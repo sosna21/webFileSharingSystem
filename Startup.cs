@@ -1,17 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using API.Data;
+using API.Identity;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 
 namespace API
@@ -30,8 +26,30 @@ namespace API
         {
             services.AddDbContext<DataContext>(options =>
             {
-                options.UseSqlServer(Configuration.GetConnectionString("DevConnection"));
+               
+                options.UseSqlite(Configuration.GetConnectionString("DevSqlLiteConnection"));
+                // options.UseSqlServer(Configuration.GetConnectionString("DevConnection"));
             });
+            
+              services
+                  .AddDefaultIdentity<ApplicationUser>()
+                  .AddRoles<IdentityRole>()
+                  .AddEntityFrameworkStores<DataContext>();
+            
+             services.AddIdentityServer()
+                 .AddApiAuthorization<ApplicationUser, DataContext>();
+            
+            
+            services.AddTransient<IIdentityService, IdentityService>();
+            
+             // services.AddAuthentication()
+             //     .AddIdentityServerJwt();
+
+             services.AddAuthorization(options =>
+             {
+                 options.AddPolicy("CanPurge", policy => policy.RequireRole("Administrator"));
+             });
+            
             services.AddControllers();
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "API", Version = "v1"}); });
         }
@@ -49,7 +67,9 @@ namespace API
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
+            
+            app.UseAuthentication();
+            app.UseIdentityServer();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
