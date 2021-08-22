@@ -1,6 +1,7 @@
 using API.Data;
 using API.Identity;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -31,10 +32,15 @@ namespace API
                 // options.UseSqlServer(Configuration.GetConnectionString("DevConnection"));
             });
             
-              services
-                  .AddDefaultIdentity<ApplicationUser>()
-                  .AddRoles<IdentityRole>()
-                  .AddEntityFrameworkStores<DataContext>();
+            // TODO Consider switching to only user AddIdentityCore instead of AddDefaultIdentity
+            // services.AddIdentityCore<ApplicationUser>()
+            //     .AddRoles<IdentityRole>()
+            //     .AddEntityFrameworkStores<DataContext>();
+            //
+
+            services.AddDefaultIdentity<ApplicationUser>()
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<DataContext>();
             
              services.AddIdentityServer()
                  .AddApiAuthorization<ApplicationUser, DataContext>();
@@ -42,15 +48,16 @@ namespace API
             
             services.AddTransient<IIdentityService, IdentityService>();
             
-             // services.AddAuthentication()
-             //     .AddIdentityServerJwt();
+              services.AddAuthentication()
+                  .AddIdentityServerJwt();
 
-             services.AddAuthorization(options =>
+            services.AddAuthorization(options =>
              {
                  options.AddPolicy("CanPurge", policy => policy.RequireRole("Administrator"));
              });
             
             services.AddControllers();
+            services.AddCors();
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "API", Version = "v1"}); });
         }
 
@@ -67,6 +74,8 @@ namespace API
             app.UseHttpsRedirection();
 
             app.UseRouting();
+            
+            app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
             
             app.UseAuthentication();
             app.UseIdentityServer();
