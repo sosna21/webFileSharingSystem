@@ -1,0 +1,65 @@
+<!--<button class="navbar-toggler bg-warning" type="button" aria-controls="sidebarMenu" aria-label="Toggle navigation" (click)="isCollapsed = !isCollapsed"-->
+<!--        [attr.aria-expanded]="isCollapsed">-->
+<!--  <span class="navbar-toggler-icon"></span>-->
+<!--</button>-->
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse" [collapse]="isCollapsed">
+  <div class="sidebar-sticky pt-3">
+    <ul class="nav flex-column">
+      <li class="nav-item">
+        <a class="nav-link active" href="#">
+          <span><fa-icon [icon]="['fas', 'file']"></fa-icon></span>
+          Files
+        </a>
+      </li>
+<!--      <li class="nav-item">-->
+<!--        <a class="nav-link dropdown-toggle" href="#">-->
+<!--          <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>-->
+<!--          Shares-->
+<!--        </a>-->
+<!--        <ul class="sl-menu-sub nav flex-column">-->
+<!--          <li>-->
+<!--            <a class="nav-link" href="#">Home 1</a>-->
+<!--          </li>-->
+<!--          <li>-->
+<!--            <a class="nav-link" href="#">Home 2</a>-->
+<!--          </li>-->
+<!--          <li>-->
+<!--            <a class="nav-link" href="#">Home 3</a>-->
+<!--          </li>-->
+<!--        </ul>-->
+<!--      </li>-->
+      <li class="nav-item">
+        <a class="nav-link" href="#">
+          <span><fa-icon [icon]="['fas', 'star']"></fa-icon></span>
+          Favourite
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">
+          <span><fa-icon [icon]="['far', 'clock']"></fa-icon></span>
+          Recent
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">
+          <span><fa-icon [icon]="['fas', 'tags']"></fa-icon></span>
+          Tags
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">
+          <span><fa-icon [icon]="['fas', 'trash']"></fa-icon></span>
+          Deleted
+        </a>
+      </li>
+    </ul>
+    <ul class="nav flex-column">
+      <li class="nav-item">
+        <a class="nav-link" href="#">
+          <span><fa-icon [icon]="['fas', 'hdd']"></fa-icon></span>
+          8.4 GB used
+        </a>
+      </li>
+    </ul>
+    </div>
+</nav>
