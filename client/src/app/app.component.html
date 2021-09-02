@@ -1,1 +1,12 @@
-<router-outlet></router-outlet>
+<app-navbar></app-navbar>
+<div class="container-fluid">
+  <div class="row">
+    <app-sidebar></app-sidebar>
+    <main id="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+<div class="footer container-fluid text-center bg-light p-3 fixed-bottom">
+  <span class="text-muted">Place sticky footer content here.</span>
+</div>

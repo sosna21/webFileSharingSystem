@@ -13,7 +13,7 @@ interface File {
 @Component({
   selector: 'app-file-explorer',
   templateUrl: './file-explorer.component.html',
-  styleUrls: ['./file-explorer.component.less']
+  styleUrls: ['./file-explorer.component.scss']
 })
 export class FileExplorerComponent implements OnInit {
 
