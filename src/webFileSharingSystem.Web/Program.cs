@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -23,8 +24,14 @@ namespace webFileSharingSystem.Web
             try
             {
                 var context = services.GetRequiredService<ApplicationDbContext>();
-                await context.Database.MigrateAsync();
-                
+
+                var config = services.GetRequiredService<IConfiguration>();
+
+                if (!config.GetValue<bool>("UseInMemoryDatabase"))
+                {
+                    await context.Database.MigrateAsync();
+                }
+
                 var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
                 var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
