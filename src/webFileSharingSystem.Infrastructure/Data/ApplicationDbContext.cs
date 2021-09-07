@@ -3,9 +3,12 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
+using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 
@@ -16,13 +19,14 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
         private readonly ICurrentUserService _currentUserService;
         private readonly IDomainEventService _domainEventService;
 
-        public ApplicationDbContext(
-            DbContextOptions options
-        ) : base(options)
+        public ApplicationDbContext(DbContextOptions options)
+            : base(options)
         {
             //_currentUserService = currentUserService;
             //_domainEventService = domainEventService;
         }
+        
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new())
         {
@@ -56,6 +60,12 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             base.OnModelCreating(builder);
+            
+            
+            builder.Entity<ApplicationUser>()
+                .HasOne<IdentityUser>()
+                .WithOne()
+                .HasForeignKey<ApplicationUser>(e => e.IdentityUserId);
         }
 
         private async Task DispatchEvents()

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using webFileSharingSystem.Core.Entities;
-using webFileSharingSystem.Infrastructure.Common;
+using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Infrastructure.Data;
 
 namespace webFileSharingSystem.Web
@@ -27,7 +27,7 @@ namespace webFileSharingSystem.Web
                 
                 var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-                var applicationUserRepository = services.GetRequiredService<Repository<ApplicationUser>>();
+                var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
                 
                 await context.SeedDefaultUserAsync(userManager, roleManager, applicationUserRepository);
             }
@@ -42,6 +42,10 @@ namespace webFileSharingSystem.Web
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
+                .ConfigureWebHostDefaults(
+                    webBuilder =>
+                    {
+                        webBuilder.UseStartup<Startup>();
+                    });
     }
 }
