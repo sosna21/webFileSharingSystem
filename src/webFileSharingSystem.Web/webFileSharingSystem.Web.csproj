@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>default</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="5.0.9" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Contracts\Requests" />
+      <Folder Include="Contracts\Responses" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\webFileSharingSystem.Infrastructure\webFileSharingSystem.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>

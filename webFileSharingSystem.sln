@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "API.csproj", "{E582E5A7-7F53-400F-9910-DE2FEEBBA25F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.Core", "src\webFileSharingSystem.Core\webFileSharingSystem.Core.csproj", "{24572AA1-0592-40C4-A7D4-6A6DBBEC8931}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.Infrastructure", "src\webFileSharingSystem.Infrastructure\webFileSharingSystem.Infrastructure.csproj", "{9F8430A0-9C92-4A18-AAA8-E1EBB712D277}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.Web", "src\webFileSharingSystem.Web\webFileSharingSystem.Web.csproj", "{928DF081-7856-432E-A72E-9C39D8AE6C39}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +12,17 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E582E5A7-7F53-400F-9910-DE2FEEBBA25F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E582E5A7-7F53-400F-9910-DE2FEEBBA25F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E582E5A7-7F53-400F-9910-DE2FEEBBA25F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E582E5A7-7F53-400F-9910-DE2FEEBBA25F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24572AA1-0592-40C4-A7D4-6A6DBBEC8931}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24572AA1-0592-40C4-A7D4-6A6DBBEC8931}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24572AA1-0592-40C4-A7D4-6A6DBBEC8931}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24572AA1-0592-40C4-A7D4-6A6DBBEC8931}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F8430A0-9C92-4A18-AAA8-E1EBB712D277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F8430A0-9C92-4A18-AAA8-E1EBB712D277}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F8430A0-9C92-4A18-AAA8-E1EBB712D277}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F8430A0-9C92-4A18-AAA8-E1EBB712D277}.Release|Any CPU.Build.0 = Release|Any CPU
+		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
