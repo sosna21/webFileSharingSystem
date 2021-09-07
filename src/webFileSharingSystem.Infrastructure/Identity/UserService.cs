@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Authorization;
@@ -30,9 +31,9 @@ public class UserService : IUserService
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<string> GetUserNameAsync(int userId)
+        public async Task<string> GetUserNameAsync(int userId, CancellationToken cancellationToken = default)
         {
-            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId);
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
             
             if(appUser is null)
             {
@@ -65,9 +66,9 @@ public class UserService : IUserService
             return (ToApplicationResult(identityResult), appUser.Id);
         }
 
-        public async Task<bool> IsInRoleAsync(int userId, string role)
+        public async Task<bool> IsInRoleAsync(int userId, string role, CancellationToken cancellationToken = default)
         {
-            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId);
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
             
             if(appUser is null)
             {
@@ -86,9 +87,9 @@ public class UserService : IUserService
             return await _identityUserManager.IsInRoleAsync(identityUser, role);
         }
 
-        public async Task<bool> AuthorizeAsync(int userId, string policyName)
+        public async Task<bool> AuthorizeAsync(int userId, string policyName, CancellationToken cancellationToken = default)
         {
-            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId);
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
             
             if(appUser is null)
             {

@@ -1,4 +1,9 @@
-﻿using System.Linq;
+﻿/*
+ * Specification patter, source:
+ * https://medium.com/@rudyzio92/net-core-using-the-specification-pattern-alongside-a-generic-repository-318cd4eea4aa
+ */
+
+using System.Linq;
 
 using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities.Common;
