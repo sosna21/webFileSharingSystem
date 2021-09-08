@@ -1,3 +1,4 @@
+<div *ngIf="currentRoute !== '/login'">
 <app-navbar></app-navbar>
 <div class="container-fluid">
   <div class="row">
@@ -9,4 +10,8 @@
 </div>
 <div class="footer container-fluid text-center bg-light p-3 fixed-bottom">
   <span class="text-muted">Place sticky footer content here.</span>
+</div>
+</div>
+<div *ngIf="currentRoute == '/login'">
+  <router-outlet></router-outlet>
 </div>
