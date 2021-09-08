@@ -14,6 +14,10 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from "@angular/common/http";
 import { FileExplorerComponent } from './Components/file-explorer/file-explorer.component';
 import { HomeComponent } from './Components/home/home.component';
+import { FavouritePageComponent } from './Components/favourite-page/favourite-page.component';
+import { RecentComponent } from './Components/recent/recent.component';
+import { TagsComponent } from './Components/tags/tags.component';
+import { DeletedComponent } from './Components/deleted/deleted.component';
 
 @NgModule({
   declarations: [
@@ -23,6 +27,10 @@ import { HomeComponent } from './Components/home/home.component';
     LoginComponent,
     FileExplorerComponent,
     HomeComponent,
+    FavouritePageComponent,
+    RecentComponent,
+    TagsComponent,
+    DeletedComponent,
   ],
   imports: [
     BrowserModule,

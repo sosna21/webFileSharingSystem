@@ -59,6 +59,10 @@
   color: inherit;
 }
 
+.sidebar p.nav-link:hover {
+  cursor: default;
+  color: #999;
+}
 
 //.dropdown-toggle::after {
 ////  display: block;
