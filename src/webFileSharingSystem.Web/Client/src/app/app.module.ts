@@ -18,6 +18,8 @@ import { FavouritePageComponent } from './Components/favourite-page/favourite-pa
 import { RecentComponent } from './Components/recent/recent.component';
 import { TagsComponent } from './Components/tags/tags.component';
 import { DeletedComponent } from './Components/deleted/deleted.component';
+import { RegisterComponent } from './Components/register/register.component';
+import { TextInputComponent } from './Components/common/text-input/text-input.component';
 import {JwtInterceptor} from "./interceptors/jwt.interceptor";
 
 @NgModule({
@@ -32,6 +34,8 @@ import {JwtInterceptor} from "./interceptors/jwt.interceptor";
     RecentComponent,
     TagsComponent,
     DeletedComponent,
+    RegisterComponent,
+    TextInputComponent,
   ],
   imports: [
     BrowserModule,
