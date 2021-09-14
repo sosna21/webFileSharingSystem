@@ -19,10 +19,10 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
         private readonly ICurrentUserService _currentUserService;
         private readonly IDomainEventService _domainEventService;
 
-        public ApplicationDbContext(DbContextOptions options)
+        public ApplicationDbContext(DbContextOptions options, ICurrentUserService currentUserService)
             : base(options)
         {
-            //_currentUserService = currentUserService;
+            _currentUserService = currentUserService;
             //_domainEventService = domainEventService;
         }
         
@@ -36,12 +36,12 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        entry.Entity.CreatedBy = -1; //_currentUserService.UserId;
+                        entry.Entity.CreatedBy = _currentUserService.UserId ?? -1;
                         entry.Entity.Created = DateTime.Now;
                         break;
 
                     case EntityState.Modified:
-                        entry.Entity.LastModifiedBy = -1; //_currentUserService.UserId;
+                        entry.Entity.LastModifiedBy = _currentUserService.UserId ?? -1;
                         entry.Entity.LastModified = DateTime.Now;
                         break;
                 }

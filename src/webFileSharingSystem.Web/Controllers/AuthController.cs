@@ -1,0 +1,49 @@
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using webFileSharingSystem.Core.Entities.Common;
+using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Web.Contracts.Requests;
+
+namespace webFileSharingSystem.Web.Controllers
+{
+    public class AuthController : BaseController
+    {
+
+        private readonly IUserService _userService;
+        private readonly ITokenService _tokenService;
+
+        public AuthController(IUserService userService, ITokenService tokenService)
+        {
+            _userService = userService;
+            _tokenService = tokenService;
+        }
+        
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            var (authenticationResult, applicationUser) =
+                await _userService.AuthenticateAsync(request.Username, request.Password);
+
+            switch (authenticationResult)
+            {
+                case AuthenticationResult.Success:
+                    var token = _tokenService.GenerateToken(applicationUser!);
+                    return Ok(new { Token = token, Message = "Success" });
+                case AuthenticationResult.Failed:
+                    return BadRequest(new {Message = "Invalid password"});
+                case AuthenticationResult.LockedOut:
+                    return BadRequest(new { Message = "To many failed login attempts" });
+                case AuthenticationResult.IsBlocked:
+                    return Unauthorized(new { Message = "User is not allowed to login" });
+                case AuthenticationResult.NotFound:
+                    return BadRequest(new {Message = "User not found"});
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+    }
+}

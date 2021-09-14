@@ -5,27 +5,31 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-
+using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Infrastructure.Common;
 
 namespace webFileSharingSystem.Infrastructure.Identity
 {
 public class UserService : IUserService
     {
-        private readonly UserManager<IdentityUser> _identityUserManager;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IUserClaimsPrincipalFactory<IdentityUser> _identityUserClaimsPrincipalFactory;
         private readonly IAuthorizationService _authorizationService;
         private readonly IUnitOfWork _unitOfWork;
 
         public UserService(
-            UserManager<IdentityUser> identityUserManager,
+            UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager,
             IUserClaimsPrincipalFactory<IdentityUser> identityUserClaimsPrincipalFactory,
             IAuthorizationService authorizationService,
             IUnitOfWork unitOfWork)
         {
-            _identityUserManager = identityUserManager;
+            _userManager = userManager;
+            _signInManager = signInManager;
             _identityUserClaimsPrincipalFactory = identityUserClaimsPrincipalFactory;
             _authorizationService = authorizationService;
             _unitOfWork = unitOfWork;
@@ -41,7 +45,7 @@ public class UserService : IUserService
                 //throw new UserNotFoundException( userId );
             }
             
-            return appUser.UserName;
+            return (appUser.UserName ?? appUser.EmailAddress)!;
         }
 
         public async Task<(Result Result, int UserId)> CreateUserAsync(string userName, string emailAddress, string password)
@@ -52,7 +56,7 @@ public class UserService : IUserService
                 Email = emailAddress,
             };
 
-            var identityResult = await _identityUserManager.CreateAsync(user, password);
+            var identityResult = await _userManager.CreateAsync(user, password);
             
             if(!identityResult.Succeeded)
             {
@@ -66,6 +70,52 @@ public class UserService : IUserService
             return (ToApplicationResult(identityResult), appUser.Id);
         }
 
+        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser)> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken = default)
+        {
+            var identityUser = await _userManager.Users
+                .SingleOrDefaultAsync(x => x.UserName == userName || x.Email == userName, cancellationToken);
+
+            async Task<ApplicationUser> GetApplicationUser()
+            {
+                var userByIdentityIdSpecs =
+                    new Specification<ApplicationUser>(appUser => appUser.IdentityUserId == identityUser!.Id);
+                var appUserByIdentityId = await _unitOfWork.Repository<ApplicationUser>().FindAsync( userByIdentityIdSpecs, cancellationToken);
+
+                var appUser = appUserByIdentityId.SingleOrDefault();
+            
+                if(appUser is null)
+                {
+                    throw new Exception($"User not found, identityUserId: {identityUser!.Id}");
+                    //throw new UserNotFoundException( userId );
+                }
+
+                return appUser;
+            }
+
+            if (identityUser is null)
+            {
+                return (AuthenticationResult.NotFound, null);
+            }
+
+            var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, true);
+
+            if (result.IsLockedOut)
+            {
+                return (AuthenticationResult.LockedOut, null);
+            }
+            
+            if (result.IsNotAllowed)
+            {
+                return (AuthenticationResult.IsBlocked, null);
+            }
+
+            return result.Succeeded switch
+            {
+                false => (AuthenticationResult.Failed, null),
+                true => (AuthenticationResult.Success, await GetApplicationUser())
+            };
+        }
+
         public async Task<bool> IsInRoleAsync(int userId, string role, CancellationToken cancellationToken = default)
         {
             var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
@@ -76,7 +126,7 @@ public class UserService : IUserService
                 //throw new UserNotFoundException( userId );
             }
             
-            var identityUser = _identityUserManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
+            var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
             
             if(identityUser is null)
             {
@@ -84,7 +134,7 @@ public class UserService : IUserService
                 //throw new ApplicationUnhandledException( $"Identity user not found, IdentityUserId: {appUser.IdentityUserId}" );
             }
             
-            return await _identityUserManager.IsInRoleAsync(identityUser, role);
+            return await _userManager.IsInRoleAsync(identityUser, role);
         }
 
         public async Task<bool> AuthorizeAsync(int userId, string policyName, CancellationToken cancellationToken = default)
@@ -97,7 +147,7 @@ public class UserService : IUserService
                 //throw new UserNotFoundException( userId );
             }
             
-            var identityUser = _identityUserManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
+            var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
             
             if(identityUser is null)
             {
@@ -128,7 +178,7 @@ public class UserService : IUserService
         public async Task<Result> DeleteUserAsync(ApplicationUser appUser)
         {
             
-            var identityUser = _identityUserManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
+            var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
             
             if(identityUser is null)
             {
@@ -136,7 +186,7 @@ public class UserService : IUserService
                 //throw new ApplicationUnhandledException( $"Identity user not found, IdentityUserId: {appUser.IdentityUserId}" );
             }
             
-            var result = await _identityUserManager.DeleteAsync(identityUser);
+            var result = await _userManager.DeleteAsync(identityUser);
 
             return ToApplicationResult(result);
         }
