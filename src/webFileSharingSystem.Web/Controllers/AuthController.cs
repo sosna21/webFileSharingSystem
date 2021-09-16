@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Web.Contracts.Requests;
+using webFileSharingSystem.Web.Contracts.Responses;
 
 namespace webFileSharingSystem.Web.Controllers
 {
@@ -32,7 +33,17 @@ namespace webFileSharingSystem.Web.Controllers
             {
                 case AuthenticationResult.Success:
                     var token = _tokenService.GenerateToken(applicationUser!);
-                    return Ok(new { Token = token, Message = "Success" });
+                    var userResponse = new AppUserResponse
+                    {
+                        Id = applicationUser!.Id,
+                        UserName = applicationUser.UserName,
+                        EmailAddress = applicationUser.EmailAddress,
+                        UsedSpace = applicationUser.UsedSpace,
+                        Quota = applicationUser.Quota, 
+                        Token = await token
+
+                    };
+                    return Ok(new { User = userResponse, Message = "Success"  });
                 case AuthenticationResult.Failed:
                     return BadRequest(new {Message = "Invalid password"});
                 case AuthenticationResult.LockedOut:

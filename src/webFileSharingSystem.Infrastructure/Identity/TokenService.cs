@@ -17,18 +17,18 @@ namespace webFileSharingSystem.Infrastructure.Identity
     public class TokenService: ITokenService
     {
         private readonly JwtSettings _settings;
-        private readonly UserManager<IdentityUser> _identityUserManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly SymmetricSecurityKey _key;
         
-        public TokenService(IOptions<JwtSettings> settings, UserManager<IdentityUser> identityUserManager)
+        public TokenService(IOptions<JwtSettings> settings, UserManager<IdentityUser> userManager)
         {
             _settings = settings.Value;
-            _identityUserManager = identityUserManager;
+            _userManager = userManager;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         }
         public async Task<string> GenerateToken(ApplicationUser appUser)
         {
-            var identityUser = _identityUserManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
+            var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
             
             if(identityUser is null)
             {
@@ -41,17 +41,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
                 new(JwtRegisteredClaimNames.NameId, appUser.Id.ToString()),
             };
 
-            if (appUser.UserName is not null)
-            {
-                claims.Add(new Claim(JwtRegisteredClaimNames.GivenName, appUser.UserName));
-            }
-            
-            if (appUser.EmailAddress is not null)
-            {
-                claims.Add(new Claim(JwtRegisteredClaimNames.Email, appUser.EmailAddress));
-            }
-
-            var roles = await _identityUserManager.GetRolesAsync(identityUser);
+            var roles = await _userManager.GetRolesAsync(identityUser);
             
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
@@ -59,6 +49,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddSeconds(_settings.ExpiryTimeInSeconds),
                 SigningCredentials = credentials,
                 Audience = _settings.Audience,

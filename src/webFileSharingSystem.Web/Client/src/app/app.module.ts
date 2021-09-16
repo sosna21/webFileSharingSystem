@@ -11,13 +11,14 @@ import { NavbarComponent } from './Components/navbar/navbar.component';
 import { SidebarComponent } from './Components/sidebar/sidebar.component';
 import { LoginComponent } from './Components/login/login.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from "@angular/common/http";
+import {HTTP_INTERCEPTORS, HttpClientModule} from "@angular/common/http";
 import { FileExplorerComponent } from './Components/file-explorer/file-explorer.component';
 import { HomeComponent } from './Components/home/home.component';
 import { FavouritePageComponent } from './Components/favourite-page/favourite-page.component';
 import { RecentComponent } from './Components/recent/recent.component';
 import { TagsComponent } from './Components/tags/tags.component';
 import { DeletedComponent } from './Components/deleted/deleted.component';
+import {JwtInterceptor} from "./interceptors/jwt.interceptor";
 
 @NgModule({
   declarations: [
@@ -41,7 +42,9 @@ import { DeletedComponent } from './Components/deleted/deleted.component';
     FontAwesomeModule,
     CollapseModule.forRoot()
   ],
-  providers: [],
+  providers: [
+    {provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true},
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {

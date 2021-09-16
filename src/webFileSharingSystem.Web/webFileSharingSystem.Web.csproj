@@ -24,11 +24,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Contracts\Requests" />
-      <Folder Include="Contracts\Responses" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\webFileSharingSystem.Infrastructure\webFileSharingSystem.Infrastructure.csproj" />
     </ItemGroup>
 
