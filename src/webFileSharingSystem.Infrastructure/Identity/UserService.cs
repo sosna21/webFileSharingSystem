@@ -75,23 +75,6 @@ public class UserService : IUserService
             var identityUser = await _userManager.Users
                 .SingleOrDefaultAsync(x => x.UserName == userName || x.Email == userName, cancellationToken);
 
-            async Task<ApplicationUser> GetApplicationUser()
-            {
-                var userByIdentityIdSpecs =
-                    new Specification<ApplicationUser>(appUser => appUser.IdentityUserId == identityUser!.Id);
-                var appUserByIdentityId = await _unitOfWork.Repository<ApplicationUser>().FindAsync( userByIdentityIdSpecs, cancellationToken);
-
-                var appUser = appUserByIdentityId.SingleOrDefault();
-            
-                if(appUser is null)
-                {
-                    throw new Exception($"User not found, identityUserId: {identityUser!.Id}");
-                    //throw new UserNotFoundException( userId );
-                }
-
-                return appUser;
-            }
-
             if (identityUser is null)
             {
                 return (AuthenticationResult.NotFound, null);
@@ -109,11 +92,25 @@ public class UserService : IUserService
                 return (AuthenticationResult.IsBlocked, null);
             }
 
-            return result.Succeeded switch
+            if (!result.Succeeded)
             {
-                false => (AuthenticationResult.Failed, null),
-                true => (AuthenticationResult.Success, await GetApplicationUser())
-            };
+                return (AuthenticationResult.Failed, null);
+            }
+            
+            var userByIdentityIdSpecs =
+                new Specification<ApplicationUser>(appUser => appUser.IdentityUserId == identityUser!.Id);
+            var appUserByIdentityId = await _unitOfWork.Repository<ApplicationUser>().FindAsync( userByIdentityIdSpecs, cancellationToken);
+
+            var appUser = appUserByIdentityId.SingleOrDefault();
+        
+            if(appUser is null)
+            {
+                throw new Exception($"User not found, identityUserId: {identityUser!.Id}");
+                //throw new UserNotFoundException( userId );
+            }
+            
+
+            return (AuthenticationResult.Success, appUser);
         }
 
         public async Task<bool> IsInRoleAsync(int userId, string role, CancellationToken cancellationToken = default)

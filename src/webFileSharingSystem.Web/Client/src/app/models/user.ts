@@ -2,7 +2,7 @@
     id: number;
     username: string;
     email: string;
-    UsedSpace: number;
+    usedSpace: number;
     quota: number;
     token: string;
     roles: string[];

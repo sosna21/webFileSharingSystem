@@ -44,14 +44,13 @@ namespace webFileSharingSystem.Web.Controllers
 
                     };
                     return Ok(new { User = userResponse, Message = "Success"  });
+                case AuthenticationResult.NotFound:
                 case AuthenticationResult.Failed:
-                    return BadRequest(new {Message = "Invalid password"});
+                    return BadRequest(new {Message = "Invalid username or password"});
                 case AuthenticationResult.LockedOut:
                     return BadRequest(new { Message = "To many failed login attempts" });
                 case AuthenticationResult.IsBlocked:
                     return Unauthorized(new { Message = "User is not allowed to login" });
-                case AuthenticationResult.NotFound:
-                    return BadRequest(new {Message = "User not found"});
                 default:
                     throw new ArgumentOutOfRangeException();
             }
