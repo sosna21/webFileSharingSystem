@@ -1,0 +1,28 @@
+th {
+  color: #989898;
+  font-weight: lighter;
+  font-family: "Segoe UI", serif;
+}
+
+tr {
+  cursor: default;
+  text-align: center;
+}
+
+.trim {
+  display: inline-block;
+}
+
+.header {
+  font-family: "fantasy", serif;
+}
+
+#faCircle:hover {
+  stroke: lemonchiffon;
+  stroke-width: 20;
+  color: #989898;
+}
+
+input[type=checkbox], fa-icon, #actionBtn:hover{
+  cursor: pointer;
+}
