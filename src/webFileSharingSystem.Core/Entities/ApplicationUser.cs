@@ -12,9 +12,9 @@ namespace webFileSharingSystem.Core.Entities
 
         
         // TODO: Consider not to duplicate identity UserName and EmailAddress
-        public string UserName { get; set; }
+        public string? UserName { get; set; }
         
-        public string EmailAddress { get; set; }
+        public string? EmailAddress { get; set; }
         
         public ulong UsedSpace { get; set; }
         

@@ -2,9 +2,8 @@
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-//import { environment } from '@environments/environment';
 import { User } from '../models/user';
+import { JwtTokenService} from "./jwt-token.service";
 import {environment} from "../../environments/environment";
 
 
@@ -13,9 +12,10 @@ export class AuthenticationService {
     private currentUserSubject: BehaviorSubject<User>;
     public currentUser: Observable<User>;
 
-    constructor(private http: HttpClient) {
+    constructor(private http: HttpClient, private jwtService: JwtTokenService) {
         this.currentUserSubject = new BehaviorSubject<User>(JSON.parse(localStorage.getItem('currentUser')!));
         this.currentUser = this.currentUserSubject.asObservable();
+        this.currentUser.subscribe(u => jwtService.setToken(u?.token));
     }
 
     public get currentUserValue(): User {
@@ -23,13 +23,13 @@ export class AuthenticationService {
     }
 
     login(username: string, password: string) {
-        return this.http.post<any>(`${environment.apiUrl}/users/authenticate`, { username, password })
-            .pipe(map(user => {
+        return this.http.post<any>(`${environment.apiUrl}/Auth/Login`, { username, password })
+            .pipe(map(response => {
                 // store user details and basic auth credentials in local storage to keep user logged in between page refreshes
-                user.authdata = window.btoa(username + ':' + password);
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                this.currentUserSubject.next(user);
-                return user;
+                this.jwtService.setTokenAndUpdateUserInfo(response.user);
+                localStorage.setItem('currentUser', JSON.stringify(response.user));
+                this.currentUserSubject.next(response.user);
+                return response.user;
             }));
     }
 

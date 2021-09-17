@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import { Observable } from 'rxjs';
+import { environment } from "../../../environments/environment";
 
 interface File {
   fileName: string;
@@ -16,15 +16,13 @@ interface File {
   styleUrls: ['./file-explorer.component.scss']
 })
 export class FileExplorerComponent implements OnInit {
-
-  baseUrl = 'https://localhost:5001/';
   files: File[] = [];
 
   constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
     //var observableFiles = this.files.asObservable();
-    this.http.get<File[]>(this.baseUrl + 'File').subscribe(response => {
+    this.http.get<File[]>(`${environment.apiUrl}/File`).subscribe(response => {
       this.files = response;
      }, error => {
        console.log(error)

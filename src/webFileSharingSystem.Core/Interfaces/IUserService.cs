@@ -17,6 +17,8 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<(Result Result, int UserId)> CreateUserAsync(string userName, string emailAddress, string password);
 
+        Task<(AuthenticationResult Result, ApplicationUser? AppUser)> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken = default);
+
         Task<Result> DeleteUserAsync(int userId);
         
         Task<Result> DeleteUserAsync(ApplicationUser appUser);

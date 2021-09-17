@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -39,14 +40,16 @@ namespace webFileSharingSystem.Infrastructure
             services.AddIdentityCore<IdentityUser>()
                 .AddRoles<IdentityRole>()
                 .AddRoleManager<RoleManager<IdentityRole>>()
-                //.AddSignInManager<SignInManager<IdentityUser>>()
+                .AddSignInManager<SignInManager<IdentityUser>>()
                 .AddRoleValidator<RoleValidator<IdentityRole>>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-
-            var jwtSettings = new JwtSettings();
-            configuration.Bind(nameof(JwtSettings), jwtSettings);
-            services.AddSingleton<JwtSettings>();
             
+            var jwtSection = configuration.GetSection(nameof(JwtSettings));
+            services.Configure<JwtSettings>(jwtSection);
+
+            // configure jwt authentication
+            var jwtSettings = jwtSection.Get<JwtSettings>();
+
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
                 options =>
                 {
@@ -54,14 +57,16 @@ namespace webFileSharingSystem.Infrastructure
                     {
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
+                        ValidIssuer = jwtSettings.Issuer,
+                        ValidAudience = jwtSettings.Audience,
+                        ClockSkew = TimeSpan.Zero
                     };
                 });
             
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<ITokenService, TokenService>();
             
 
             services.AddAuthorization(options =>

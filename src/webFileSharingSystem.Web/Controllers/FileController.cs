@@ -9,9 +9,7 @@ using webFileSharingSystem.Web.DTOs;
 
 namespace webFileSharingSystem.Web.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class FileController : ControllerBase
+    public class FileController : BaseController
     {
         private static readonly string[] FileName = new[]
         {
