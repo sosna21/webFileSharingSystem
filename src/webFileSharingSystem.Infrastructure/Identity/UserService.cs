@@ -137,7 +137,7 @@ public class UserService : IUserService
         public async Task<bool> AuthorizeAsync(int userId, string policyName, CancellationToken cancellationToken = default)
         {
             var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
-            
+
             if(appUser is null)
             {
                 throw new Exception($"User not found, userId: {userId}");

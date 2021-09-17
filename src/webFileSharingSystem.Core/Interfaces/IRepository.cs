@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using webFileSharingSystem.Core.Entities.Common;
 
 namespace webFileSharingSystem.Core.Interfaces
 {
@@ -18,6 +19,8 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<IEnumerable<TEntity>> FindAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
         
+        Task<PaginatedList<TEntity>> PaginatedListAsync(int pageNumber, int pageSize, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
+
         Task<bool> ContainsAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
         
         Task<bool> ContainsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
