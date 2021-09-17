@@ -1,5 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators} from "@angular/forms";
+import {AuthenticationService} from "../../services/authentication.service";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-register',
@@ -10,13 +12,18 @@ export class RegisterComponent implements OnInit {
   model: any = {};
   registerForm!: FormGroup;
 
-  constructor(private formBuilder: FormBuilder) {
+  constructor(private formBuilder: FormBuilder,
+              private router: Router,
+              private authenticationService: AuthenticationService) {
+    // redirect to home if already logged in
+    if (this.authenticationService.currentUserValue) {
+      this.router.navigate(['/']);
+    }
   }
 
   ngOnInit(): void {
     this.initializeForm();
   }
-
 
   initializeForm() {
     this.registerForm = this.formBuilder.group({
@@ -31,7 +38,6 @@ export class RegisterComponent implements OnInit {
     })
   }
 
-
   matchValues(matchTo: string): ValidatorFn {
     return (control: AbstractControl): { [key: string]: any } | null => {
       const forbidden = control?.parent?.controls as any;
@@ -41,9 +47,7 @@ export class RegisterComponent implements OnInit {
     }
   }
 
-
   register() {
     console.log(this.registerForm.value);
   }
-
 }

@@ -14,7 +14,7 @@ export class AppComponent {
 
   currentRoute: string = "";
 
-  constructor(private router: Router,
+  constructor(public router: Router,
               private authenticationService: AuthenticationService){
     router.events.pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(event =>

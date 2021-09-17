@@ -10,7 +10,7 @@
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
 
           <app-text-input [formControl]="$any(loginForm).controls['username']" [label]="'Username/Email'"></app-text-input>
-          <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'"></app-text-input>
+          <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'" type="password"></app-text-input>
 
           <div class="col-6 offset-3 ">
             <button [disabled]="loading" class="btn btn-dark btn-block">
@@ -30,7 +30,7 @@
           <br/> Click Register to create a new account! </p>
       </div>
       <div class="col-3">
-        <button class="btn btn-secondary btn-block" routerLink="/register">Register</button>
+        <button class="btn btn-secondary btn-block" routerLink="register">Register</button>
       </div>
     </div>
   </div>

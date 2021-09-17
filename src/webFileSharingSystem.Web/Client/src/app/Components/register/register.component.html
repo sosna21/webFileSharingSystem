@@ -1,6 +1,5 @@
 <div class="d-flex align-items-center min-vh-100">
   <div class="col-4 offset-4 card">
-
     <form [formGroup]="registerForm!" (ngSubmit)="register()" autocomplete="off">
       <h2 class="text-center text-primary">Sign up</h2>
       <hr>
@@ -8,14 +7,13 @@
       <app-text-input [formControl]="$any(registerForm).controls['email']" [label]="'Email (optional)'"></app-text-input>
       <app-text-input [formControl]="$any(registerForm).controls['password']" [label]="'Password'" [type]="'password'"></app-text-input>
       <app-text-input [formControl]="$any(registerForm).controls['confirmPassword']" [label]="'Confirm Password'" [type]="'password'"></app-text-input>
-
       <div class="form-group text-center">
         <div class="row">
         <div class="col-4 offset-2">
         <button class="btn btn-success btn-block" type="submit">Register</button>
         </div>
         <div class="col-4 ">
-        <button class="btn btn-danger btn-block " routerLink="/login">Cancel</button>
+        <button class="btn btn-danger btn-block " routerLink="login">Cancel</button>
         </div>
       </div>
       </div>
