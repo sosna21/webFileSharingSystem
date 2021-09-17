@@ -8,7 +8,8 @@
   </div>
 </div>
 <div *ngIf="!authenticated">
-  <app-login></app-login>
+  <app-login *ngIf="router.url === '/login'" ></app-login>
+  <app-register *ngIf="router.url === '/register'" ></app-register>
 </div>
 <div class="footer container-fluid text-center bg-light p-3 fixed-bottom">
   <span class="text-muted">Place sticky footer content here.</span>

@@ -8,6 +8,7 @@ import {FileExplorerComponent} from "./Components/file-explorer/file-explorer.co
 import {RecentComponent} from "./Components/recent/recent.component";
 import {TagsComponent} from "./Components/tags/tags.component";
 import {DeletedComponent} from "./Components/deleted/deleted.component";
+import {RegisterComponent} from "./Components/register/register.component";
 
 
 const routes: Routes = [
@@ -25,6 +26,7 @@ const routes: Routes = [
     ]
   },
   { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent},
   { path: '**', component: LoginComponent, pathMatch: 'full' },
 ];
 
