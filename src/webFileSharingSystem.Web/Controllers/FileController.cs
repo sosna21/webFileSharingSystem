@@ -27,14 +27,14 @@ namespace webFileSharingSystem.Web.Controllers
         public IEnumerable<FileDto> Get()
         {
             var rng = new Random();
-            return Enumerable.Range(1, 5).Select(index => new FileDto
+            return Enumerable.Range(1, 40).Select(index => new FileDto
                 {
-                    
-                    ModificationData = DateTime.Now.AddDays(index),
+                    Id = index,
+                    ModificationData = DateTime.Now.AddDays(rng.Next(0,21)),
                     FileName = FileName[rng.Next(FileName.Length)],
-                    Size = (ulong)rng.Next(0, 10000),
-                    IsFavourite = Convert.ToBoolean( rng.Next(0, 1) ),
-                    IsShared = Convert.ToBoolean( rng.Next(0, 1) )
+                    Size = (ulong)rng.Next(100, 1000000000),
+                    IsFavourite = Convert.ToBoolean( rng.Next(0, 2) ),
+                    IsShared = Convert.ToBoolean( rng.Next(0, 2) )
                 })
                 .ToArray();
         }

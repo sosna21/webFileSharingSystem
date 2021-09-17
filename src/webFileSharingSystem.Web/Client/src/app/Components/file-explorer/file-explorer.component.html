@@ -1,25 +1,99 @@
-<h2 class="m-3">All Files</h2>
-<div class="table-responsive">
-  <table class="table table-striped table-sm">
-    <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">File Name</th>
-      <th scope="col">Last Modification</th>
-      <th scope="col">Size</th>
-      <th scope="col"></th>
-      <th scope="col"></th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr *ngFor="let file of files; index as i">
-      <th scope="row">{{ i + 1 }}</th>
-      <td>{{ file.fileName }}</td>
-      <td>{{ file.modificationData | date: 'short' }}</td>
-      <td>{{ file.size }}</td>
-      <td>{{ file.isFavourite }}</td>
-      <td>{{ file.isShared }}</td>
-    </tr>
-    </tbody>
-  </table>
+<div class="row">
+  <div>
+    <h2 class="m-3">All Files</h2>
+  </div>
+  <div class="align-self-center bg-white">
+    <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']" (click)="createDirectory()"></fa-icon>
+  </div>
 </div>
+<div class="row">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead>
+      <tr>
+        <th scope="col" style="width: 2%">
+          <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
+        </th>
+        <th scope="col" style="width: 60%" class="text-left">File Name
+
+          <span *ngIf="isManyCheckboxesChecked()" class="dropdown ml-3" dropdown>
+            <span id="actionBtn" dropdownToggle>
+            <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': 'black'}"></fa-icon>
+            Actions  </span>
+            <span class="dropdown-menu mt-3" *dropdownMenu>
+              <a class="dropdown-item">Download</a>
+              <a class="dropdown-item">Move / Copy</a>
+              <a class="dropdown-item" (click)="deleteCheckedFiles()">Delete</a>
+            </span>
+          </span>
+        </th>
+        <th scope="col" style="width: 4%">Favourite</th>
+        <th scope="col" style="width: 4%">Share</th>
+        <th scope="col" style="width: 4%">Actions</th>
+        <th scope="col" style="width: 8%">Size</th>
+        <th scope="col" style="width: 16%">Last Modification</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr *ngFor="let file of filesToView; index as i" (click)="file.isDirectory ? changeDirectory() : null">
+        <td>
+          <input type="checkbox" value="{{file.id}}" (change)="file.checked = !file.checked" [checked]="file.checked">
+        </td>
+        <td *ngIf="!file.rename" class="text-left">{{ file.fileName }}</td>
+        <td *ngIf="file.rename" class="text-left">
+          <form [formGroup]="fileNameForm" (ngSubmit)="rename(file)">
+            <app-text-input (focusout)="rename(file)" (keydown.enter)="rename(file)"
+                            [formControl]="$any(fileNameForm).controls['fileName']"
+                            [label]="file.fileName"></app-text-input>
+          </form>
+        </td>
+        <td *ngIf="file.isFavourite">
+          <fa-icon [icon]="['fas', 'star']" (click)="file.isFavourite = !file.isFavourite"
+                   [styles]="{'stroke-width': '40','stroke': 'gray', 'color': 'yellow'}"></fa-icon>
+        </td>
+        <td *ngIf="!file.isFavourite">
+          <fa-icon [icon]="['fas', 'star']" (click)="file.isFavourite = !file.isFavourite"
+                   [styles]="{'stroke-width': '40','stroke': 'gray', 'color': 'white'}"></fa-icon>
+        </td>
+        <td *ngIf="file.isShared">
+          <fa-icon [icon]="['fas', 'share-alt']" (click)="file.isShared = !file.isShared"></fa-icon>
+        </td>
+        <td *ngIf="!file.isShared">
+          <fa-icon [icon]="['fas', 'share-alt']" (click)="file.isShared = !file.isShared"
+                   [styles]=" {'color': '#bfbbbb'}"></fa-icon>
+        </td>
+        <td>
+          <div class="dropdown" dropdown #dropdown="bs-dropdown" [autoClose]="true">
+            <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': '#60646b'}" dropdownToggle></fa-icon>
+            <div class="dropdown-menu mt-3" *dropdownMenu (mouseleave)="dropdown.hide()">
+              <a class="dropdown-item">Download</a>
+              <a class="dropdown-item" (click)="!gRename ? file.rename = gRename = true : null">Rename</a>
+              <a class="dropdown-item">Move / Copy</a>
+              <a class="dropdown-item" (click)="deleteFile(file)">Delete</a>
+            </div>
+          </div>
+
+        </td>
+        <td>{{convertToReadableFileSize(file.size)}}</td>
+        <td>
+          <div class="trim" popover="{{file.modificationData | date :'medium'}}"
+               triggers="mouseenter:mouseleave">{{file.modificationData | timeago}}</div>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="d-flex justify-content-center">
+      <pagination [boundaryLinks]="true"
+                  [totalItems]="totalItems"
+                  [itemsPerPage]="itemsPerPage"
+                  [(ngModel)]="currentPage"
+                  (pageChanged)="pageChanged($event)"
+                  previousText="&lsaquo;"
+                  nextText="&rsaquo;"
+                  firstText="&laquo;"
+                  lastText="&raquo;">
+      </pagination>
+    </div>
+  </div>
+</div>
+<div class="datatable" data-full-pagination="true" data-selectable="true" data-multi="true"></div>

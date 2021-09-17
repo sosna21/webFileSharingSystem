@@ -19,23 +19,23 @@
         </a>
       </li>
 
-        <!--      <li class="nav-item">-->
-        <!--        <a class="nav-link dropdown-toggle" href="#">-->
-        <!--          <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>-->
-        <!--          Shares-->
-        <!--        </a>-->
-        <!--        <ul class="sl-menu-sub nav flex-column">-->
-        <!--          <li>-->
-        <!--            <a class="nav-link" href="#">Home 1</a>-->
-        <!--          </li>-->
-        <!--          <li>-->
-        <!--            <a class="nav-link" href="#">Home 2</a>-->
-        <!--          </li>-->
-        <!--          <li>-->
-        <!--            <a class="nav-link" href="#">Home 3</a>-->
-        <!--          </li>-->
-        <!--        </ul>-->
-        <!--      </li>-->
+      <!--      <li class="nav-item">-->
+      <!--        <a class="nav-link dropdown-toggle" href="#">-->
+      <!--          <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>-->
+      <!--          Shares-->
+      <!--        </a>-->
+      <!--        <ul class="sl-menu-sub nav flex-column">-->
+      <!--          <li>-->
+      <!--            <a class="nav-link" href="#">Home 1</a>-->
+      <!--          </li>-->
+      <!--          <li>-->
+      <!--            <a class="nav-link" href="#">Home 2</a>-->
+      <!--          </li>-->
+      <!--          <li>-->
+      <!--            <a class="nav-link" href="#">Home 3</a>-->
+      <!--          </li>-->
+      <!--        </ul>-->
+      <!--      </li>-->
       <li class="nav-item">
         <a class="nav-link" routerLink="favourite" routerLinkActive="active">
           <span><fa-icon [icon]="['fas', 'heart']"></fa-icon></span>
@@ -61,7 +61,7 @@
         </a>
       </li>
     </ul>
-    <ul class="nav flex-column">
+    <ul class="nav flex-column mb-3">
       <li class="nav-item">
         <p class="nav-link">
           <span><fa-icon [icon]="['fas', 'hdd']"></fa-icon></span>
@@ -69,5 +69,35 @@
         </p>
       </li>
     </ul>
+
+
+    <div class="row">
+
+      <div class="col-12">
+        <div ng2FileDrop
+             [ngClass]="{'nv-file-over': hasBaseDropzoneOver}"
+             (fileOver)="fileOverBase($event)"
+             [uploader]="uploader"
+             class="card bg-faded p-3 text-center mb-3 my-drop-zone">
+          <fa-icon size="3x" [icon]="['fas', 'file-upload']"></fa-icon>
+          Drop files here
+        </div>
+
+        <label class="col-10 offset-1 btn custom-input-btn bg-primary">
+          <input type="file" ng2FileSelect [uploader]="uploader" style="display:none" multiple/>
+          <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon> Select files
+        </label>
+
+        <div style="margin-bottom: 40px" *ngIf="uploader?.queue?.length">
+            Upload progress:
+            <div class="progress" style="">
+              <div class="progress-bar progress-bar-striped" role="progressbar" [ngStyle]="{ 'width': uploader.progress + '%' }"></div>
+            </div>
+        </div>
+
+      </div>
+    </div>
+
+
   </div>
 </nav>
