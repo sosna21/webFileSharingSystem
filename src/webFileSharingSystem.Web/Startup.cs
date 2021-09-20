@@ -29,7 +29,33 @@ namespace webFileSharingSystem.Web
             services.AddControllers();
             services.AddCors();
             services.AddSwaggerGen(
-                c => { c.SwaggerDoc("v1", new OpenApiInfo {Title = "webFileSharingSystem.Api", Version = "v1"}); });
+                option =>
+                {
+                    option.SwaggerDoc("v1", new OpenApiInfo {Title = "webFileSharingSystem.Api", Version = "v1"});
+                    option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+                    {
+                        Name = "Authorization",
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "Bearer",
+                        BearerFormat = "JWT",
+                        In = ParameterLocation.Header,
+                        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.",
+                    });
+                    option.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            System.Array.Empty<string>()
+                        }
+                    });
+                });
 
             // In production, the Angular files will be served from this directory
             services.AddSpaStaticFiles(configuration => { configuration.RootPath = "Client/dist"; });

@@ -2,12 +2,12 @@
 
 namespace webFileSharingSystem.Web.Contracts.Requests
 {
-    public class LoginRequest
+    public class FileRequest
     {
         [Required]
-        public string Username { get; set; } = null!;
-
+        public int PageNumber { get; set; }
+        
         [Required]
-        public string Password { get; set; } = null!;
+        public int PageSize { get; set; }
     }
 }

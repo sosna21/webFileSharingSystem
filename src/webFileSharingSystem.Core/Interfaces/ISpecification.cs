@@ -24,10 +24,8 @@ namespace webFileSharingSystem.Core.Interfaces
         
         Expression<Func<T, object>>? GroupBy { get; }
 
-        int Take { get; }
+        int? Take { get; }
         
-        int Skip { get; }
-        
-        bool IsPagingEnabled { get; }
+        int? Skip { get; }
     }
 }
