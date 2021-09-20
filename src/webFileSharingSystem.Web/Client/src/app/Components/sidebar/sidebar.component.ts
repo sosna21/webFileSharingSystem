@@ -12,6 +12,8 @@ uploader!: FileUploader;
 hasBaseDropzoneOver = false;
 baseUrl = environment.apiUrl;
 
+isShareItemActive : boolean = false;
+
   constructor() { }
 
   ngOnInit(): void {
@@ -43,5 +45,9 @@ baseUrl = environment.apiUrl;
         //this.member.files.push(file)
       }
     }
+  }
+
+  toggleShareItemActive(): void {
+    this.isShareItemActive = !this.isShareItemActive;
   }
 }

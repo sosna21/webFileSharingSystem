@@ -41,7 +41,6 @@ namespace webFileSharingSystem.Infrastructure.Data {
                     applicationUser = new ApplicationUser(administrator.UserName, administrator.Email, administrator.Id);
                     applicationUserRepository.Add( applicationUser );
                     await applicationDbContext.SaveChangesAsync();
-                    
                     scope.Complete();
                 }
 

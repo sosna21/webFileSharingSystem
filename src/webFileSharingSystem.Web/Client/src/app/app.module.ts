@@ -41,6 +41,7 @@ import {BsDropdownModule} from "ngx-bootstrap/dropdown";
     DeletedComponent,
     RegisterComponent,
     TextInputComponent,
+
   ],
   imports: [
     BrowserModule,

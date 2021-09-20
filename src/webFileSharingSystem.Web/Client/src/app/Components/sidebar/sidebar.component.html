@@ -3,101 +3,90 @@
 <!--  <span class="navbar-toggler-icon"></span>-->
 <!--</button>-->
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse" [collapse]="isCollapsed">
-  <div class="sidebar-sticky pt-3">
-    <ul class="nav flex-column">
-      <li class="nav-item">
-        <a class="nav-link active" routerLink="files" routerLinkActive="active">
-          <span><fa-icon [icon]="['fas', 'file']"></fa-icon></span>
-          Files
-        </a>
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link dropdown-toggle" href="#">
-          <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>
-          Shares
-        </a>
-      </li>
-
-      <!--      <li class="nav-item">-->
-      <!--        <a class="nav-link dropdown-toggle" href="#">-->
-      <!--          <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>-->
-      <!--          Shares-->
-      <!--        </a>-->
-      <!--        <ul class="sl-menu-sub nav flex-column">-->
-      <!--          <li>-->
-      <!--            <a class="nav-link" href="#">Home 1</a>-->
-      <!--          </li>-->
-      <!--          <li>-->
-      <!--            <a class="nav-link" href="#">Home 2</a>-->
-      <!--          </li>-->
-      <!--          <li>-->
-      <!--            <a class="nav-link" href="#">Home 3</a>-->
-      <!--          </li>-->
-      <!--        </ul>-->
-      <!--      </li>-->
-      <li class="nav-item">
-        <a class="nav-link" routerLink="favourite" routerLinkActive="active">
-          <span><fa-icon [icon]="['fas', 'heart']"></fa-icon></span>
-          Favourite
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" routerLink="recent" routerLinkActive="active">
-          <span><fa-icon [icon]="['far', 'clock']"></fa-icon></span>
-          Recent
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" routerLink="tags" routerLinkActive="active">
-          <span><fa-icon [icon]="['fas', 'tags']"></fa-icon></span>
-          Tags
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" routerLink="deleted" routerLinkActive="active">
-          <span><fa-icon [icon]="['fas', 'trash']"></fa-icon></span>
-          Deleted
-        </a>
-      </li>
-    </ul>
-    <ul class="nav flex-column mb-3">
-      <li class="nav-item">
-        <p class="nav-link">
-          <span><fa-icon [icon]="['fas', 'hdd']"></fa-icon></span>
-          8.4 GB used
-        </p>
-      </li>
-    </ul>
+  <div  class="d-flex flex-column sidebar-sticky pb-md-3 pt-md-3">
+    <div>
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link" routerLink="files" routerLinkActive="active">
+            <span><fa-icon [icon]="['fas', 'file']"></fa-icon></span>
+            Files
+          </a>
+        </li>
+              <li class="nav-item" (click)="toggleShareItemActive()" [ngClass]="{'active': isShareItemActive}">
+                <a class="nav-link dropdown-toggle">
+                  <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>
+                  Shares
+                </a>
+                <ul class="sl-menu-sub nav flex-column submenu">
+                  <li>
+                    <a class="nav-link" href="">Home 1</a>
+                  </li>
+                  <li>
+                    <a class="nav-link" >Home 2</a>
+                  </li>
+                  <li>
+                    <a class="nav-link" >Home 3</a>
+                  </li>
+                </ul>
+              </li>
 
 
-    <div class="row">
+        <li class="nav-item">
+          <a class="nav-link" routerLink="favourite" routerLinkActive="active">
+            <span><fa-icon [icon]="['fas', 'heart']"></fa-icon></span>
+            Favourite
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="recent" routerLinkActive="active">
+            <span><fa-icon [icon]="['far', 'clock']"></fa-icon></span>
+            Recent
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="tags" routerLinkActive="active">
+            <span><fa-icon [icon]="['fas', 'tags']"></fa-icon></span>
+            Tags
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="deleted" routerLinkActive="active">
+            <span><fa-icon [icon]="['fas', 'trash']"></fa-icon></span>
+            Deleted
+          </a>
+        </li>
 
-      <div class="col-12">
-        <div ng2FileDrop
-             [ngClass]="{'nv-file-over': hasBaseDropzoneOver}"
-             (fileOver)="fileOverBase($event)"
-             [uploader]="uploader"
-             class="card bg-faded p-3 text-center mb-3 my-drop-zone">
-          <fa-icon size="3x" [icon]="['fas', 'file-upload']"></fa-icon>
-          Drop files here
-        </div>
-
-        <label class="col-10 offset-1 btn custom-input-btn bg-primary">
-          <input type="file" ng2FileSelect [uploader]="uploader" style="display:none" multiple/>
-          <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon> Select files
-        </label>
-
-        <div style="margin-bottom: 40px" *ngIf="uploader?.queue?.length">
-            Upload progress:
-            <div class="progress" style="">
-              <div class="progress-bar progress-bar-striped" role="progressbar" [ngStyle]="{ 'width': uploader.progress + '%' }"></div>
-            </div>
-        </div>
-
-      </div>
+        <li class="nav-item">
+          <p class="nav-link">
+            <span><fa-icon [icon]="['fas', 'hdd']"></fa-icon></span>
+            8.4 GB used
+          </p>
+        </li>
+      </ul>
     </div>
 
+    <div class="mt-auto">
+      <div ng2FileDrop
+           [ngClass]="{'nv-file-over': hasBaseDropzoneOver}"
+           (fileOver)="fileOverBase($event)"
+           (onFileDrop)="uploadProgressBar.style.visibility = 'visible'"
+           [uploader]="uploader"
+           class="card bg-faded p-3 text-center mb-3 my-drop-zone">
+        <fa-icon size="3x" [icon]="['fas', 'file-upload']"></fa-icon>
+        Drop files here
+      </div>
 
+      <label class="col-10 offset-1 btn custom-input-btn bg-primary">
+        <input (change)="uploadProgressBar.style.visibility = 'visible'" type="file" ng2FileSelect [uploader]="uploader" style="display:none" multiple/>
+        <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon> Select files
+      </label>
+
+      <div #uploadProgressBar style="margin-bottom: 40px; visibility: hidden">
+        Upload progress:
+        <div class="progress" style="">
+          <div class="progress-bar progress-bar-striped" role="progressbar" [ngStyle]="{ 'width': uploader.progress + '%' }"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </nav>

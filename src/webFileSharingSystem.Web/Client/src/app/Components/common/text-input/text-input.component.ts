@@ -1,4 +1,4 @@
-import {Component, Input, OnInit, Self} from '@angular/core';
+import {Component, Input, Output, Self, ViewChild} from '@angular/core';
 import {ControlValueAccessor, NgControl} from "@angular/forms";
 
 @Component({
@@ -9,6 +9,9 @@ import {ControlValueAccessor, NgControl} from "@angular/forms";
 export class TextInputComponent implements ControlValueAccessor {
   @Input() label!: string;
   @Input() type = 'text';
+  @Input() value = '';
+  @Input() errors = true;
+  @ViewChild('inputElement') private input : any;
 
   constructor(@Self() public ngControl: NgControl) {
     this.ngControl.valueAccessor = this;
@@ -21,6 +24,10 @@ export class TextInputComponent implements ControlValueAccessor {
   }
 
   writeValue(obj: any): void {
+  }
+
+   setFocus(){
+    this.input.nativeElement.focus();
   }
 
 }
