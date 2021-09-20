@@ -1,42 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-
-using webFileSharingSystem.Web.DTOs;
+using webFileSharingSystem.Core.Entities;
+using webFileSharingSystem.Core.Entities.Common;
+using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Specifications;
+using webFileSharingSystem.Web.Contracts.Requests;
+using webFileSharingSystem.Web.Contracts.Responses;
 
 namespace webFileSharingSystem.Web.Controllers
 {
     public class FileController : BaseController
     {
-        private static readonly string[] FileName = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ICurrentUserService _currentUserService;
 
-        private readonly ILogger<FileController> _logger;
-
-        public FileController(ILogger<FileController> logger)
+        public FileController(IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
         {
-            _logger = logger;
+            _unitOfWork = unitOfWork;
+            _currentUserService = currentUserService;
         }
-
+        
         [HttpGet]
-        public IEnumerable<FileDto> Get()
+        public async Task<PaginatedList<FileResponse>> GetAllFilesAsync([FromQuery] FileRequest request)
         {
-            var rng = new Random();
-            return Enumerable.Range(1, 40).Select(index => new FileDto
+            var userId = _currentUserService.UserId;
+            return await _unitOfWork.Repository<File>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => new FileResponse
                 {
-                    Id = index,
-                    ModificationData = DateTime.Now.AddDays(rng.Next(0,21)),
-                    FileName = FileName[rng.Next(FileName.Length)],
-                    Size = (ulong)rng.Next(100, 1000000000),
-                    IsFavourite = Convert.ToBoolean( rng.Next(0, 2) ),
-                    IsShared = Convert.ToBoolean( rng.Next(0, 2) )
-                })
-                .ToArray();
+                    Id = file.Id,
+                    FileName = file.FileName,
+                    MimeType = file.MimeType,
+                    Size = file.Size,
+                    IsShared = file.IsShared,
+                    IsFavourite = file.IsFavourite,
+                    IsDirectory = file.IsDirectory
+
+                }, new GetAllFilesSpecs(userId!.Value));
         }
     }
 }

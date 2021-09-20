@@ -49,12 +49,15 @@ namespace webFileSharingSystem.Infrastructure.Common
             {
                 query = query.GroupBy(specification.GroupBy).SelectMany(x => x);
             }
-
-            // Apply paging if enabled
-            if (specification.IsPagingEnabled)
+            
+            if (specification.Skip is not null)
             {
-                query = query.Skip(specification.Skip)
-                    .Take(specification.Take);
+                query = query.Skip(specification.Skip.Value);
+            }
+            
+            if (specification.Take is not null)
+            {
+                query = query.Skip(specification.Take.Value);
             }
             return query;
         }

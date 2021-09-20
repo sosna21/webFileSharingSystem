@@ -1,10 +1,12 @@
-using System;
+﻿using System;
 
-namespace webFileSharingSystem.Web.DTOs {
-    public class FileDto {
+namespace webFileSharingSystem.Web.Contracts.Responses
+{
+    public class FileResponse
+    {
         public int Id { get; set; }
         public string FileName { get; set; } = null!;
-        public DateTime ModificationData { get; set; }
+        public string? MimeType { get; set; }
         public ulong Size { get; set; } 
         public bool IsFavourite { get; set;}
         public bool IsShared { get; set;}

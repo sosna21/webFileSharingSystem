@@ -66,6 +66,11 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
                 .HasOne<IdentityUser>()
                 .WithOne()
                 .HasForeignKey<ApplicationUser>(e => e.IdentityUserId);
+
+            builder.Entity<File>()
+                .HasOne<ApplicationUser>()
+                .WithMany(e => e.Files)
+                .HasForeignKey(e => e.UserId);
         }
 
         private async Task DispatchEvents()

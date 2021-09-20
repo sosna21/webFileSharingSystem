@@ -19,7 +19,7 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<IEnumerable<TEntity>> FindAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
         
-        Task<PaginatedList<TEntity>> PaginatedListAsync(int pageNumber, int pageSize, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
+        Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
 
         Task<bool> ContainsAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
         

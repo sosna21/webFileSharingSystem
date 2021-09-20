@@ -38,13 +38,13 @@ namespace webFileSharingSystem.Infrastructure.Common
             return await ApplySpecification(specification).ToListAsync(cancellationToken);
         }
 
-        public async Task<PaginatedList<TEntity>> PaginatedListAsync(int pageNumber, int pageSize, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
+        public async Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
         {
             var querySource = ApplySpecification(specification);
             var count = await querySource.CountAsync(cancellationToken);
             var items = await querySource.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
-            return new PaginatedList<TEntity>(items, count, pageNumber, pageSize);
+            return new PaginatedList<TResult>(items.Select(mapToResult), count, pageNumber, pageSize);
         }
 
         public async Task<bool> ContainsAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)

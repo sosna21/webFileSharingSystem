@@ -1,4 +1,5 @@
-﻿using webFileSharingSystem.Core.Entities.Common;
+﻿using System.Collections.Generic;
+using webFileSharingSystem.Core.Entities.Common;
 
 namespace webFileSharingSystem.Core.Entities
 {
@@ -23,5 +24,7 @@ namespace webFileSharingSystem.Core.Entities
         public bool IsBlocked { get; set; }
         
         public string IdentityUserId { get; set; }
+        
+        public ICollection<File> Files { get; set; }
     }
 }
