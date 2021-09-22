@@ -14,7 +14,7 @@
   left: 0;
   z-index: 100; /* Behind the navbar */
   padding: 48px 0 0; /* Height of navbar */
-  margin-bottom: 55px; /*Height of the header */
+  margin-bottom: 38px; /*Height of the header */
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
 }
 
@@ -27,7 +27,7 @@
 .sidebar-sticky {
   position: relative;
   top: 0;
-  height: calc(100vh - 48px);
+  height: 100%;
   padding-top: .5rem;
   overflow-x: hidden;
   overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
@@ -49,14 +49,12 @@
   margin-right: 4px;
   color: #999;
 }
-
+.sidebar .nav-item {
+cursor: pointer;
+}
 
 .sidebar .nav-link.active {
   color: #007bff;
-}
-
-.sidebar .nav-link:hover {
-  color: inherit;
 }
 
 .sidebar p.nav-link:hover {
@@ -86,4 +84,20 @@
 input[type=file] {
   color: transparent;
 }
+
+.sidebar .submenu li {
+  padding-left:15px;
+}
+
+.sidebar .submenu {
+  display: none;
+}
+
+.sidebar li.active .submenu {
+  display: block;
+}
+
+
+
+
 

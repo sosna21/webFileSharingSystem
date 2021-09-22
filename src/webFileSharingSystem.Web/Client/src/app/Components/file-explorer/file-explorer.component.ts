@@ -1,19 +1,23 @@
 import {Component, OnInit} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
-import { environment } from "../../../environments/environment";
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
+import {environment} from "../../../environments/environment";
+import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 
 
 interface File {
   id: number;
   fileName: string;
-  modificationData: Date;
+  mimeType?: string;
   size: number;
   isFavourite: boolean;
   isShared: boolean
-  checked: boolean;
   isDirectory: boolean;
+  modificationDate: Date;
+
+  checked: boolean;
   rename: boolean;
+  isCompleted: boolean;
+  stooped: boolean;
 }
 
 @Component({
@@ -23,30 +27,59 @@ interface File {
 })
 export class FileExplorerComponent implements OnInit {
   fileNameForm!: FormGroup;
-  filesToView: File[] = [];
   files: File[] = [];
-  itemsPerPage = 17;
+  itemsPerPage = 15;
   currentPage = 1;
   totalItems!: number;
   gRename: boolean = false;
+  names: string[] = [];
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder,) {
   }
 
+  private openDropdownToBeHidden: any;
+
   ngOnInit(): void {
     this.getFiles();
+    this.initializeForm();
+
+  }
+
+  initializeForm() {
     this.fileNameForm = this.formBuilder.group({
-      fileName: ['', Validators.required]
+      dirName: ['', [Validators.required, this.checkDirUnique()]],
+      fileName: ['', [Validators.required, this.checkFileUnique()]]
     });
   }
 
+  checkFileUnique(): ValidatorFn {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      const forbidden = control?.parent?.controls as any;
+      return (forbidden)
+        ? !(this.names.filter(x => x === control?.value).length > 1) ? null : {isUnique: true}
+        : null;
+    }
+  }
+
+  checkDirUnique(): ValidatorFn {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      const forbidden = control?.parent?.controls as any;
+
+      return (forbidden)
+        ? !this.names.includes(control?.value) ? null : {isUnique: true}
+        : null;
+    }
+  }
+
   getFiles(): void {
-    this.http.get<File[]>(`${environment.apiUrl}/File`).subscribe(files => {
-      this.totalItems = files.length;
-      this.files = files;
-      this.filesToView = files.slice(0, this.itemsPerPage);
+    this.http.get<any>(`${environment.apiUrl}/File/GetAll?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}`).subscribe(response => {
+      this.totalItems = response.totalCount;
+      this.files = response.items;
+      this.names = this.files.map(x => x.fileName);
+      this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
+      this.files.filter(x => !x.isCompleted).forEach(x => x.stooped = Math.random() > 0.5);
     }, error => {
-      console.log(error)
+      console.log(error);
     })
   }
 
@@ -60,21 +93,18 @@ export class FileExplorerComponent implements OnInit {
 
   deleteCheckedFiles() {
     this.files = this.files.filter(x => !x.checked)
-    this.reloadFiles();
+
+  //  this.reloadFiles();
   }
 
   pageChanged(event: any) {
     this.currentPage = event.page;
-    this.reloadFiles();
+    this.getFiles()
   }
 
-  reloadFiles() {
-    this.filesToView = this.files.slice((this.currentPage - 1) * this.itemsPerPage,
-      (this.currentPage - 1) * this.itemsPerPage + this.itemsPerPage);
-  }
 
   convertToReadableFileSize(size: number) {
-    if (size === 0) {
+    if (size <= 0) {
       return "0 B"
     }
     let units = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
@@ -88,8 +118,11 @@ export class FileExplorerComponent implements OnInit {
   }
 
   deleteFile(file: File) {
-    this.files = this.files.filter(x => x !== file);
-    this.reloadFiles();
+    this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
+      this.getFiles();
+    }, error => {
+      console.log(error)
+    })
   }
 
   //TODO implement
@@ -98,39 +131,73 @@ export class FileExplorerComponent implements OnInit {
     return null;
   }
 
+  hideOnSecondOpen(dropdown: any) {
+    if (this.openDropdownToBeHidden && dropdown !== this.openDropdownToBeHidden) {
+      this.openDropdownToBeHidden.hide();
+    }
+    this.openDropdownToBeHidden = dropdown;
+    console.log(dropdown);
+  }
+
   createDirectory() {
-
-    if (!this.gRename) {
-      this.gRename = true;
-      this.filesToView.pop();
-
+    if (!this.fileNameForm.get('dirName')?.invalid) {
+      let delFile = this.files.pop();
       const file: File = {
         id: Math.max.apply(Math, this.files.map(function (file) {
           return file.id;
         })) + 1,
-        fileName: "newDirectory",
-        modificationData: new Date(),
+        fileName: this.fileNameForm.get('dirName')?.value,
+        modificationDate: new Date(),
         size: 0,
         isFavourite: false,
         isShared: false,
         checked: false,
         isDirectory: true,
-        rename: true,
+        rename: false,
+        isCompleted: true,
+        stooped: false
       };
-      this.filesToView.unshift(file)
-      console.log("create Dir");
+      this.files.unshift(file);
+      this.files.unshift(file);
+      delete this.files[this.files.findIndex(file => file === delFile)];
+      this.gRename = false;
+      this.names.push(this.fileNameForm.get('dirName')?.value);
+    }
+  }
+
+  renameInit(file: File) {
+    if (!this.gRename) {
+      this.fileNameForm.get('fileName')?.patchValue(file.fileName);
+      this.fileNameForm.markAsTouched();
+      file.rename = this.gRename = true;
     }
   }
 
   rename(file: File) {
-    if (!this.fileNameForm.invalid) {
+    if (!this.fileNameForm.get('fileName')?.invalid) {
+      delete this.names[this.names.findIndex(x => x === file.fileName)];
       file.fileName = this.fileNameForm.get('fileName')?.value;
-      file.rename = false;
       this.fileNameForm.reset();
-      console.log(this.fileNameForm.get('fileName')?.value);
-      this.gRename = false;
+      this.names.push(file.fileName);
     }
+    file.rename = false;
+    this.gRename = false;
   }
 
+  dirCreat(form: any) {
+    if (!this.gRename) {
+      this.fileNameForm.reset();
+      this.fileNameForm.markAsUntouched();
+    }
+    this.gRename = true;
+    form.hidden = false;
+  }
 
+  stopUpload(file: File) {
+  file.stooped = true;
+  }
+
+  continueUpload(file: File) {
+    file.stooped = false;
+  }
 }

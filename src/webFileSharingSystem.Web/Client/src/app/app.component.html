@@ -1,4 +1,5 @@
 <app-navbar></app-navbar>
+
 <div *ngIf="authenticated" class="container-fluid">
   <div class="row">
     <app-sidebar></app-sidebar>
@@ -7,11 +8,15 @@
     </main>
   </div>
 </div>
+
+
 <div *ngIf="!authenticated">
   <app-login *ngIf="router.url === '/login'" ></app-login>
   <app-register *ngIf="router.url === '/register'" ></app-register>
 </div>
-<div class="footer container-fluid text-center bg-light p-3 fixed-bottom">
+
+<div class="row">
+<div class="footer container-fluid text-center p-2 bg-light fixed-bottom">
   <span class="text-muted">Place sticky footer content here.</span>
 </div>
-
+</div>
