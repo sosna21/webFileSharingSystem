@@ -3,7 +3,7 @@
 <!--  <span class="navbar-toggler-icon"></span>-->
 <!--</button>-->
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse" [collapse]="isCollapsed">
-  <div  class="d-flex flex-column sidebar-sticky pb-md-3 pt-md-3">
+  <div class="d-flex flex-column sidebar-sticky pb-md-3 pt-md-3">
     <div>
       <ul class="nav flex-column">
         <li class="nav-item">
@@ -12,23 +12,23 @@
             Files
           </a>
         </li>
-              <li class="nav-item" (click)="toggleShareItemActive()" [ngClass]="{'active': isShareItemActive}">
-                <a class="nav-link dropdown-toggle">
-                  <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>
-                  Shares
-                </a>
-                <ul class="sl-menu-sub nav flex-column submenu">
-                  <li>
-                    <a class="nav-link" href="">Home 1</a>
-                  </li>
-                  <li>
-                    <a class="nav-link" >Home 2</a>
-                  </li>
-                  <li>
-                    <a class="nav-link" >Home 3</a>
-                  </li>
-                </ul>
-              </li>
+        <li class="nav-item" (click)="toggleShareItemActive()" [ngClass]="{'active': isShareItemActive}">
+          <a class="nav-link dropdown-toggle">
+            <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>
+            Shares
+          </a>
+          <ul class="sl-menu-sub nav flex-column submenu">
+            <li>
+              <a class="nav-link" href="">Home 1</a>
+            </li>
+            <li>
+              <a class="nav-link">Home 2</a>
+            </li>
+            <li>
+              <a class="nav-link">Home 3</a>
+            </li>
+          </ul>
+        </li>
 
 
         <li class="nav-item">
@@ -77,14 +77,17 @@
       </div>
 
       <label class="col-10 offset-1 btn custom-input-btn bg-primary">
-        <input (change)="uploadProgressBar.style.visibility = 'visible'" type="file" ng2FileSelect [uploader]="uploader" style="display:none" multiple/>
-        <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon> Select files
+        <input (change)="uploadProgressBar.style.visibility = 'visible'" type="file" ng2FileSelect [uploader]="uploader"
+               style="display:none" multiple/>
+        <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
+        Select files
       </label>
 
       <div #uploadProgressBar style="margin-bottom: 40px; visibility: hidden">
         Upload progress:
-        <div class="progress" style="">
-          <div class="progress-bar progress-bar-striped" role="progressbar" [ngStyle]="{ 'width': uploader.progress + '%' }"></div>
+        <div class="progress">
+          <div class="progress-bar progress-bar-striped" role="progressbar"
+               [ngStyle]="{ 'width': uploader.progress + '%' }"></div>
         </div>
       </div>
     </div>

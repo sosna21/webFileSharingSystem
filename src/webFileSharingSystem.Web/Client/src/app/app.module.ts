@@ -26,6 +26,7 @@ import {PaginationModule} from "ngx-bootstrap/pagination";
 import { TimeagoModule } from 'ngx-timeago';
 import {PopoverModule} from "ngx-bootstrap/popover";
 import {BsDropdownModule} from "ngx-bootstrap/dropdown";
+import {MimeFontawesomePipe} from "./Components/common/MimeFontawesomePipe";
 
 @NgModule({
   declarations: [
@@ -41,6 +42,7 @@ import {BsDropdownModule} from "ngx-bootstrap/dropdown";
     DeletedComponent,
     RegisterComponent,
     TextInputComponent,
+    MimeFontawesomePipe
 
   ],
   imports: [
@@ -56,8 +58,7 @@ import {BsDropdownModule} from "ngx-bootstrap/dropdown";
     FormsModule,
     TimeagoModule.forRoot(),
     PopoverModule,
-    BsDropdownModule.forRoot()
-
+    BsDropdownModule.forRoot(),
 
   ],
   providers: [

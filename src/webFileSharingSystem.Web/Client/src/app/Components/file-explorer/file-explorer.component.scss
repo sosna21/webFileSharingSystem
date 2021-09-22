@@ -26,3 +26,15 @@ tr {
 input[type=checkbox], fa-icon, #actionBtn:hover{
   cursor: pointer;
 }
+
+#table {
+  margin-bottom: 38px;
+}
+.progress-sm {
+  height: 0.6rem!important;
+}
+
+.fa-disabled {
+  opacity: 0.45;
+  cursor: default;
+}

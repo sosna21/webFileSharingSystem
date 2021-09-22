@@ -3,16 +3,19 @@
     <h2>All Files</h2>
   </div>
   <div class="align-self-center mr-3">
-    <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']" (click)="dirCreat(form); createDirTextInput.setFocus()"></fa-icon>
+    <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
+             (click)="dirCreat(form); createDirTextInput.setFocus()"></fa-icon>
   </div>
   <div class="align-self-end pt-3">
-    <form  hidden #form [formGroup]="fileNameForm" (ngSubmit)="createDirectory(); form.hidden = true" >
-      <app-text-input #createDirTextInput  [formControl]="$any(fileNameForm).controls['dirName']"
-                      [label]="'Folder name'" [errors]="false" (focusin)="fileNameForm.markAllAsTouched()" (focusout)="form.hidden = true; gRename = false;"></app-text-input>
+    <form hidden #form [formGroup]="fileNameForm" (ngSubmit)="createDirectory(); form.hidden = true">
+      <app-text-input #createDirTextInput [formControl]="$any(fileNameForm).controls['dirName']"
+                      [label]="'Folder name'" [errors]="false" (focusin)="fileNameForm.markAllAsTouched()"
+                      (focusout)="form.hidden = true; gRename = false;"></app-text-input>
     </form>
   </div>
 </div>
-<div class="row">
+
+<div id="table" class="row">
   <div class="table-responsive">
     <table class="table table-sm table-hover">
       <thead>
@@ -22,7 +25,8 @@
         </th>
         <th scope="col" style="width: 60%" class="text-left">File Name
 
-          <span *ngIf="isManyCheckboxesChecked()" class="dropdown ml-3" dropdown   #dropdown="bs-dropdown" (onShown)="hideOnSecondOpen(dropdown)">
+          <span *ngIf="isManyCheckboxesChecked()" class="dropdown ml-3" dropdown #dropdown="bs-dropdown"
+                (onShown)="hideOnSecondOpen(dropdown)">
             <span id="actionBtn" dropdownToggle>
             <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': 'black'}"></fa-icon>
             Actions  </span>
@@ -41,72 +45,68 @@
       </tr>
       </thead>
       <tbody>
-      <tr *ngFor="let file of filesToView">
+      <tr *ngFor="let file of files">
         <td>
           <input type="checkbox" value="{{file.id}}" (change)="file.checked = !file.checked" [checked]="file.checked">
         </td>
-        <td *ngIf="!file.rename" class="text-left">{{ file.fileName }}</td>
-        <td #renameInput hidden class="text-left">
+        <td *ngIf="!file.rename" class="text-left">
+          <div class="row col-12 align-items-center">
+            <div class="col-lg-6 col-md-8 col-sm-10">
+              <fa-icon class="mr-sm-1" size="2x"
+                       [icon]="[file.isDirectory ? 'fas' : 'far', (file.mimeType | mimeFontawesome)]"></fa-icon>
+              {{ file.fileName }}
+            </div>
+            <div *ngIf="!file.isCompleted" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
+              <div class="col p-0 d-none d-lg-block">
+                <div class="progress progress-sm bg-dark ">
+                  <div [class]="file.stooped ? 'bg-danger' : 'progress-bar-animated'"
+                       class="progress-bar progress-bar-striped bg-info " role="progressbar"
+                       [ngStyle]="{ 'width': 70 + '%'}"></div>
+                </div>
+              </div>
+              <fa-icon size="lg" [class.fa-disabled]="!file.stooped" class="mr-sm-1 ml-sm-1"
+                       [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
+              <fa-icon size="lg" [class.fa-disabled]="file.stooped" [icon]="['fas', 'stop-circle']"
+                       (click)="stopUpload(file)"></fa-icon>
+            </div>
+          </div>
 
+        </td>
+        <td #renameInput hidden class="text-left">
           <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
-            <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()" (focusout)="rename(file); renameInput.hidden = true" (keydown.enter)="rename(file); renameInput.hidden = true"
+            <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
+                            (focusout)="rename(file); renameInput.hidden = true"
+                            (keydown.enter)="rename(file); renameInput.hidden = true"
                             [formControl]="$any(fileNameForm).controls['fileName']"
                             [label]="file.fileName"
                             [value]="file.fileName"></app-text-input>
           </form>
-
         </td>
-        <td *ngIf="file.isFavourite">
+        <td>
           <fa-icon [icon]="['fas', 'star']" (click)="file.isFavourite = !file.isFavourite"
-                   [styles]="{'stroke-width': '40','stroke': 'gray', 'color': 'yellow'}"></fa-icon>
+                   [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
         </td>
-        <td *ngIf="!file.isFavourite">
-          <fa-icon [icon]="['fas', 'star']" (click)="file.isFavourite = !file.isFavourite"
-                   [styles]="{'stroke-width': '40','stroke': 'gray', 'color': 'white'}"></fa-icon>
-        </td>
-        <td *ngIf="file.isShared">
-          <fa-icon [icon]="['fas', 'share-alt']" (click)="file.isShared = !file.isShared"></fa-icon>
-        </td>
-        <td *ngIf="!file.isShared">
+        <td>
           <fa-icon [icon]="['fas', 'share-alt']" (click)="file.isShared = !file.isShared"
-                   [styles]=" {'color': '#bfbbbb'}"></fa-icon>
+                   [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
+
         <td>
           <div class="dropdown" dropdown #dropdown="bs-dropdown" (onShown)="hideOnSecondOpen(dropdown)">
             <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': '#60646b'}" dropdownToggle></fa-icon>
             <div class="dropdown-menu mt-3" *dropdownMenu>
               <a class="dropdown-item">Download</a>
-              <a class="dropdown-item" (click)="renameInit(file);renameInput.hidden = false; renameTextInput.setFocus()">Rename</a>
+              <a class="dropdown-item"
+                 (click)="renameInit(file);renameInput.hidden = false; renameTextInput.setFocus()">Rename</a>
               <a class="dropdown-item" (click)="changeDirectory()">Move / Copy</a>
               <a class="dropdown-item" (click)="deleteFile(file)">Delete</a>
             </div>
           </div>
-
-          <!--          <div class="btn-group" dropdown #dropdown="bs-dropdown" [autoClose]="false">-->
-          <!--            <button id="button-basic" dropdownToggle type="button"-->
-          <!--                    class="btn btn-primary dropdown-toggle"-->
-          <!--                    aria-controls="dropdown-basic">-->
-          <!--              Menu <span class="caret"></span>-->
-          <!--            </button>-->
-          <!--            <ul id="dropdown-basic" *dropdownMenu class="dropdown-menu"-->
-          <!--                role="menu" aria-labelledby="button-basic">-->
-          <!--              <li role="menuitem"><a class="dropdown-item" href="#">File</a></li>-->
-          <!--              <li role="menuitem"><a class="dropdown-item" href="#">Edit</a></li>-->
-          <!--              <li role="menuitem"><a class="dropdown-item" href="#">Search</a></li>-->
-          <!--              <li class="divider dropdown-divider"></li>-->
-          <!--              <li role="menuitem"><a class="dropdown-item" href="#">Recents</a>-->
-          <!--              </li>-->
-          <!--            </ul>-->
-          <!--          </div>-->
-          <!--          <button type="button" class="btn btn-primary"-->
-          <!--                  (click)="dropdown.isOpen = !dropdown.isOpen">Show/Hide-->
-          <!--          </button>-->
-
         </td>
         <td>{{convertToReadableFileSize(file.size)}}</td>
         <td>
-          <div class="trim" popover="{{file.modificationData | date :'medium'}}"
-               triggers="mouseenter:mouseleave">{{file.modificationData | timeago}}</div>
+          <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
+               triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>
         </td>
       </tr>
       </tbody>
