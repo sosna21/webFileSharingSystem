@@ -262,6 +262,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int>("CreatedBy")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("FileId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -287,6 +290,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<string>("MimeType")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Size")
                         .HasColumnType("decimal(20,0)");
 
@@ -294,6 +300,10 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentId")
+                        .IsUnique()
+                        .HasFilter("[ParentId] IS NOT NULL");
 
                     b.HasIndex("UserId");
 
@@ -362,6 +372,10 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.File", b =>
                 {
+                    b.HasOne("webFileSharingSystem.Core.Entities.File", null)
+                        .WithOne()
+                        .HasForeignKey("webFileSharingSystem.Core.Entities.File", "ParentId");
+
                     b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", null)
                         .WithMany("Files")
                         .HasForeignKey("UserId")

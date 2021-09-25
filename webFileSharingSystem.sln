@@ -6,6 +6,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.Infras
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.Web", "src\webFileSharingSystem.Web\webFileSharingSystem.Web.csproj", "{928DF081-7856-432E-A72E-9C39D8AE6C39}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.UnitTests", "tests\webFileSharingSystem.UnitTests\webFileSharingSystem.UnitTests.csproj", "{F87AA787-531D-40E1-B41B-EE9EA0F0CB47}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{82F94986-4DFC-4FE5-ADC5-07E44222ABF0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{ADDDDE7A-1D9B-4135-90D2-649E21536DDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webFileSharingSystem.IntegrationTests", "tests\webFileSharingSystem.IntegrationTests\webFileSharingSystem.IntegrationTests.csproj", "{C3F7E21B-0BD1-409F-987B-80B1B190ECAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +32,20 @@ Global
 		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{928DF081-7856-432E-A72E-9C39D8AE6C39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F87AA787-531D-40E1-B41B-EE9EA0F0CB47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F87AA787-531D-40E1-B41B-EE9EA0F0CB47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F87AA787-531D-40E1-B41B-EE9EA0F0CB47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F87AA787-531D-40E1-B41B-EE9EA0F0CB47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3F7E21B-0BD1-409F-987B-80B1B190ECAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3F7E21B-0BD1-409F-987B-80B1B190ECAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3F7E21B-0BD1-409F-987B-80B1B190ECAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3F7E21B-0BD1-409F-987B-80B1B190ECAC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{24572AA1-0592-40C4-A7D4-6A6DBBEC8931} = {82F94986-4DFC-4FE5-ADC5-07E44222ABF0}
+		{9F8430A0-9C92-4A18-AAA8-E1EBB712D277} = {82F94986-4DFC-4FE5-ADC5-07E44222ABF0}
+		{928DF081-7856-432E-A72E-9C39D8AE6C39} = {82F94986-4DFC-4FE5-ADC5-07E44222ABF0}
+		{F87AA787-531D-40E1-B41B-EE9EA0F0CB47} = {ADDDDE7A-1D9B-4135-90D2-649E21536DDD}
+		{C3F7E21B-0BD1-409F-987B-80B1B190ECAC} = {ADDDDE7A-1D9B-4135-90D2-649E21536DDD}
 	EndGlobalSection
 EndGlobal
