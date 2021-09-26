@@ -12,6 +12,7 @@ using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Common;
 using webFileSharingSystem.Infrastructure.Data;
 using webFileSharingSystem.Infrastructure.Identity;
+using webFileSharingSystem.Infrastructure.Storage.OnPremise;
 
 namespace webFileSharingSystem.Infrastructure
 {
@@ -49,6 +50,9 @@ namespace webFileSharingSystem.Infrastructure
 
             // configure jwt authentication
             var jwtSettings = jwtSection.Get<JwtSettings>();
+            
+            var storageSection = configuration.GetSection(nameof(StorageSettings));
+            services.Configure<StorageSettings>(storageSection);
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
                 options =>
@@ -65,9 +69,11 @@ namespace webFileSharingSystem.Infrastructure
             
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IFilePersistenceService, FilePersistenceService>();
+            
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<ITokenService, TokenService>();
-            
+
 
             services.AddAuthorization(options =>
             {
