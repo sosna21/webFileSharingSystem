@@ -11,7 +11,6 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public bool IsFavourite { get; set;}
         public bool IsShared { get; set;}
         public bool IsDirectory { get; set; }
-        
         public DateTime ModificationDate { get; set; }
     }
 }

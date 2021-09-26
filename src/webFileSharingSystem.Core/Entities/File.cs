@@ -16,5 +16,7 @@ namespace webFileSharingSystem.Core.Entities
         public bool IsDirectory { get; set; }
         public bool IsDeleted { get; set; }
         public Guid? FileId { get; set; }
+        public FileStatus FileStatus { get; set; }
+        public PartialFileInfo? PartialFileInfo { get; set; }
     }
 }

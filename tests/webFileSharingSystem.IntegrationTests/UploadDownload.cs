@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
+using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Core.Storage;
 using webFileSharingSystem.Infrastructure.Storage.OnPremise;
 using Xunit;
@@ -11,7 +13,14 @@ namespace webFileSharingSystem.IntegrationTests
     public class UploadDownload
     {
         private readonly Random _random = new();
-
+        
+        private readonly FilePersistenceService _filePersistenceService = new FilePersistenceService(
+            Options.Create(new StorageSettings
+        {
+            UserDefaultQuota = 0,
+            OnPremiseFileLocation = "./TestResources"
+        }));
+        
         [Fact]
         public async Task GetChunks()
         {
@@ -28,7 +37,7 @@ namespace webFileSharingSystem.IntegrationTests
             var totalFileSizeFromChunks = 0;
             for (var i = 0; i < partialFileInfo.NumberOfChunks; i++)
             {
-                var chunk = await FilePersistenceService.GetChunk(filePath, chunkSize, i);
+                var chunk = await _filePersistenceService.GetChunk(filePath, chunkSize, i);
                 Assert.NotNull(chunk);
                 Assert.NotEmpty(chunk);
                 var expectedChunkSize = i < partialFileInfo.NumberOfChunks - 1
@@ -60,7 +69,7 @@ namespace webFileSharingSystem.IntegrationTests
             foreach (var (index, chunk) in chunks.Select((c, index) => (Index: index, Chunk: c))
                 .OrderBy(_ => _random.Next()))
             {
-                await FilePersistenceService.SaveChunk(savedTestFilePath, index, chunkSize, chunk);
+                await _filePersistenceService.SaveChunk(savedTestFilePath, index, chunkSize, chunk);
                 totalFileSizeFromChunks += chunks[index].Length;
             }
 
@@ -92,7 +101,7 @@ namespace webFileSharingSystem.IntegrationTests
 
             Parallel.ForEach(shuffledChunks, async item =>
             {
-                await FilePersistenceService.SaveChunk(savedTestFilePath, item.Index, chunkSize, item.Chunk);
+                await _filePersistenceService.SaveChunk(savedTestFilePath, item.Index, chunkSize, item.Chunk);
                 totalFileSizeFromChunks += chunks[item.Index].Length;
             });
 
@@ -130,13 +139,13 @@ namespace webFileSharingSystem.IntegrationTests
                 Parallel.ForEach(shuffledChunks,
                     async item =>
                     {
-                        await FilePersistenceService.SaveChunk(fileName, item.Index, chunkSize, item.Chunk);
+                        await _filePersistenceService.SaveChunk(fileName, item.Index, chunkSize, item.Chunk);
                     });
             });
         }
 
 
-        private static async Task<byte[][]> GetFileChunks(long fileSizeInBytes, string filePath, int chunkSize)
+        private async Task<byte[][]> GetFileChunks(long fileSizeInBytes, string filePath, int chunkSize)
         {
             var partialFileInfo = StorageExtensions.GeneratePartialFileInfo(fileSizeInBytes, chunkSize);
 
@@ -146,7 +155,7 @@ namespace webFileSharingSystem.IntegrationTests
 
             for (var i = 0; i < partialFileInfo.NumberOfChunks; i++)
             {
-                chunks[i] = await FilePersistenceService.GetChunk(filePath, chunkSize, i);
+                chunks[i] = await _filePersistenceService.GetChunk(filePath, chunkSize, i);
             }
 
             return chunks;

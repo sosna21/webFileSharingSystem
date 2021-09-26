@@ -27,6 +27,8 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
         }
         
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+        
+        public DbSet<PartialFileInfo> PartialFileInfos { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new())
         {
@@ -76,6 +78,12 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
                 .HasOne<File>()
                 .WithOne()
                 .HasForeignKey<File>(e => e.ParentId);
+            
+            builder.Entity<PartialFileInfo>()
+                .HasOne<File>()
+                .WithOne(e => e.PartialFileInfo)
+                .HasForeignKey<PartialFileInfo>(e => e.FileId);
+            
         }
 
         private async Task DispatchEvents()
