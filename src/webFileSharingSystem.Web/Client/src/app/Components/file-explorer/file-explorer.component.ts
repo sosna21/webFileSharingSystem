@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
@@ -17,7 +17,7 @@ interface File {
   checked: boolean;
   rename: boolean;
   isCompleted: boolean;
-  stooped: boolean;
+  stopped: boolean;
 }
 
 @Component({
@@ -26,6 +26,8 @@ interface File {
   styleUrls: ['./file-explorer.component.scss']
 })
 export class FileExplorerComponent implements OnInit {
+  @Input() mode: string = 'GetAll';
+  @Input() title: string = 'All Files';
   fileNameForm!: FormGroup;
   files: File[] = [];
   itemsPerPage = 15;
@@ -33,6 +35,7 @@ export class FileExplorerComponent implements OnInit {
   totalItems!: number;
   gRename: boolean = false;
   names: string[] = [];
+  patch: string[] = [];
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder,) {
   }
@@ -40,28 +43,28 @@ export class FileExplorerComponent implements OnInit {
   private openDropdownToBeHidden: any;
 
   ngOnInit(): void {
-    this.getFiles();
+    this.getFiles(this.mode);
     this.initializeForm();
+  }
+
+  selectDir(file: File) {
+    if (file.isDirectory) {
+      this.patch.push(file.fileName);
+      this.getFiles(this.mode, file.id);
+      console.log(`Directory changed to: ${file.fileName}`)
+    }
 
   }
 
   initializeForm() {
     this.fileNameForm = this.formBuilder.group({
-      dirName: ['', [Validators.required, this.checkDirUnique()]],
-      fileName: ['', [Validators.required, this.checkFileUnique()]]
+      dirName: ['', [Validators.required, this.checkNameUnique()]],
+      fileName: ['', [Validators.required, this.checkNameUnique()]]
     });
   }
 
-  checkFileUnique(): ValidatorFn {
-    return (control: AbstractControl): { [key: string]: any } | null => {
-      const forbidden = control?.parent?.controls as any;
-      return (forbidden)
-        ? !(this.names.filter(x => x === control?.value).length > 1) ? null : {isUnique: true}
-        : null;
-    }
-  }
 
-  checkDirUnique(): ValidatorFn {
+  checkNameUnique(): ValidatorFn {
     return (control: AbstractControl): { [key: string]: any } | null => {
       const forbidden = control?.parent?.controls as any;
 
@@ -71,13 +74,13 @@ export class FileExplorerComponent implements OnInit {
     }
   }
 
-  getFiles(): void {
-    this.http.get<any>(`${environment.apiUrl}/File/GetAll?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}`).subscribe(response => {
+  getFiles(mode: string, parentId: number = -1): void {
+    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
       this.names = this.files.map(x => x.fileName);
       this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
-      this.files.filter(x => !x.isCompleted).forEach(x => x.stooped = Math.random() > 0.5);
+      this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
       console.log(error);
     })
@@ -93,15 +96,24 @@ export class FileExplorerComponent implements OnInit {
 
   deleteCheckedFiles() {
     this.files = this.files.filter(x => !x.checked)
+    //  this.reloadFiles();
+  }
 
-  //  this.reloadFiles();
+
+  SetFavourite(file: File) {
+    if (file.isCompleted) {
+      file.isFavourite = !file.isFavourite;
+      this.http.put<any>(`${environment.apiUrl}/File/SetFavourite/${file.id}?value=${file.isFavourite}`, {}).subscribe(() => {
+      }, error => {
+        console.log(error);
+      });
+    }
   }
 
   pageChanged(event: any) {
     this.currentPage = event.page;
-    this.getFiles()
+    this.getFiles(this.mode)
   }
-
 
   convertToReadableFileSize(size: number) {
     if (size <= 0) {
@@ -119,7 +131,7 @@ export class FileExplorerComponent implements OnInit {
 
   deleteFile(file: File) {
     this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
-      this.getFiles();
+      this.getFiles(this.mode);
     }, error => {
       console.log(error)
     })
@@ -141,32 +153,29 @@ export class FileExplorerComponent implements OnInit {
 
   createDirectory() {
     if (!this.fileNameForm.get('dirName')?.invalid) {
-      let delFile = this.files.pop();
-      const file: File = {
-        id: Math.max.apply(Math, this.files.map(function (file) {
-          return file.id;
-        })) + 1,
-        fileName: this.fileNameForm.get('dirName')?.value,
-        modificationDate: new Date(),
-        size: 0,
-        isFavourite: false,
-        isShared: false,
-        checked: false,
-        isDirectory: true,
-        rename: false,
-        isCompleted: true,
-        stooped: false
-      };
-      this.files.unshift(file);
-      this.files.unshift(file);
-      delete this.files[this.files.findIndex(file => file === delFile)];
-      this.gRename = false;
-      this.names.push(this.fileNameForm.get('dirName')?.value);
+      this.files.pop();
+      let name = this.fileNameForm.get('dirName')?.value;
+      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}`, {}).subscribe(response => {
+        let file: File = response;
+
+        file.checked = false;
+        file.rename = false;
+        file.isCompleted = true;
+        file.stopped = false;
+
+        this.files.unshift(file)
+        this.names.push(file.fileName);
+
+        this.gRename = false;
+      }, error => {
+        console.log(error);
+      });
     }
   }
 
   renameInit(file: File) {
     if (!this.gRename) {
+      delete this.names[this.names.findIndex(x => x === file.fileName)];
       this.fileNameForm.get('fileName')?.patchValue(file.fileName);
       this.fileNameForm.markAsTouched();
       file.rename = this.gRename = true;
@@ -174,30 +183,38 @@ export class FileExplorerComponent implements OnInit {
   }
 
   rename(file: File) {
-    if (!this.fileNameForm.get('fileName')?.invalid) {
-      delete this.names[this.names.findIndex(x => x === file.fileName)];
-      file.fileName = this.fileNameForm.get('fileName')?.value;
-      this.fileNameForm.reset();
-      this.names.push(file.fileName);
+    if (this.gRename) {
+      if (!this.fileNameForm.get('fileName')?.invalid) {
+        let filename = this.fileNameForm.get('fileName')?.value;
+
+        this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
+          file.fileName = filename;
+          file.modificationDate = new Date();
+          this.names.push(file.fileName);
+          this.gRename = false;
+        }, error => {
+          console.log(error)
+        })
+        this.fileNameForm.reset();
+      }
+      file.rename = false;
     }
-    file.rename = false;
-    this.gRename = false;
   }
 
-  dirCreat(form: any) {
+  initDirCreat(form: any) {
     if (!this.gRename) {
       this.fileNameForm.reset();
       this.fileNameForm.markAsUntouched();
+      this.gRename = true;
+      form.hidden = false;
     }
-    this.gRename = true;
-    form.hidden = false;
   }
 
   stopUpload(file: File) {
-  file.stooped = true;
+    file.stopped = true;
   }
 
   continueUpload(file: File) {
-    file.stooped = false;
+    file.stopped = false;
   }
 }

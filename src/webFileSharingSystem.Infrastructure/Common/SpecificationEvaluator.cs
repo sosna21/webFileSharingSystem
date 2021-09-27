@@ -57,7 +57,7 @@ namespace webFileSharingSystem.Infrastructure.Common
             
             if (specification.Take is not null)
             {
-                query = query.Skip(specification.Take.Value);
+                query = query.Take(specification.Take.Value);
             }
             return query;
         }

@@ -9,6 +9,7 @@ import {RecentComponent} from "./Components/recent/recent.component";
 import {TagsComponent} from "./Components/tags/tags.component";
 import {DeletedComponent} from "./Components/deleted/deleted.component";
 import {RegisterComponent} from "./Components/register/register.component";
+import {FilesComponent} from "./Components/files/files.component";
 
 
 const routes: Routes = [
@@ -18,7 +19,7 @@ const routes: Routes = [
     canActivate: [AuthGuard],
     children: [
       {path: '', component: HomeComponent },
-      { path: 'files', component: FileExplorerComponent },
+      { path: 'files', component: FilesComponent },
       { path: 'favourite', component: FavouritePageComponent },
       { path: 'recent', component: RecentComponent },
       { path: 'tags', component: TagsComponent },

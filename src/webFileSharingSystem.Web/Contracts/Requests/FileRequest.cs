@@ -9,5 +9,7 @@ namespace webFileSharingSystem.Web.Contracts.Requests
         
         [Required]
         public int PageSize { get; set; }
+
+        public int? ParentId { get; set; }
     }
 }
