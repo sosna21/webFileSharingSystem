@@ -130,7 +130,7 @@ namespace webFileSharingSystem.IntegrationTests
 
             Directory.CreateDirectory(saveToFileMulti);
 
-            Parallel.ForEach(Enumerable.Range(1, 100), _ =>
+            Parallel.ForEach(Enumerable.Range(1, 100-0), _ =>
             {
                 var shuffledChunks = chunks.Select((c, index) => (Index: index, Chunk: c)).OrderBy(_ => _random.Next());
 

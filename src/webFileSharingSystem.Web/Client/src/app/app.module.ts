@@ -28,6 +28,7 @@ import {PopoverModule} from "ngx-bootstrap/popover";
 import {BsDropdownModule} from "ngx-bootstrap/dropdown";
 import {MimeFontawesomePipe} from "./Components/common/MimeFontawesomePipe";
 import {FileUploadComponent} from './Components/file-upload/file-upload.component';
+import { FilesComponent } from './Components/files/files.component';
 
 @NgModule({
   declarations: [
@@ -44,7 +45,8 @@ import {FileUploadComponent} from './Components/file-upload/file-upload.componen
     RegisterComponent,
     TextInputComponent,
     MimeFontawesomePipe,
-    FileUploadComponent
+    FileUploadComponent,
+    FilesComponent
 
   ],
   imports: [

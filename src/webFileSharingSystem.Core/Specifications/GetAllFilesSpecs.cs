@@ -4,10 +4,12 @@ namespace webFileSharingSystem.Core.Specifications
 {
     public sealed class GetAllFilesSpecs : BaseSpecification<File>
     {
-        public GetAllFilesSpecs(int userId) : base(
+        public GetAllFilesSpecs(int userId, int parentId) : base(
             e => e.UserId == userId
-                 && e.IsDeleted == false)
+                 && e.IsDeleted == false &&
+                 parentId == -1 ? e.ParentId == null : e.ParentId == parentId)
         {
+            ApplyOrderBy(file => file.Id);
         }
     }
 }
