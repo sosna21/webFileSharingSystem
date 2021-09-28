@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
+using static System.IO.File;
 
 namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
 {
@@ -13,32 +13,24 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
     {
         private readonly IOptions<StorageSettings> _settings;
 
-        private readonly ConcurrentDictionary<int, string> _filePathsCache;
-
         public FilePersistenceService(IOptions<StorageSettings> settings)
         {
             _settings = settings;
-            _filePathsCache = new ConcurrentDictionary<int, string>();
         }
-
+        
         public async Task SaveChunk(string filePath, int chunkIndex, int chunkSize, byte[] data,
             CancellationToken cancellationToken = default)
         {
-            async void PersistToStreamAction(Stream s) => await s.WriteAsync(data, cancellationToken);;
-
-            await SaveChunk(filePath, chunkIndex, chunkSize, PersistToStreamAction);
+            await SaveChunkInternal(filePath, chunkIndex, chunkSize, async stream => await stream.WriteAsync(data, cancellationToken));
         }
         
-        // TODO If that version can be used to upload data add tests and use instead
         public async Task SaveChunk(string filePath, int chunkIndex, int chunkSize, Stream data,
             CancellationToken cancellationToken = default)
         {
-            async void PersistToStreamAction(Stream s) => await data.CopyToAsync(s, cancellationToken);
-
-            await SaveChunk(filePath, chunkIndex, chunkSize, PersistToStreamAction);
+            await SaveChunkInternal(filePath, chunkIndex, chunkSize, stream => data.CopyToAsync(stream, cancellationToken));
         }
         
-        private async Task SaveChunk(string filePath, int chunkIndex, int chunkSize, Action<Stream> persistToStreamAction)
+        private static async Task SaveChunkInternal(string filePath, int chunkIndex, int chunkSize, Func<Stream, Task> persistToStreamAction)
         {
             await using var stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write,
                 FileShare.ReadWrite,
@@ -46,7 +38,7 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
 
             stream.Position = chunkIndex * chunkSize;
             
-            persistToStreamAction(stream);
+            await persistToStreamAction(stream);
         }
 
         public async Task<byte[]> GetChunk(string filePath, int chunkSize, int chunkIndex,
@@ -68,21 +60,29 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
             return buffer;
         }
 
-        public string GenerateAndCacheFilePath(int userId, int fileId, Guid persistedFileId)
+        public async Task<string> GenerateNewFile(int userId, Guid persistedFileId)
         {
-            if (_filePathsCache.ContainsKey(fileId))
-            {
-                return _filePathsCache[fileId];
-            }
             var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString());
             Directory.CreateDirectory(filePath);
-            _filePathsCache[fileId] = Path.Combine(filePath, persistedFileId.ToString());
-            return _filePathsCache[fileId];
+
+            filePath = Path.Combine(filePath, persistedFileId.ToString());
+
+            await Create(filePath).DisposeAsync();
+
+            return filePath;
         }
 
-        public string? GetCachedFilePath(int fileId)
+        public string GetFilePath(int userId, Guid fileGuid)
         {
-            return _filePathsCache.ContainsKey(fileId) ? _filePathsCache[fileId] : null;
+            return Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString(), fileGuid.ToString());
+        }
+
+        public void DeleteExistingFile(int userId, Guid persistedFileId)
+        {
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString());
+            if (!Directory.Exists(filePath)) return;
+            filePath = Path.Combine(filePath, persistedFileId.ToString());
+            Delete(filePath);
         }
     }
 }

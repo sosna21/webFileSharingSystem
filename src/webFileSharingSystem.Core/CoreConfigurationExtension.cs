@@ -1,6 +1,17 @@
-﻿namespace webFileSharingSystem.Core
+﻿using Microsoft.Extensions.DependencyInjection;
+using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Services;
+
+namespace webFileSharingSystem.Core
 {
-    public class CoreConfigurationExtension
+    
+    public static class CoreConfigurationExtension
     {
+        public static IServiceCollection AddCore(this IServiceCollection services)
+        {
+            services.AddScoped<IUploadService, UploadService>();
+            return services;
+        }
     }
+    
 }

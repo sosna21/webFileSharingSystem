@@ -9,15 +9,17 @@ namespace webFileSharingSystem.Core.Interfaces
     {
         Task SaveChunk(string filePath, int chunkIndex, int chunkSize, byte[] data,
             CancellationToken cancellationToken = default);
-        
+
         Task SaveChunk(string filePath, int chunkIndex, int chunkSize, Stream data,
             CancellationToken cancellationToken = default);
 
         Task<byte[]> GetChunk(string filePath, int chunkSize, int chunkIndex,
             CancellationToken cancellationToken = default);
 
-        string GenerateAndCacheFilePath(int userId, int fileId, Guid persistedFileId);
-        
-        string? GetCachedFilePath(int fileId );
+        Task<string> GenerateNewFile(int userId, Guid persistedFileId);
+
+        string GetFilePath(int userId, Guid fileGuid);
+
+        void DeleteExistingFile(int userId, Guid persistedFileId);
     }
 }
