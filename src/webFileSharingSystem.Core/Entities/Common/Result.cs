@@ -25,5 +25,10 @@ namespace webFileSharingSystem.Core.Entities.Common
         {
             return new Result(false, errors);
         }
+        
+        public static Result Failure(params string[] errors)
+        {
+            return new Result(false, errors);
+        }
     }
 }

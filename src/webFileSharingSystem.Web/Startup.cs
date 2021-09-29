@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using webFileSharingSystem.Core;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Infrastructure;
 using webFileSharingSystem.Web.Services;
@@ -22,6 +23,8 @@ namespace webFileSharingSystem.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCore();
+            
             services.AddInfrastructure(_config);
 
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
