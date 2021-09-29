@@ -1,2 +1,8 @@
-<input type="file" (change)="fileChanged($event.target)" >
-<button (click)="saveFile()">Save</button>
+<!--<input type="file" (change)="fileSelected($event.target)" >-->
+<!--<button (click)="saveFile()">Save</button>-->
+
+<label class="col-10 offset-1 btn custom-input-btn bg-primary">
+  <input (change)="fileSelected($event.target)" type="file" style="display:none"/>
+  <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
+  Select file
+</label>

@@ -24,6 +24,23 @@ namespace webFileSharingSystem.Web.Controllers
         }
 
         [HttpGet]
+        [Route("GetFilePath/{fileId:int}")]
+        public async Task<ActionResult<IEnumerable<FilePathPartResponse>>> GetFilePath(int fileId)
+        {
+            var userId = _currentUserService.UserId;
+            var fileToGetPath = await _unitOfWork.Repository<File>().FindByIdAsync(fileId);
+            if (fileToGetPath is null) return BadRequest(ErrorMessage);
+            if (fileToGetPath.UserId != userId) return Unauthorized(ErrorMessage);
+
+            var filePathParts = await _unitOfWork.CustomQueriesRepository().FindPathToAllParents(fileId);
+            return Ok(filePathParts.Reverse().Select(part => new FilePathPartResponse
+            {
+                Id = part.Id,
+                FileName = part.FileName
+            }));
+        }
+
+        [HttpGet]
         [Route("GetAll")]
         public async Task<PaginatedList<FileResponse>> GetAllFilesAsync([FromQuery] FileRequest request)
         {
@@ -39,20 +56,20 @@ namespace webFileSharingSystem.Web.Controllers
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
                     ModificationDate = file.LastModified ?? file.Created
-                },new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
+                }, new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
         }
-        
-        //
-        // [HttpGet]
-        // [Route("GetNames/{parentId:int?}")]
-        // public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
-        // {
-        //     var dbParentId = parentId == -1 ? (int?)null : parentId;
-        //     var userId = _currentUserService.UserId;
-        //     var files =  await _unitOfWork.Repository<File>().FindAsync(new GeFilesNamesSpecs(userId!.Value,dbParentId));
-        //     return files.Select(e => e.FileName);
-        // }
-        
+
+
+        [HttpGet]
+        [Route("GetNames/{parentId:int?}")]
+        public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
+        {
+            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            var userId = _currentUserService.UserId;
+            var files = await _unitOfWork.Repository<File>()
+                .FindAsync(new GeFilesNamesSpecs(userId!.Value, dbParentId));
+            return files.Select(e => e.FileName);
+        }
 
 
         [HttpGet]
@@ -71,7 +88,7 @@ namespace webFileSharingSystem.Web.Controllers
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
                     ModificationDate = file.LastModified ?? file.Created
-                }, new GetFavouriteFilesSpecs(userId!.Value,request.ParentId!.Value));
+                }, new GetFavouriteFilesSpecs(userId!.Value, request.ParentId!.Value));
         }
 
 
@@ -143,10 +160,9 @@ namespace webFileSharingSystem.Web.Controllers
             return BadRequest("Problem with renaming the file");
         }
 
-
         [HttpPost]
         [Route("CreateDir/{name}")]
-        public async Task<ActionResult<FileResponse>> CreateDir(string name)
+        public async Task<ActionResult<FileResponse>> CreateDir(string name, [FromQuery] int? parentId)
         {
             var userId = _currentUserService.UserId;
 
@@ -154,6 +170,7 @@ namespace webFileSharingSystem.Web.Controllers
             {
                 FileName = name,
                 IsDirectory = true,
+                ParentId = parentId,
                 UserId = userId!.Value
             };
 
@@ -172,8 +189,8 @@ namespace webFileSharingSystem.Web.Controllers
                 ModificationDate = file.LastModified ?? file.Created
             };
         }
-        
-        [HttpDelete]
+
+        [HttpPut]
         [Route("Delete/{id:int}")]
         public async Task<ActionResult> DeleteFileAsync(int id)
         {

@@ -7,7 +7,6 @@ import {FileUploaderService} from "../../services/file-uploader.service";
   styleUrls: ['./file-upload.component.scss']
 })
 export class FileUploadComponent implements OnInit {
-  private uploadFile!: File;
 
   constructor(private fileUploader: FileUploaderService) {
   }
@@ -15,21 +14,14 @@ export class FileUploadComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  public fileChanged(target: EventTarget | null) {
+  public fileSelected(target: EventTarget | null) {
     const fileElement = target as HTMLInputElement;
     if (fileElement == null ||
       fileElement.files == null ||
       fileElement.files.length <= 0) {
       return;
     }
-    // the first file is set as upload target.
-    this.uploadFile = fileElement.files[0];
+    this.fileUploader.upload(fileElement.files[0]);
   }
 
-  public saveFile() {
-    if (this.uploadFile == null) {
-      return;
-    }
-    this.fileUploader.upload(this.uploadFile);
-  }
 }

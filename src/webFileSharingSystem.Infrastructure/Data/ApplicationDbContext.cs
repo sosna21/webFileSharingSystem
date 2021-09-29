@@ -3,18 +3,17 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
+using EntityState = Microsoft.EntityFrameworkCore.EntityState;
 
 namespace webFileSharingSystem.Infrastructure.Data {
     
-public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
+    public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
     {
         private readonly ICurrentUserService _currentUserService;
         private readonly IDomainEventService _domainEventService;
@@ -25,10 +24,11 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
             _currentUserService = currentUserService;
             //_domainEventService = domainEventService;
         }
-        
-        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
-        
-        public DbSet<PartialFileInfo> PartialFileInfos { get; set; }
+
+        public Microsoft.EntityFrameworkCore.DbSet<ApplicationUser> ApplicationUsers { get; set; }
+
+        public Microsoft.EntityFrameworkCore.DbSet<PartialFileInfo> PartialFileInfos { get; set; }
+
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new())
         {
@@ -57,13 +57,14 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
             return result;
         }
 
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             base.OnModelCreating(builder);
-            
-            
+
+
             builder.Entity<ApplicationUser>()
                 .HasOne<IdentityUser>()
                 .WithOne()
@@ -73,19 +74,21 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
                 .HasOne<ApplicationUser>()
                 .WithMany(e => e.Files)
                 .HasForeignKey(e => e.UserId);
-            
+
             builder.Entity<File>()
                 .HasOne<File>()
-                .WithOne()
-                .HasForeignKey<File>(e => e.ParentId);
-            
+                .WithMany()
+                .HasForeignKey(e => e.ParentId);
+
             builder.Entity<PartialFileInfo>()
                 .HasOne<File>()
                 .WithOne(e => e.PartialFileInfo)
                 .HasForeignKey<PartialFileInfo>(e => e.FileId);
-            
+
+            builder.Entity<FilePathPart>().HasNoKey().ToView(null);
         }
 
+        //TODO Add dispatch events if needed or remove 
         private async Task DispatchEvents()
         {
             while (true)
@@ -94,13 +97,28 @@ public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
                     .Entries<IHasDomainEvent>()
                     .Select(x => x.Entity.DomainEvents)
                     .SelectMany(x => x)
-                    .FirstOrDefault( domainEvent => !domainEvent.IsPublished );
-                
+                    .FirstOrDefault(domainEvent => !domainEvent.IsPublished);
+
                 if (domainEventEntity is null) break;
 
                 domainEventEntity.IsPublished = true;
                 await _domainEventService.Publish(domainEventEntity);
             }
         }
+        
+        public IQueryable<FilePathPart> GetFiePathParts(int id) =>
+            Set<FilePathPart>().FromSqlInterpolated(
+                $@"
+                    WITH recursive_cte AS
+                    (
+                    SELECT [Id], [FileName], [ParentId]
+                    FROM [File] WHERE Id={id}
+                    UNION ALL
+                    SELECT [f].[Id], [f].[FileName], [f].[ParentId]
+                    FROM [File] AS [f]
+                    INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
+                    )
+                    SELECT [Id], [FileName] FROM recursive_cte
+                ");
     }
 }
