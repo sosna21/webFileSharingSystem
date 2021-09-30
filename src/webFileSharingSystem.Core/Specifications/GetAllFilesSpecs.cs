@@ -7,7 +7,7 @@ namespace webFileSharingSystem.Core.Specifications
         public GetAllFilesSpecs(int userId, int parentId) : base(
             e => e.UserId == userId
                  && e.IsDeleted == false &&
-                 parentId == -1 ? e.ParentId == null : e.ParentId == parentId)
+                 (parentId == -1 ? e.ParentId == null : e.ParentId == parentId))
         {
             ApplyOrderBy(file => file.Id);
         }

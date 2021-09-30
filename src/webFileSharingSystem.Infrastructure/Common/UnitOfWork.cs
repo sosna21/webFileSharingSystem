@@ -23,7 +23,12 @@ namespace webFileSharingSystem.Infrastructure.Common
         {
             _context = context;
         }
-        
+
+        public ICustomQueriesRepository CustomQueriesRepository()
+        {
+            return new CustomQueriesRepository(_context);
+        }
+
         public IRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity
         {
             var type = typeof(TEntity).Name;

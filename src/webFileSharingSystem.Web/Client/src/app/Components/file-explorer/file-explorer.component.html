@@ -15,6 +15,19 @@
   </div>
 </div>
 
+<div>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/files" routerLinkActive="active">
+        <span><fa-icon [icon]="['fas', 'home']"></fa-icon></span>
+        Home
+      </a></li>
+      <li *ngFor="let item of breadCrumbs" class="breadcrumb-item ">
+        <a [routerLink]="['/files', item.id]">{{item.fileName}}</a></li>
+    </ol>
+  </nav>
+</div>
+
 <div id="table" class="row">
   <div class="table-responsive">
     <table class="table table-sm table-hover">
@@ -52,10 +65,10 @@
           <fa-icon [hidden]="file.isCompleted" [icon]="['far', 'trash-alt']" [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
         <td *ngIf="!file.rename" class="text-left">
-          <div (click)="selectDir(file)" class="row col-12 align-items-center"
+          <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
                [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
             <div [ngClass]="file.isCompleted ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
-              <fa-icon class="mr-sm-1" size="2x"
+              <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
                        [icon]="[file.isDirectory ? 'fas' : 'far', (file.mimeType | mimeFontawesome)]"></fa-icon>
               {{ file.fileName }} | {{file.id}}
             </div>

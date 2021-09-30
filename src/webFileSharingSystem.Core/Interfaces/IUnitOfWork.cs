@@ -12,6 +12,8 @@ namespace webFileSharingSystem.Core.Interfaces
 {
     public interface IUnitOfWork
     {
+        ICustomQueriesRepository CustomQueriesRepository();
+        
         IRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity;
         
         Task<int> Complete(CancellationToken cancellationToken = default);

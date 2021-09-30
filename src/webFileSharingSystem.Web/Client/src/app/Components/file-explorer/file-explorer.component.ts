@@ -1,7 +1,9 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
+import {Subscription} from "rxjs";
+import {ActivatedRoute} from "@angular/router";
 
 
 interface File {
@@ -20,14 +22,20 @@ interface File {
   stopped: boolean;
 }
 
+interface BreadCrumb {
+  id: number;
+  fileName: string;
+}
+
 @Component({
   selector: 'app-file-explorer',
   templateUrl: './file-explorer.component.html',
   styleUrls: ['./file-explorer.component.scss']
 })
-export class FileExplorerComponent implements OnInit {
+export class FileExplorerComponent implements OnInit, OnDestroy {
   @Input() mode: string = 'GetAll';
   @Input() title: string = 'All Files';
+  parentId: number | null = null;
   fileNameForm!: FormGroup;
   files: File[] = [];
   itemsPerPage = 15;
@@ -35,25 +43,34 @@ export class FileExplorerComponent implements OnInit {
   totalItems!: number;
   gRename: boolean = false;
   names: string[] = [];
-  patch: string[] = [];
+  breadCrumbs: BreadCrumb[] = [];
+  userSubscription!: Subscription;
 
-  constructor(private http: HttpClient, private formBuilder: FormBuilder,) {
+  constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute) {
+  }
+
+  ngOnDestroy(): void {
+    this.userSubscription.unsubscribe();
   }
 
   private openDropdownToBeHidden: any;
 
   ngOnInit(): void {
-    this.getFiles(this.mode);
+
+    this.userSubscription = this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.parentId = +params['id'];
+      }
+      this.reloadData();
+      this.getNames();
+      if(this.parentId)
+        this.getFilePath(this.parentId);
+    });
     this.initializeForm();
   }
 
-  selectDir(file: File) {
-    if (file.isDirectory) {
-      this.patch.push(file.fileName);
-      this.getFiles(this.mode, file.id);
-      console.log(`Directory changed to: ${file.fileName}`)
-    }
-
+  private reloadData(): void {
+    this.getFiles(this.mode, this.parentId);
   }
 
   initializeForm() {
@@ -74,17 +91,36 @@ export class FileExplorerComponent implements OnInit {
     }
   }
 
-  getFiles(mode: string, parentId: number = -1): void {
-    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId}`).subscribe(response => {
+  getFiles(mode: string, parentId: number | null): void {
+    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
-      this.names = this.files.map(x => x.fileName);
+      // this.names = this.files.map(x => x.fileName);
       this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
       this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
       console.log(error);
     })
   }
+
+  getNames(): void {
+    let parentId = this.parentId ?? -1;
+    this.http.get<any>(`${environment.apiUrl}/File/GetNames/${parentId}`).subscribe(response => {
+      this.names = response;
+    }, error => {
+      console.log(error);
+    })
+  }
+
+  getFilePath(fileId: number) {
+    this.http.get<any>(`${environment.apiUrl}/File/GetFilePath/${fileId}`).subscribe(response => {
+      this.breadCrumbs = response;
+      console.log(this.breadCrumbs);
+    }, error => {
+      console.log(error);
+    })
+  }
+
 
   checkAllCheckBox(ev: any) {
     this.files.forEach(x => x.checked = ev.target.checked)
@@ -112,7 +148,7 @@ export class FileExplorerComponent implements OnInit {
 
   pageChanged(event: any) {
     this.currentPage = event.page;
-    this.getFiles(this.mode)
+    this.reloadData();
   }
 
   convertToReadableFileSize(size: number) {
@@ -130,8 +166,8 @@ export class FileExplorerComponent implements OnInit {
   }
 
   deleteFile(file: File) {
-    this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
-      this.getFiles(this.mode);
+    this.http.put(`${environment.apiUrl}/File/Delete/${file.id}`, {}).subscribe(() => {
+      this.reloadData();
     }, error => {
       console.log(error)
     })
@@ -153,11 +189,12 @@ export class FileExplorerComponent implements OnInit {
 
   createDirectory() {
     if (!this.fileNameForm.get('dirName')?.invalid) {
-      this.files.pop();
+
       let name = this.fileNameForm.get('dirName')?.value;
-      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}`, {}).subscribe(response => {
+      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}${this.parentId ? '?parentId=' + this.parentId : ''}`, {}).subscribe(response => {
         let file: File = response;
 
+        this.files.length >= this.itemsPerPage ? this.files.pop() : null;
         file.checked = false;
         file.rename = false;
         file.isCompleted = true;
@@ -165,6 +202,7 @@ export class FileExplorerComponent implements OnInit {
 
         this.files.unshift(file)
         this.names.push(file.fileName);
+        this.totalItems ++;
 
         this.gRename = false;
       }, error => {

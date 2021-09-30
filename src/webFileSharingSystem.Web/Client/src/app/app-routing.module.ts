@@ -4,7 +4,6 @@ import { LoginComponent } from './Components/login/login.component';
 import {AuthGuard} from "./guards/auth.guard";
 import {HomeComponent} from "./Components/home/home.component";
 import {FavouritePageComponent} from "./Components/favourite-page/favourite-page.component";
-import {FileExplorerComponent} from "./Components/file-explorer/file-explorer.component";
 import {RecentComponent} from "./Components/recent/recent.component";
 import {TagsComponent} from "./Components/tags/tags.component";
 import {DeletedComponent} from "./Components/deleted/deleted.component";
@@ -20,6 +19,7 @@ const routes: Routes = [
     children: [
       {path: '', component: HomeComponent },
       { path: 'files', component: FilesComponent },
+      { path: 'files/:id', component: FilesComponent },
       { path: 'favourite', component: FavouritePageComponent },
       { path: 'recent', component: RecentComponent },
       { path: 'tags', component: TagsComponent },
