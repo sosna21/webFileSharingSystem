@@ -1,4 +1,4 @@
-import {Component, Input, OnDestroy, OnInit, TemplateRef} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
@@ -7,7 +7,24 @@ import {ActivatedRoute} from "@angular/router";
 import {FileExplorerService} from "../../services/file-explorer.service";
 import {BsModalRef, BsModalService} from "ngx-bootstrap/modal";
 import {File} from "../common/file";
+import {DownloadService} from "../../services/download.service";
 
+
+interface File {
+  id: number;
+  fileName: string;
+  mimeType?: string;
+  size: number;
+  isFavourite: boolean;
+  isShared: boolean
+  isDirectory: boolean;
+  modificationDate: Date;
+
+  checked: boolean;
+  rename: boolean;
+  isCompleted: boolean;
+  stopped: boolean;
+}
 
 interface BreadCrumb {
   id: number;
@@ -36,13 +53,12 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   modalRef?: BsModalRef;
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
-    , private modalService: BsModalService) {
+    ,private modalService: BsModalService, private downloadService: DownloadService) {
   }
 
   private openDropdownToBeHidden: any;
 
   ngOnInit(): void {
-
     this.userSubscription = this.route.params.subscribe(params => {
       if (params['id']) {
         this.parentId = +params['id'];
@@ -126,6 +142,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }, error => {
       console.log(error);
     })
+  }
+
+  getDownloadUrl(fileId: number) {
+    return `${environment.apiUrl}/Download/${fileId}`;
+  }
+
+  downloadSingleFile(fileId: number) {
+    return this.downloadService.downloadSingleFile(fileId);
   }
 
 
@@ -215,7 +239,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       })
   }
 
-
   hideOnSecondOpen(dropdown: any) {
     if (this.openDropdownToBeHidden && dropdown !== this.openDropdownToBeHidden) {
       this.openDropdownToBeHidden.hide();
@@ -286,7 +309,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       file.rename = false;
     }
   }
-
 
   stopUpload(file: File) {
     file.stopped = true;

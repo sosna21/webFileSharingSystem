@@ -23,12 +23,15 @@
     "@fortawesome/free-brands-svg-icons": "^5.15.3",
     "@fortawesome/free-regular-svg-icons": "^5.15.3",
     "@fortawesome/free-solid-svg-icons": "^5.15.3",
+    "@types/streamsaver": "^2.0.1",
     "bootstrap": "^4.5.3",
     "ng2-file-upload": "^1.4.0",
     "ngx-bootstrap": "^7.0.0",
     "ngx-timeago": "^2.0.0",
     "rxjs": "~6.6.0",
+    "streamsaver": "^2.0.5",
     "tslib": "^2.3.0",
+    "web-streams-polyfill": "^3.1.1",
     "zone.js": "~0.11.4"
   },
   "devDependencies": {
