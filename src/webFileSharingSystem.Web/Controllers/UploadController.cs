@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Web.Contracts.Requests;
@@ -12,7 +13,6 @@ namespace webFileSharingSystem.Web.Controllers
     {
         private readonly ICurrentUserService _currentUserService;
         private readonly IUploadService _uploadService;
-
 
         public UploadController(ICurrentUserService currentUserService, IUploadService uploadService)
         {

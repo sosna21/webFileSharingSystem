@@ -4,9 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Core.Specifications;
 using webFileSharingSystem.Core.Storage;
 using File = webFileSharingSystem.Core.Entities.File;
@@ -17,16 +19,19 @@ namespace webFileSharingSystem.Core.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFilePersistenceService _filePersistenceService;
+        
+        private readonly IOptions<StorageSettings> _storageSettings;
 
         private static readonly
             ConcurrentDictionary<(int userId, int fileId), (string filePath, PartialFileInfo partialFileInfo)>
             UserFileCache = new();
 
 
-        public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService)
+        public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService, IOptions<StorageSettings> storageSettings)
         {
             _unitOfWork = unitOfWork;
             _filePersistenceService = filePersistenceService;
+            _storageSettings = storageSettings;
         }
 
 
@@ -35,7 +40,11 @@ namespace webFileSharingSystem.Core.Services
             string fileName,
             string? mimeType, long size)
         {
-            var partialFileInfo = StorageExtensions.GeneratePartialFileInfo(size);
+            var preferredChunk = CalculatePreferredChunkSize(size);
+            var partialFileInfo = preferredChunk is null
+                ? StorageExtensions.GeneratePartialFileInfo(size)
+                : StorageExtensions.GeneratePartialFileInfo(size, preferredChunk.Value);
+            
             var fileGuidId = Guid.NewGuid();
             //TODO Check if file with the same name already exists for that user
             var file = new File
@@ -172,6 +181,23 @@ namespace webFileSharingSystem.Core.Services
             await _unitOfWork.Complete(cancellationToken);
             
             return Result.Success();
+        }
+
+        private int? CalculatePreferredChunkSize(long fileSize)
+        {
+            if (_storageSettings.Value?.ChunkSizeConstraints is null)
+                return null;
+
+            var chunkSizeConstraints = _storageSettings.Value.ChunkSizeConstraints;
+            var calculatedChunkSize = (long)Math.Ceiling( (double)fileSize / chunkSizeConstraints.PreferredNumberOfChunks );
+
+            if (calculatedChunkSize < chunkSizeConstraints.MinimumChunkSize)
+                return chunkSizeConstraints.MinimumChunkSize;
+
+            if (calculatedChunkSize > chunkSizeConstraints.MaximumChunkSize)
+                return chunkSizeConstraints.MaximumChunkSize;
+            
+            return (int)calculatedChunkSize;
         }
     }
 }

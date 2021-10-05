@@ -36,7 +36,7 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
                 FileShare.ReadWrite,
                 4096, FileOptions.Asynchronous);
 
-            stream.Position = chunkIndex * chunkSize;
+            stream.Position = (long)chunkIndex * chunkSize;
             
             await persistToStreamAction(stream);
         }
