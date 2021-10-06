@@ -14,21 +14,22 @@ export class FileUploaderService {
   constructor(private http: HttpClient) {
   }
 
-  public upload(file: File) {
-    this.startFileUpload(file).subscribe(partialFileInfo => {
+  public upload(file: File,  parentId: number | null = null) {
+    this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
       this.sendFileAsChunks(file, partialFileInfo).subscribe(_ => {
         return this.completeFileUpload(partialFileInfo.fileId).subscribe()
       })
     });
   }
 
-  private startFileUpload(file: File): Observable<PartialFileInfo> {
+  private startFileUpload(file: File,  parentId: number | null): Observable<PartialFileInfo> {
 
     let uploadFileInfo: UploadFileInfo = {
       fileName: file.name,
       size: file.size,
       lastModificationDate: new Date(file.lastModified),
-      mimeType: file.type
+      mimeType: file.type,
+      parentId: parentId
     };
 
     return this.http.post<PartialFileInfo>(`${environment.apiUrl}/Upload/Start`, uploadFileInfo);

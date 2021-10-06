@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,14 @@ namespace webFileSharingSystem.Web.Controllers
         private const string ErrorMessage = "File does not exist or you do not have access";
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IFilePersistenceService _filePersistenceService;
 
-        public FileController(IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
+        public FileController(IUnitOfWork unitOfWork, ICurrentUserService currentUserService,
+            IFilePersistenceService filePersistenceService)
         {
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+            _filePersistenceService = filePersistenceService;
         }
 
         [HttpGet]
@@ -39,6 +43,7 @@ namespace webFileSharingSystem.Web.Controllers
                 FileName = part.FileName
             }));
         }
+
 
         [HttpGet]
         [Route("GetAll")]
@@ -190,18 +195,123 @@ namespace webFileSharingSystem.Web.Controllers
             };
         }
 
-        [HttpPut]
+        [HttpDelete]
         [Route("Delete/{id:int}")]
         public async Task<ActionResult> DeleteFileAsync(int id)
         {
             var userId = _currentUserService.UserId;
-            var fileToUpdate = await _unitOfWork.Repository<File>().FindByIdAsync(id);
-            if (fileToUpdate is null) return BadRequest(ErrorMessage);
-            if (fileToUpdate.UserId != userId) return Unauthorized(ErrorMessage);
-            fileToUpdate.IsDeleted = true;
-            _unitOfWork.Repository<File>().Update(fileToUpdate);
-            if (await _unitOfWork.Complete() > 0) return Ok();
-            return BadRequest("Problem deleting the file");
+            var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(id);
+            if (fileToDelete is null) return BadRequest(ErrorMessage);
+            if (fileToDelete.UserId != userId) return Unauthorized(ErrorMessage);
+            
+            var guidToRemove = fileToDelete.FileId!.Value;
+
+            try
+            {
+                _filePersistenceService.DeleteExistingFile(userId.Value, guidToRemove);
+
+                _unitOfWork.Repository<File>().Remove(fileToDelete);
+                if (await _unitOfWork.Complete() > 0) return Ok();
+            }
+            catch
+            {
+                //TODO log exception
+                return BadRequest("Problem with deleting file");
+            }
+            
+            return BadRequest("Problem with deleting file");
         }
+
+        [HttpDelete]
+        [Route("DeleteDir/{parentId:int}")]
+        public async Task<ActionResult> DeleteFolderWithInsideFiles(int parentId)
+        {
+            var userId = _currentUserService.UserId;
+            var folderToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(parentId);
+            if (folderToDelete is null) return BadRequest(ErrorMessage);
+            if (folderToDelete.UserId != userId) return Unauthorized(ErrorMessage);
+            
+            var filesToRemove = await _unitOfWork.CustomQueriesRepository().GetListOfAllChildrenAsFiles(parentId);
+            var guidsToRemove = filesToRemove.Where(x => !x.IsDirectory).Select(x => x.FileId!.Value);
+
+            try
+            {
+                foreach (var guid in guidsToRemove)
+                {
+                    _filePersistenceService.DeleteExistingFile(userId.Value, guid);
+                }
+                
+                _unitOfWork.Repository<File>().RemoveRange(filesToRemove);
+                if (await _unitOfWork.Complete() > 0) return Ok();
+            }
+            catch
+            {
+                //TODO log exception
+                return BadRequest("Error deleting directory");
+            }
+            
+            return BadRequest("Error deleting directory");
+        }
+        
+        [HttpPut]
+        [Route("Move/{parentId:int}")]
+        public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
+        {
+            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            //TODO check if names of files to move are uniq in target directory
+            var userId = _currentUserService.UserId;
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var fileToMove = await _unitOfWork.Repository<File>().FindByIdAsync(id);
+                    if (fileToMove is null) return BadRequest(ErrorMessage);
+                    if (fileToMove.UserId != userId) return Unauthorized(ErrorMessage);
+                    fileToMove.ParentId = dbParentId;
+                    _unitOfWork.Repository<File>().Update(fileToMove);
+                }
+                if (await _unitOfWork.Complete() > 0) return Ok();
+            }
+            catch
+            {
+                return BadRequest("Problem with moving files");
+            }
+            return BadRequest("Problem with moving files");
+        }
+        
+        [HttpPost]
+        [Route("Copy/{parentId:int}")]
+        public async Task<ActionResult> CopyFiles(int parentId, [FromBody] int[] ids)
+        {
+            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            //TODO check if names of files to move are uniq in target directory
+            var userId = _currentUserService.UserId;
+            try
+            {
+                foreach (var id in ids)
+                {
+                    var fileToCopy = await _unitOfWork.Repository<File>().FindByIdAsync(id);
+                    if (fileToCopy is null) return BadRequest(ErrorMessage);
+                    if (fileToCopy.UserId != userId) return Unauthorized(ErrorMessage);
+                    
+                    var file = new File
+                    {
+                        FileName = fileToCopy.FileName,
+                        IsDirectory = fileToCopy.IsDirectory,
+                        ParentId = dbParentId,
+                        UserId = userId.Value,
+                    };
+
+                    _unitOfWork.Repository<File>().Add(file);
+                }
+                if (await _unitOfWork.Complete() > 0) return Ok();
+            }
+            catch
+            {
+                return BadRequest("Problem with copying files");
+            }
+            return BadRequest("Problem with copying files");
+        }
+        
     }
 }

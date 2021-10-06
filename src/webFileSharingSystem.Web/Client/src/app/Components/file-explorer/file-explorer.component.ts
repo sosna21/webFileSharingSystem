@@ -4,6 +4,7 @@ import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {Subscription} from "rxjs";
 import {ActivatedRoute} from "@angular/router";
+import {FileExplorerService} from "../../services/file-explorer.service";
 
 
 interface File {
@@ -46,11 +47,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   breadCrumbs: BreadCrumb[] = [];
   userSubscription!: Subscription;
 
-  constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute) {
-  }
 
-  ngOnDestroy(): void {
-    this.userSubscription.unsubscribe();
+  constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService) {
   }
 
   private openDropdownToBeHidden: any;
@@ -63,10 +61,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       }
       this.reloadData();
       this.getNames();
-      if(this.parentId)
+      if (this.parentId)
         this.getFilePath(this.parentId);
     });
     this.initializeForm();
+  }
+
+  ngOnDestroy(): void {
+    this.userSubscription.unsubscribe();
   }
 
   private reloadData(): void {
@@ -79,7 +81,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       fileName: ['', [Validators.required, this.checkNameUnique()]]
     });
   }
-
 
   checkNameUnique(): ValidatorFn {
     return (control: AbstractControl): { [key: string]: any } | null => {
@@ -95,7 +96,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
-      // this.names = this.files.map(x => x.fileName);
       this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
       this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
@@ -131,8 +131,12 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   deleteCheckedFiles() {
-    this.files = this.files.filter(x => !x.checked)
-    //  this.reloadFiles();
+    let filesToDelete: File[] = this.files.filter(x => x.checked);
+
+    for (const file of filesToDelete) {
+      this.deleteFile(file, false)
+    }
+    this.reloadData();
   }
 
 
@@ -165,19 +169,48 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     return this.files.filter(x => x.checked).length > 1;
   }
 
-  deleteFile(file: File) {
-    this.http.put(`${environment.apiUrl}/File/Delete/${file.id}`, {}).subscribe(() => {
-      this.reloadData();
-    }, error => {
-      console.log(error)
-    })
+  deleteFile(file: File, reload: boolean = true) {
+    if (file.isDirectory) {
+      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
+        reload ? this.reloadData() : null;
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+      }, error => {
+        console.log(error)
+      })
+    } else {
+      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
+        reload ? this.reloadData() : null;
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+      }, error => {
+        console.log(error)
+      })
+    }
   }
 
-  //TODO implement
-  changeDirectory() {
-    console.log("change directory");
-    return null;
+
+  moveCopyInit(file?: File) {
+    var filesIds: number[];
+    if (file) {
+      filesIds = [file.id];
+    } else {
+      filesIds = this.files.filter(x => x.checked).map(x => x.id);
+    }
+    this.fileExplorerService.filesToMoveCopy = filesIds;
   }
+
+
+  moveCopyFiles(copy: boolean, filesIds: number[] = this.fileExplorerService.filesToMoveCopy) {
+    let parentId = this.parentId ?? -1;
+    (copy ? this.http.post(`${environment.apiUrl}/File/Copy/${parentId}`, filesIds)
+      : this.http.put(`${environment.apiUrl}/File/Move/${parentId}`, filesIds))
+      .subscribe(() => {
+        this.reloadData();
+        this.fileExplorerService.filesToMoveCopy = [];
+      }, error => {
+        console.log(error)
+      })
+  }
+
 
   hideOnSecondOpen(dropdown: any) {
     if (this.openDropdownToBeHidden && dropdown !== this.openDropdownToBeHidden) {
@@ -185,6 +218,16 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
     this.openDropdownToBeHidden = dropdown;
     console.log(dropdown);
+  }
+
+
+  initDirCreat(form: any) {
+    if (!this.gRename) {
+      this.fileNameForm.reset();
+      this.fileNameForm.markAsUntouched();
+      this.gRename = true;
+      form.hidden = false;
+    }
   }
 
   createDirectory() {
@@ -202,7 +245,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
         this.files.unshift(file)
         this.names.push(file.fileName);
-        this.totalItems ++;
+        this.totalItems++;
 
         this.gRename = false;
       }, error => {
@@ -222,6 +265,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   rename(file: File) {
     if (this.gRename) {
+      this.gRename = false;
       if (!this.fileNameForm.get('fileName')?.invalid) {
         let filename = this.fileNameForm.get('fileName')?.value;
 
@@ -239,14 +283,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
   }
 
-  initDirCreat(form: any) {
-    if (!this.gRename) {
-      this.fileNameForm.reset();
-      this.fileNameForm.markAsUntouched();
-      this.gRename = true;
-      form.hidden = false;
-    }
-  }
 
   stopUpload(file: File) {
     file.stopped = true;

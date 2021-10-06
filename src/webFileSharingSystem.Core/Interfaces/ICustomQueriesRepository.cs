@@ -8,5 +8,7 @@ namespace webFileSharingSystem.Core.Interfaces
     public interface ICustomQueriesRepository
     {
         Task<IEnumerable<FilePathPart>> FindPathToAllParents(int fileId, CancellationToken cancellationToken = default);
+
+        Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default);
     }
 }

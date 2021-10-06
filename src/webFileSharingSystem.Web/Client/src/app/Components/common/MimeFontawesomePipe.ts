@@ -1,16 +1,17 @@
 ﻿import {Pipe, PipeTransform} from '@angular/core';
 
+
 @Pipe({
   name: 'mimeFontawesome'
 })
 export class MimeFontawesomePipe implements PipeTransform {
 
-  transform(mimeType?: string): any {
-    return this.getFontAwesomeIconFromMIME(mimeType);
+  transform(file: any): any {
+    return this.getFontAwesomeIconFromMIME(file);
   }
 
-  getFontAwesomeIconFromMIME(mimeType?: string) {
-    let icon_classes: any = {
+  getFontAwesomeIconFromMIME(file: any) {
+    let icon_classes: Record<string, string> = {
       // Media
       image: "file-image",
       audio: "file-audio",
@@ -48,12 +49,17 @@ export class MimeFontawesomePipe implements PipeTransform {
       "application/vnd.rar" : "file-archive",
       "application/x-7z-compressed": "file-archive",
       "application/java-archive" : "file-archive",
+      "application/x-tar" : "file-archive",
     };
 
-    if (mimeType) {
-      return icon_classes[mimeType] || icon_classes[mimeType.split('/')[0]] || "file";
+    if (file.mimeType) {
+      return icon_classes[file.mimeType] || icon_classes[file.mimeType.split('/')[0]] || "file";
+    } else if(file.isDirectory) {
+      return "folder";
     }
+    let fileExt = file.fileName.split('.').pop();
+    if(fileExt == 'rar' || 'zip' || '7z' || 'tar' || 'gzip' )  return "file-archive";
+    return "file"
 
-    return "folder";
   }
 }

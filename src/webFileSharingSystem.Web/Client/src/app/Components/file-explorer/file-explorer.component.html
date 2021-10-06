@@ -45,10 +45,15 @@
             Actions  </span>
             <span class="dropdown-menu mt-3" *dropdownMenu>
               <a class="dropdown-item">Download</a>
-              <a class="dropdown-item">Move / Copy</a>
+              <a class="dropdown-item" (click)="moveCopyInit()">Move / Copy</a>
               <a class="dropdown-item" (click)="deleteCheckedFiles()">Delete</a>
             </span>
           </span>
+          <div *ngIf="fileExplorerService.filesToMoveCopy.length>0" class="custom-control-inline ml-3">
+            <button class="btn btn-primary btn-sm mr-1" (click)="moveCopyFiles(false)">Move here</button>
+            <button class="btn btn-secondary btn-sm mr-1" (click)="moveCopyFiles(true)">Copy here</button>
+            <button class="btn btn-danger btn-sm" (click)="this.fileExplorerService.filesToMoveCopy = []">Cancel</button>
+          </div>
         </th>
         <th scope="col" style="width: 4%">Favourite</th>
         <th scope="col" style="width: 4%">Share</th>
@@ -69,7 +74,7 @@
                [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
             <div [ngClass]="file.isCompleted ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
               <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
-                       [icon]="[file.isDirectory ? 'fas' : 'far', (file.mimeType | mimeFontawesome)]"></fa-icon>
+                       [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
               {{ file.fileName }} | {{file.id}}
             </div>
             <div *ngIf="!file.isCompleted" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
@@ -116,8 +121,8 @@
             <div class="dropdown-menu mt-3" *dropdownMenu>
               <a class="dropdown-item">Download</a>
               <a class="dropdown-item"
-                 (click)="renameInit(file); renameInput.hidden = false;renameTextInput.setFocus() ">Rename</a>
-              <a class="dropdown-item" (click)="changeDirectory()">Move / Copy</a>
+                 (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
+              <a class="dropdown-item" (click)="moveCopyInit(file)">Move / Copy</a>
               <a class="dropdown-item" (click)="deleteFile(file)">Delete</a>
             </div>
           </div>
