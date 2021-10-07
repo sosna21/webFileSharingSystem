@@ -1,22 +1,19 @@
-<app-navbar></app-navbar>
+ <app-navbar></app-navbar>
 
-<div *ngIf="authenticated" class="container-fluid">
-  <div class="row">
-    <app-sidebar></app-sidebar>
-    <main id="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-      <router-outlet></router-outlet>
-    </main>
+  <div *ngIf="authenticated" class="container-fluid mainView">
+    <div class="row">
+      <app-sidebar></app-sidebar>
+      <main id="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   </div>
-</div>
 
+  <div *ngIf="!authenticated" class="mainView">
+    <app-login id="appLogin" *ngIf="router.url === '/login'"></app-login>
+    <app-register *ngIf="router.url === '/register'"></app-register>
+  </div>
 
-<div *ngIf="!authenticated">
-  <app-login *ngIf="router.url === '/login'" ></app-login>
-  <app-register *ngIf="router.url === '/register'" ></app-register>
-</div>
-
-<div class="row">
-<div class="footer container-fluid text-center p-2 bg-light fixed-bottom">
-  <span class="text-muted">Place sticky footer content here.</span>
-</div>
-</div>
+    <div class="footer container-fluid text-center p-2 bg-light fixed-bottom">
+      <span class="text-muted">Place sticky footer content here.</span>
+    </div>

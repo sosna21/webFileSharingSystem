@@ -77,7 +77,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   initializeForm() {
     this.fileNameForm = this.formBuilder.group({
-      dirName: ['', [Validators.required, this.checkNameUnique()]],
+      dirName: ['folderName', [Validators.required, this.checkNameUnique()]],
       fileName: ['', [Validators.required, this.checkNameUnique()]]
     });
   }
@@ -96,8 +96,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
-      this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
-      this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
+      this.files.forEach(x => x.isCompleted = true);
+      //this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
+      //this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
       console.log(error);
     })
