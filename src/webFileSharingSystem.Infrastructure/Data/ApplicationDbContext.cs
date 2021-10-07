@@ -120,5 +120,21 @@ namespace webFileSharingSystem.Infrastructure.Data {
                     )
                     SELECT [Id], [FileName] FROM recursive_cte
                 ");
+        
+        
+        public IQueryable<File> GetListOfAllChildrenAsFiles(int parentId) =>
+            Set<File>().FromSqlInterpolated(
+                $@"
+                    WITH recursive_cte AS
+                    (
+                    SELECT *
+                    FROM [File] WHERE Id={parentId}
+                    UNION All
+                    SELECT [f].*
+                    FROM [File] AS [f]
+                    INNER JOIN recursive_cte AS [cte] ON [f].[ParentId] = [cte].[Id] 
+                    )
+                    SELECT * FROM recursive_cte
+                ");
     }
 }
