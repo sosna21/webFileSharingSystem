@@ -6,23 +6,8 @@ import {Subscription} from "rxjs";
 import {ActivatedRoute} from "@angular/router";
 import {FileExplorerService} from "../../services/file-explorer.service";
 import {BsModalRef, BsModalService} from "ngx-bootstrap/modal";
+import {File} from "../common/file";
 
-
-interface File {
-  id: number;
-  fileName: string;
-  mimeType?: string;
-  size: number;
-  isFavourite: boolean;
-  isShared: boolean
-  isDirectory: boolean;
-  modificationDate: Date;
-
-  checked: boolean;
-  rename: boolean;
-  isCompleted: boolean;
-  stopped: boolean;
-}
 
 interface BreadCrumb {
   id: number;

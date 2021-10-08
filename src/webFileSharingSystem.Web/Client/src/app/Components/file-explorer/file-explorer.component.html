@@ -64,7 +64,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr *ngFor="let file of files; let i=index">
+      <tr *ngFor="let file of files; let fileIndex=index">
         <td>
           <input type="checkbox" [hidden]="!file.isCompleted" value="{{file.id}}"
                  (change)="file.checked = !file.checked" [checked]="file.checked">
@@ -116,7 +116,7 @@
 
         <td>
 
-          <div #dropdown="bs-dropdown" [dropup]="i >= (itemsPerPage-2)" [isDisabled]="!file.isCompleted"
+          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)" [isDisabled]="!file.isCompleted"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
             <fa-icon dropdownToggle [class.fa-disabled]="!file.isCompleted" [icon]="['fas', 'ellipsis-h']"
                      [styles]="{'color': '#60646b'}"></fa-icon>
@@ -159,7 +159,7 @@
 
 <ng-template #deleteTemplate>
   <div class="modal-body text-center">
-    <p>Delete is permanent and cannot be reverse.
+    <p>Delete is permanent and cannot be reversed.
       <br/>Do you want to continue?</p>
     <button type="button" class="btn btn-dark mr-2" (click)="confirm()">Yes</button>
     <button type="button" class="btn btn-secondary" (click)="decline()">No</button>
@@ -169,7 +169,7 @@
 
 <ng-template #shareTemplate>
   <div class="modal-header text-center">
-    <p>Plesae insert userName/login of the user you want to share this file/files with.</p>
+    <p>Please insert the userName/login of the user you want to share this file/files with.</p>
   </div>
   <div class="modal-body">
     <form>
