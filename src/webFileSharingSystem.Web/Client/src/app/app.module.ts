@@ -29,6 +29,7 @@ import {BsDropdownModule} from "ngx-bootstrap/dropdown";
 import {MimeFontawesomePipe} from "./Components/common/MimeFontawesomePipe";
 import {FileUploadComponent} from './Components/file-upload/file-upload.component';
 import { FilesComponent } from './Components/files/files.component';
+import {ModalModule} from "ngx-bootstrap/modal";
 
 @NgModule({
   declarations: [
@@ -63,6 +64,7 @@ import { FilesComponent } from './Components/files/files.component';
     TimeagoModule.forRoot(),
     PopoverModule,
     BsDropdownModule.forRoot(),
+    ModalModule.forRoot()
 
   ],
   providers: [

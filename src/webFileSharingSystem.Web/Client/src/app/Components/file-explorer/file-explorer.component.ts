@@ -1,27 +1,13 @@
-import {Component, Input, OnDestroy, OnInit} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit, TemplateRef} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {Subscription} from "rxjs";
 import {ActivatedRoute} from "@angular/router";
 import {FileExplorerService} from "../../services/file-explorer.service";
+import {BsModalRef, BsModalService} from "ngx-bootstrap/modal";
+import {File} from "../common/file";
 
-
-interface File {
-  id: number;
-  fileName: string;
-  mimeType?: string;
-  size: number;
-  isFavourite: boolean;
-  isShared: boolean
-  isDirectory: boolean;
-  modificationDate: Date;
-
-  checked: boolean;
-  rename: boolean;
-  isCompleted: boolean;
-  stopped: boolean;
-}
 
 interface BreadCrumb {
   id: number;
@@ -47,8 +33,10 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   breadCrumbs: BreadCrumb[] = [];
   userSubscription!: Subscription;
 
+  modalRef?: BsModalRef;
 
-  constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService) {
+  constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
+    , private modalService: BsModalService) {
   }
 
   private openDropdownToBeHidden: any;
@@ -71,13 +59,31 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.userSubscription.unsubscribe();
   }
 
+  openModal(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template, {class:'modal-dialog-centered modal-md'});
+  }
+
+  confirm(): void {
+    this.modalRef?.hide();
+
+    for (let i = 0; i < this.fileExplorerService.filesToDelete.length-1; i++) {
+      this.deleteFile(this.fileExplorerService.filesToDelete[i],false)
+    }
+    this.deleteFile(this.fileExplorerService.filesToDelete[this.fileExplorerService.filesToDelete.length-1],true);
+  }
+
+  decline(): void {
+    this.modalRef?.hide();
+  }
+
+
   private reloadData(): void {
     this.getFiles(this.mode, this.parentId);
   }
 
   initializeForm() {
     this.fileNameForm = this.formBuilder.group({
-      dirName: ['', [Validators.required, this.checkNameUnique()]],
+      dirName: ['folderName', [Validators.required, this.checkNameUnique()]],
       fileName: ['', [Validators.required, this.checkNameUnique()]]
     });
   }
@@ -96,8 +102,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
-      this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
-      this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
+      this.files.forEach(x => x.isCompleted = true);
+      //this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
+      //this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
       console.log(error);
     })
@@ -127,16 +134,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   isAllCheckBoxChecked() {
-    return this.files.every(file => file.checked)
+    if (this.files.length > 0)
+      return this.files.every(file => file.checked)
+    return false
   }
 
-  deleteCheckedFiles() {
-    let filesToDelete: File[] = this.files.filter(x => x.checked);
-
-    for (const file of filesToDelete) {
-      this.deleteFile(file, false)
-    }
-    this.reloadData();
+  markCheckedFiles() {
+      this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
   }
 
 
@@ -170,21 +174,21 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   deleteFile(file: File, reload: boolean = true) {
-    if (file.isDirectory) {
-      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
-        reload ? this.reloadData() : null;
-        delete this.names[this.names.findIndex(x => x === file.fileName)];
-      }, error => {
-        console.log(error)
-      })
-    } else {
-      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
-        reload ? this.reloadData() : null;
-        delete this.names[this.names.findIndex(x => x === file.fileName)];
-      }, error => {
-        console.log(error)
-      })
-    }
+      if (file.isDirectory) {
+        this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
+          reload ? this.reloadData() : null;
+          delete this.names[this.names.findIndex(x => x === file.fileName)];
+        }, error => {
+          console.log(error)
+        })
+      } else {
+        this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
+          reload ? this.reloadData() : null;
+          delete this.names[this.names.findIndex(x => x === file.fileName)];
+        }, error => {
+          console.log(error)
+        })
+      }
   }
 
 

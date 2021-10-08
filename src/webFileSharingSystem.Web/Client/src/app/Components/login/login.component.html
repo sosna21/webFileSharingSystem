@@ -1,16 +1,13 @@
- <div class="d-flex flex-column justify-content-center">
-
-      <div class="col-4 offset-4 card">
-
+ <div class="d-flex justify-content-center align-items-center" >
+      <div class="col-4 card">
         <h2 class="text-center text-dark m-3">Log in</h2>
 
         <div class="card">
           <div class="card-body">
 
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-
               <app-text-input [formControl]="$any(loginForm).controls['username']" [label]="'Username/Email'"></app-text-input>
-              <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'"></app-text-input>
+              <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'" type="password"></app-text-input>
 
               <div class="col-6 offset-3 ">
                 <button [disabled]="loading" class="btn btn-dark btn-block">
@@ -21,6 +18,7 @@
 
               <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
             </form>
+
           </div>
         </div>
 
