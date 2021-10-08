@@ -40,14 +40,11 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
             
             await persistToStreamAction(stream);
         }
-        
-        public async Task GetFileStream(string filePath, Stream outputStream, CancellationToken cancellationToken = default)
+
+        public FileStream GetFileStream(string filePath)
         {
-            await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+            return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
                 4096, FileOptions.Asynchronous);
-            
-            await stream.CopyToAsync(outputStream, cancellationToken);
-            await stream.FlushAsync(cancellationToken);
         }
         
         public async Task<byte[]> GetChunk(string filePath, int chunkSize, int chunkIndex,

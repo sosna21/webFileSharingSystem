@@ -18,7 +18,7 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<string> GenerateNewFile(int userId, Guid persistedFileId);
 
-        Task GetFileStream(string filePath, Stream outputStream, CancellationToken cancellationToken = default);
+        FileStream GetFileStream(string filePath);
 
         string GetFilePath(int userId, Guid fileGuid);
 

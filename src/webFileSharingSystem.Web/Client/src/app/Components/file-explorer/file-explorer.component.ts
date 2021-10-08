@@ -1,5 +1,5 @@
 import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import {HttpClient} from "@angular/common/http";
+import {HttpClient, HttpEventType, HttpResponse} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {Subscription} from "rxjs";
@@ -144,14 +144,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     })
   }
 
-  getDownloadUrl(fileId: number) {
-    return `${environment.apiUrl}/Download/${fileId}`;
-  }
-
   downloadSingleFile(fileId: number) {
-    return this.downloadService.downloadSingleFile(fileId);
+    return this.downloadService.downloadSingleFileDirectUrl(fileId);
   }
-
 
   checkAllCheckBox(ev: any) {
     this.files.forEach(x => x.checked = ev.target.checked)
@@ -248,7 +243,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
 
-  initDirCreat(form: any) {
+  initDirCreate(form: any) {
     if (!this.gRename) {
       this.fileNameForm.reset();
       this.fileNameForm.markAsUntouched();
