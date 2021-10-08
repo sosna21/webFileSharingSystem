@@ -1,5 +1,5 @@
-import {Component, Input, OnDestroy, OnInit} from '@angular/core';
-import {HttpClient, HttpEventType, HttpResponse} from "@angular/common/http";
+import {Component, Input, OnDestroy, OnInit, TemplateRef} from '@angular/core';
+import {HttpClient} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {Subscription} from "rxjs";
@@ -8,23 +8,6 @@ import {FileExplorerService} from "../../services/file-explorer.service";
 import {BsModalRef, BsModalService} from "ngx-bootstrap/modal";
 import {File} from "../common/file";
 import {DownloadService} from "../../services/download.service";
-
-
-interface File {
-  id: number;
-  fileName: string;
-  mimeType?: string;
-  size: number;
-  isFavourite: boolean;
-  isShared: boolean
-  isDirectory: boolean;
-  modificationDate: Date;
-
-  checked: boolean;
-  rename: boolean;
-  isCompleted: boolean;
-  stopped: boolean;
-}
 
 interface BreadCrumb {
   id: number;
