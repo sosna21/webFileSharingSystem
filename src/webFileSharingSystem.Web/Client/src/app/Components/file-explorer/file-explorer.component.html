@@ -4,7 +4,7 @@
   </div>
   <div *ngIf="mode === 'GetAll'" class="align-self-center mr-3">
     <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
-             (click)="initDirCreat(form); createDirTextInput.setFocus();"></fa-icon>
+             (click)="initDirCreate(form); createDirTextInput.setFocus();"></fa-icon>
   </div>
   <div class="align-self-end pt-3">
     <form hidden #form [formGroup]="fileNameForm" (ngSubmit)="createDirectory(); form.hidden = true">
@@ -122,7 +122,7 @@
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
-              <li role="menuitem"><a class="dropdown-item" href="#">Download</a></li>
+              <li role="menuitem"><a class="dropdown-item" [href]="downloadSingleFile(file.id)">Download</a></li>
               <li role="menuitem"><a class="dropdown-item"
                                      (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
               </li>

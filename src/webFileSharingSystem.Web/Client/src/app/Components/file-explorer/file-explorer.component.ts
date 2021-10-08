@@ -7,7 +7,7 @@ import {ActivatedRoute} from "@angular/router";
 import {FileExplorerService} from "../../services/file-explorer.service";
 import {BsModalRef, BsModalService} from "ngx-bootstrap/modal";
 import {File} from "../common/file";
-
+import {DownloadService} from "../../services/download.service";
 
 interface BreadCrumb {
   id: number;
@@ -36,13 +36,12 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   modalRef?: BsModalRef;
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
-    , private modalService: BsModalService) {
+    ,private modalService: BsModalService, private downloadService: DownloadService) {
   }
 
   private openDropdownToBeHidden: any;
 
   ngOnInit(): void {
-
     this.userSubscription = this.route.params.subscribe(params => {
       if (params['id']) {
         this.parentId = +params['id'];
@@ -128,6 +127,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     })
   }
 
+  downloadSingleFile(fileId: number) {
+    return this.downloadService.downloadSingleFileDirectUrl(fileId);
+  }
 
   checkAllCheckBox(ev: any) {
     this.files.forEach(x => x.checked = ev.target.checked)
@@ -215,7 +217,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       })
   }
 
-
   hideOnSecondOpen(dropdown: any) {
     if (this.openDropdownToBeHidden && dropdown !== this.openDropdownToBeHidden) {
       this.openDropdownToBeHidden.hide();
@@ -225,7 +226,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
 
-  initDirCreat(form: any) {
+  initDirCreate(form: any) {
     if (!this.gRename) {
       this.fileNameForm.reset();
       this.fileNameForm.markAsUntouched();
@@ -286,7 +287,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       file.rename = false;
     }
   }
-
 
   stopUpload(file: File) {
     file.stopped = true;

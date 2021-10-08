@@ -33,18 +33,24 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
         private static async Task SaveChunkInternal(string filePath, int chunkIndex, int chunkSize, Func<Stream, Task> persistToStreamAction)
         {
             await using var stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write,
-                FileShare.ReadWrite,
+                FileShare.Write,
                 4096, FileOptions.Asynchronous);
 
-            stream.Position = chunkIndex * chunkSize;
+            stream.Position = (long)chunkIndex * chunkSize;
             
             await persistToStreamAction(stream);
         }
 
+        public FileStream GetFileStream(string filePath)
+        {
+            return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                4096, FileOptions.Asynchronous);
+        }
+        
         public async Task<byte[]> GetChunk(string filePath, int chunkSize, int chunkIndex,
             CancellationToken cancellationToken = default)
         {
-            await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+            await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
                 4096, FileOptions.Asynchronous);
 
             stream.Position = chunkIndex * chunkSize;

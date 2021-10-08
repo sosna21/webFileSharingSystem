@@ -18,6 +18,8 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<string> GenerateNewFile(int userId, Guid persistedFileId);
 
+        FileStream GetFileStream(string filePath);
+
         string GetFilePath(int userId, Guid fileGuid);
 
         void DeleteExistingFile(int userId, Guid persistedFileId);
