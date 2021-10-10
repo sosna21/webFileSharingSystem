@@ -30,7 +30,4 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     }
     this.fileUploader.upload(fileElement.files[0], this.parentId);
   }
-
-
-
 }

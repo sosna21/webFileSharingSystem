@@ -1,30 +1,64 @@
-import {Injectable, Output, EventEmitter} from '@angular/core';
+import {Injectable} from '@angular/core';
 import {HttpClient, HttpEvent, HttpEventType} from "@angular/common/http";
-import {from, Observable} from "rxjs";
+import {BehaviorSubject, from, Observable, Subscription} from "rxjs";
 import {environment} from "../../environments/environment";
 import {UploadFileInfo} from "../models/uploadFileInfo";
 import {PartialFileInfo} from "../models/partialFileInfo";
-import {catchError, concatMap, last, tap} from "rxjs/operators";
-import {FileProgressInfo} from "../Components/common/fileProgressInfo";
+import {catchError, concatMap, finalize, last, tap} from "rxjs/operators";
+import {UploadProgressInfo, UploadStatus} from "../Components/common/fileUploadProgress";
 
 @Injectable({
   providedIn: 'root'
 })
 export class FileUploaderService {
-  @Output() onProgressChange = new EventEmitter<FileProgressInfo>();
+  private uploadingFiles: Record<number, { upload: Subscription, isStopped: boolean }> = [];
+  private reportUploadProgressSource = new BehaviorSubject<UploadProgressInfo | null>(null);
+  public reportUploadProgress = this.reportUploadProgressSource.asObservable();
 
   constructor(private http: HttpClient) {
   }
 
-  public upload(file: File,  parentId: number | null = null) {
+  public upload(file: File, parentId: number | null = null) {
+
     this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
-      this.sendFileAsChunks(file, partialFileInfo).subscribe(_ => {
-        return this.completeFileUpload(partialFileInfo.fileId).subscribe()
-      })
+      const progress: UploadProgressInfo = {
+        status: UploadStatus.Started,
+        parentId: parentId,
+        fileId: partialFileInfo.fileId,
+        progress: 0
+      }
+      this.reportUploadProgressSource.next(progress)
+      this.uploadingFiles[partialFileInfo.fileId] = {
+        upload: this.sendFileAsChunks(file, partialFileInfo, progress => {
+          progress.parentId = parentId;
+          this.reportUploadProgressSource.next(progress);
+        }).subscribe(_ => {
+          return this.completeFileUpload(partialFileInfo.fileId).subscribe(_ => {
+            const progress: UploadProgressInfo = {
+              status: UploadStatus.Completed,
+              parentId: parentId,
+              fileId: partialFileInfo.fileId,
+              progress: 1
+            }
+            this.reportUploadProgressSource.next(progress)
+          })
+        }),
+        isStopped: false
+      };
     });
   }
 
-  private startFileUpload(file: File,  parentId: number | null): Observable<PartialFileInfo> {
+  public cancel(fileId: number) {
+    this.uploadingFiles[fileId]?.upload.unsubscribe();
+  }
+
+  public pause(fileId: number) {
+    const uploadingFile = this.uploadingFiles[fileId];
+    if (uploadingFile)
+      uploadingFile.isStopped = true;
+  }
+
+  private startFileUpload(file: File, parentId: number | null): Observable<PartialFileInfo> {
 
     let uploadFileInfo: UploadFileInfo = {
       fileName: file.name,
@@ -41,23 +75,51 @@ export class FileUploaderService {
     return this.http.put(`${environment.apiUrl}/Upload/${fileId}/Complete`, {});
   }
 
-  private sendFileAsChunks(file: File, partialFileInfo: PartialFileInfo) {
+  private sendFileAsChunks(file: File, partialFileInfo: PartialFileInfo, reportProgressFunc: (progress: UploadProgressInfo) => void) {
 
-    let allChunks = [];
+    let allChunks: number[][] = [];
     for (let i = 0; i < partialFileInfo.numberOfChunks; i++) {
       let start = partialFileInfo.chunkSize * i;
       let end = start + (i == partialFileInfo.numberOfChunks - 1 ? partialFileInfo.lastChunkSize : partialFileInfo.chunkSize);
-      allChunks.push([start, end, i]);
+      allChunks.push([start, end, i, 0]);
     }
 
-    const chunksConcatMap = from(allChunks).pipe(concatMap((element) => {
+    let updateProgress = function (event: HttpEvent<any>, index: number) {
+      switch (event.type) {
+        case HttpEventType.UploadProgress:
+          const percentDone = event.loaded / (event.total ?? 1);
+          console.log(`File "${file.name}" chunk ${index} is ${percentDone * 100}% uploaded.`);
+          allChunks[index][3] = percentDone;
+          break;
+
+        case HttpEventType.Response:
+          console.log(`File "${file.name}" chunk ${index} was completely uploaded!`);
+          allChunks[index][3] = 1;
+          break;
+      }
+
+      // Calculate sum of all chunks progress / number of chunks
+      const fileProgress = allChunks.reduce((a, b) => a + b[3], 0) / partialFileInfo.numberOfChunks;
+
+      if (fileProgress > 0) {
+        const uploadProgress: UploadProgressInfo = {
+          status: UploadStatus.InProgress,
+          fileId: partialFileInfo.fileId,
+          progress: fileProgress
+        }
+
+        console.log(`File "${file.name}" total progress ${fileProgress} was completely uploaded!`);
+
+        reportProgressFunc(uploadProgress);
+      }
+    }
+
+    return from(allChunks).pipe(concatMap((element) => {
       const chunk = file.slice(element[0], element[1]);
       return this.sendChunk(chunk, partialFileInfo.fileId, element[2])
-        .pipe(tap(event => this.getEventMessage(event, file)))
-      //  .pipe(catchError(error => error));
+        .pipe(tap(event => updateProgress(event, element[2])))
+        .pipe(catchError(error => error));
     })).pipe(last());
-
-    return chunksConcatMap;
   }
 
   private sendChunk(chunk: Blob, fileId: number, chunkIndex: number): Observable<any> {
@@ -66,31 +128,13 @@ export class FileUploaderService {
     return this.http.put(`${environment.apiUrl}/Upload/${fileId}/Chunk/${chunkIndex}`, chunkForm, {
       reportProgress: true,
       observe: 'events'
-    })
+    }).pipe(finalize(() => {
+      const uploadingFile = this.uploadingFiles[fileId];
+      if (uploadingFile?.isStopped ?? false) {
+        uploadingFile.upload.unsubscribe();
+      }
+    }));
   }
-
-  private getEventMessage(event: HttpEvent<any>, file: File) {
-    switch (event.type) {
-      case HttpEventType.Sent:
-        console.log(`Uploading file "${file.name}" of size ${file.size}.`);
-        return `Uploading file "${file.name}" of size ${file.size}.`;
-
-      case HttpEventType.UploadProgress:
-        // Compute and show the % done:
-        const percentDone = Math.round(100 * event.loaded / (event.total ?? 0));
-        console.log(`File "${file.name}" is ${percentDone}% uploaded.`);
-        return `File "${file.name}" is ${percentDone}% uploaded.`;
-
-      case HttpEventType.Response:
-        console.log(`File "${file.name}" was completely uploaded!`);
-        return `File "${file.name}" was completely uploaded!`;
-
-      default:
-        console.log(`File "${file.name}" surprising upload event: ${event.type}.`);
-        return `File "${file.name}" surprising upload event: ${event.type}.`;
-    }
-  }
-
 }
 
 

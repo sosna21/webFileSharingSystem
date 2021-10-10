@@ -8,6 +8,8 @@ import {FileExplorerService} from "../../services/file-explorer.service";
 import {BsModalRef, BsModalService} from "ngx-bootstrap/modal";
 import {File} from "../common/file";
 import {DownloadService} from "../../services/download.service";
+import {FileUploaderService} from "../../services/file-uploader.service";
+import {UploadStatus} from "../common/fileUploadProgress";
 
 interface BreadCrumb {
   id: number;
@@ -36,7 +38,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   modalRef?: BsModalRef;
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
-    ,private modalService: BsModalService, private downloadService: DownloadService) {
+    , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService) {
   }
 
   private openDropdownToBeHidden: any;
@@ -52,6 +54,24 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.getFilePath(this.parentId);
     });
     this.initializeForm();
+
+    this.uploadService.reportUploadProgress.subscribe(progress => {
+      if (progress?.status === UploadStatus.Started) {
+        if (progress.parentId === this.parentId) {
+          this.getFiles(this.mode, this.parentId);
+        }
+      } else if (progress) {
+        const uploadingFile = this.files.find(f => f.id === progress.fileId);
+        if (uploadingFile) {
+          if (progress.status === UploadStatus.Completed) {
+            uploadingFile.isCompleted = true;
+          } else if (progress.status === UploadStatus.InProgress) {
+            uploadingFile.isCompleted = false
+            uploadingFile.uploadProgress = progress.progress * 100;
+          }
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -59,16 +79,16 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   openModal(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, {class:'modal-dialog-centered modal-md'});
+    this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
   }
 
   confirm(): void {
     this.modalRef?.hide();
 
-    for (let i = 0; i < this.fileExplorerService.filesToDelete.length-1; i++) {
-      this.deleteFile(this.fileExplorerService.filesToDelete[i],false)
+    for (let i = 0; i < this.fileExplorerService.filesToDelete.length - 1; i++) {
+      this.deleteFile(this.fileExplorerService.filesToDelete[i], false)
     }
-    this.deleteFile(this.fileExplorerService.filesToDelete[this.fileExplorerService.filesToDelete.length-1],true);
+    this.deleteFile(this.fileExplorerService.filesToDelete[this.fileExplorerService.filesToDelete.length - 1], true);
   }
 
   decline(): void {
@@ -102,8 +122,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.totalItems = response.totalCount;
       this.files = response.items;
       this.files.forEach(x => x.isCompleted = true);
-      this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
-      this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
       console.log(error);
     })
@@ -142,7 +160,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   markCheckedFiles() {
-      this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
+    this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
   }
 
 
@@ -176,21 +194,21 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   deleteFile(file: File, reload: boolean = true) {
-      if (file.isDirectory) {
-        this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
-          reload ? this.reloadData() : null;
-          delete this.names[this.names.findIndex(x => x === file.fileName)];
-        }, error => {
-          console.log(error)
-        })
-      } else {
-        this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
-          reload ? this.reloadData() : null;
-          delete this.names[this.names.findIndex(x => x === file.fileName)];
-        }, error => {
-          console.log(error)
-        })
-      }
+    if (file.isDirectory) {
+      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
+        reload ? this.reloadData() : null;
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+      }, error => {
+        console.log(error)
+      })
+    } else {
+      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
+        reload ? this.reloadData() : null;
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+      }, error => {
+        console.log(error)
+      })
+    }
   }
 
 
@@ -289,10 +307,16 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   stopUpload(file: File) {
+    this.uploadService.pause( file.id );
     file.stopped = true;
   }
 
   continueUpload(file: File) {
     file.stopped = false;
+  }
+
+  cancelUpload(file: File) {
+    this.uploadService.cancel( file.id );
+    this.deleteFile( file, false );
   }
 }

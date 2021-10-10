@@ -12,4 +12,5 @@
   rename: boolean;
   isCompleted: boolean;
   stopped: boolean;
+  uploadProgress: number;
 }

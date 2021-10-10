@@ -68,7 +68,7 @@
         <td>
           <input type="checkbox" [hidden]="!file.isCompleted" value="{{file.id}}"
                  (change)="file.checked = !file.checked" [checked]="file.checked">
-          <fa-icon [hidden]="file.isCompleted" [icon]="['far', 'trash-alt']" [styles]="{'color': '#8c2e2e'}"></fa-icon>
+          <fa-icon [hidden]="file.isCompleted" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)" [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
         <td *ngIf="!file.rename" class="text-left">
           <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
@@ -82,8 +82,8 @@
               <div class="col p-0 d-none d-lg-block">
                 <div class="progress progress-sm bg-dark ">
                   <div [class]="file.stopped ? 'bg-danger' : 'progress-bar-animated'"
-                       class="progress-bar progress-bar-striped bg-info " role="progressbar"
-                       [ngStyle]="{ 'width': 70.777 + '%'}"></div>
+                       class="progress-bar progress-bar-striped bg-info" role="progressbar"
+                       [ngStyle]="{ 'width': file.uploadProgress + '%'}"></div>
                 </div>
               </div>
               <fa-icon size="lg" [class.fa-disabled]="!file.stopped" class="mr-sm-1 ml-sm-1"
