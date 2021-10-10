@@ -102,8 +102,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.totalItems = response.totalCount;
       this.files = response.items;
       this.files.forEach(x => x.isCompleted = true);
-      //this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
-      //this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
+      this.files.forEach(x => x.isCompleted = Math.random() > 0.15);
+      this.files.filter(x => !x.isCompleted).forEach(x => x.stopped = Math.random() > 0.5);
     }, error => {
       console.log(error);
     })

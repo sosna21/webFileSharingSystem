@@ -14,7 +14,6 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-
   }
 
   ngOnDestroy(): void {
@@ -29,7 +28,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       fileElement.files.length <= 0) {
       return;
     }
-    this.fileUploader.upload(fileElement.files[0],this.parentId);
+    this.fileUploader.upload(fileElement.files[0], this.parentId);
   }
 
 

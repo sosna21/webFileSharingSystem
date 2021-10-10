@@ -61,7 +61,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             var filePath = _filePersistenceService.GetFilePath(fileToDownload.UserId, fileToDownload.FileId!.Value);
 
-            return new FileStreamResult(_filePersistenceService.GetFileStream(filePath), fileToDownload.MimeType)
+            return new FileStreamResult(_filePersistenceService.GetFileStream(filePath), string.IsNullOrEmpty(fileToDownload.MimeType) ? "application/octet-stream" : fileToDownload.MimeType)
             {
                 FileDownloadName = fileToDownload.FileName,
                 EnableRangeProcessing = true
