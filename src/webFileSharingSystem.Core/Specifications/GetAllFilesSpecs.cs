@@ -9,6 +9,7 @@ namespace webFileSharingSystem.Core.Specifications
                  && e.IsDeleted == false &&
                  (parentId == -1 ? e.ParentId == null : e.ParentId == parentId))
         {
+            AddInclude(file => file.PartialFileInfo);
             ApplyOrderBy(file => file.Id);
         }
     }

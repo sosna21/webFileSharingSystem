@@ -66,29 +66,31 @@
       <tbody>
       <tr *ngFor="let file of files; let fileIndex=index">
         <td>
-          <input type="checkbox" [hidden]="!file.isCompleted" value="{{file.id}}"
+          <input type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
                  (change)="file.checked = !file.checked" [checked]="file.checked">
-          <fa-icon [hidden]="file.isCompleted" [icon]="['far', 'trash-alt']" [styles]="{'color': '#8c2e2e'}"></fa-icon>
+          <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
+                   [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
         <td *ngIf="!file.rename" class="text-left">
           <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
                [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
-            <div [ngClass]="file.isCompleted ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
+            <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
               <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
                        [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
-              {{ file.fileName }} | {{file.id}}
+              {{ file.fileName }} | {{file.id}} | {{file.mimeType}}
             </div>
-            <div *ngIf="!file.isCompleted" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
+            <div *ngIf="!isCompleted(file)" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
               <div class="col p-0 d-none d-lg-block">
                 <div class="progress progress-sm bg-dark ">
-                  <div [class]="file.stopped ? 'bg-danger' : 'progress-bar-animated'"
-                       class="progress-bar progress-bar-striped bg-info " role="progressbar"
-                       [ngStyle]="{ 'width': 70 + '%'}"></div>
+                  <div [class]="file.progressStatus === ProgressStatus.Stopped ? 'bg-danger' :
+                  file.progressStatus === ProgressStatus.Stopping ? 'bg-warning progress-bar-animated' : 'progress-bar-animated'"
+                       class="progress-bar progress-bar-striped bg-info" role="progressbar"
+                       [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
                 </div>
               </div>
-              <fa-icon size="lg" [class.fa-disabled]="!file.stopped" class="mr-sm-1 ml-sm-1"
+              <fa-icon  size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped" class="mr-sm-1 ml-sm-1"
                        [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
-              <fa-icon size="lg" [class.fa-disabled]="file.stopped" [icon]="['fas', 'stop-circle']"
+              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started" [icon]="['fas', 'stop-circle']"
                        (click)="stopUpload(file)"></fa-icon>
             </div>
           </div>
@@ -105,20 +107,20 @@
           </form>
         </td>
         <td>
-          <fa-icon [class.fa-disabled]="!file.isCompleted" [icon]="['fas', 'star']" (click)="SetFavourite(file)"
+          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'star']" (click)="SetFavourite(file)"
                    [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
         </td>
         <td>
-          <fa-icon [class.fa-disabled]="!file.isCompleted" [icon]="['fas', 'share-alt']"
-                   (click)="openModal(shareTemplate); file.isCompleted ? file.isShared = !file.isShared : null"
+          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
+                   (click)="openModal(shareTemplate); isCompleted(file) ? file.isShared = !file.isShared : null"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
         <td>
 
-          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)" [isDisabled]="!file.isCompleted"
+          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)" [isDisabled]="!isCompleted(file)"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
-            <fa-icon dropdownToggle [class.fa-disabled]="!file.isCompleted" [icon]="['fas', 'ellipsis-h']"
+            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'ellipsis-h']"
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
@@ -179,10 +181,11 @@
       </div>
     </form>
   </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-dark mr-2" (click)="confirm()">Yes</button>
-      <button type="button" class="btn btn-secondary" (click)="decline()">No</button>
-    </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-dark mr-2" (click)="confirm()">Yes</button>
+    <button type="button" class="btn btn-secondary" (click)="decline()">No</button>
+  </div>
 
 </ng-template>
 
+<input [hidden]="true" type="file" #fileUpload id="fileUpload" name="fileUpload"/>

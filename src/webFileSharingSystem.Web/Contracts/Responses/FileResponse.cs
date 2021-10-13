@@ -1,4 +1,5 @@
 ﻿using System;
+using webFileSharingSystem.Core.Entities;
 
 namespace webFileSharingSystem.Web.Contracts.Responses
 {
@@ -12,5 +13,8 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public bool IsShared { get; set;}
         public bool IsDirectory { get; set; }
         public DateTime ModificationDate { get; set; }
+        public FileStatus FileStatus { get; set; }
+        public PartialFileInfo? PartialFileInfo { get; set; }
+        public double? UploadProgress { get; set; }
     }
 }

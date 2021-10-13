@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,21 @@ namespace webFileSharingSystem.Web.Controllers
 
             return Ok();
         }
+        
+        
+        [HttpPut]
+        [Route("{fileId:int}/Pause")]
+        public async Task<ActionResult<PartialFileInfo>> PauseFileUploadAsync(int fileId)
+        {
+            var userId = _currentUserService.UserId;
+
+            var result = await _uploadService.UpdatePartialFileInfoAsync(userId!.Value, fileId);
+
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            return Ok();
+        }
+        
 
         [HttpPut]
         [Route("{fileId:int}/Complete")]
@@ -62,6 +78,19 @@ namespace webFileSharingSystem.Web.Controllers
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok();
+        }
+        
+        [HttpGet]
+        [Route("{fileId:int}/MissingChunks")]
+        public async Task<ActionResult<IEnumerable<int>>> GetMissingChunksAsync(int fileId,
+            CancellationToken cancellationToken = default)
+        {
+            var userId = _currentUserService.UserId;
+            var (result, missingChunkIndexes) = await _uploadService.GetMissingFileChunks(userId!.Value, fileId, cancellationToken);
+           
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            return Ok(missingChunkIndexes);
         }
     }
 }
