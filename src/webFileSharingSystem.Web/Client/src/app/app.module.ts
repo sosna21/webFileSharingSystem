@@ -30,6 +30,7 @@ import {MimeFontawesomePipe} from "./Components/common/MimeFontawesomePipe";
 import {FileUploadComponent} from './Components/file-upload/file-upload.component';
 import { FilesComponent } from './Components/files/files.component';
 import {ModalModule} from "ngx-bootstrap/modal";
+import {SizeConverterPipe} from "./Components/common/sizeConverterPipe";
 
 @NgModule({
   declarations: [
@@ -47,7 +48,8 @@ import {ModalModule} from "ngx-bootstrap/modal";
     TextInputComponent,
     MimeFontawesomePipe,
     FileUploadComponent,
-    FilesComponent
+    FilesComponent,
+    SizeConverterPipe
 
   ],
   imports: [

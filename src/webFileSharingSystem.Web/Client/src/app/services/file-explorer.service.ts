@@ -6,7 +6,7 @@ import {File} from "../Components/common/file";
   providedIn: 'root'
 })
 export class FileExplorerService {
-  filesToMoveCopy: number[] = [];
+  filesToMoveCopy: File[] = [];
   filesToDelete: File[] = [];
 
   constructor() { }

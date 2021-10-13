@@ -73,8 +73,9 @@ namespace webFileSharingSystem.Web.Controllers
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
         {
             if (partialFileInfo is null) return null;
-            var uploadedChunks = partialFileInfo.PersistenceMap.GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks-1).Length;
-            return  (double)uploadedChunks / partialFileInfo.NumberOfChunks;
+            var uploadedChunks = partialFileInfo.PersistenceMap
+                .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
+            return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
         }
 
 
@@ -224,6 +225,27 @@ namespace webFileSharingSystem.Web.Controllers
                 _filePersistenceService.DeleteExistingFile(userId.Value, guidToRemove);
 
                 _unitOfWork.Repository<File>().Remove(fileToDelete);
+
+                if (fileToDelete.ParentId is not null)
+                {
+                    var filesToUpdateSize =
+                        await _unitOfWork.CustomQueriesRepository()
+                            .GetListOfAllParentsAsFiles(fileToDelete.ParentId.Value);
+
+                    foreach (File fileToUpdate in filesToUpdateSize)
+                    {
+                        fileToUpdate.Size -= fileToDelete.Size;
+                        _unitOfWork.Repository<File>().Update(fileToUpdate);
+                    }
+                }
+
+                var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId.Value);
+                if (appUser is null)
+                    return BadRequest($"User not found, userId: {userId}");
+
+                appUser.UsedSpace -= fileToDelete.Size;
+                _unitOfWork.Repository<ApplicationUser>().Update(appUser);
+
                 if (await _unitOfWork.Complete() > 0) return Ok();
             }
             catch
@@ -255,6 +277,28 @@ namespace webFileSharingSystem.Web.Controllers
                 }
 
                 _unitOfWork.Repository<File>().RemoveRange(filesToRemove);
+
+                if (folderToDelete.ParentId is not null)
+                {
+                    var filesToUpdateSize =
+                        await _unitOfWork.CustomQueriesRepository()
+                            .GetListOfAllParentsAsFiles(folderToDelete.ParentId.Value);
+
+                    foreach (File fileToUpdate in filesToUpdateSize)
+                    {
+                        fileToUpdate.Size -= folderToDelete.Size;
+                        _unitOfWork.Repository<File>().Update(fileToUpdate);
+                    }
+                }
+
+                var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId.Value);
+                if (appUser is null)
+                    return BadRequest($"User not found, userId: {userId}");
+
+                appUser.UsedSpace -= folderToDelete.Size;
+                _unitOfWork.Repository<ApplicationUser>().Update(appUser);
+
+
                 if (await _unitOfWork.Complete() > 0) return Ok();
             }
             catch
@@ -280,15 +324,44 @@ namespace webFileSharingSystem.Web.Controllers
                     var fileToMove = await _unitOfWork.Repository<File>().FindByIdAsync(id);
                     if (fileToMove is null) return BadRequest(ErrorMessage);
                     if (fileToMove.UserId != userId) return Unauthorized(ErrorMessage);
+
+                    if (fileToMove.ParentId is not null)
+                    {
+                        var filesToUpdateSize =
+                            await _unitOfWork.CustomQueriesRepository()
+                                .GetListOfAllParentsAsFiles(fileToMove.ParentId.Value);
+
+                        foreach (File fileToUpdate in filesToUpdateSize)
+                        {
+                            fileToUpdate.Size -= fileToMove.Size;
+                            _unitOfWork.Repository<File>().Update(fileToUpdate);
+                        }
+                    }
+
                     fileToMove.ParentId = dbParentId;
+
+                    if (dbParentId is not null)
+                    {
+                        var filesToUpdateSize =
+                            await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(dbParentId.Value);
+
+                        foreach (File fileToUpdate in filesToUpdateSize)
+                        {
+                            fileToUpdate.Size += fileToMove.Size;
+                            _unitOfWork.Repository<File>().Update(fileToUpdate);
+                        }
+                    }
+
                     _unitOfWork.Repository<File>().Update(fileToMove);
                 }
+
                 if (await _unitOfWork.Complete() > 0) return Ok();
             }
             catch
             {
                 return BadRequest("Problem with moving files");
             }
+
             return BadRequest("Problem with moving files");
         }
 
@@ -309,20 +382,46 @@ namespace webFileSharingSystem.Web.Controllers
 
                     var file = new File
                     {
-                        FileName = fileToCopy.FileName,
-                        IsDirectory = fileToCopy.IsDirectory,
-                        ParentId = dbParentId,
                         UserId = userId.Value,
+                        ParentId = dbParentId,
+                        FileName = fileToCopy.FileName,
+                        MimeType = fileToCopy.MimeType,
+                        Size = fileToCopy.Size,
+                        IsDirectory = fileToCopy.IsDirectory,
+                        FileId = fileToCopy.FileId,
+                        FileStatus = FileStatus.Completed,
                     };
+
+                    if (dbParentId is not null)
+                    {
+                        var filesToUpdateSize =
+                            await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(dbParentId.Value);
+
+                        foreach (File fileToUpdate in filesToUpdateSize)
+                        {
+                            fileToUpdate.Size += fileToCopy.Size;
+                            _unitOfWork.Repository<File>().Update(fileToUpdate);
+                        }
+                    }
+
+                    var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId.Value);
+                    if (appUser is null)
+                        return BadRequest($"User not found, userId: {userId}");
+
+                    appUser.UsedSpace += file.Size;
+                    _unitOfWork.Repository<ApplicationUser>().Update(appUser);
+
 
                     _unitOfWork.Repository<File>().Add(file);
                 }
+
                 if (await _unitOfWork.Complete() > 0) return Ok();
             }
             catch
             {
                 return BadRequest("Problem with copying files");
             }
+
             return BadRequest("Problem with copying files");
         }
     }

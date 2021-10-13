@@ -135,7 +135,7 @@
             </ul>
           </div>
         </td>
-        <td>{{convertToReadableFileSize(file.size)}}</td>
+        <td>{{file.size | convertSizeToReadable}}</td>
         <td>
           <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
                triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>

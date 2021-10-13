@@ -10,6 +10,7 @@ import {File, FileStatus, ProgressStatus} from "../common/file";
 import {DownloadService} from "../../services/download.service";
 import {FileUploaderService} from "../../services/file-uploader.service";
 import {UploadStatus} from "../common/fileUploadProgress";
+import {AuthenticationService} from "../../services/authentication.service";
 
 interface BreadCrumb {
   id: number;
@@ -39,7 +40,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   ProgressStatus = ProgressStatus;
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
-    , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService) {
+    , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService) {
   }
 
   private openDropdownToBeHidden: any;
@@ -203,15 +204,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.reloadData();
   }
 
-  convertToReadableFileSize(size: number) {
-    if (size <= 0) {
-      return "0 B"
-    }
-    let units = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-    let i = Math.floor(Math.log(size) / Math.log(1024));
-    return i === 0 ? (size / Math.pow(1024, i)).toFixed(0) + ' ' + units[i]
-      : (size / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
-  };
 
   isManyCheckboxesChecked(): boolean {
     return this.files.filter(x => x.checked).length > 1;
@@ -221,6 +213,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     if (file.isDirectory) {
       this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
         reload ? this.reloadData() : null;
+        this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
         console.log(error)
@@ -228,6 +221,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     } else {
       this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
         reload ? this.reloadData() : null;
+        this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
         console.log(error)
@@ -237,21 +231,26 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
 
   moveCopyInit(file?: File) {
-    var filesIds: number[];
+    var filesToMoveCopy: File[];
     if (file) {
-      filesIds = [file.id];
+      filesToMoveCopy = [file];
     } else {
-      filesIds = this.files.filter(x => x.checked).map(x => x.id);
+      filesToMoveCopy = this.files.filter(x => x.checked);
     }
-    this.fileExplorerService.filesToMoveCopy = filesIds;
+    this.fileExplorerService.filesToMoveCopy = filesToMoveCopy;
   }
 
 
-  moveCopyFiles(copy: boolean, filesIds: number[] = this.fileExplorerService.filesToMoveCopy) {
-    let parentId = this.parentId ?? -1;
-    (copy ? this.http.post(`${environment.apiUrl}/File/Copy/${parentId}`, filesIds)
-      : this.http.put(`${environment.apiUrl}/File/Move/${parentId}`, filesIds))
+  moveCopyFiles(copy: boolean, filesToMoveCopy: File[] = this.fileExplorerService.filesToMoveCopy) {
+    const parentId = this.parentId ?? -1;
+    const fileIds = filesToMoveCopy.map(x => x.id);
+    (copy ? this.http.post(`${environment.apiUrl}/File/Copy/${parentId}`, fileIds)
+      : this.http.put(`${environment.apiUrl}/File/Move/${parentId}`, fileIds))
       .subscribe(() => {
+        if(copy) {
+          const totalSize = filesToMoveCopy.reduce((a,b) => a + b.size, 0);
+          this.authenticationService.updateCurrentUserUsedSpace(totalSize);
+        }
         this.reloadData();
         this.fileExplorerService.filesToMoveCopy = [];
       }, error => {

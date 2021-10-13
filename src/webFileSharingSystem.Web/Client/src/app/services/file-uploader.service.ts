@@ -6,6 +6,7 @@ import {UploadFileInfo} from "../models/uploadFileInfo";
 import {PartialFileInfo} from "../models/partialFileInfo";
 import {catchError, concatMap, finalize, last, tap} from "rxjs/operators";
 import {UploadProgressInfo, UploadStatus} from "../Components/common/fileUploadProgress";
+import {AuthenticationService} from "./authentication.service";
 
 @Injectable({
   providedIn: 'root'
@@ -16,12 +17,14 @@ export class FileUploaderService {
   private reportUploadProgressSource = new BehaviorSubject<UploadProgressInfo | null>(null);
   public reportUploadProgress = this.reportUploadProgressSource.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authenticationService: AuthenticationService) {
   }
 
   public upload(file: File, parentId: number | null = null) {
 
     this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
+
+      this.authenticationService.updateCurrentUserUsedSpace(file.size);
       const progress: UploadProgressInfo = {
         status: UploadStatus.Started,
         parentId: parentId,

@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {FileUploader} from "ng2-file-upload";
 import {environment} from "../../../environments/environment";
+import {AuthenticationService} from "../../services/authentication.service";
+import {SizeConverterPipe} from "../common/sizeConverterPipe";
 
 @Component({
   selector: 'app-sidebar',
@@ -8,15 +10,22 @@ import {environment} from "../../../environments/environment";
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent implements OnInit {
-uploader!: FileUploader;
-hasBaseDropzoneOver = false;
-baseUrl = environment.apiUrl;
+  uploader!: FileUploader;
+  hasBaseDropzoneOver = false;
+  baseUrl = environment.apiUrl;
+  usedSpace: number = 0;
+  quota: number = 0;
 
-isShareItemActive : boolean = false;
+  isShareItemActive: boolean = false;
 
-  constructor() { }
+  constructor(private authenticationService: AuthenticationService) {
+  }
 
   ngOnInit(): void {
+    this.authenticationService.currentUser.subscribe(user => {
+      this.usedSpace = user.usedSpace;
+      this.quota = user.quota;
+    });
     this.initializeUploader();
   }
 
@@ -35,12 +44,12 @@ isShareItemActive : boolean = false;
       autoUpload: false
 
     });
-    this.uploader.onAfterAddingFile=(file) => {
+    this.uploader.onAfterAddingFile = (file) => {
       file.withCredentials = false;
     }
 
-    this.uploader.onSuccessItem = (item,response, status, headers) => {
-      if(response) {
+    this.uploader.onSuccessItem = (item, response, status, headers) => {
+      if (response) {
         const file = JSON.parse(response);
         //this.member.files.push(file)
       }
@@ -49,5 +58,10 @@ isShareItemActive : boolean = false;
 
   toggleShareItemActive(): void {
     this.isShareItemActive = !this.isShareItemActive;
+  }
+
+  getQuota() {
+    let quota = new SizeConverterPipe().transform(this.quota)
+    return this.quota === 0 ? null : ` \\ ${quota}`
   }
 }

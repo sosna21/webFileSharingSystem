@@ -59,7 +59,7 @@
         <li class="nav-item">
           <p class="nav-link">
             <span><fa-icon [icon]="['fas', 'hdd']"></fa-icon></span>
-            8.4 GB used
+            {{usedSpace | convertSizeToReadable}}{{getQuota()}}
           </p>
         </li>
       </ul>
