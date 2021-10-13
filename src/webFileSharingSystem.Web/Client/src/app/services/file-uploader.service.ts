@@ -12,6 +12,7 @@ import {UploadProgressInfo, UploadStatus} from "../Components/common/fileUploadP
 })
 export class FileUploaderService {
   private uploadingFiles: Record<number, { upload: Subscription, isStopped: boolean }> = [];
+  private filesInfo: Record<number, { partialFileInfo: PartialFileInfo, file: File }> = [];
   private reportUploadProgressSource = new BehaviorSubject<UploadProgressInfo | null>(null);
   public reportUploadProgress = this.reportUploadProgressSource.asObservable();
 
@@ -28,8 +29,14 @@ export class FileUploaderService {
         progress: 0
       }
       this.reportUploadProgressSource.next(progress)
+      this.filesInfo[partialFileInfo.fileId] = {
+        partialFileInfo: partialFileInfo,
+        file: file
+      }
+
       this.uploadingFiles[partialFileInfo.fileId] = {
-        upload: this.sendFileAsChunks(file, partialFileInfo, progress => {
+        isStopped: false,
+        upload: this.sendFile(file, partialFileInfo, progress => {
           progress.parentId = parentId;
           this.reportUploadProgressSource.next(progress);
         }).subscribe(_ => {
@@ -41,21 +48,73 @@ export class FileUploaderService {
               progress: 1
             }
             this.reportUploadProgressSource.next(progress)
+            delete this.filesInfo[partialFileInfo.fileId];
+            delete this.uploadingFiles[partialFileInfo.fileId];
           })
-        }),
-        isStopped: false
+        })
+      };
+    });
+  }
+
+  public getCachedFileInfo(fileId: number) {
+    return this.filesInfo[fileId];
+  }
+
+  public resume(fileId: number, fileInfo: { partialFileInfo: PartialFileInfo, file: File }, parentId: number | null = null) {
+    this.filesInfo[fileId] = fileInfo;
+    this.getMissingChunks(fileId).subscribe(result => {
+
+      const progress: UploadProgressInfo = {
+        status: UploadStatus.Resumed,
+        parentId: parentId,
+        fileId: fileId,
+        progress: 1
+      }
+      this.reportUploadProgressSource.next(progress);
+
+      const chunksToUpload = new Map<number, number[]>();
+      result.map(x => {
+        let start = fileInfo.partialFileInfo.chunkSize * x;
+        let end = start + (x == fileInfo.partialFileInfo.numberOfChunks - 1 ? fileInfo.partialFileInfo.lastChunkSize : fileInfo.partialFileInfo.chunkSize);
+        chunksToUpload.set(x, [start, end, 0]);
+      });
+
+      let partialFileInfo = fileInfo.partialFileInfo;
+      this.uploadingFiles[partialFileInfo.fileId] = {
+        isStopped: false,
+        upload: this.sendFileChunks(fileInfo.file, chunksToUpload, partialFileInfo, progress => {
+          progress.parentId = parentId;
+          this.reportUploadProgressSource.next(progress);
+        }).subscribe(_ => {
+          return this.completeFileUpload(partialFileInfo.fileId).subscribe(_ => {
+            const progress: UploadProgressInfo = {
+              status: UploadStatus.Completed,
+              parentId: parentId,
+              fileId: partialFileInfo.fileId,
+              progress: 1
+            }
+            this.reportUploadProgressSource.next(progress);
+            delete this.filesInfo[partialFileInfo.fileId];
+            delete this.uploadingFiles[partialFileInfo.fileId];
+          })
+        })
       };
     });
   }
 
   public cancel(fileId: number) {
     this.uploadingFiles[fileId]?.upload.unsubscribe();
+    delete this.uploadingFiles[fileId];
   }
 
   public pause(fileId: number) {
     const uploadingFile = this.uploadingFiles[fileId];
     if (uploadingFile)
       uploadingFile.isStopped = true;
+  }
+
+  private getMissingChunks(fileId: number): Observable<number[]> {
+    return this.http.get<number[]>(`${environment.apiUrl}/Upload/${fileId}/MissingChunks`);
   }
 
   private startFileUpload(file: File, parentId: number | null): Observable<PartialFileInfo> {
@@ -75,51 +134,56 @@ export class FileUploaderService {
     return this.http.put(`${environment.apiUrl}/Upload/${fileId}/Complete`, {});
   }
 
-  private sendFileAsChunks(file: File, partialFileInfo: PartialFileInfo, reportProgressFunc: (progress: UploadProgressInfo) => void) {
 
-    let allChunks: number[][] = [];
-    for (let i = 0; i < partialFileInfo.numberOfChunks; i++) {
-      let start = partialFileInfo.chunkSize * i;
-      let end = start + (i == partialFileInfo.numberOfChunks - 1 ? partialFileInfo.lastChunkSize : partialFileInfo.chunkSize);
-      allChunks.push([start, end, i, 0]);
-    }
+  private sendFileChunks(file: File, chunksToUpload: Map<number, number[]>, partialFileInfo: PartialFileInfo, reportProgressFunc: (progress: UploadProgressInfo) => void) {
 
-    let updateProgress = function (event: HttpEvent<any>, index: number) {
+    let updateProgress = function (event: HttpEvent<any>, index: number, uploadingFiles: Record<number, { upload: Subscription, isStopped: boolean }>) {
       switch (event.type) {
         case HttpEventType.UploadProgress:
           const percentDone = event.loaded / (event.total ?? 1);
-          console.log(`File "${file.name}" chunk ${index} is ${percentDone * 100}% uploaded.`);
-          allChunks[index][3] = percentDone;
+          chunksToUpload.get(index)![2] = percentDone;
+
           break;
 
         case HttpEventType.Response:
-          console.log(`File "${file.name}" chunk ${index} was completely uploaded!`);
-          allChunks[index][3] = 1;
+          chunksToUpload.get(index)![2] = 1;
           break;
       }
 
+      let numberOfSuccessfulChunks = partialFileInfo.numberOfChunks - chunksToUpload.size;
       // Calculate sum of all chunks progress / number of chunks
-      const fileProgress = allChunks.reduce((a, b) => a + b[3], 0) / partialFileInfo.numberOfChunks;
+      const fileProgress = ([...chunksToUpload.values()].reduce((a, b) => a + b[2], 0) + numberOfSuccessfulChunks) / partialFileInfo.numberOfChunks;
 
       if (fileProgress > 0) {
+        const uploadingFile = uploadingFiles[partialFileInfo.fileId];
+        const status = (uploadingFile?.isStopped ?? true) ? UploadStatus.Stopping : UploadStatus.InProgress;
         const uploadProgress: UploadProgressInfo = {
-          status: UploadStatus.InProgress,
+          status: status,
           fileId: partialFileInfo.fileId,
           progress: fileProgress
         }
-
-        console.log(`File "${file.name}" total progress ${fileProgress} was completely uploaded!`);
 
         reportProgressFunc(uploadProgress);
       }
     }
 
-    return from(allChunks).pipe(concatMap((element) => {
-      const chunk = file.slice(element[0], element[1]);
-      return this.sendChunk(chunk, partialFileInfo.fileId, element[2])
-        .pipe(tap(event => updateProgress(event, element[2])))
+    return from(chunksToUpload).pipe(concatMap((element) => {
+      const chunk = file.slice(element[1][0], element[1][1]);
+      return this.sendChunk(chunk, partialFileInfo.fileId, element[0])
+        .pipe(tap(event => updateProgress(event, element[0], this.uploadingFiles)))
         .pipe(catchError(error => error));
     })).pipe(last());
+  }
+
+
+  private sendFile(file: File, partialFileInfo: PartialFileInfo, reportProgressFunc: (progress: UploadProgressInfo) => void) {
+    const allChunks = new Map<number, number[]>();
+    for (let i = 0; i < partialFileInfo.numberOfChunks; i++) {
+      let start = partialFileInfo.chunkSize * i;
+      let end = start + (i == partialFileInfo.numberOfChunks - 1 ? partialFileInfo.lastChunkSize : partialFileInfo.chunkSize);
+      allChunks.set(i, [start, end, 0]);
+    }
+    return this.sendFileChunks(file, allChunks, partialFileInfo, reportProgressFunc);
   }
 
   private sendChunk(chunk: Blob, fileId: number, chunkIndex: number): Observable<any> {
@@ -132,6 +196,13 @@ export class FileUploaderService {
       const uploadingFile = this.uploadingFiles[fileId];
       if (uploadingFile?.isStopped ?? false) {
         uploadingFile.upload.unsubscribe();
+        uploadingFile.isStopped = false;
+        const progress: UploadProgressInfo = {
+          status: UploadStatus.Stopped,
+          fileId: fileId,
+          progress: null
+        }
+        this.reportUploadProgressSource.next(progress);
       }
     }));
   }

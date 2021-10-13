@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using webFileSharingSystem.Core.Entities;
@@ -16,7 +17,14 @@ namespace webFileSharingSystem.Core.Interfaces
         Result UploadFileChunk(int userId, int fileId, int chunkIndex, Stream chunkStream,
             CancellationToken cancellationToken = default);
 
+        Task<(Result result, IEnumerable<int> missingChunkIndexes)> GetMissingFileChunks(int userId, int fileId,
+            CancellationToken cancellationToken = default);
+
         Task<Result> CompleteFileAsync(int userId, int fileId,
             CancellationToken cancellationToken = default);
+
+        Task<Result> UpdatePartialFileInfoAsync(int userId, int fileId);
+        
+        PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId);
     }
 }

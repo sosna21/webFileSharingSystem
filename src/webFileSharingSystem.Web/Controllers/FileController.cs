@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +6,7 @@ using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Specifications;
+using webFileSharingSystem.Core.Storage;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
 
@@ -18,13 +18,15 @@ namespace webFileSharingSystem.Web.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFilePersistenceService _filePersistenceService;
+        private readonly IUploadService _uploadService;
 
         public FileController(IUnitOfWork unitOfWork, ICurrentUserService currentUserService,
-            IFilePersistenceService filePersistenceService)
+            IFilePersistenceService filePersistenceService, IUploadService uploadService)
         {
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _filePersistenceService = filePersistenceService;
+            _uploadService = uploadService;
         }
 
         [HttpGet]
@@ -60,8 +62,19 @@ namespace webFileSharingSystem.Web.Controllers
                     IsShared = file.IsShared,
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
-                    ModificationDate = file.LastModified ?? file.Created
+                    ModificationDate = file.LastModified ?? file.Created,
+                    FileStatus = file.FileStatus,
+                    PartialFileInfo = file.PartialFileInfo,
+                    UploadProgress = CalculateUploadProgress(
+                        _uploadService.GetCachedPartialFileInfo(userId!.Value, file.Id) ?? file.PartialFileInfo)
                 }, new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
+        }
+
+        private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
+        {
+            if (partialFileInfo is null) return null;
+            var uploadedChunks = partialFileInfo.PersistenceMap.GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks-1).Length;
+            return  (double)uploadedChunks / partialFileInfo.NumberOfChunks;
         }
 
 
@@ -203,7 +216,7 @@ namespace webFileSharingSystem.Web.Controllers
             var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(id);
             if (fileToDelete is null) return BadRequest(ErrorMessage);
             if (fileToDelete.UserId != userId) return Unauthorized(ErrorMessage);
-            
+
             var guidToRemove = fileToDelete.FileId!.Value;
 
             try
@@ -218,7 +231,7 @@ namespace webFileSharingSystem.Web.Controllers
                 //TODO log exception
                 return BadRequest("Problem with deleting file");
             }
-            
+
             return BadRequest("Problem with deleting file");
         }
 
@@ -230,7 +243,7 @@ namespace webFileSharingSystem.Web.Controllers
             var folderToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(parentId);
             if (folderToDelete is null) return BadRequest(ErrorMessage);
             if (folderToDelete.UserId != userId) return Unauthorized(ErrorMessage);
-            
+
             var filesToRemove = await _unitOfWork.CustomQueriesRepository().GetListOfAllChildrenAsFiles(parentId);
             var guidsToRemove = filesToRemove.Where(x => !x.IsDirectory).Select(x => x.FileId!.Value);
 
@@ -240,7 +253,7 @@ namespace webFileSharingSystem.Web.Controllers
                 {
                     _filePersistenceService.DeleteExistingFile(userId.Value, guid);
                 }
-                
+
                 _unitOfWork.Repository<File>().RemoveRange(filesToRemove);
                 if (await _unitOfWork.Complete() > 0) return Ok();
             }
@@ -249,10 +262,10 @@ namespace webFileSharingSystem.Web.Controllers
                 //TODO log exception
                 return BadRequest("Error deleting directory");
             }
-            
+
             return BadRequest("Error deleting directory");
         }
-        
+
         [HttpPut]
         [Route("Move/{parentId:int}")]
         public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
@@ -278,7 +291,7 @@ namespace webFileSharingSystem.Web.Controllers
             }
             return BadRequest("Problem with moving files");
         }
-        
+
         [HttpPost]
         [Route("Copy/{parentId:int}")]
         public async Task<ActionResult> CopyFiles(int parentId, [FromBody] int[] ids)
@@ -293,7 +306,7 @@ namespace webFileSharingSystem.Web.Controllers
                     var fileToCopy = await _unitOfWork.Repository<File>().FindByIdAsync(id);
                     if (fileToCopy is null) return BadRequest(ErrorMessage);
                     if (fileToCopy.UserId != userId) return Unauthorized(ErrorMessage);
-                    
+
                     var file = new File
                     {
                         FileName = fileToCopy.FileName,
@@ -312,6 +325,5 @@ namespace webFileSharingSystem.Web.Controllers
             }
             return BadRequest("Problem with copying files");
         }
-        
     }
 }

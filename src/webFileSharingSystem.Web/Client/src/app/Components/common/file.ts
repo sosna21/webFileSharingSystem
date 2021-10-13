@@ -1,4 +1,6 @@
-﻿export interface File {
+﻿import {PartialFileInfo} from "../../models/partialFileInfo";
+
+export interface File {
   id: number;
   fileName: string;
   mimeType?: string;
@@ -7,10 +9,23 @@
   isShared: boolean
   isDirectory: boolean;
   modificationDate: Date;
+  fileStatus: FileStatus;
+  uploadProgress: number;
+  partialFileInfo?: PartialFileInfo;
 
   checked: boolean;
   rename: boolean;
-  isCompleted: boolean;
-  stopped: boolean;
-  uploadProgress: number;
+  stopping: boolean;
+  progressStatus: ProgressStatus;
+}
+
+export enum FileStatus {
+  Completed,
+  Incomplete
+}
+
+export enum ProgressStatus {
+  Started,
+  Stopping,
+  Stopped,
 }

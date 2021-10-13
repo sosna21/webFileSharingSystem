@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -19,7 +20,7 @@ namespace webFileSharingSystem.Core.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFilePersistenceService _filePersistenceService;
-        
+
         private readonly IOptions<StorageSettings> _storageSettings;
 
         private static readonly
@@ -27,7 +28,8 @@ namespace webFileSharingSystem.Core.Services
             UserFileCache = new();
 
 
-        public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService, IOptions<StorageSettings> storageSettings)
+        public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService,
+            IOptions<StorageSettings> storageSettings)
         {
             _unitOfWork = unitOfWork;
             _filePersistenceService = filePersistenceService;
@@ -44,7 +46,7 @@ namespace webFileSharingSystem.Core.Services
             var partialFileInfo = preferredChunk is null
                 ? StorageExtensions.GeneratePartialFileInfo(size)
                 : StorageExtensions.GeneratePartialFileInfo(size, preferredChunk.Value);
-            
+
             var fileGuidId = Guid.NewGuid();
             //TODO Check if file with the same name already exists for that user
             var file = new File
@@ -122,7 +124,8 @@ namespace webFileSharingSystem.Core.Services
             {
                 partialFileInfo.PersistenceMap.SetBit(chunkIndex, false);
 
-                _filePersistenceService.SaveChunk(filePath, chunkIndex, partialFileInfo.ChunkSize, chunkStream, cancellationToken)
+                _filePersistenceService.SaveChunk(filePath, chunkIndex, partialFileInfo.ChunkSize, chunkStream,
+                        cancellationToken)
                     .ConfigureAwait(false).GetAwaiter().GetResult();
             }
 
@@ -175,13 +178,87 @@ namespace webFileSharingSystem.Core.Services
             if (file is null) return Result.Failure("File does not exist");
 
             file.FileStatus = FileStatus.Completed;
-            
+
             _unitOfWork.Repository<File>().Update(file);
-            
+
+            _unitOfWork.Repository<PartialFileInfo>().Remove(UserFileCache[key].partialFileInfo);
+
             await _unitOfWork.Complete(cancellationToken);
-            
+
             return Result.Success();
         }
+
+
+        public async Task<(Result result, IEnumerable<int> missingChunkIndexes)> GetMissingFileChunks(int userId,
+            int fileId,
+            CancellationToken cancellationToken = default)
+        {
+            File? file = null;
+
+            var key = (userId, fileId);
+
+            if (!UserFileCache.ContainsKey(key))
+            {
+                var lockObject = new object();
+
+                lock (lockObject)
+                {
+                    if (!UserFileCache.ContainsKey(key))
+                    {
+                        file = _unitOfWork.Repository<File>()
+                            .FindAsync(new FindFileByIdIncludePartialFileInfo(fileId), cancellationToken)
+                            .ConfigureAwait(false).GetAwaiter().GetResult()
+                            .SingleOrDefault();
+
+                        if (file?.PartialFileInfo is not null)
+                            UserFileCache[key] = (_filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                                file.PartialFileInfo);
+                    }
+                }
+
+                if (file is null || file.UserId != userId)
+                    return (Result.Failure("File does not exist or you do not have access"), Array.Empty<int>());
+
+                if (file.IsDirectory)
+                    return (Result.Failure("Directory can't have missing chunks"), Array.Empty<int>());
+
+                if (file.IsDeleted)
+                    return (Result.Failure("Deleted files can't have missing chunks"), Array.Empty<int>());
+
+                if (file.FileStatus == FileStatus.Completed)
+                    return (Result.Failure("Completed file can't have missing chunks"), Array.Empty<int>());
+
+                if (file.PartialFileInfo is null)
+                    return (Result.Failure("File does not contain 'PartialFileInfo'"), Array.Empty<int>());
+            }
+
+            var partialFileInfo = UserFileCache[key].partialFileInfo;
+
+            var uploadedChunks =
+                partialFileInfo.PersistenceMap.GetAllIndexesWithValue(true,
+                    maxIndex: partialFileInfo.NumberOfChunks - 1);
+
+            return (Result.Success(), uploadedChunks);
+        }
+
+        public async Task<Result> UpdatePartialFileInfoAsync(int userId, int fileId)
+        {
+            var key = (userId, fileId);
+
+            if (!UserFileCache.ContainsKey(key)) return Result.Failure("'PartialFileInfo' can not be found");
+
+            var partialFileInfo = UserFileCache[key].partialFileInfo;
+
+            _unitOfWork.Repository<PartialFileInfo>().Update(partialFileInfo);
+
+            await _unitOfWork.Complete();
+
+            return Result.Success();
+        }
+
+        public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
+            UserFileCache.GetValueOrDefault((userId, fileId)).partialFileInfo;
+
 
         private int? CalculatePreferredChunkSize(long fileSize)
         {
@@ -189,15 +266,16 @@ namespace webFileSharingSystem.Core.Services
                 return null;
 
             var chunkSizeConstraints = _storageSettings.Value.ChunkSizeConstraints;
-            var calculatedChunkSize = (long)Math.Ceiling( (double)fileSize / chunkSizeConstraints.PreferredNumberOfChunks );
+            var calculatedChunkSize =
+                (long) Math.Ceiling((double) fileSize / chunkSizeConstraints.PreferredNumberOfChunks);
 
             if (calculatedChunkSize < chunkSizeConstraints.MinimumChunkSize)
                 return chunkSizeConstraints.MinimumChunkSize;
 
             if (calculatedChunkSize > chunkSizeConstraints.MaximumChunkSize)
                 return chunkSizeConstraints.MaximumChunkSize;
-            
-            return (int)calculatedChunkSize;
+
+            return (int) calculatedChunkSize;
         }
     }
 }

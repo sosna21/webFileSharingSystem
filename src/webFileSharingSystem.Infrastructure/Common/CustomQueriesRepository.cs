@@ -19,7 +19,7 @@ namespace webFileSharingSystem.Infrastructure.Common
         
         public async Task<IEnumerable<FilePathPart>> FindPathToAllParents(int fileId, CancellationToken cancellationToken = default)
         {
-            return await _dbContext.GetFiePathParts(fileId).ToListAsync(cancellationToken);
+            return await _dbContext.GetFilePathParts(fileId).ToListAsync(cancellationToken);
         }
         
         public async Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default)
