@@ -86,6 +86,19 @@ namespace webFileSharingSystem.Infrastructure.Data {
                 .HasForeignKey<PartialFileInfo>(e => e.FileId);
 
             builder.Entity<FilePathPart>().HasNoKey().ToView(null);
+            
+            builder.Entity<Share>().HasOne<ApplicationUser>()
+                .WithMany(e => e.Shares)
+                .HasForeignKey(e => e.SharedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            
+            builder.Entity<Share>().HasOne<ApplicationUser>()
+                .WithMany(e => e.Shares)
+                .HasForeignKey(e => e.SharedWithUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<Share>()
+                .HasOne(e => e.File);
         }
 
         //TODO Add dispatch events if needed or remove 

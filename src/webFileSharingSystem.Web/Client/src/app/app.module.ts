@@ -31,6 +31,8 @@ import {FileUploadComponent} from './Components/file-upload/file-upload.componen
 import { FilesComponent } from './Components/files/files.component';
 import {ModalModule} from "ngx-bootstrap/modal";
 import {SizeConverterPipe} from "./Components/common/sizeConverterPipe";
+import { SharedWithMeComponent } from './Components/shared-with-me/shared-with-me.component';
+import { SharedByMeComponent } from './Components/shared-by-me/shared-by-me.component';
 import { DndDirective } from './Components/file-upload/directive/dnd.directive';
 import {ToastrModule} from "ngx-toastr";
 
@@ -51,6 +53,9 @@ import {ToastrModule} from "ngx-toastr";
     MimeFontawesomePipe,
     FileUploadComponent,
     FilesComponent,
+    SizeConverterPipe,
+    SharedWithMeComponent,
+    SharedByMeComponent,
     SizeConverterPipe,
     DndDirective
 

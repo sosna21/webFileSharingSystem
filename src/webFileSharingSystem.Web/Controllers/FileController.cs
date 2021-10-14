@@ -149,8 +149,54 @@ namespace webFileSharingSystem.Web.Controllers
                     ModificationDate = file.LastModified ?? file.Created
                 }, new GetRecentFilesSpecs(userId!.Value));
         }
-
-
+        
+        [HttpGet]
+        [Route("GetSharedWithMe")]
+        public async Task<PaginatedList<FileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
+        {
+            var userId = _currentUserService.UserId;
+            return await _unitOfWork.Repository<Share>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, share =>
+                {
+                    var file = share.File;
+                    return new FileResponse
+                    {
+                        Id = file.Id,
+                        FileName = file.FileName,
+                        MimeType = file.MimeType,
+                        Size = file.Size,
+                        IsShared = file.IsShared,
+                        IsFavourite = file.IsFavourite,
+                        IsDirectory = file.IsDirectory,
+                        ModificationDate = file.LastModified ?? file.Created
+                    };
+                }, new GetFilesSharedWithMeSpecs(userId!.Value));
+        }
+        
+        [HttpGet]
+        [Route("GetSharedByMe")]
+        public async Task<PaginatedList<FileResponse>> GetFilesSharedByMe([FromQuery] FileRequest request)
+        {
+            var userId = _currentUserService.UserId;
+            return await _unitOfWork.Repository<Share>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, share =>
+                {
+                    var file = share.File;
+                    return new FileResponse
+                    {
+                        Id = file.Id,
+                        FileName = file.FileName,
+                        MimeType = file.MimeType,
+                        Size = file.Size,
+                        IsShared = file.IsShared,
+                        IsFavourite = file.IsFavourite,
+                        IsDirectory = file.IsDirectory,
+                        ModificationDate = file.LastModified ?? file.Created
+                    };
+                }, new GetFilesSharedByMeSpecs(userId!.Value));
+        }
+        
+        
         [HttpPut]
         [Route("SetFavourite/{id:int}")]
         public async Task<ActionResult> SetFavourite(int id, [FromQuery] bool value)

@@ -27,5 +27,7 @@ namespace webFileSharingSystem.Core.Entities
         public string IdentityUserId { get; set; }
         
         public ICollection<File> Files { get; set; }
+        
+        public ICollection<Share> Shares { get; set; }
     }
 }
