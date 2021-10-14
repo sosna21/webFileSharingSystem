@@ -16,7 +16,7 @@ namespace webFileSharingSystem.Infrastructure.Common
         {
             _dbContext = dbContext;
         }
-        
+
         public async Task<IEnumerable<FilePathPart>> FindPathToAllParents(int fileId, CancellationToken cancellationToken = default)
         {
             return await _dbContext.GetFilePathParts(fileId).ToListAsync(cancellationToken);
@@ -25,6 +25,11 @@ namespace webFileSharingSystem.Infrastructure.Common
         public async Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default)
         {
             return await _dbContext.GetListOfAllChildrenAsFiles(parentId).ToListAsync(cancellationToken);
+        }
+        
+        public async Task<List<File>> GetListOfAllParentsAsFiles(int parentId, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.GetListOfAllParentsAsFiles(parentId).ToListAsync(cancellationToken);
         }
     }
 }

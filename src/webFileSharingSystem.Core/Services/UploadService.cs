@@ -62,6 +62,27 @@ namespace webFileSharingSystem.Core.Services
             };
 
             _unitOfWork.Repository<File>().Add(file);
+
+            if (parentId is not null)
+            {
+                var filesToUpdateSize =
+                    await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(parentId.Value);
+
+                foreach (File fileToUpdate in filesToUpdateSize)
+                {
+                    fileToUpdate.Size += file.Size;
+                    _unitOfWork.Repository<File>().Update(fileToUpdate);
+                }
+            }
+
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId);
+            if (appUser is null)
+                return (Result.Failure($"User not found, userId: {userId}"), null);
+
+            appUser.UsedSpace += file.Size;
+            _unitOfWork.Repository<ApplicationUser>().Update(appUser);
+
+
             if (await _unitOfWork.Complete() <= 0)
                 return (Result.Failure("Problem during upload initialization"), null);
 

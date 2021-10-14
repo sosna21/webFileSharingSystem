@@ -22,6 +22,13 @@ export class AuthenticationService {
         return this.currentUserSubject.value;
     }
 
+    public updateCurrentUserUsedSpace(difference :number): void {
+      const user = this.currentUserSubject.value
+      user.usedSpace += difference;
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      this.currentUserSubject.next(user);
+    }
+
     login(username: string, password: string) {
         return this.http.post<any>(`${environment.apiUrl}/Auth/Login`, { username, password })
             .pipe(map(response => {

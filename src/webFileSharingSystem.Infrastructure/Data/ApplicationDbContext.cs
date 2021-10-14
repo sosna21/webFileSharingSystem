@@ -106,7 +106,22 @@ namespace webFileSharingSystem.Infrastructure.Data {
             }
         }
         
-        public IQueryable<FilePathPart> GetFiePathParts(int id) =>
+        public IQueryable<File> GetListOfAllParentsAsFiles(int parentId) =>
+            Set<File>().FromSqlInterpolated(
+                $@"
+                    WITH recursive_cte AS
+                    (
+                    SELECT *
+                    FROM [File] WHERE Id={parentId}
+                    UNION ALL
+                    SELECT [f].*
+                    FROM [File] AS [f]
+                    INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
+                    )
+                    SELECT * FROM recursive_cte
+                ");
+
+        public IQueryable<FilePathPart> GetFilePathParts(int id) =>
             Set<FilePathPart>().FromSqlInterpolated(
                 $@"
                     WITH recursive_cte AS
