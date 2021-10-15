@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {FileUploaderService} from "../../services/file-uploader.service";
 import {Router} from "@angular/router";
 
@@ -7,16 +7,13 @@ import {Router} from "@angular/router";
   templateUrl: './file-upload.component.html',
   styleUrls: ['./file-upload.component.scss']
 })
-export class FileUploadComponent implements OnInit, OnDestroy {
+export class FileUploadComponent implements OnInit {
   parentId: number | null = null;
 
   constructor(private fileUploader: FileUploaderService, private route: Router) {
   }
 
   ngOnInit(): void {
-  }
-
-  ngOnDestroy(): void {
   }
 
   public fileSelected(target: EventTarget | null) {

@@ -62,27 +62,9 @@ cursor: pointer;
   color: #999;
 }
 
-//.dropdown-toggle::after {
-////  display: block;
-////  position: absolute;
-////  top: 50%;
-////  right: 20px;
-//  transform: translateY(-50%);
-//}
-
 .sidebar-heading {
   font-size: .75rem;
   text-transform: uppercase;
-}
-
-
-// File dropzone stylization
-.nv-file-over {
-  border: dotted 3px red;
-}
-
-input[type=file] {
-  color: transparent;
 }
 
 .sidebar .submenu li {
@@ -96,8 +78,4 @@ input[type=file] {
 .sidebar li.active .submenu {
   display: block;
 }
-
-
-
-
 

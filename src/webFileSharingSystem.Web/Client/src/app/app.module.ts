@@ -31,6 +31,7 @@ import {FileUploadComponent} from './Components/file-upload/file-upload.componen
 import { FilesComponent } from './Components/files/files.component';
 import {ModalModule} from "ngx-bootstrap/modal";
 import {SizeConverterPipe} from "./Components/common/sizeConverterPipe";
+import { DndDirective } from './Components/file-upload/directive/dnd.directive';
 
 @NgModule({
   declarations: [
@@ -49,7 +50,8 @@ import {SizeConverterPipe} from "./Components/common/sizeConverterPipe";
     MimeFontawesomePipe,
     FileUploadComponent,
     FilesComponent,
-    SizeConverterPipe
+    SizeConverterPipe,
+    DndDirective
 
   ],
   imports: [
