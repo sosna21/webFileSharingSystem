@@ -112,7 +112,7 @@
         </td>
         <td>
           <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
-                   (click)="openModal(shareTemplate); isCompleted(file) ? file.isShared = !file.isShared : null"
+                   (click)="openModal(shareTemplate); fileExplorerService.filesToShare = [file] ;isCompleted(file) ? file.isShared = !file.isShared : null"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
@@ -177,13 +177,13 @@
     <form>
       <div class="form-group">
         <label for="recipient-name" class="col-form-label">Share with:</label>
-        <input type="text" class="form-control" id="recipient-name">
+        <input type="text" class="form-control" id="recipient-name" [(ngModel)]="sharedWithUserName" [ngModelOptions]="{standalone: true}"/>
       </div>
     </form>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-dark mr-2" (click)="confirm()">Yes</button>
-    <button type="button" class="btn btn-secondary" (click)="decline()">No</button>
+    <button type="button" class="btn btn-dark mr-2" (click)="shareConfirm()">Yes</button>
+    <button type="button" class="btn btn-secondary" (click)="shareDecline()">No</button>
   </div>
 
 </ng-template>

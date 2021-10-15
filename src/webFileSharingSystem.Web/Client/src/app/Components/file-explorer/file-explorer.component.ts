@@ -38,6 +38,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   userSubscription!: Subscription;
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
+  sharedWithUserName: string = '';
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
     , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService) {
@@ -247,8 +248,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     (copy ? this.http.post(`${environment.apiUrl}/File/Copy/${parentId}`, fileIds)
       : this.http.put(`${environment.apiUrl}/File/Move/${parentId}`, fileIds))
       .subscribe(() => {
-        if(copy) {
-          const totalSize = filesToMoveCopy.reduce((a,b) => a + b.size, 0);
+        if (copy) {
+          const totalSize = filesToMoveCopy.reduce((a, b) => a + b.size, 0);
           this.authenticationService.updateCurrentUserUsedSpace(totalSize);
         }
         this.reloadData();
@@ -362,7 +363,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
   }
 
-
   cancelUpload(file: File) {
     this.uploadService.cancel(file.id);
     this.deleteFile(file, false);
@@ -374,4 +374,30 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
 
+  shareConfirm() {
+    this.modalRef?.hide();
+    const fileId = this.fileExplorerService.filesToShare[0].id;
+
+    const requestBody = {
+      UserNameToShareWith: this.sharedWithUserName,
+      AccessMode: 1,
+      AccessDuration: {
+        "days": 7
+      }
+    };
+
+    this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, requestBody).subscribe(() => {
+
+    }, error => {
+      console.log(error);
+
+    }, () => {
+      this.fileExplorerService.filesToShare = [];
+    });
+  }
+
+  shareDecline() {
+    this.modalRef?.hide();
+    this.fileExplorerService.filesToShare = [];
+  }
 }

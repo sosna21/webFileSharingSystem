@@ -1,9 +1,7 @@
 ﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Mvc;
-
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Specifications;
@@ -28,19 +26,19 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<ActionResult> AddShareAsync(int fileId, [FromBody] AddFileShareRequest request, CancellationToken cancellationToken = default)
         {
             var userId = _currentUserService.UserId;
+            
+            var applicationUser = (await  _unitOfWork.Repository<ApplicationUser>().FindAsync(new FindUserByUserNameSpecs(request.UserNameToShareWith), cancellationToken))
+                .SingleOrDefault();
 
-            if (userId == request.UserToShareWithId) return BadRequest("You can't share file with yourself");
+            if (applicationUser is null)  return BadRequest("Ups, something went wrong");
+
+            if (userId == applicationUser.Id) return BadRequest("You can't share file with yourself");
 
                 var fileToShare = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
             if (fileToShare is null) return BadRequest("File doesn't exist or you do not have access");
 
-            var userExists = (await _unitOfWork.Repository<ApplicationUser>().CountAsync(
-                x => x.Id == request.UserToShareWithId,
-                cancellationToken)) > 0;
-            if (!userExists) return BadRequest("Share can't be added");
-
             var existingShare = (await _unitOfWork.Repository<Share>()
-                .FindAsync(new GetShareByUserAndFileIdSpecs(request.UserToShareWithId, fileId), cancellationToken)).SingleOrDefault();
+                .FindAsync(new GetShareByUserAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken)).SingleOrDefault();
             
             if (existingShare is not null) return BadRequest("File is already shared with that user");
             
@@ -48,7 +46,7 @@ namespace webFileSharingSystem.Web.Controllers
             _unitOfWork.Repository<Share>().Add(new Share
             {
                 SharedByUserId = userId!.Value,
-                SharedWithUserId = request.UserToShareWithId,
+                SharedWithUserId = applicationUser.Id,
                 FileId = fileId,
                 AccessMode = request.AccessMode,
                 AccessDuration = request.AccessDuration
