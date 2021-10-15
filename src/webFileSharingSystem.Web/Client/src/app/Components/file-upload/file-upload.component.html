@@ -6,3 +6,9 @@
   <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
   Select file
 </label>
+
+<div  class="dropzone" appDnd>
+  <input type="file" id="fileDropRef" multiple (change)="fileSelected($event.target)" >
+  <fa-icon size="3x" [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
+  <h3>Drag and drop file here</h3>
+</div>
