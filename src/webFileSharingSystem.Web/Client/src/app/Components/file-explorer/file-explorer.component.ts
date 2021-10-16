@@ -17,6 +17,18 @@ interface BreadCrumb {
   fileName: string;
 }
 
+enum ShareAccessMode {
+  ReadOnly,
+  ReadWrite,
+  FullAccess,
+}
+
+interface ShareRequestBody {
+  UserNameToShareWith?: string,
+  AccessMode?: ShareAccessMode,
+  AccessDuration?: any
+}
+
 @Component({
   selector: 'app-file-explorer',
   templateUrl: './file-explorer.component.html',
@@ -38,7 +50,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   userSubscription!: Subscription;
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
-  sharedWithUserName: string = '';
+  shareRequestBody: ShareRequestBody = {};
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
     , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService) {
@@ -378,15 +390,20 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.modalRef?.hide();
     const fileId = this.fileExplorerService.filesToShare[0].id;
 
-    const requestBody = {
-      UserNameToShareWith: this.sharedWithUserName,
-      AccessMode: 1,
-      AccessDuration: {
-        "days": 7
-      }
-    };
+    console.log( this.shareRequestBody?.UserNameToShareWith);
+    console.log( this.shareRequestBody?.AccessMode);
 
-    this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, requestBody).subscribe(() => {
+    // const requestBody: ShareRequestBody = {
+    //   UserNameToShareWith: this.shareRequestBody.UserNameToShareWith,
+    //   AccessMode: this.shareRequestBody.AccessMode,
+    //   AccessDuration: this.shareRequestBody.AccessDuration
+    //   //   {
+    //   //   "days": 7
+    //   // }
+    // };
+
+    this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
+      this.files.find(file => file.id === fileId)!.isShared = true;
 
     }, error => {
       console.log(error);

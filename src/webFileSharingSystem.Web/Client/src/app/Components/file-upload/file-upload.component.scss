@@ -1,7 +1,7 @@
 .dropzone {
   padding: 2rem;
   text-align: center;
-  border: dashed 1px #979797;
+  border: dashed 2px #979797;
   position: relative;
   margin: 0 auto;
 }
@@ -17,8 +17,10 @@ input {
 }
 
 .fileOver {
-  animation: shake 1s;
-  animation-iteration-count: infinite;
+  transition: 0.3s ease-in-out;
+  transform: scale(1.05);
+  //animation: shake 1s;
+  //animation-iteration-count: infinite;
   border: dotted 3px red;
 }
 
@@ -37,36 +39,36 @@ h3 {
 
   @keyframes shake {
     0% {
-      transform: translate(1px, 1px) rotate(0deg);
+      transform: translate(1px, 1px) rotate(0deg) scale(1.00);
     }
     10% {
-      transform: translate(-1px, -2px) rotate(-1deg);
+      transform: translate(-1px, -2px) rotate(-1deg) scale(1.01);
     }
     20% {
-      transform: translate(-3px, 0px) rotate(1deg);
+      transform: translate(-3px, 0px) rotate(1deg) scale(1.02);
     }
     30% {
-      transform: translate(3px, 2px) rotate(0deg);
+      transform: translate(3px, 2px) rotate(0deg) scale(1.03);
     }
     40% {
-      transform: translate(1px, -1px) rotate(1deg);
+      transform: translate(1px, -1px) rotate(1deg) scale(1.04);
     }
     50% {
-      transform: translate(-1px, 2px) rotate(-1deg);
+      transform: translate(-1px, 2px) rotate(-1deg) scale(1.05);
     }
     60% {
-      transform: translate(-3px, 1px) rotate(0deg);
+      transform: translate(-3px, 1px) rotate(0deg) scale(1.04);
     }
     70% {
-      transform: translate(3px, 1px) rotate(-1deg);
+      transform: translate(3px, 1px) rotate(-1deg) scale(1.03);
     }
     80% {
-      transform: translate(-1px, -1px) rotate(1deg);
+      transform: translate(-1px, -1px) rotate(1deg) scale(1.02);
     }
     90% {
-      transform: translate(1px, 2px) rotate(0deg);
+      transform: translate(1px, 2px) rotate(0deg) scale(1.01);
     }
     100% {
-      transform: translate(1px, -2px) rotate(-1deg);
+      transform: translate(1px, -2px) rotate(-1deg) scale(1.00);
     }
   }

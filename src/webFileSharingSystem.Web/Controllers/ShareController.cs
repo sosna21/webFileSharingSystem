@@ -50,7 +50,10 @@ namespace webFileSharingSystem.Web.Controllers
                 FileId = fileId,
                 AccessMode = request.AccessMode,
                 AccessDuration = request.AccessDuration
-            }); 
+            });
+
+            fileToShare.IsShared = true;
+            _unitOfWork.Repository<File>().Update(fileToShare);
             
             if (await _unitOfWork.Complete(cancellationToken) > 0) return Ok();
             

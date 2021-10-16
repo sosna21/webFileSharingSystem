@@ -2,7 +2,8 @@
 {
     public enum ShareAccessMode
     {
+        ReadOnly,
+        ReadWrite,
         FullAccess,
-        ReadOnly
     }
 }
