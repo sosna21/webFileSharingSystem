@@ -5,10 +5,11 @@ namespace webFileSharingSystem.Core.Entities
 {
     public class ApplicationUser : BaseEntity
     {
-        public ApplicationUser( string userName, string emailAddress, string identityUserId ) {
+        public ApplicationUser( string userName, string? emailAddress, string identityUserId, ulong quota = 0 ) {
             UserName = userName;
             EmailAddress = emailAddress;
             IdentityUserId = identityUserId;
+            Quota = quota;
         }
 
         

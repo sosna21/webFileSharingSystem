@@ -32,6 +32,7 @@ import { FilesComponent } from './Components/files/files.component';
 import {ModalModule} from "ngx-bootstrap/modal";
 import {SizeConverterPipe} from "./Components/common/sizeConverterPipe";
 import { DndDirective } from './Components/file-upload/directive/dnd.directive';
+import {ToastrModule} from "ngx-toastr";
 
 @NgModule({
   declarations: [
@@ -68,7 +69,10 @@ import { DndDirective } from './Components/file-upload/directive/dnd.directive';
     TimeagoModule.forRoot(),
     PopoverModule,
     BsDropdownModule.forRoot(),
-    ModalModule.forRoot()
+    ModalModule.forRoot(),
+    ToastrModule.forRoot({
+      positionClass: 'toast-bottom-right'
+    }),
 
   ],
   providers: [

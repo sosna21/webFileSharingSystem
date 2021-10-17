@@ -11,7 +11,6 @@ namespace webFileSharingSystem.Web.Controllers
 {
     public class AuthController : BaseController
     {
-
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
 
@@ -20,7 +19,7 @@ namespace webFileSharingSystem.Web.Controllers
             _userService = userService;
             _tokenService = tokenService;
         }
-        
+
         [AllowAnonymous]
         [HttpPost]
         [Route("Login")]
@@ -39,21 +38,33 @@ namespace webFileSharingSystem.Web.Controllers
                         UserName = applicationUser.UserName,
                         EmailAddress = applicationUser.EmailAddress,
                         UsedSpace = applicationUser.UsedSpace,
-                        Quota = applicationUser.Quota, 
+                        Quota = applicationUser.Quota,
                         Token = await token
-
                     };
-                    return Ok(new { User = userResponse, Message = "Success"  });
+                    return Ok(new {User = userResponse, Message = "Success"});
                 case AuthenticationResult.NotFound:
                 case AuthenticationResult.Failed:
                     return BadRequest(new {Message = "Invalid username or password"});
                 case AuthenticationResult.LockedOut:
-                    return BadRequest(new { Message = "To many failed login attempts" });
+                    return BadRequest(new {Message = "To many failed login attempts"});
                 case AuthenticationResult.IsBlocked:
-                    return Unauthorized(new { Message = "User is not allowed to login" });
+                    return Unauthorized(new {Message = "User is not allowed to login"});
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+        
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("Register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            var (registrationResult, applicationUserId) =
+                await _userService.CreateUserAsync(request.Username, request.Email, request.Password);
+            
+            if (!registrationResult.Succeeded) return BadRequest(registrationResult.Errors);
+
+            return Ok(new {UserId = applicationUserId});
         }
     }
 }
