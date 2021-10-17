@@ -183,8 +183,15 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     })
   }
 
-  downloadSingleFile(fileId: number) {
-    return this.downloadService.downloadSingleFileDirectUrl(fileId);
+  downloadFile(file: File) {
+    return file.isDirectory
+      ? this.downloadService.downloadMultipleFilesDirectUrl([file.id])
+      : this.downloadService.downloadSingleFileDirectUrl(file.id);
+  }
+
+  downloadMultipleFiles() {
+    const fileIdsToDownload = this.files.filter(f => f.checked).map(f => f.id);
+    return  this.downloadService.downloadMultipleFilesDirectUrl(fileIdsToDownload);
   }
 
   checkAllCheckBox(ev: any) {

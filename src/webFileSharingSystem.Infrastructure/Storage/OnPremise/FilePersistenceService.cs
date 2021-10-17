@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Options;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
 using static System.IO.File;
+using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
 {
@@ -17,27 +19,30 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
         {
             _settings = settings;
         }
-        
+
         public async Task SaveChunk(string filePath, int chunkIndex, int chunkSize, byte[] data,
             CancellationToken cancellationToken = default)
         {
-            await SaveChunkInternal(filePath, chunkIndex, chunkSize, async stream => await stream.WriteAsync(data, cancellationToken));
+            await SaveChunkInternal(filePath, chunkIndex, chunkSize,
+                async stream => await stream.WriteAsync(data, cancellationToken));
         }
-        
+
         public async Task SaveChunk(string filePath, int chunkIndex, int chunkSize, Stream data,
             CancellationToken cancellationToken = default)
         {
-            await SaveChunkInternal(filePath, chunkIndex, chunkSize, stream => data.CopyToAsync(stream, cancellationToken));
+            await SaveChunkInternal(filePath, chunkIndex, chunkSize,
+                stream => data.CopyToAsync(stream, cancellationToken));
         }
-        
-        private static async Task SaveChunkInternal(string filePath, int chunkIndex, int chunkSize, Func<Stream, Task> persistToStreamAction)
+
+        private static async Task SaveChunkInternal(string filePath, int chunkIndex, int chunkSize,
+            Func<Stream, Task> persistToStreamAction)
         {
             await using var stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write,
                 FileShare.Write,
                 4096, FileOptions.Asynchronous);
 
-            stream.Position = (long)chunkIndex * chunkSize;
-            
+            stream.Position = (long) chunkIndex * chunkSize;
+
             await persistToStreamAction(stream);
         }
 
@@ -46,7 +51,7 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
             return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
                 4096, FileOptions.Asynchronous);
         }
-        
+
         public async Task<byte[]> GetChunk(string filePath, int chunkSize, int chunkIndex,
             CancellationToken cancellationToken = default)
         {
@@ -89,6 +94,27 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
             if (!Directory.Exists(filePath)) return;
             filePath = Path.Combine(filePath, persistedFileId.ToString());
             Delete(filePath);
+        }
+
+        public IEnumerable<File> FindRelativeFilePath(File startFile, IDictionary<int, File> fileDictionary)
+        {
+            var currentFile = startFile;
+            var visited = new HashSet<int>();
+            while (visited.Add(currentFile.Id))
+            {
+                yield return currentFile;
+                if (currentFile.ParentId is null)
+                {
+                    yield break;
+                }
+
+                if (!fileDictionary.TryGetValue(currentFile.ParentId.Value, out currentFile))
+                {
+                    throw new Exception("invalid parent id");
+                }
+            }
+
+            throw new Exception("loop detected");
         }
     }
 }
