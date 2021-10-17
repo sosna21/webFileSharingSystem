@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {AuthenticationService} from "../../services/authentication.service";
 import {Router} from "@angular/router";
+import {ToastrService} from "ngx-toastr";
 
 @Component({
   selector: 'app-register',
@@ -14,7 +15,8 @@ export class RegisterComponent implements OnInit {
 
   constructor(private formBuilder: FormBuilder,
               private router: Router,
-              private authenticationService: AuthenticationService) {
+              private authenticationService: AuthenticationService,
+              private toastr: ToastrService) {
     // redirect to home if already logged in
     if (this.authenticationService.currentUserValue) {
       this.router.navigate(['/']);
@@ -47,7 +49,14 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+
   register() {
-    console.log(this.registerForm.value);
+    this.authenticationService.register(this.registerForm.value).subscribe(response => {
+      this.toastr.success("Account created successfully");
+      this.router.navigateByUrl('/login');
+    }, error => {
+      console.log(error);
+    })
   }
+
 }

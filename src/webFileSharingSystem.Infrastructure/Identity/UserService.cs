@@ -2,13 +2,15 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Transactions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Common;
 
 namespace webFileSharingSystem.Infrastructure.Identity
@@ -20,19 +22,25 @@ public class UserService : IUserService
         private readonly IUserClaimsPrincipalFactory<IdentityUser> _identityUserClaimsPrincipalFactory;
         private readonly IAuthorizationService _authorizationService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IOptions<StorageSettings> _options;
 
         public UserService(
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
             IUserClaimsPrincipalFactory<IdentityUser> identityUserClaimsPrincipalFactory,
             IAuthorizationService authorizationService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            RoleManager<IdentityRole> roleManager,
+            IOptions<StorageSettings> options)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _identityUserClaimsPrincipalFactory = identityUserClaimsPrincipalFactory;
             _authorizationService = authorizationService;
             _unitOfWork = unitOfWork;
+            _roleManager = roleManager;
+            _options = options;
         }
 
         public async Task<string> GetUserNameAsync(int userId, CancellationToken cancellationToken = default)
@@ -48,27 +56,40 @@ public class UserService : IUserService
             return (appUser.UserName ?? appUser.EmailAddress)!;
         }
 
-        public async Task<(Result Result, int UserId)> CreateUserAsync(string userName, string emailAddress, string password)
+
+
+        public async Task<(Result Result, int UserId)> CreateUserAsync(string userName, string? emailAddress,
+            string password)
         {
+            var identityRole = new IdentityRole("Member");
+
+            if (_roleManager.Roles.All(r => r.Name != identityRole.Name))
+            {
+                await _roleManager.CreateAsync(identityRole);
+            }
+
             var user = new IdentityUser
             {
                 UserName = userName,
                 Email = emailAddress,
             };
-
-            var identityResult = await _userManager.CreateAsync(user, password);
             
-            if(!identityResult.Succeeded)
+            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                return (ToApplicationResult(identityResult), 0);
-            }
-            
-            var appUser = new ApplicationUser(userName, emailAddress, user.Id);
-            
-            _unitOfWork.Repository<ApplicationUser>().Add(appUser);
-
-            return (ToApplicationResult(identityResult), appUser.Id);
+                var identityResult = await _userManager.CreateAsync(user, password);
+                if(!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+                
+                identityResult = await _userManager.AddToRolesAsync(user, new[] {identityRole.Name});
+                if(!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+                
+                var applicationUser = new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
+                _unitOfWork.Repository<ApplicationUser>().Add(applicationUser);
+                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"),0);
+                scope.Complete();
+                return (Result.Success(), applicationUser.Id);
+            } 
         }
+        
 
         public async Task<(AuthenticationResult Result, ApplicationUser? AppUser)> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken = default)
         {
