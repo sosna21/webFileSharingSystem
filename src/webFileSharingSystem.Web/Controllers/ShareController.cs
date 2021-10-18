@@ -1,6 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Microsoft.AspNetCore.Mvc;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
@@ -42,14 +44,13 @@ namespace webFileSharingSystem.Web.Controllers
             
             if (existingShare is not null) return BadRequest("File is already shared with that user");
             
-
             _unitOfWork.Repository<Share>().Add(new Share
             {
                 SharedByUserId = userId!.Value,
                 SharedWithUserId = applicationUser.Id,
                 FileId = fileId,
                 AccessMode = request.AccessMode,
-                AccessDuration = request.AccessDuration
+                ValidUntil = DateTime.Now + XmlConvert.ToTimeSpan(request.AccessDuration)
             });
 
             fileToShare.IsShared = true;

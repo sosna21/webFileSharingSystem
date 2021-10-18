@@ -50,7 +50,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   userSubscription!: Subscription;
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
-  shareRequestBody: ShareRequestBody = {};
+  shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
     , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService) {
@@ -390,31 +390,34 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.modalRef?.hide();
     const fileId = this.fileExplorerService.filesToShare[0].id;
 
-    console.log( this.shareRequestBody?.UserNameToShareWith);
-    console.log( this.shareRequestBody?.AccessMode);
-
-    // const requestBody: ShareRequestBody = {
-    //   UserNameToShareWith: this.shareRequestBody.UserNameToShareWith,
-    //   AccessMode: this.shareRequestBody.AccessMode,
-    //   AccessDuration: this.shareRequestBody.AccessDuration
-    //   //   {
-    //   //   "days": 7
-    //   // }
-    // };
-
     this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
       this.files.find(file => file.id === fileId)!.isShared = true;
+      this.fileExplorerService.filesToShare = [];
+      this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
 
     }, error => {
       console.log(error);
-
-    }, () => {
       this.fileExplorerService.filesToShare = [];
+      this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
     });
   }
 
   shareDecline() {
     this.modalRef?.hide();
     this.fileExplorerService.filesToShare = [];
+    this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+  }
+
+  shareGetItemAccessMode(shareType: string){
+    switch (shareType){
+      case "read":
+        return ShareAccessMode.ReadOnly;
+      case "write":
+        return ShareAccessMode.ReadWrite;
+      case "full":
+        return ShareAccessMode.FullAccess;
+      default:
+        return ShareAccessMode.ReadOnly;
+    }
   }
 }

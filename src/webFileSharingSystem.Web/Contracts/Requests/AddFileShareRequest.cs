@@ -8,6 +8,6 @@ namespace webFileSharingSystem.Web.Contracts.Requests
     {
         public string UserNameToShareWith { get; set; }
         public ShareAccessMode AccessMode { get; set; }
-        public TimeSpan AccessDuration { get; set; }
+        public string AccessDuration { get; set; }
     }
 }

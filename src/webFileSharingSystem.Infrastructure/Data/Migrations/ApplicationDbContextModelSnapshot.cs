@@ -356,9 +356,6 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<TimeSpan>("AccessDuration")
-                        .HasColumnType("time");
-
                     b.Property<int>("AccessMode")
                         .HasColumnType("int");
 
@@ -382,6 +379,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.Property<int>("SharedWithUserId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("ValidUntil")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

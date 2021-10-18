@@ -10,7 +10,7 @@ using webFileSharingSystem.Infrastructure.Data;
 namespace webFileSharingSystem.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20211014204742_ShareEntity")]
+    [Migration("20211018212320_ShareEntity")]
     partial class ShareEntity
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -358,9 +358,6 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<TimeSpan>("AccessDuration")
-                        .HasColumnType("time");
-
                     b.Property<int>("AccessMode")
                         .HasColumnType("int");
 
@@ -384,6 +381,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.Property<int>("SharedWithUserId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("ValidUntil")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

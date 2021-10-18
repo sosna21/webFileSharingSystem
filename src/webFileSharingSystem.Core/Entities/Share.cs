@@ -11,6 +11,6 @@ namespace webFileSharingSystem.Core.Entities
         public int FileId { get; set; }
         public File File { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
-        public TimeSpan AccessDuration { get; set; }
+        public DateTime ValidUntil { get; set; }
     }
 }

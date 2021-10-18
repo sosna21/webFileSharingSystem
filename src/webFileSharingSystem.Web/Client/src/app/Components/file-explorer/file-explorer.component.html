@@ -182,22 +182,25 @@
       <div class="form-group">
         Select access mode: <br>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="0" checked>
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" [value]="shareGetItemAccessMode('read')"
+                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('read')" (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('read')">
           <label class="form-check-label" for="inlineRadio1">Read</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="1" >
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" [value]="shareGetItemAccessMode('write')"
+                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('write')" (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('write')">
           <label class="form-check-label" for="inlineRadio2">Read/Write</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="2">
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" [value]="shareGetItemAccessMode('full')"
+                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('full')" (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('full')">
           <label class="form-check-label" for="inlineRadio3">Full access</label>
         </div>
       </div>
       <div class="form-group">
         Select share duration: <br>
       <ngx-duration-picker [options]="{ showPreview: true, showWeeks: false, showSeconds: false, showMinutes: false,
-       previewFormat: '{{Y}},{{M}},{{D}},{{h}}'}"></ngx-duration-picker>
+       previewFormat: '{{Y}},{{M}},{{D}},{{h}}'}" [(value)]="shareRequestBody.AccessDuration"></ngx-duration-picker>
 
       </div>
 

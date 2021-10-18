@@ -17,7 +17,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     SharedWithUserId = table.Column<int>(type: "int", nullable: false),
                     FileId = table.Column<int>(type: "int", nullable: false),
                     AccessMode = table.Column<int>(type: "int", nullable: false),
-                    AccessDuration = table.Column<TimeSpan>(type: "time", nullable: false),
+                    ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Created = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<int>(type: "int", nullable: false),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: true),
