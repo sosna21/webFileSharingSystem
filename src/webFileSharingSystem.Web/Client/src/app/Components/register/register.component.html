@@ -17,8 +17,7 @@
         </div>
       </div>
       </div>
+      <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
     </form>
-    <p>Form value: {{registerForm.value | json}}</p>
-    <p>Form status: {{registerForm.status | json}}</p>
   </div>
 </div>
