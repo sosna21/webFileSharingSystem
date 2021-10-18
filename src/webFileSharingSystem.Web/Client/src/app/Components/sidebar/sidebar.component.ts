@@ -11,29 +11,46 @@ import {SizeConverterPipe} from "../common/sizeConverterPipe";
 })
 export class SidebarComponent implements OnInit {
   uploader!: FileUploader;
-  hasBaseDropzoneOver = false;
   baseUrl = environment.apiUrl;
   usedSpace: number = 0;
   quota: number = 0;
+
+  dynamic = 0;
+  type: 'bg-success' | 'bg-info' | 'bg-warning' | 'bg-danger' = 'bg-info';
 
   isShareItemActive: boolean = false;
 
   constructor(private authenticationService: AuthenticationService) {
   }
 
+  calculateProgressPercent(): void {
+    let value = Math.round(this.usedSpace/this.quota * 100);
+    let type: 'bg-success' | 'bg-info' | 'bg-warning' | 'bg-danger';
+
+    if (value < 25) {
+      type = 'bg-success';
+    } else if (value < 50) {
+      type = 'bg-info';
+    } else if (value < 75) {
+      type = 'bg-warning';
+    } else {
+      type = 'bg-danger';
+    }
+
+    this.dynamic = value;
+    this.type = type;
+  }
+
   ngOnInit(): void {
     this.authenticationService.currentUser.subscribe(user => {
       this.usedSpace = user.usedSpace;
       this.quota = user.quota;
+      this.calculateProgressPercent();
     });
     this.initializeUploader();
   }
 
   isCollapsed = true;
-
-  fileOverBase(e: any) {
-    this.hasBaseDropzoneOver = e;
-  }
 
   initializeUploader() {
     this.uploader = new FileUploader({
@@ -42,7 +59,6 @@ export class SidebarComponent implements OnInit {
       isHTML5: true,
       removeAfterUpload: true,
       autoUpload: false
-
     });
     this.uploader.onAfterAddingFile = (file) => {
       file.withCredentials = false;
