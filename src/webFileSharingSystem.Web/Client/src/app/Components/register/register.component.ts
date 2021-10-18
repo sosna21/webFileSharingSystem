@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators} from "@angular/forms";
+import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {AuthenticationService} from "../../services/authentication.service";
 import {Router} from "@angular/router";
 import {ToastrService} from "ngx-toastr";
@@ -10,7 +10,7 @@ import {ToastrService} from "ngx-toastr";
   styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent implements OnInit {
-  model: any = {};
+  error = '';
   registerForm!: FormGroup;
 
   constructor(private formBuilder: FormBuilder,
@@ -31,7 +31,7 @@ export class RegisterComponent implements OnInit {
     this.registerForm = this.formBuilder.group({
       username: ['', Validators.required],
       email : ['', Validators.email],
-      password: ['', [Validators.required, Validators.minLength(5)]],
+      password: ['', [Validators.required, Validators.minLength(6), this.passwordCustomValidator()]],
       confirmPassword: ['', [Validators.required, this.matchValues('password')]],
     })
 
@@ -49,12 +49,29 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+   passwordCustomValidator(): ValidatorFn {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      const forbidden = control?.parent?.controls as any;
+
+      const hasNumber = /\d/.test(control.value);
+      const hasUpper = /[A-Z]/.test(control.value);
+      const hasLower = /[a-z]/.test(control.value);
+      const hasNonAlphanumeric = /[^a-zA-Z\d\s:]/.test(control.value);
+      const valid = hasNumber && hasUpper && hasLower && hasNonAlphanumeric;
+
+      return (forbidden)
+        ? (valid) ? null : {passwordConstraintsSatisfied: true}
+        : null;
+    }
+  }
+
 
   register() {
     this.authenticationService.register(this.registerForm.value).subscribe(response => {
-      this.toastr.success("Account created successfully");
+      this.toastr.success("Account created successfully","Account creation result");
       this.router.navigateByUrl('/login');
     }, error => {
+      this.error = error.error;
       console.log(error);
     })
   }
