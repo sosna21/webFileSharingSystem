@@ -63,6 +63,12 @@
           </p>
         </li>
       </ul>
+
+      <div class="progress progress-sm bg-dark mx-3">
+        <div class="progress-bar " [ngClass]="type" role="progressbar" [ngStyle]="{ 'width': dynamic + '%'}">{{dynamic}}%</div>
+      </div>
+      <div *ngIf="dynamic >= 90" class="alert alert-danger mx-3 mt-2 p-0">{{dynamic >= 100 ? "No free space left." : "Available space is low."}}<br> Consider deleting some files.</div>
+
     </div>
 
     <div class="mt-auto">
