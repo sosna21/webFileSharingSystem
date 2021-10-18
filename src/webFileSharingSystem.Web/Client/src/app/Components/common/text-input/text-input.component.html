@@ -11,5 +11,5 @@
   <div *ngIf="errors && ngControl.control?.errors?.maxlength" class="invalid-feedback">{{label}} must have at most {{ngControl.errors!.maxLength['requiredLength']}} characters.</div>
   <div *ngIf="errors && ngControl.control?.errors?.email" class="invalid-feedback">The entered string is not an e-mail.</div>
   <div *ngIf="errors && ngControl.control?.errors?.isMatching" class="invalid-feedback">Passwords must be identical.</div>
-  <div *ngIf="errors && ngControl.control?.errors?.areAllRequiredCharacter" class="invalid-feedback">{{label}} must have at least one number, one lowercase, one uppercase and one non-alphanumeric character.</div>
+  <div *ngIf="errors && ngControl.control?.errors?.passwordConstraintsSatisfied" class="invalid-feedback">{{label}} must have at least one number, one lowercase, one uppercase and one non-alphanumeric character.</div>
 </div>

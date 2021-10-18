@@ -31,7 +31,7 @@ export class RegisterComponent implements OnInit {
     this.registerForm = this.formBuilder.group({
       username: ['', Validators.required],
       email : ['', Validators.email],
-      password: ['', [Validators.required, Validators.minLength(6), this.passwordCustomValidators()]],
+      password: ['', [Validators.required, Validators.minLength(6), this.passwordCustomValidator()]],
       confirmPassword: ['', [Validators.required, this.matchValues('password')]],
     })
 
@@ -49,18 +49,18 @@ export class RegisterComponent implements OnInit {
     }
   }
 
-   passwordCustomValidators(): ValidatorFn {
+   passwordCustomValidator(): ValidatorFn {
     return (control: AbstractControl): { [key: string]: any } | null => {
       const forbidden = control?.parent?.controls as any;
 
-      let hasNumber = /\d/.test(control.value);
-      let hasUpper = /[A-Z]/.test(control.value);
-      let hasLower = /[a-z]/.test(control.value);
-      let hasNonAlphanumeric = /[^a-zA-Z\d\s:]/.test(control.value)
+      const hasNumber = /\d/.test(control.value);
+      const hasUpper = /[A-Z]/.test(control.value);
+      const hasLower = /[a-z]/.test(control.value);
+      const hasNonAlphanumeric = /[^a-zA-Z\d\s:]/.test(control.value);
       const valid = hasNumber && hasUpper && hasLower && hasNonAlphanumeric;
 
       return (forbidden)
-        ? (valid) ? null : {areAllRequiredCharacter: true}
+        ? (valid) ? null : {passwordConstraintsSatisfied: true}
         : null;
     }
   }
