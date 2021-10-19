@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Specifications;
 using webFileSharingSystem.Web.Contracts.Requests;
+using webFileSharingSystem.Web.Contracts.Responses;
 
 namespace webFileSharingSystem.Web.Controllers
 {
@@ -75,6 +77,30 @@ namespace webFileSharingSystem.Web.Controllers
             if (await _unitOfWork.Complete() > 0) return Ok();
             
             return BadRequest("Problem with deleting share");
+        }
+        
+        [HttpGet]
+        [Route("GetShares/{fileId:int}")]
+        public async Task<IList<ShareResponse>> GetShares(int fileId)
+        {
+            var userId = _currentUserService.UserId;
+
+            var shares = await _unitOfWork.Repository<Share>()
+                .FindAsync(new GetShareByUserAndFileIdSpecs(userId!.Value, fileId));
+
+            var shareResponses = new List<ShareResponse>();
+            foreach (var share in shares)
+            {
+                var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(share.SharedWithUserId))!.UserName;
+                shareResponses.Add(new ShareResponse
+                {
+                    SharedWithUserName = userName!,
+                    AccessMode = share.AccessMode,
+                    ValidUntil = share.ValidUntil
+                });
+
+            }
+            return shareResponses;
         }
     }
 }

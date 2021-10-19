@@ -119,7 +119,7 @@
         </td>
         <td>
           <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
-                   (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]"
+                   (click)="file.loading ? null : ile.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate); fileExplorerService.filesToShare = [file]"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
@@ -224,16 +224,34 @@
         Select share duration: <br>
         <ngx-duration-picker [options]="{ showPreview: true, showWeeks: false, showSeconds: false, showMinutes: false,
        previewFormat: '{{Y}},{{M}},{{D}},{{h}}'}" [(value)]="shareRequestBody.AccessDuration"></ngx-duration-picker>
-
       </div>
-
     </form>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-dark mr-2" (click)="shareConfirm()">Yes</button>
     <button type="button" class="btn btn-secondary" (click)="shareDecline()">No</button>
   </div>
+</ng-template>
 
+
+<ng-template #customizeSharesTemplate>
+  <div class="modal-header text-center">
+    <div class="d-flex flex-row pt-3 pb-2">
+      <div class="align-self-center align-text-bottom mr-3">
+        <p>Select existing share or create a new one</p>
+      </div>
+      <div class="align-self-center mr-3">
+        <fa-icon size="2x" [icon]="['fas', 'plus-circle']"
+                 (click)="decline(); openModal(shareTemplate);"></fa-icon>
+      </div>
+    </div>
+  </div>
+  <div class="modal-body">
+
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="decline()">Exit</button>
+  </div>
 </ng-template>
 
 <input [hidden]="true" type="file" #fileUpload id="fileUpload" name="fileUpload"/>
