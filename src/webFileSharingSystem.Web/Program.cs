@@ -36,8 +36,17 @@ namespace webFileSharingSystem.Web
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
                 var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
                 var fileRepository = services.GetRequiredService<IRepository<File>>();
-                
-                await context.SeedDefaultUserAsync(userManager, roleManager, applicationUserRepository, fileRepository);
+                var filePersistenceService = services.GetRequiredService<IFilePersistenceService>();
+
+                var seedData = new ApplicationDbContextSeed(
+                    context,
+                    userManager,
+                    roleManager,
+                    applicationUserRepository,
+                    fileRepository,
+                    filePersistenceService);
+
+                await seedData.SetTestUserDataAsync();
             }
             catch (Exception ex)
             {

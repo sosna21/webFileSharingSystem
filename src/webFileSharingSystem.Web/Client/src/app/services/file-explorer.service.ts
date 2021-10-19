@@ -8,6 +8,7 @@ import {File} from "../Components/common/file";
 export class FileExplorerService {
   filesToMoveCopy: File[] = [];
   filesToDelete: File[] = [];
+  filesToShare: File[] = [];
 
   constructor() { }
 }

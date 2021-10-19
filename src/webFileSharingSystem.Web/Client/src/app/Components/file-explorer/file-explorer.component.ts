@@ -17,6 +17,18 @@ interface BreadCrumb {
   fileName: string;
 }
 
+enum ShareAccessMode {
+  ReadOnly,
+  ReadWrite,
+  FullAccess,
+}
+
+interface ShareRequestBody {
+  UserNameToShareWith?: string,
+  AccessMode?: ShareAccessMode,
+  AccessDuration?: any
+}
+
 @Component({
   selector: 'app-file-explorer',
   templateUrl: './file-explorer.component.html',
@@ -38,6 +50,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   userSubscription!: Subscription;
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
+  shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
     , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService) {
@@ -247,8 +260,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     (copy ? this.http.post(`${environment.apiUrl}/File/Copy/${parentId}`, fileIds)
       : this.http.put(`${environment.apiUrl}/File/Move/${parentId}`, fileIds))
       .subscribe(() => {
-        if(copy) {
-          const totalSize = filesToMoveCopy.reduce((a,b) => a + b.size, 0);
+        if (copy) {
+          const totalSize = filesToMoveCopy.reduce((a, b) => a + b.size, 0);
           this.authenticationService.updateCurrentUserUsedSpace(totalSize);
         }
         this.reloadData();
@@ -362,7 +375,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
   }
 
-
   cancelUpload(file: File) {
     this.uploadService.cancel(file.id);
     this.deleteFile(file, false);
@@ -374,4 +386,38 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
 
+  shareConfirm() {
+    this.modalRef?.hide();
+    const fileId = this.fileExplorerService.filesToShare[0].id;
+
+    this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
+      this.files.find(file => file.id === fileId)!.isShared = true;
+      this.fileExplorerService.filesToShare = [];
+      this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+
+    }, error => {
+      console.log(error);
+      this.fileExplorerService.filesToShare = [];
+      this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+    });
+  }
+
+  shareDecline() {
+    this.modalRef?.hide();
+    this.fileExplorerService.filesToShare = [];
+    this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+  }
+
+  shareGetItemAccessMode(shareType: string){
+    switch (shareType){
+      case "read":
+        return ShareAccessMode.ReadOnly;
+      case "write":
+        return ShareAccessMode.ReadWrite;
+      case "full":
+        return ShareAccessMode.FullAccess;
+      default:
+        return ShareAccessMode.ReadOnly;
+    }
+  }
 }

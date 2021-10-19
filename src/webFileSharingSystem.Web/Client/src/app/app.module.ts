@@ -28,10 +28,13 @@ import {PopoverModule} from "ngx-bootstrap/popover";
 import {BsDropdownModule} from "ngx-bootstrap/dropdown";
 import {MimeFontawesomePipe} from "./Components/common/MimeFontawesomePipe";
 import {FileUploadComponent} from './Components/file-upload/file-upload.component';
-import { FilesComponent } from './Components/files/files.component';
+import {FilesComponent} from './Components/files/files.component';
 import {ModalModule} from "ngx-bootstrap/modal";
 import {SizeConverterPipe} from "./Components/common/sizeConverterPipe";
-import { DndDirective } from './Components/file-upload/directive/dnd.directive';
+import {SharedWithMeComponent} from './Components/shared-with-me/shared-with-me.component';
+import {SharedByMeComponent} from './Components/shared-by-me/shared-by-me.component';
+import {DndDirective} from './Components/file-upload/directive/dnd.directive';
+import {DurationPickerModule} from "ngx-duration-picker";
 import {ToastrModule} from "ngx-toastr";
 
 @NgModule({
@@ -52,6 +55,9 @@ import {ToastrModule} from "ngx-toastr";
     FileUploadComponent,
     FilesComponent,
     SizeConverterPipe,
+    SharedWithMeComponent,
+    SharedByMeComponent,
+    SizeConverterPipe,
     DndDirective
 
   ],
@@ -70,6 +76,7 @@ import {ToastrModule} from "ngx-toastr";
     PopoverModule,
     BsDropdownModule.forRoot(),
     ModalModule.forRoot(),
+    DurationPickerModule,
     ToastrModule.forRoot({
       positionClass: 'toast-bottom-right'
     }),
