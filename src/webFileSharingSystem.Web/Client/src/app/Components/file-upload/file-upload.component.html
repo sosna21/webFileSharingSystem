@@ -15,12 +15,13 @@
   <fa-icon size="3x" [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
   <h3>Drag and drop {{radioModel}} here</h3>
 </div>
-
-<div class="offset-1 btn-group mt-2">
+<div class="d-flex justify-content-center ">
+<div class="col-10 btn-group mt-2">
   <label class="btn btn-info" [(ngModel)]="radioModel"
          btnRadio="files" tabindex="0" role="button">Upload files</label>
   <label class="btn btn-info" [(ngModel)]="radioModel"
          btnRadio="folder" tabindex="0" role="button">Upload folder</label>
+</div>
 </div>
 
 <!--<div class="offset-1 mb-2">-->
