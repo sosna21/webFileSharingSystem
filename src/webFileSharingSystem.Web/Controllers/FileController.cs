@@ -240,7 +240,7 @@ namespace webFileSharingSystem.Web.Controllers
             };
 
             _unitOfWork.Repository<File>().Add(file);
-            if (await _unitOfWork.Complete() <= 0) return BadRequest("Problem with renaming the file");
+            if (await _unitOfWork.Complete() <= 0) return BadRequest("Problem with creating directory");
 
             return new FileResponse
             {

@@ -6,7 +6,7 @@
   margin: 0 auto;
 }
 
-input {
+.dropzone input {
   opacity: 0;
   position: absolute;
   z-index: 2;
@@ -24,16 +24,15 @@ input {
   border: dotted 3px red;
 }
 
-
-label {
+#uploadLabel {
   color: white;
   background-color: #db202f;
   padding: 8px 16px;
 }
 
 h3 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 550;
   color: #38424c;
 }
 

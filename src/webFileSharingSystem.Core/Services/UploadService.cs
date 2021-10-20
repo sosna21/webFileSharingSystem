@@ -280,6 +280,51 @@ namespace webFileSharingSystem.Core.Services
         public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
             UserFileCache.GetValueOrDefault((userId, fileId)).partialFileInfo;
 
+        public async Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId,
+            IEnumerable<string> folders,
+            CancellationToken cancellationToken = default)
+        {
+            var createDirectories = false;
+            File? directoryFile = null;
+
+            foreach (var folder in folders)
+            {
+                if (!createDirectories)
+                {
+                    directoryFile = (await _unitOfWork.Repository<File>()
+                            .FindAsync(new GetFileByNameSpecs(userId, parentId, folder), cancellationToken))
+                        .SingleOrDefault();
+
+                    if (directoryFile is null)
+                        createDirectories = true;
+
+                    else if (!directoryFile.IsDirectory)
+                        return (Result.Failure($"File with the name \"{folder}\" already exists"), null);
+
+
+                    parentId = directoryFile?.Id ?? parentId;
+                }
+
+
+                if (!createDirectories)
+                    continue;
+
+                directoryFile = new File
+                {
+                    FileName = folder,
+                    IsDirectory = true,
+                    ParentId = parentId,
+                    UserId = userId
+                };
+
+                _unitOfWork.Repository<File>().Add(directoryFile);
+                if (await _unitOfWork.Complete(cancellationToken) <= 0)
+                    return (Result.Failure("Problem with creating directories"), null);
+                parentId = directoryFile.Id;
+            }
+
+            return (Result.Success(), directoryFile);
+        }
 
         private int? CalculatePreferredChunkSize(long fileSize)
         {
