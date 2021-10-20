@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -92,5 +93,19 @@ namespace webFileSharingSystem.Web.Controllers
 
             return Ok(missingChunkIndexes);
         }
+        
+        
+        [HttpPost]
+        [Route("EnsureDirectory")]
+        public async Task<ActionResult<int>> EnsureDirectory([FromBody] EnsureDirectoryRequest request)
+        {
+            var userId = _currentUserService.UserId;
+
+            var (result, file) = await _uploadService.EnsureDirectoriesExist(userId!.Value, request.ParentId, request.Folders);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            return Ok(file!.Id);
+        }
+        
     }
 }

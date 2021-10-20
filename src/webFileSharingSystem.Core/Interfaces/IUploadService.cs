@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
+using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.Core.Interfaces
 {
@@ -26,5 +27,9 @@ namespace webFileSharingSystem.Core.Interfaces
         Task<Result> UpdatePartialFileInfoAsync(int userId, int fileId);
         
         PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId);
+
+        Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders,
+            CancellationToken cancellationToken = default);
+        
     }
 }

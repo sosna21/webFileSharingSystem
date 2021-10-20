@@ -1,10 +1,10 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpEvent, HttpEventType} from "@angular/common/http";
-import {BehaviorSubject, from, Observable, Subscription} from "rxjs";
+import {BehaviorSubject, EMPTY, from, Observable, Subscription} from "rxjs";
 import {environment} from "../../environments/environment";
 import {UploadFileInfo} from "../models/uploadFileInfo";
 import {PartialFileInfo} from "../models/partialFileInfo";
-import {catchError, concatMap, finalize, last, tap} from "rxjs/operators";
+import {catchError, concatMap, finalize, last, retry, tap} from "rxjs/operators";
 import {UploadProgressInfo, UploadStatus} from "../Components/common/fileUploadProgress";
 import {AuthenticationService} from "./authentication.service";
 
@@ -22,41 +22,44 @@ export class FileUploaderService {
 
   public upload(file: File, parentId: number | null = null) {
 
-    this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
+    return new Observable(subscriber => {
+      this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
+        this.authenticationService.updateCurrentUserUsedSpace(file.size);
+        const progress: UploadProgressInfo = {
+          status: UploadStatus.Started,
+          parentId: parentId,
+          fileId: partialFileInfo.fileId,
+          progress: 0
+        }
+        this.reportUploadProgressSource.next(progress)
+        this.filesInfo[partialFileInfo.fileId] = {
+          partialFileInfo: partialFileInfo,
+          file: file
+        }
 
-      this.authenticationService.updateCurrentUserUsedSpace(file.size);
-      const progress: UploadProgressInfo = {
-        status: UploadStatus.Started,
-        parentId: parentId,
-        fileId: partialFileInfo.fileId,
-        progress: 0
-      }
-      this.reportUploadProgressSource.next(progress)
-      this.filesInfo[partialFileInfo.fileId] = {
-        partialFileInfo: partialFileInfo,
-        file: file
-      }
-
-      this.uploadingFiles[partialFileInfo.fileId] = {
-        isStopped: false,
-        upload: this.sendFile(file, partialFileInfo, progress => {
-          progress.parentId = parentId;
-          this.reportUploadProgressSource.next(progress);
-        }).subscribe(_ => {
-          return this.completeFileUpload(partialFileInfo.fileId).subscribe(_ => {
-            const progress: UploadProgressInfo = {
-              status: UploadStatus.Completed,
-              parentId: parentId,
-              fileId: partialFileInfo.fileId,
-              progress: 1
-            }
-            this.reportUploadProgressSource.next(progress)
-            delete this.filesInfo[partialFileInfo.fileId];
-            delete this.uploadingFiles[partialFileInfo.fileId];
+        this.uploadingFiles[partialFileInfo.fileId] = {
+          isStopped: false,
+          upload: this.sendFile(file, partialFileInfo, progress => {
+            progress.parentId = parentId;
+            this.reportUploadProgressSource.next(progress);
+          }).subscribe(_ => {
+            return this.completeFileUpload(partialFileInfo.fileId).subscribe(_ => {
+              const progress: UploadProgressInfo = {
+                status: UploadStatus.Completed,
+                parentId: parentId,
+                fileId: partialFileInfo.fileId,
+                progress: 1
+              }
+              this.reportUploadProgressSource.next(progress)
+              delete this.filesInfo[partialFileInfo.fileId];
+              delete this.uploadingFiles[partialFileInfo.fileId];
+              subscriber.next();
+              subscriber.complete();
+            })
           })
-        })
-      };
-    });
+        };
+      });
+    })
   }
 
   public getCachedFileInfo(fileId: number) {
@@ -137,7 +140,6 @@ export class FileUploaderService {
     return this.http.put(`${environment.apiUrl}/Upload/${fileId}/Complete`, {});
   }
 
-
   private sendFileChunks(file: File, chunksToUpload: Map<number, number[]>, partialFileInfo: PartialFileInfo, reportProgressFunc: (progress: UploadProgressInfo) => void) {
 
     let updateProgress = function (event: HttpEvent<any>, index: number, uploadingFiles: Record<number, { upload: Subscription, isStopped: boolean }>) {
@@ -172,12 +174,11 @@ export class FileUploaderService {
 
     return from(chunksToUpload).pipe(concatMap((element) => {
       const chunk = file.slice(element[1][0], element[1][1]);
-      return this.sendChunk(chunk, partialFileInfo.fileId, element[0])
+      return this.sendChunk(chunk, partialFileInfo.fileId, element[0]).pipe(retry(4))
         .pipe(tap(event => updateProgress(event, element[0], this.uploadingFiles)))
         .pipe(catchError(error => error));
     })).pipe(last());
   }
-
 
   private sendFile(file: File, partialFileInfo: PartialFileInfo, reportProgressFunc: (progress: UploadProgressInfo) => void) {
     const allChunks = new Map<number, number[]>();
@@ -208,6 +209,12 @@ export class FileUploaderService {
         this.reportUploadProgressSource.next(progress);
       }
     }));
+  }
+
+  ensureDirectoryExists(path: string, parentId: number | null) {
+    let folders = path.split("/").slice(0, -1);
+    if (folders.length <= 0) return EMPTY;
+    return this.http.post<number | null>(`${environment.apiUrl}/Upload/EnsureDirectory`, {parentId, folders});
   }
 }
 
