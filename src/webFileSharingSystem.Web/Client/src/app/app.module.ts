@@ -83,7 +83,7 @@ import {ButtonsModule} from "ngx-bootstrap/buttons";
     }),
     ButtonsModule,
 
-  ],
+    ],
   providers: [
     {provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true},
   ],

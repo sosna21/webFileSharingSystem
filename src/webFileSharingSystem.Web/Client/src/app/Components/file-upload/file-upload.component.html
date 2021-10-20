@@ -10,8 +10,6 @@
 </label>
 
 <div class="dropzone col-11" appDnd>
-  <input type="file" id="fileDropRef" multiple (change)="fileSelected($event.target)" >
-<div class="dropzone" appDnd>
   <input  *ngIf="radioModel === 'files'" type="file"  (change)="fileSelected($event.target)" multiple/>
   <input  *ngIf="radioModel === 'folder'" type="file" (change)="fileSelected($event.target)" multiple webkitdirectory/>
   <fa-icon size="3x" [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
