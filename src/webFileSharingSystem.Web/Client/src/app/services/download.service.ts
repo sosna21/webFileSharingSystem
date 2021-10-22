@@ -12,4 +12,13 @@ export class DownloadService {
   public downloadSingleFileDirectUrl(fileId: number) {
     return `${environment.apiUrl}/Download/${fileId}/Anonymous`
   }
+
+  public downloadMultipleFilesDirectUrl(fileIds: number[]) {
+    let queryParams = `${fileIds[0]}`;
+    for (let i = 1; i < fileIds.length; i++) {
+      queryParams += `&fileIds=${fileIds[i]}`
+    }
+    return `${environment.apiUrl}/Download/Multiple?fileIds=${queryParams}`
+  }
+
 }

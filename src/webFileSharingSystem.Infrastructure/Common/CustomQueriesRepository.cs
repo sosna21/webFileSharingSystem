@@ -31,5 +31,10 @@ namespace webFileSharingSystem.Infrastructure.Common
         {
             return await _dbContext.GetListOfAllParentsAsFiles(parentId).ToListAsync(cancellationToken);
         }
+        
+        public async Task<List<File>> GetListOfAllFilesFromLocations(IList<int> fileIds, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.GetListOfAllFilesFromLocations(fileIds).ToListAsync(cancellationToken);
+        }
     }
 }

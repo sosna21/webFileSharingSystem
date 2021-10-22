@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -11,8 +12,8 @@ using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 using EntityState = Microsoft.EntityFrameworkCore.EntityState;
 
-namespace webFileSharingSystem.Infrastructure.Data {
-    
+namespace webFileSharingSystem.Infrastructure.Data
+{
     public class ApplicationDbContext : IdentityDbContext, IApplicationDbContext
     {
         private readonly ICurrentUserService _currentUserService;
@@ -118,18 +119,18 @@ namespace webFileSharingSystem.Infrastructure.Data {
                 await _domainEventService.Publish(domainEventEntity);
             }
         }
-        
+
         public IQueryable<File> GetListOfAllParentsAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
                 $@"
                     WITH recursive_cte AS
                     (
-                    SELECT *
-                    FROM [File] WHERE Id={parentId}
-                    UNION ALL
-                    SELECT [f].*
-                    FROM [File] AS [f]
-                    INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
+                        SELECT *
+                        FROM [File] WHERE Id={parentId}
+                        UNION ALL
+                        SELECT [f].*
+                        FROM [File] AS [f]
+                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
                     )
                     SELECT * FROM recursive_cte
                 ");
@@ -139,30 +140,50 @@ namespace webFileSharingSystem.Infrastructure.Data {
                 $@"
                     WITH recursive_cte AS
                     (
-                    SELECT [Id], [FileName], [ParentId]
-                    FROM [File] WHERE Id={id}
-                    UNION ALL
-                    SELECT [f].[Id], [f].[FileName], [f].[ParentId]
-                    FROM [File] AS [f]
-                    INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
+                        SELECT [Id], [FileName], [ParentId]
+                        FROM [File] WHERE Id={id}
+                        UNION ALL
+                        SELECT [f].[Id], [f].[FileName], [f].[ParentId]
+                        FROM [File] AS [f]
+                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
                     )
                     SELECT [Id], [FileName] FROM recursive_cte
                 ");
-        
-        
+
+
         public IQueryable<File> GetListOfAllChildrenAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
                 $@"
                     WITH recursive_cte AS
                     (
-                    SELECT *
-                    FROM [File] WHERE Id={parentId}
-                    UNION All
-                    SELECT [f].*
-                    FROM [File] AS [f]
-                    INNER JOIN recursive_cte AS [cte] ON [f].[ParentId] = [cte].[Id] 
+                        SELECT *
+                        FROM [File] WHERE Id={parentId}
+                        UNION All
+                        SELECT [f].*
+                        FROM [File] AS [f]
+                        INNER JOIN recursive_cte AS [cte] ON [f].[ParentId] = [cte].[Id] 
                     )
                     SELECT * FROM recursive_cte
                 ");
+
+        public IQueryable<File> GetListOfAllFilesFromLocations(IList<int> fileIds)
+        {
+            var placeholders = string.Join(",", Enumerable.Range(0, fileIds.Count)
+                .Select(i => "{" + i + "}"));
+            var values = fileIds.Cast<object>().ToArray();
+
+            var query = Set<File>().FromSqlRaw($@"    
+                    WITH recursive_cte AS
+                    (
+                        SELECT *
+                        FROM [File] WHERE Id IN ({placeholders})
+                        UNION All
+                        SELECT [f].*
+                        FROM [File] AS [f]
+                        INNER JOIN recursive_cte AS [cte] ON [f].[ParentId] = [cte].[Id] 
+                    )
+                    SELECT * FROM recursive_cte", values);
+            return query;
+        }
     }
 }

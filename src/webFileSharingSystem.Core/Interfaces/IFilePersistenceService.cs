@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.Core.Interfaces
 {
@@ -23,5 +25,8 @@ namespace webFileSharingSystem.Core.Interfaces
         string GetFilePath(int userId, Guid fileGuid);
 
         void DeleteExistingFile(int userId, Guid persistedFileId);
+
+        public IEnumerable<File> FindRelativeFilePath(File startFile,
+            IDictionary<int, File> fileDictionary);
     }
 }
