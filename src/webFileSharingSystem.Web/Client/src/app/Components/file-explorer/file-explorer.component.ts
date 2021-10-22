@@ -29,6 +29,12 @@ interface ShareRequestBody {
   AccessMode?: ShareAccessMode,
   AccessDuration?: any
 }
+interface ShareRequestResponse {
+  sharedWithUserName: string,
+  accessMode: ShareAccessMode,
+  validUntil: Date
+}
+
 
 @Component({
   selector: 'app-file-explorer',
@@ -53,6 +59,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
   shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+  shares: ShareRequestResponse[] = [];
 
   private subscriptions: Subscription[] = []
 
@@ -135,6 +142,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   openModal(template: TemplateRef<any>) {
+    this.getShares(this.fileExplorerService.filesToShare[0].id);
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
   }
 
@@ -186,6 +194,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.loadingData = false;
         console.log(error);
       })
+  }
+
+  getShares(fileId: number): void {
+    this.http.get<any>(`${environment.apiUrl}/Share/GetShares/${fileId}`).subscribe(response => {
+    this.shares = response;
+    }, error => {
+      console.log(error);
+    })
   }
 
   getNames(): void {

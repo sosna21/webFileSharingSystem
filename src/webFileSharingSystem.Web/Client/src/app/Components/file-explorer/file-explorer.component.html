@@ -118,8 +118,8 @@
                    [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
         </td>
         <td>
-          <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
-                   (click)="file.loading ? null : ile.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate); fileExplorerService.filesToShare = [file]"
+          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
+                   (click)="file.loading ? null : fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
@@ -193,7 +193,7 @@
     <form>
       <div class="form-group">
         <label for="recipient-name" class="col-form-label">Share with:</label>
-        <input type="text" class="form-control" id="recipient-name" [(ngModel)]="shareRequestBody.UserNameToShareWith"
+        <input [disabled]="!!shareRequestBody.UserNameToShareWith" type="text" class="form-control" id="recipient-name" [(ngModel)]="shareRequestBody.UserNameToShareWith"
                [ngModelOptions]="{standalone: true}"/>
       </div>
       <div class="form-group">
@@ -228,26 +228,43 @@
     </form>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-dark mr-2" (click)="shareConfirm()">Yes</button>
-    <button type="button" class="btn btn-secondary" (click)="shareDecline()">No</button>
+    <button type="button" class="btn btn-dark mr-2" (click)="shareConfirm()">{{!!shareRequestBody.UserNameToShareWith ? 'Update' : 'Yes'}}</button>
+    <button type="button" class="btn btn-secondary" (click)="shareDecline()">{{!!shareRequestBody.UserNameToShareWith ? 'Cancel' : 'No'}}</button>
   </div>
 </ng-template>
 
 
 <ng-template #customizeSharesTemplate>
   <div class="modal-header text-center">
-    <div class="d-flex flex-row pt-3 pb-2">
-      <div class="align-self-center align-text-bottom mr-3">
+    <div class="d-flex flex-row align-middle pt-3 pb-2">
+      <div class="mr-3">
         <p>Select existing share or create a new one</p>
       </div>
-      <div class="align-self-center mr-3">
+      <div>
         <fa-icon size="2x" [icon]="['fas', 'plus-circle']"
                  (click)="decline(); openModal(shareTemplate);"></fa-icon>
       </div>
     </div>
   </div>
   <div class="modal-body">
-
+    <div class="table-responsive" style="overflow: visible">
+      <table class="table table-sm table-hover">
+        <thead>
+        <tr>
+          <th scope="col">Shared with:</th>
+          <th scope="col">Access mode:</th>
+          <th scope="col">Valid until:</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let share of shares" (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName; decline() ;openModal(shareTemplate)" style="cursor: pointer">
+          <td>{{share.sharedWithUserName}}</td>
+          <td>{{share.accessMode}}</td>
+          <td>{{share.validUntil | timeago}}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-danger" (click)="decline()">Exit</button>
