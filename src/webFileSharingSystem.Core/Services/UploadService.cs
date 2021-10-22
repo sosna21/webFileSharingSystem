@@ -24,9 +24,8 @@ namespace webFileSharingSystem.Core.Services
         private readonly IOptions<StorageSettings> _storageSettings;
 
         private static readonly
-            ConcurrentDictionary<(int userId, int fileId), (string filePath, PartialFileInfo partialFileInfo)>
-            UserFileCache = new();
-
+            ConcurrentDictionary<(int userId, int fileId), PartialFileInfoCache> UserFileCache = new();
+        
 
         public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService,
             IOptions<StorageSettings> storageSettings)
@@ -90,7 +89,7 @@ namespace webFileSharingSystem.Core.Services
             {
                 var filePath = await _filePersistenceService.GenerateNewFile(userId, fileGuidId);
                 //TODO What if given key already exists in the cache? 
-                UserFileCache[(userId, file.Id)] = (filePath, partialFileInfo);
+                UserFileCache[(userId, file.Id)] = new PartialFileInfoCache(filePath, partialFileInfo);
                 return (Result.Success(), partialFileInfo);
             }
             catch
@@ -121,7 +120,8 @@ namespace webFileSharingSystem.Core.Services
                             .SingleOrDefault();
 
                         if (file?.PartialFileInfo is not null)
-                            UserFileCache[key] = (_filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                            UserFileCache[key] = new PartialFileInfoCache(
+                                _filePersistenceService.GetFilePath(userId, file.FileId!.Value),
                                 file.PartialFileInfo);
                     }
                 }
@@ -139,15 +139,18 @@ namespace webFileSharingSystem.Core.Services
             }
 
 
-            var (filePath, partialFileInfo) = UserFileCache[key];
+            var partialFileInfoCache = UserFileCache[key];
 
-            lock (partialFileInfo)
+            lock (partialFileInfoCache.PartialFileInfo)
             {
-                partialFileInfo.PersistenceMap.SetBit(chunkIndex, false);
+                partialFileInfoCache.PartialFileInfo.PersistenceMap.SetBit(chunkIndex, false);
 
-                _filePersistenceService.SaveChunk(filePath, chunkIndex, partialFileInfo.ChunkSize, chunkStream,
+                _filePersistenceService.SaveChunk(partialFileInfoCache.FilePath, chunkIndex,
+                        partialFileInfoCache.PartialFileInfo.ChunkSize, chunkStream,
                         cancellationToken)
                     .ConfigureAwait(false).GetAwaiter().GetResult();
+
+                partialFileInfoCache.IsDirty = true;
             }
 
             return Result.Success();
@@ -175,7 +178,8 @@ namespace webFileSharingSystem.Core.Services
                             .SingleOrDefault();
 
                         if (file?.PartialFileInfo is not null)
-                            UserFileCache[key] = (_filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                            UserFileCache[key] = new PartialFileInfoCache(
+                                _filePersistenceService.GetFilePath(userId, file.FileId!.Value),
                                 file.PartialFileInfo);
                     }
                 }
@@ -191,7 +195,7 @@ namespace webFileSharingSystem.Core.Services
             }
 
 
-            if (!UserFileCache[key].partialFileInfo.PersistenceMap.CheckIfAllBitsAreZeros())
+            if (!UserFileCache[key].PartialFileInfo.PersistenceMap.CheckIfAllBitsAreZeros())
                 return Result.Failure("Not all chunks were uploaded correctly to the server");
 
             file ??= await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
@@ -202,7 +206,7 @@ namespace webFileSharingSystem.Core.Services
 
             _unitOfWork.Repository<File>().Update(file);
 
-            _unitOfWork.Repository<PartialFileInfo>().Remove(UserFileCache[key].partialFileInfo);
+            _unitOfWork.Repository<PartialFileInfo>().Remove(UserFileCache[key].PartialFileInfo);
 
             await _unitOfWork.Complete(cancellationToken);
 
@@ -232,7 +236,8 @@ namespace webFileSharingSystem.Core.Services
                             .SingleOrDefault();
 
                         if (file?.PartialFileInfo is not null)
-                            UserFileCache[key] = (_filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                            UserFileCache[key] = new PartialFileInfoCache(
+                                _filePersistenceService.GetFilePath(userId, file.FileId!.Value),
                                 file.PartialFileInfo);
                     }
                 }
@@ -253,7 +258,7 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure("File does not contain 'PartialFileInfo'"), Array.Empty<int>());
             }
 
-            var partialFileInfo = UserFileCache[key].partialFileInfo;
+            var partialFileInfo = UserFileCache[key].PartialFileInfo;
 
             var uploadedChunks =
                 partialFileInfo.PersistenceMap.GetAllIndexesWithValue(true,
@@ -268,7 +273,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (!UserFileCache.ContainsKey(key)) return Result.Failure("'PartialFileInfo' can not be found");
 
-            var partialFileInfo = UserFileCache[key].partialFileInfo;
+            var partialFileInfo = UserFileCache[key].PartialFileInfo;
 
             _unitOfWork.Repository<PartialFileInfo>().Update(partialFileInfo);
 
@@ -278,8 +283,8 @@ namespace webFileSharingSystem.Core.Services
         }
 
         public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
-            UserFileCache.GetValueOrDefault((userId, fileId)).partialFileInfo;
-
+            UserFileCache.GetValueOrDefault((userId, fileId))?.PartialFileInfo;
+        
         public async Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId,
             IEnumerable<string> folders,
             CancellationToken cancellationToken = default)
@@ -342,6 +347,33 @@ namespace webFileSharingSystem.Core.Services
                 return chunkSizeConstraints.MaximumChunkSize;
 
             return (int) calculatedChunkSize;
+        }
+
+        public static async Task SaveCacheData(IRepository<PartialFileInfo> partialFileInfoRepository, IApplicationDbContext applicationDbContext, CancellationToken cancellationToken)  
+        {
+            foreach (var cache in UserFileCache.Values.Where(t => t.IsDirty))
+            {
+                lock (cache.PartialFileInfo)
+                {
+                    partialFileInfoRepository.Update(cache.PartialFileInfo);
+                    cache.IsDirty = false;
+                }
+            }
+
+            await applicationDbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        private class PartialFileInfoCache
+        {
+            public PartialFileInfoCache(string filePath, PartialFileInfo partialFileInfo)
+            {
+                FilePath = filePath;
+                PartialFileInfo = partialFileInfo;
+            }
+
+            public bool IsDirty { get; set; }
+            public string FilePath { get; set; }
+            public PartialFileInfo PartialFileInfo { get; set; }
         }
     }
 }

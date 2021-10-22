@@ -79,6 +79,7 @@ namespace webFileSharingSystem.Infrastructure
             {
                 options.AddPolicy("AdminOnly", policy => policy.RequireRole("Administrator"));
             });
+            
 
             return services;
         }
