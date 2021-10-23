@@ -17,7 +17,5 @@ namespace webFileSharingSystem.Core.Interfaces
         Task<List<File>> GetListOfAllFilesFromLocations(IList<int> fileIds, CancellationToken cancellationToken = default);
 
         IQueryable<File> GetFilteredListOfAllChildrenAsFilesQuery(int parentId, ISpecification<File> spec);
-        
-        
     }
 }

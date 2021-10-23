@@ -163,7 +163,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   getFiles(mode: string, parentId: number | null, searchedPhrase: string | null, callBack?: () => void): void {
-    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}${searchedPhrase ? '&SearchedPhrase=' + searchedPhrase : ''}`).subscribe(response => {
+    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
       this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);

@@ -53,21 +53,24 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => new FileResponse
-                {
-                    Id = file.Id,
-                    FileName = file.FileName,
-                    MimeType = file.MimeType,
-                    Size = file.Size,
-                    IsShared = file.IsShared,
-                    IsFavourite = file.IsFavourite,
-                    IsDirectory = file.IsDirectory,
-                    ModificationDate = file.LastModified ?? file.Created,
-                    FileStatus = file.FileStatus,
-                    PartialFileInfo = file.PartialFileInfo,
-                    UploadProgress = CalculateUploadProgress(
-                        _uploadService.GetCachedPartialFileInfo(userId!.Value, file.Id) ?? file.PartialFileInfo)
-                }, new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value, request.SearchedPhrase));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => ToFileResponse(file ,userId!.Value), new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
+        }
+        
+        [HttpGet]
+        [Route("GetSearched")]
+        public async Task<ActionResult<PaginatedList<FileResponse>>> GetSearchedFilesAsync([FromQuery] FileRequest request)
+        {
+            if (string.IsNullOrEmpty(request.SearchedPhrase)) return BadRequest("Search phrase must be specified");
+                
+                var userId = _currentUserService.UserId;
+        
+            if (request.ParentId is null)
+                return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    file => ToFileResponse(file, userId!.Value), new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
+            
+            return await _unitOfWork.Repository<File>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => ToFileResponse(file, userId!.Value), 
+                    _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
         }
 
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
@@ -469,6 +472,25 @@ namespace webFileSharingSystem.Web.Controllers
             }
 
             return BadRequest("Problem with copying files");
+        }
+        
+        private FileResponse ToFileResponse(File file, int userId)
+        {
+            return new FileResponse
+            {
+                Id = file.Id,
+                FileName = file.FileName,
+                MimeType = file.MimeType,
+                Size = file.Size,
+                IsShared = file.IsShared,
+                IsFavourite = file.IsFavourite,
+                IsDirectory = file.IsDirectory,
+                ModificationDate = file.LastModified ?? file.Created,
+                FileStatus = file.FileStatus,
+                PartialFileInfo = file.PartialFileInfo,
+                UploadProgress = CalculateUploadProgress(
+                    _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+            };
         }
     }
 }
