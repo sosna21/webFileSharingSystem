@@ -67,7 +67,7 @@ namespace webFileSharingSystem.Web.Controllers
                     PartialFileInfo = file.PartialFileInfo,
                     UploadProgress = CalculateUploadProgress(
                         _uploadService.GetCachedPartialFileInfo(userId!.Value, file.Id) ?? file.PartialFileInfo)
-                }, new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
+                }, new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value, request.SearchedPhrase));
         }
 
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)

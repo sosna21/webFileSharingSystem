@@ -30,8 +30,6 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders,
             CancellationToken cancellationToken = default);
-        
 
-        
     }
 }

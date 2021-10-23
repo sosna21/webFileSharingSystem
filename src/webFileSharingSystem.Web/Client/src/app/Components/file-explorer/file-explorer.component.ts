@@ -46,6 +46,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   totalItems!: number;
   gRename: boolean = false;
   names: string[] = [];
+  searchedPhrase: string | null = null;
   breadCrumbs: BreadCrumb[] = [];
   userSubscription!: Subscription;
   modalRef?: BsModalRef;
@@ -59,10 +60,17 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   private openDropdownToBeHidden: any;
 
   ngOnInit(): void {
+
     this.userSubscription = this.route.params.subscribe(params => {
+
       if (params['id']) {
         this.parentId = +params['id'];
       }
+      this.fileExplorerService.searchedText.subscribe(response => {
+        this.searchedPhrase = response;
+        this.reloadData();
+      })
+
       this.reloadData();
       this.getNames();
       if (this.parentId)
@@ -75,7 +83,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       // console.log(progress?.progress);
       if (progress?.status === UploadStatus.Started) {
         if (progress.parentId === this.parentId) {
-          this.getFiles(this.mode, this.parentId, () => {
+          this.getFiles(this.mode, this.parentId, this.searchedPhrase,() => {
             const uploadingFile = this.files.find(f => f.id === progress.fileId);
             if (uploadingFile) uploadingFile.progressStatus = ProgressStatus.Started;
           });
@@ -134,7 +142,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
 
   private reloadData(): void {
-    this.getFiles(this.mode, this.parentId);
+    this.getFiles(this.mode, this.parentId, this.searchedPhrase);
   }
 
   initializeForm() {
@@ -154,8 +162,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
   }
 
-  getFiles(mode: string, parentId: number | null, callBack?: () => void): void {
-    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
+  getFiles(mode: string, parentId: number | null, searchedPhrase: string | null, callBack?: () => void): void {
+    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}${searchedPhrase ? '&SearchedPhrase=' + searchedPhrase : ''}`).subscribe(response => {
       this.totalItems = response.totalCount;
       this.files = response.items;
       this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);
@@ -191,7 +199,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   downloadMultipleFiles() {
     const fileIdsToDownload = this.files.filter(f => f.checked).map(f => f.id);
-    return  this.downloadService.downloadMultipleFilesDirectUrl(fileIdsToDownload);
+    return this.downloadService.downloadMultipleFilesDirectUrl(fileIdsToDownload);
   }
 
   checkAllCheckBox(ev: any) {
@@ -415,8 +423,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
   }
 
-  shareGetItemAccessMode(shareType: string){
-    switch (shareType){
+  shareGetItemAccessMode(shareType: string) {
+    switch (shareType) {
       case "read":
         return ShareAccessMode.ReadOnly;
       case "write":

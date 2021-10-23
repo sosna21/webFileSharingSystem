@@ -11,5 +11,7 @@ namespace webFileSharingSystem.Web.Contracts.Requests
         public int PageSize { get; set; }
 
         public int? ParentId { get; set; }
+
+        public string? SearchedPhrase { get; set; }
     }
 }
