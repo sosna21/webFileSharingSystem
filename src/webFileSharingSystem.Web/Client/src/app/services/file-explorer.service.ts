@@ -18,6 +18,5 @@ export class FileExplorerService {
 
   public updateSearchText(searchedPhrase: string){
     this.searchedTextSource.next(searchedPhrase);
-    console.log(searchedPhrase);
   }
 }

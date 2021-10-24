@@ -52,26 +52,43 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<PaginatedList<FileResponse>> GetAllFilesAsync([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
-            return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => ToFileResponse(file ,userId!.Value), new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
-        }
-        
-        [HttpGet]
-        [Route("GetSearched")]
-        public async Task<ActionResult<PaginatedList<FileResponse>>> GetSearchedFilesAsync([FromQuery] FileRequest request)
-        {
-            if (string.IsNullOrEmpty(request.SearchedPhrase)) return BadRequest("Search phrase must be specified");
-                
-                var userId = _currentUserService.UserId;
-        
+
+            if (string.IsNullOrEmpty(request.SearchedPhrase))
+                return await _unitOfWork.Repository<File>()
+                    .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                        file => ToFileResponse(file, userId!.Value),
+                        new GetAllFilesSpecs(userId!.Value, request.ParentId));
+
             if (request.ParentId is null)
                 return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    file => ToFileResponse(file, userId!.Value), new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
-            
+                    file => ToFileResponse(file, userId!.Value),
+                    new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
+
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => ToFileResponse(file, userId!.Value), 
-                    _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    file => ToFileResponse(file, userId!.Value),
+                    _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
+                        request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
         }
+
+
+        // [HttpGet]
+        // [Route("GetFiltered")]
+        // public async Task<ActionResult<PaginatedList<FileResponse>>> GetFilteredFilesAsync([FromQuery] FileRequest request)
+        // {
+        //     if (string.IsNullOrEmpty(request.SearchedPhrase)) return BadRequest("Search phrase must be specified");
+        //         
+        //         var userId = _currentUserService.UserId;
+        //
+        //     if (request.ParentId is null)
+        //         return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
+        //             file => ToFileResponse(file, userId!.Value), new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
+        //     
+        //     return await _unitOfWork.Repository<File>()
+        //         .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => ToFileResponse(file, userId!.Value), 
+        //             _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
+        // }
+        
 
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
         {
@@ -110,7 +127,7 @@ namespace webFileSharingSystem.Web.Controllers
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
                     ModificationDate = file.LastModified ?? file.Created
-                }, new GetFavouriteFilesSpecs(userId!.Value, request.ParentId!.Value));
+                }, new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
 
 
@@ -150,7 +167,7 @@ namespace webFileSharingSystem.Web.Controllers
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
                     ModificationDate = file.LastModified ?? file.Created
-                }, new GetRecentFilesSpecs(userId!.Value));
+                }, new GetRecentFilesSpecs(userId!.Value,request.SearchedPhrase));
         }
         
         [HttpGet]
@@ -173,7 +190,7 @@ namespace webFileSharingSystem.Web.Controllers
                         IsDirectory = file.IsDirectory,
                         ModificationDate = file.LastModified ?? file.Created
                     };
-                }, new GetFilesSharedWithMeSpecs(userId!.Value));
+                }, new GetFilesSharedWithMeSpecs(userId!.Value,request.SearchedPhrase));
         }
         
         [HttpGet]
@@ -196,7 +213,7 @@ namespace webFileSharingSystem.Web.Controllers
                         IsDirectory = file.IsDirectory,
                         ModificationDate = file.LastModified ?? file.Created
                     };
-                }, new GetFilesSharedByMeSpecs(userId!.Value));
+                }, new GetFilesSharedByMeSpecs(userId!.Value,request.SearchedPhrase));
         }
         
         

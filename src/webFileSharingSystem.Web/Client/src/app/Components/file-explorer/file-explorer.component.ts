@@ -66,9 +66,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       if (params['id']) {
         this.parentId = +params['id'];
       }
+      let reloadSearchWhenEmpty = false;
       this.fileExplorerService.searchedText.subscribe(response => {
         this.searchedPhrase = response;
-        this.reloadData();
+        if(reloadSearchWhenEmpty || (response && response !== '')){
+          this.reloadData();
+          reloadSearchWhenEmpty = true;
+        }
       })
 
       this.reloadData();
@@ -163,14 +167,16 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   getFiles(mode: string, parentId: number | null, searchedPhrase: string | null, callBack?: () => void): void {
-    this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}&ParentId=${parentId ?? -1}`).subscribe(response => {
-      this.totalItems = response.totalCount;
-      this.files = response.items;
-      this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);
-      callBack?.();
-    }, error => {
-      console.log(error);
-    })
+      this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
+      ${parentId ? '&ParentId=' + parentId : ''}${(searchedPhrase && searchedPhrase !== '') ? '&SearchedPhrase=' + searchedPhrase : ''}`)
+        .subscribe(response => {
+        this.totalItems = response.totalCount;
+        this.files = response.items;
+        this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);
+        callBack?.();
+      }, error => {
+        console.log(error);
+      })
   }
 
   getNames(): void {

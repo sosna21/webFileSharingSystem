@@ -101,7 +101,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                     MimeType = fileExtensionAndMineType.mimeType,
                     Size = isDirectory ? 0 : GenerateRandomSize(),
                     IsDirectory = isDirectory,
-                    IsShared = GenerateRandomBoolean(40),
+                    IsShared = false,
                     IsFavourite = GenerateRandomBoolean(25),
                     IsDeleted = false,
                     UserId = userId,

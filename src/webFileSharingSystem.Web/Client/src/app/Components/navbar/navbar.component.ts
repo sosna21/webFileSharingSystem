@@ -2,7 +2,7 @@ import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/
 import {AuthenticationService} from "../../services/authentication.service"
 import {Router} from "@angular/router";
 import {fromEvent} from "rxjs";
-import {debounceTime, distinctUntilChanged, map} from "rxjs/operators";
+import {debounceTime, map} from "rxjs/operators";
 import {FileExplorerService} from "../../services/file-explorer.service";
 
 @Component({
@@ -21,9 +21,12 @@ export class NavbarComponent implements OnInit, AfterViewInit {
       .pipe(
         debounceTime<any>(1000),
         map((event: Event) => (<HTMLInputElement>event.target).value),
-        distinctUntilChanged(),
         map(value => this.fileExplorerService.updateSearchText(value))
       ).subscribe()
+
+    this.fileExplorerService.searchedText.subscribe(response => {
+      this.filter!.nativeElement.value = response;
+    });
   }
 
   ngOnInit(): void {
