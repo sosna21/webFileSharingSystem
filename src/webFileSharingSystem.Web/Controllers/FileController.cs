@@ -46,7 +46,6 @@ namespace webFileSharingSystem.Web.Controllers
             }));
         }
 
-
         [HttpGet]
         [Route("GetAll")]
         public async Task<PaginatedList<FileResponse>> GetAllFilesAsync([FromQuery] FileRequest request)
@@ -71,25 +70,6 @@ namespace webFileSharingSystem.Web.Controllers
                         request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
         }
 
-
-        // [HttpGet]
-        // [Route("GetFiltered")]
-        // public async Task<ActionResult<PaginatedList<FileResponse>>> GetFilteredFilesAsync([FromQuery] FileRequest request)
-        // {
-        //     if (string.IsNullOrEmpty(request.SearchedPhrase)) return BadRequest("Search phrase must be specified");
-        //         
-        //         var userId = _currentUserService.UserId;
-        //
-        //     if (request.ParentId is null)
-        //         return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
-        //             file => ToFileResponse(file, userId!.Value), new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
-        //     
-        //     return await _unitOfWork.Repository<File>()
-        //         .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => ToFileResponse(file, userId!.Value), 
-        //             _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
-        // }
-        
-
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
         {
             if (partialFileInfo is null) return null;
@@ -97,8 +77,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
             return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
         }
-
-
+        
         [HttpGet]
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
@@ -109,8 +88,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .FindAsync(new GeFilesNamesSpecs(userId!.Value, dbParentId));
             return files.Select(e => e.FileName);
         }
-
-
+        
         [HttpGet]
         [Route("GetFavourites")]
         public async Task<PaginatedList<FileResponse>> GetFavouritesFilesAsync([FromQuery] FileRequest request)
@@ -130,7 +108,6 @@ namespace webFileSharingSystem.Web.Controllers
                 }, new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
 
-
         [HttpGet]
         [Route("GetDeleted")]
         public async Task<PaginatedList<FileResponse>> GetDeletedFilesAsync([FromQuery] FileRequest request)
@@ -149,8 +126,7 @@ namespace webFileSharingSystem.Web.Controllers
                     ModificationDate = file.LastModified ?? file.Created
                 }, new GetDeletedFilesSpecs(userId!.Value, request.ParentId!.Value));
         }
-
-
+        
         [HttpGet]
         [Route("GetRecent")]
         public async Task<PaginatedList<FileResponse>> GetRecentFilesAsync([FromQuery] FileRequest request)
@@ -215,7 +191,6 @@ namespace webFileSharingSystem.Web.Controllers
                     };
                 }, new GetFilesSharedByMeSpecs(userId!.Value,request.SearchedPhrase));
         }
-        
         
         [HttpPut]
         [Route("SetFavourite/{id:int}")]
