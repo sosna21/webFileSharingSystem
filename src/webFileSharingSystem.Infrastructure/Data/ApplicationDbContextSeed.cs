@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
-
 using Microsoft.AspNetCore.Identity;
-
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 
@@ -49,7 +47,7 @@ namespace webFileSharingSystem.Infrastructure.Data
             await CreateUser("Administrator", "maciej@localhost", "Administrator1!", "maciej@localhost", 10);
             await CreateUser("Administrator", "stefan_stefan", "Administrator1!", numberOfFiles: 33);
         }
-        
+
         private async Task CreateUser(
             string roleName,
             string userName,
@@ -64,12 +62,12 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             if (_userManager.Users.All(u => u.UserName != userName))
             {
-                var user = new IdentityUser { UserName = userName, Email = email };
+                var user = new IdentityUser {UserName = userName, Email = email};
                 ApplicationUser applicationUser;
                 using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
                 {
                     await _userManager.CreateAsync(user, password);
-                    await _userManager.AddToRolesAsync(user, new[] { roleName });
+                    await _userManager.AddToRolesAsync(user, new[] {roleName});
                     applicationUser = new ApplicationUser(user.UserName, user.Email, user.Id);
                     _applicationUserRepository.Add(applicationUser);
                     await _applicationDbContext.SaveChangesAsync();
@@ -77,15 +75,18 @@ namespace webFileSharingSystem.Infrastructure.Data
                 }
 
                 var userId = applicationUser.Id;
-
-                await GenerateUserRandomFiles(userId, numberOfFiles);
+                var totalSize = await GenerateUserRandomFiles(userId, numberOfFiles);
+                applicationUser.UsedSpace = totalSize;
+                applicationUser.Quota = Math.Max(5368709120, (ulong) (totalSize * 1.5));
+                _applicationUserRepository.Update(applicationUser);
+                await _applicationDbContext.SaveChangesAsync();
             }
         }
 
-        private async Task GenerateUserRandomFiles(int userId, int numberOfFiles = 50)
+        private async Task<ulong> GenerateUserRandomFiles(int userId, int numberOfFiles = 50)
         {
             var fileNames = GetRandomFileNames().Take(numberOfFiles);
-
+            ulong totalSize = 0;
             foreach (var fileName in fileNames)
             {
                 var isDirectory = GenerateRandomBoolean(10);
@@ -108,10 +109,13 @@ namespace webFileSharingSystem.Infrastructure.Data
                     FileId = Guid.NewGuid()
                 };
                 _fileRepository.Add(file);
+                totalSize += file.Size;
 
                 await _applicationDbContext.SaveChangesAsync();
                 await _filePersistenceService.GenerateNewFile(userId, file.FileId!.Value);
             }
+
+            return totalSize;
         }
 
         private async Task CreateRoleAsync(string roleName)
@@ -143,9 +147,9 @@ namespace webFileSharingSystem.Infrastructure.Data
         private static ulong GenerateRandomSize()
         {
             var number = Random.Next(1, 100);
-            var power = Random.Next(1, 5);
+            var power = Random.Next(1, 3);
 
-            return (ulong)number * (ulong)Math.Pow(1024, power);
+            return (ulong) number * (ulong) Math.Pow(1024, power);
         }
 
         private static (string extension, string mimeType) GenerateRandomExtensionAndMineType()

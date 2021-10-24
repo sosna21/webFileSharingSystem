@@ -145,7 +145,7 @@ namespace webFileSharingSystem.Web.Controllers
                     ModificationDate = file.LastModified ?? file.Created
                 }, new GetRecentFilesSpecs(userId!.Value,request.SearchedPhrase));
         }
-        
+
         [HttpGet]
         [Route("GetSharedWithMe")]
         public async Task<PaginatedList<FileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
@@ -168,7 +168,7 @@ namespace webFileSharingSystem.Web.Controllers
                     };
                 }, new GetFilesSharedWithMeSpecs(userId!.Value,request.SearchedPhrase));
         }
-        
+
         [HttpGet]
         [Route("GetSharedByMe")]
         public async Task<PaginatedList<FileResponse>> GetFilesSharedByMe([FromQuery] FileRequest request)
@@ -275,7 +275,10 @@ namespace webFileSharingSystem.Web.Controllers
 
                     foreach (File fileToUpdate in filesToUpdateSize)
                     {
-                        fileToUpdate.Size -= fileToDelete.Size;
+                        if (fileToUpdate.Size >= fileToDelete.Size)
+                            fileToUpdate.Size -= fileToDelete.Size;
+                        else 
+                            fileToUpdate.Size = 0; //TODO log error message
                         _unitOfWork.Repository<File>().Update(fileToUpdate);
                     }
                 }
@@ -284,7 +287,11 @@ namespace webFileSharingSystem.Web.Controllers
                 if (appUser is null)
                     return BadRequest($"User not found, userId: {userId}");
 
-                appUser.UsedSpace -= fileToDelete.Size;
+                if (appUser.UsedSpace >= fileToDelete.Size)
+                    appUser.UsedSpace -= fileToDelete.Size;
+                else 
+                    appUser.UsedSpace = 0; //TODO log error message
+                
                 _unitOfWork.Repository<ApplicationUser>().Update(appUser);
 
                 if (await _unitOfWork.Complete() > 0) return Ok();
@@ -327,7 +334,11 @@ namespace webFileSharingSystem.Web.Controllers
 
                     foreach (File fileToUpdate in filesToUpdateSize)
                     {
-                        fileToUpdate.Size -= folderToDelete.Size;
+                        if (fileToUpdate.Size >= folderToDelete.Size)
+                            fileToUpdate.Size -= folderToDelete.Size;
+                        else 
+                            fileToUpdate.Size = 0; //TODO log error message
+                     
                         _unitOfWork.Repository<File>().Update(fileToUpdate);
                     }
                 }
@@ -336,7 +347,11 @@ namespace webFileSharingSystem.Web.Controllers
                 if (appUser is null)
                     return BadRequest($"User not found, userId: {userId}");
 
-                appUser.UsedSpace -= folderToDelete.Size;
+                if (appUser.UsedSpace >= folderToDelete.Size)
+                    appUser.UsedSpace -= folderToDelete.Size;
+                else 
+                    appUser.UsedSpace = 0; //TODO log error message
+                
                 _unitOfWork.Repository<ApplicationUser>().Update(appUser);
 
 
@@ -374,7 +389,11 @@ namespace webFileSharingSystem.Web.Controllers
 
                         foreach (File fileToUpdate in filesToUpdateSize)
                         {
-                            fileToUpdate.Size -= fileToMove.Size;
+                            if (fileToUpdate.Size >= fileToMove.Size)
+                                fileToUpdate.Size -= fileToMove.Size;
+                            else 
+                                fileToUpdate.Size = 0; //TODO log error message
+                            
                             _unitOfWork.Repository<File>().Update(fileToUpdate);
                         }
                     }
@@ -413,6 +432,11 @@ namespace webFileSharingSystem.Web.Controllers
             var dbParentId = parentId == -1 ? (int?) null : parentId;
             //TODO check if names of files to move are uniq in target directory
             var userId = _currentUserService.UserId;
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId.Value);
+            if (appUser is null)
+                return BadRequest($"User not found, userId: {userId}");
+            ulong filesToCopyTotalSize = 0;
+            
             try
             {
                 foreach (var id in ids)
@@ -435,26 +459,24 @@ namespace webFileSharingSystem.Web.Controllers
 
                     if (dbParentId is not null)
                     {
-                        var filesToUpdateSize =
+                        var parentsToUpdate =
                             await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(dbParentId.Value);
 
-                        foreach (File fileToUpdate in filesToUpdateSize)
+                        foreach (File parentToUpdate in parentsToUpdate)
                         {
-                            fileToUpdate.Size += fileToCopy.Size;
-                            _unitOfWork.Repository<File>().Update(fileToUpdate);
+                            parentToUpdate.Size += fileToCopy.Size;
+                            _unitOfWork.Repository<File>().Update(parentToUpdate);
                         }
                     }
 
-                    var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId.Value);
-                    if (appUser is null)
-                        return BadRequest($"User not found, userId: {userId}");
-
-                    appUser.UsedSpace += file.Size;
-                    _unitOfWork.Repository<ApplicationUser>().Update(appUser);
-
-
                     _unitOfWork.Repository<File>().Add(file);
+                    filesToCopyTotalSize += file.Size;
                 }
+
+                if (appUser.UsedSpace + filesToCopyTotalSize > appUser.Quota)
+                    return BadRequest("You do not have enough free space to copy these files");
+                appUser.UsedSpace += filesToCopyTotalSize;
+                _unitOfWork.Repository<ApplicationUser>().Update(appUser);
 
                 if (await _unitOfWork.Complete() > 0) return Ok();
             }
