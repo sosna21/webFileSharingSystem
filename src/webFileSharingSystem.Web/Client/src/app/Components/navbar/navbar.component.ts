@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, EventEmitter,ElementRef, OnInit, ViewChild, Output} from '@angular/core';
 import {AuthenticationService} from "../../services/authentication.service"
 import {Router} from "@angular/router";
 import {fromEvent} from "rxjs";
@@ -17,6 +17,12 @@ export class NavbarComponent implements OnInit, AfterViewInit {
               private router: Router, private fileExplorerService: FileExplorerService) {
   }
 
+  @Output() toggleCollapsed = new EventEmitter<boolean>();
+  private isCollapsed: boolean = true;
+
+  constructor(private authenticationService: AuthenticationService,
+              private router: Router, private fileExplorerService: FileExplorerService) {
+  }
   ngAfterViewInit() {
     fromEvent(this.filter?.nativeElement, 'keyup')
       .pipe(
@@ -43,8 +49,12 @@ export class NavbarComponent implements OnInit, AfterViewInit {
 
   }
 
+  toggleSidebarCollapse(){
+    this.isCollapsed = !this.isCollapsed;
+    this.toggleCollapsed.emit(this.isCollapsed)
+}
+
   public get authenticated(): boolean {
     return !!this.authenticationService.currentUserValue
   }
-
 }

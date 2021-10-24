@@ -1,8 +1,9 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
 import {FileUploader} from "ng2-file-upload";
 import {environment} from "../../../environments/environment";
 import {AuthenticationService} from "../../services/authentication.service";
 import {SizeConverterPipe} from "../common/sizeConverterPipe";
+import {Observable} from "rxjs";
 
 @Component({
   selector: 'app-sidebar',
@@ -10,17 +11,30 @@ import {SizeConverterPipe} from "../common/sizeConverterPipe";
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent implements OnInit {
+  @Input() toggleCollapsed: Observable<boolean> | undefined;
   uploader!: FileUploader;
   baseUrl = environment.apiUrl;
   usedSpace: number = 0;
   quota: number = 0;
-
+  isCollapsed = true;
+  isShareItemActive: boolean = false;
   dynamic = 0;
   type: 'bg-success' | 'bg-info' | 'bg-warning' | 'bg-danger' = 'bg-info';
 
-  isShareItemActive: boolean = false;
-
   constructor(private authenticationService: AuthenticationService) {
+  }
+
+  ngOnInit(): void {
+    this.authenticationService.currentUser.subscribe(user => {
+      this.usedSpace = user.usedSpace;
+      this.quota = user.quota;
+      this.calculateProgressPercent();
+    });
+    this.initializeUploader();
+
+    this.toggleCollapsed?.subscribe(response => {
+      this.isCollapsed = response;
+    });
   }
 
   calculateProgressPercent(): void {
@@ -40,17 +54,6 @@ export class SidebarComponent implements OnInit {
     this.dynamic = value;
     this.type = type;
   }
-
-  ngOnInit(): void {
-    this.authenticationService.currentUser.subscribe(user => {
-      this.usedSpace = user.usedSpace;
-      this.quota = user.quota;
-      this.calculateProgressPercent();
-    });
-    this.initializeUploader();
-  }
-
-  isCollapsed = true;
 
   initializeUploader() {
     this.uploader = new FileUploader({

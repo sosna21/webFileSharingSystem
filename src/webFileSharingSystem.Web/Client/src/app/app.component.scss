@@ -21,4 +21,11 @@ body {
 .mainView {
   flex: 1;
   margin-bottom: 38px;
+  padding: 48px 0 0; /* Height of navbar */
+}
+
+@media (max-width: 767.98px) {
+  .mainViewCollapsed {
+    padding: 140px 0 0; /* Height of navbar */
+  }
 }
