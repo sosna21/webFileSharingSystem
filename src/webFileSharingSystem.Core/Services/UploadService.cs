@@ -25,7 +25,7 @@ namespace webFileSharingSystem.Core.Services
 
         private static readonly
             ConcurrentDictionary<(int userId, int fileId), PartialFileInfoCache> UserFileCache = new();
-        
+
 
         public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService,
             IOptions<StorageSettings> storageSettings)
@@ -41,10 +41,21 @@ namespace webFileSharingSystem.Core.Services
             string fileName,
             string? mimeType, long size)
         {
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId);
+            if (appUser is null)
+                return (Result.Failure($"User not found, userId: {userId}"), null);
+
+            if (appUser.UsedSpace + (ulong) size > appUser.Quota)
+                return (Result.Failure($"You do not have enough free space to upload \"{fileName}\""), null);
+
             var preferredChunk = CalculatePreferredChunkSize(size);
-            var partialFileInfo = preferredChunk is null
-                ? StorageExtensions.GeneratePartialFileInfo(size)
-                : StorageExtensions.GeneratePartialFileInfo(size, preferredChunk.Value);
+            PartialFileInfo? partialFileInfo = null;
+            if (size != 0)
+            {
+                partialFileInfo = preferredChunk is null
+                    ? StorageExtensions.GeneratePartialFileInfo(size)
+                    : StorageExtensions.GeneratePartialFileInfo(size, preferredChunk.Value);
+            }
 
             var fileGuidId = Guid.NewGuid();
             //TODO Check if file with the same name already exists for that user
@@ -54,7 +65,7 @@ namespace webFileSharingSystem.Core.Services
                 FileName = fileName,
                 MimeType = mimeType,
                 Size = (ulong) size,
-                FileStatus = FileStatus.Incomplete,
+                FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,
                 FileId = fileGuidId,
                 ParentId = parentId,
                 PartialFileInfo = partialFileInfo
@@ -62,7 +73,7 @@ namespace webFileSharingSystem.Core.Services
 
             _unitOfWork.Repository<File>().Add(file);
 
-            if (parentId is not null)
+            if (parentId is not null && size > 0)
             {
                 var filesToUpdateSize =
                     await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(parentId.Value);
@@ -74,13 +85,8 @@ namespace webFileSharingSystem.Core.Services
                 }
             }
 
-            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId);
-            if (appUser is null)
-                return (Result.Failure($"User not found, userId: {userId}"), null);
-
             appUser.UsedSpace += file.Size;
             _unitOfWork.Repository<ApplicationUser>().Update(appUser);
-
 
             if (await _unitOfWork.Complete() <= 0)
                 return (Result.Failure("Problem during upload initialization"), null);
@@ -89,7 +95,8 @@ namespace webFileSharingSystem.Core.Services
             {
                 var filePath = await _filePersistenceService.GenerateNewFile(userId, fileGuidId);
                 //TODO What if given key already exists in the cache? 
-                UserFileCache[(userId, file.Id)] = new PartialFileInfoCache(filePath, partialFileInfo);
+                if (partialFileInfo is not null)
+                    UserFileCache[(userId, file.Id)] = new PartialFileInfoCache(filePath, partialFileInfo);
                 return (Result.Success(), partialFileInfo);
             }
             catch
@@ -284,7 +291,7 @@ namespace webFileSharingSystem.Core.Services
 
         public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
             UserFileCache.GetValueOrDefault((userId, fileId))?.PartialFileInfo;
-        
+
         public async Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId,
             IEnumerable<string> folders,
             CancellationToken cancellationToken = default)
@@ -349,7 +356,8 @@ namespace webFileSharingSystem.Core.Services
             return (int) calculatedChunkSize;
         }
 
-        public static async Task SaveCacheData(IRepository<PartialFileInfo> partialFileInfoRepository, IApplicationDbContext applicationDbContext, CancellationToken cancellationToken)  
+        public static async Task SaveCacheData(IRepository<PartialFileInfo> partialFileInfoRepository,
+            IApplicationDbContext applicationDbContext, CancellationToken cancellationToken)
         {
             foreach (var cache in UserFileCache.Values.Where(t => t.IsDirty))
             {

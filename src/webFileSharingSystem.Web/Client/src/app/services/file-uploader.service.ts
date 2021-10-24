@@ -7,6 +7,7 @@ import {PartialFileInfo} from "../models/partialFileInfo";
 import {catchError, concatMap, finalize, last, retry, tap} from "rxjs/operators";
 import {UploadProgressInfo, UploadStatus} from "../Components/common/fileUploadProgress";
 import {AuthenticationService} from "./authentication.service";
+import {ToastrService} from "ngx-toastr";
 
 @Injectable({
   providedIn: 'root'
@@ -17,13 +18,14 @@ export class FileUploaderService {
   private reportUploadProgressSource = new BehaviorSubject<UploadProgressInfo | null>(null);
   public reportUploadProgress = this.reportUploadProgressSource.asObservable();
 
-  constructor(private http: HttpClient, private authenticationService: AuthenticationService) {
+  constructor(private http: HttpClient, private authenticationService: AuthenticationService, private toastr: ToastrService) {
   }
 
   public upload(file: File, parentId: number | null = null) {
 
     return new Observable(subscriber => {
       this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
+        if (file.size === 0) return;
         this.authenticationService.updateCurrentUserUsedSpace(file.size);
         const progress: UploadProgressInfo = {
           status: UploadStatus.Started,
@@ -58,6 +60,13 @@ export class FileUploaderService {
             })
           })
         };
+      }, error => {
+        if (error.error.length < 100)
+          this.toastr.error(error.error, "Upload error");
+        else {
+          this.toastr.error('See console log for additional info', `"${file.name}" unexpected upload error`)
+          console.log(error.error)
+        }
       });
     })
   }

@@ -11,6 +11,7 @@ import {DownloadService} from "../../services/download.service";
 import {FileUploaderService} from "../../services/file-uploader.service";
 import {UploadStatus} from "../common/fileUploadProgress";
 import {AuthenticationService} from "../../services/authentication.service";
+import {ToastrService} from "ngx-toastr";
 
 interface BreadCrumb {
   id: number;
@@ -54,7 +55,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
-    , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService) {
+    , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService
+    , private toastr: ToastrService) {
   }
 
   private openDropdownToBeHidden: any;
@@ -288,7 +290,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.reloadData();
         this.fileExplorerService.filesToMoveCopy = [];
       }, error => {
-        console.log(error)
+        if (error.error)
+          this.toastr.error(error.error, "Copy error");
       })
   }
 

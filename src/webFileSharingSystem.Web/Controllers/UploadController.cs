@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Web.Contracts.Requests;
@@ -51,8 +49,8 @@ namespace webFileSharingSystem.Web.Controllers
 
             return Ok();
         }
-        
-        
+
+
         [HttpPut]
         [Route("{fileId:int}/Pause")]
         public async Task<ActionResult<PartialFileInfo>> PauseFileUploadAsync(int fileId)
@@ -65,7 +63,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             return Ok();
         }
-        
+
 
         [HttpPut]
         [Route("{fileId:int}/Complete")]
@@ -80,32 +78,32 @@ namespace webFileSharingSystem.Web.Controllers
 
             return Ok();
         }
-        
+
         [HttpGet]
         [Route("{fileId:int}/MissingChunks")]
         public async Task<ActionResult<IEnumerable<int>>> GetMissingChunksAsync(int fileId,
             CancellationToken cancellationToken = default)
         {
             var userId = _currentUserService.UserId;
-            var (result, missingChunkIndexes) = await _uploadService.GetMissingFileChunks(userId!.Value, fileId, cancellationToken);
-           
+            var (result, missingChunkIndexes) =
+                await _uploadService.GetMissingFileChunks(userId!.Value, fileId, cancellationToken);
+
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok(missingChunkIndexes);
         }
-        
-        
+
         [HttpPost]
         [Route("EnsureDirectory")]
         public async Task<ActionResult<int>> EnsureDirectory([FromBody] EnsureDirectoryRequest request)
         {
             var userId = _currentUserService.UserId;
 
-            var (result, file) = await _uploadService.EnsureDirectoriesExist(userId!.Value, request.ParentId, request.Folders);
+            var (result, file) =
+                await _uploadService.EnsureDirectoriesExist(userId!.Value, request.ParentId, request.Folders);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok(file!.Id);
         }
-        
     }
 }
