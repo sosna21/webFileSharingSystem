@@ -17,7 +17,7 @@ namespace webFileSharingSystem.Core.Services
         {
             _serviceProvider = serviceProvider;
         }
-        
+
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -36,7 +36,7 @@ namespace webFileSharingSystem.Core.Services
                 var partialFileInfoRepository =
                     scope.ServiceProvider.GetRequiredService<IRepository<PartialFileInfo>>();
 
-                await UploadService.SaveCacheData(partialFileInfoRepository, applicationDbContext,cancellationToken);
+                await UploadService.SaveCacheData(partialFileInfoRepository, applicationDbContext, cancellationToken);
             }
         }
     }

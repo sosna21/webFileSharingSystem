@@ -40,9 +40,14 @@ namespace webFileSharingSystem.Infrastructure.Common
 
         public async Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
         {
-            var querySource = ApplySpecification(specification);
-            var count = await querySource.CountAsync(cancellationToken);
-            var items = await querySource.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+            return await PaginatedListFindAsync(pageNumber, pageSize, mapToResult, ApplySpecification(specification),
+                cancellationToken);
+        }
+        
+        public async Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, IQueryable<TEntity> customQuery, CancellationToken cancellationToken = default)
+        {
+            var count = await customQuery.CountAsync(cancellationToken);
+            var items = await customQuery.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
             return new PaginatedList<TResult>(items.Select(mapToResult), count, pageNumber, pageSize);
         }

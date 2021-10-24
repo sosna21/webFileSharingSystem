@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {File} from "../Components/common/file";
+import {BehaviorSubject} from "rxjs";
 
 
 @Injectable({
@@ -10,5 +11,12 @@ export class FileExplorerService {
   filesToDelete: File[] = [];
   filesToShare: File[] = [];
 
+  private searchedTextSource = new BehaviorSubject<string | null>(null);
+  public searchedText = this.searchedTextSource.asObservable();
+
   constructor() { }
+
+  public updateSearchText(searchedPhrase: string){
+    this.searchedTextSource.next(searchedPhrase);
+  }
 }

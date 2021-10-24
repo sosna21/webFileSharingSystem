@@ -165,7 +165,13 @@ namespace webFileSharingSystem.Infrastructure.Data
                     )
                     SELECT * FROM recursive_cte
                 ");
-
+        
+        public IQueryable<File> GetListOfAllChildrenTvfAsFiles(int parentId) =>
+            Set<File>().FromSqlInterpolated(
+                $@"
+                    SELECT * FROM GetListOfAllChildrenTVF({parentId})
+                ");
+        
         public IQueryable<File> GetListOfAllFilesFromLocations(IList<int> fileIds)
         {
             var placeholders = string.Join(",", Enumerable.Range(0, fileIds.Count)

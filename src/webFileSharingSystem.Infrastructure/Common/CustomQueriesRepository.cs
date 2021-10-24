@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,11 @@ namespace webFileSharingSystem.Infrastructure.Common
         public async Task<List<File>> GetListOfAllFilesFromLocations(IList<int> fileIds, CancellationToken cancellationToken = default)
         {
             return await _dbContext.GetListOfAllFilesFromLocations(fileIds).ToListAsync(cancellationToken);
+        }
+
+        public IQueryable<File> GetFilteredListOfAllChildrenAsFilesQuery(int parentId, ISpecification<File> spec)
+        {
+            return SpecificationEvaluator<File>.GetQuery(_dbContext.GetListOfAllChildrenTvfAsFiles(parentId), spec);
         }
     }
 }

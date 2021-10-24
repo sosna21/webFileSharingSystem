@@ -4,11 +4,11 @@ namespace webFileSharingSystem.Core.Specifications
 {
     public sealed class GetFavouriteFilesSpecs : BaseSpecification<File>
     {
-        public GetFavouriteFilesSpecs(int userId, int parentId) : base(
+        public GetFavouriteFilesSpecs(int userId, string? searchPhrase) : base(
             file => file.UserId == userId
-                 && file.IsDeleted == false
-                 && file.IsFavourite == true
-                 && parentId == -1 ? file.ParentId == null : file.ParentId == parentId)
+                    && file.IsDeleted == false
+                    && file.IsFavourite == true
+                    && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
         {
             ApplyOrderBy(file => file.Id);
         }

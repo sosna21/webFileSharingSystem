@@ -4,21 +4,22 @@
  */
 
 using System.Linq;
-
 using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 
 namespace webFileSharingSystem.Infrastructure.Common
 {
-    public static class SpecificationEvaluator <TEntity> where TEntity : BaseEntity
+    public static class SpecificationEvaluator<TEntity> where TEntity : BaseEntity
     {
-        public static IQueryable<TEntity> GetQuery(IQueryable<TEntity> inputQuery, ISpecification<TEntity>? specification)
+        public static IQueryable<TEntity> GetQuery(IQueryable<TEntity> inputQuery,
+            ISpecification<TEntity>? specification)
         {
-            if(specification is null) {
+            if (specification is null)
+            {
                 return inputQuery;
             }
-            
+
             var query = inputQuery;
 
             // modify the IQueryable using the specification's criteria expression
@@ -49,16 +50,17 @@ namespace webFileSharingSystem.Infrastructure.Common
             {
                 query = query.GroupBy(specification.GroupBy).SelectMany(x => x);
             }
-            
+
             if (specification.Skip is not null)
             {
                 query = query.Skip(specification.Skip.Value);
             }
-            
+
             if (specification.Take is not null)
             {
                 query = query.Take(specification.Take.Value);
             }
+
             return query;
         }
     }

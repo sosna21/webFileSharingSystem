@@ -16,14 +16,14 @@
 </div>
 
 <div>
-  <nav aria-label="breadcrumb">
+  <nav *ngIf="mode==='GetAll'" aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a routerLink="/files" routerLinkActive="active">
+      <li (click)="fileExplorerService.updateSearchText('')" class="breadcrumb-item"><a routerLink="/files" routerLinkActive="active">
         <span><fa-icon [icon]="['fas', 'home']"></fa-icon></span>
         Home
       </a></li>
       <li *ngFor="let item of breadCrumbs" class="breadcrumb-item ">
-        <a [routerLink]="['/files', item.id]">{{item.fileName}}</a></li>
+        <a (click)="fileExplorerService.updateSearchText('')" [routerLink]="['/files', item.id]">{{item.fileName}}</a></li>
     </ol>
   </nav>
 </div>

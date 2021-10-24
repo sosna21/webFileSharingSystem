@@ -46,28 +46,28 @@ namespace webFileSharingSystem.Web.Controllers
             }));
         }
 
-
         [HttpGet]
         [Route("GetAll")]
         public async Task<PaginatedList<FileResponse>> GetAllFilesAsync([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
+
+            if (string.IsNullOrEmpty(request.SearchedPhrase))
+                return await _unitOfWork.Repository<File>()
+                    .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                        file => ToFileResponse(file, userId!.Value),
+                        new GetAllFilesSpecs(userId!.Value, request.ParentId));
+
+            if (request.ParentId is null)
+                return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    file => ToFileResponse(file, userId!.Value),
+                    new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
+
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => new FileResponse
-                {
-                    Id = file.Id,
-                    FileName = file.FileName,
-                    MimeType = file.MimeType,
-                    Size = file.Size,
-                    IsShared = file.IsShared,
-                    IsFavourite = file.IsFavourite,
-                    IsDirectory = file.IsDirectory,
-                    ModificationDate = file.LastModified ?? file.Created,
-                    FileStatus = file.FileStatus,
-                    PartialFileInfo = file.PartialFileInfo,
-                    UploadProgress = CalculateUploadProgress(
-                        _uploadService.GetCachedPartialFileInfo(userId!.Value, file.Id) ?? file.PartialFileInfo)
-                }, new GetAllFilesSpecs(userId!.Value, request.ParentId!.Value));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    file => ToFileResponse(file, userId!.Value),
+                    _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
+                        request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
         }
 
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
@@ -77,8 +77,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
             return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
         }
-
-
+        
         [HttpGet]
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
@@ -89,8 +88,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .FindAsync(new GeFilesNamesSpecs(userId!.Value, dbParentId));
             return files.Select(e => e.FileName);
         }
-
-
+        
         [HttpGet]
         [Route("GetFavourites")]
         public async Task<PaginatedList<FileResponse>> GetFavouritesFilesAsync([FromQuery] FileRequest request)
@@ -107,9 +105,8 @@ namespace webFileSharingSystem.Web.Controllers
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
                     ModificationDate = file.LastModified ?? file.Created
-                }, new GetFavouriteFilesSpecs(userId!.Value, request.ParentId!.Value));
+                }, new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
-
 
         [HttpGet]
         [Route("GetDeleted")]
@@ -129,8 +126,7 @@ namespace webFileSharingSystem.Web.Controllers
                     ModificationDate = file.LastModified ?? file.Created
                 }, new GetDeletedFilesSpecs(userId!.Value, request.ParentId!.Value));
         }
-
-
+        
         [HttpGet]
         [Route("GetRecent")]
         public async Task<PaginatedList<FileResponse>> GetRecentFilesAsync([FromQuery] FileRequest request)
@@ -147,7 +143,7 @@ namespace webFileSharingSystem.Web.Controllers
                     IsFavourite = file.IsFavourite,
                     IsDirectory = file.IsDirectory,
                     ModificationDate = file.LastModified ?? file.Created
-                }, new GetRecentFilesSpecs(userId!.Value));
+                }, new GetRecentFilesSpecs(userId!.Value,request.SearchedPhrase));
         }
         
         [HttpGet]
@@ -170,7 +166,7 @@ namespace webFileSharingSystem.Web.Controllers
                         IsDirectory = file.IsDirectory,
                         ModificationDate = file.LastModified ?? file.Created
                     };
-                }, new GetFilesSharedWithMeSpecs(userId!.Value));
+                }, new GetFilesSharedWithMeSpecs(userId!.Value,request.SearchedPhrase));
         }
         
         [HttpGet]
@@ -193,9 +189,8 @@ namespace webFileSharingSystem.Web.Controllers
                         IsDirectory = file.IsDirectory,
                         ModificationDate = file.LastModified ?? file.Created
                     };
-                }, new GetFilesSharedByMeSpecs(userId!.Value));
+                }, new GetFilesSharedByMeSpecs(userId!.Value,request.SearchedPhrase));
         }
-        
         
         [HttpPut]
         [Route("SetFavourite/{id:int}")]
@@ -469,6 +464,25 @@ namespace webFileSharingSystem.Web.Controllers
             }
 
             return BadRequest("Problem with copying files");
+        }
+        
+        private FileResponse ToFileResponse(File file, int userId)
+        {
+            return new FileResponse
+            {
+                Id = file.Id,
+                FileName = file.FileName,
+                MimeType = file.MimeType,
+                Size = file.Size,
+                IsShared = file.IsShared,
+                IsFavourite = file.IsFavourite,
+                IsDirectory = file.IsDirectory,
+                ModificationDate = file.LastModified ?? file.Created,
+                FileStatus = file.FileStatus,
+                PartialFileInfo = file.PartialFileInfo,
+                UploadProgress = CalculateUploadProgress(
+                    _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+            };
         }
     }
 }
