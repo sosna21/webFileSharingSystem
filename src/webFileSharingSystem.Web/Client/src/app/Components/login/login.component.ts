@@ -21,9 +21,9 @@ export class LoginComponent implements OnInit {
     private router: Router,
     private authenticationService: AuthenticationService
   ) {
-    // redirect to home if already logged in
+    // redirect to files if already logged in
     if (this.authenticationService.currentUserValue) {
-      this.router.navigate(['/']);
+      this.router.navigate(['files']);
     }
   }
 
@@ -33,8 +33,8 @@ export class LoginComponent implements OnInit {
       password: ['', Validators.required]
     });
 
-    // get return url from route parameters or default to '/'
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+    // get return url from route parameters or default to 'files'
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || 'files';
   }
 
   // convenience getter for easy access to form fields

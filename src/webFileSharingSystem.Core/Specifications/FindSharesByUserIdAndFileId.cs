@@ -2,14 +2,14 @@
 
 namespace webFileSharingSystem.Core.Specifications
 {
-    public sealed class FindSharesByUserIdAndFileId : BaseSpecification<Share>
+    public sealed class FindSharesWithByUserIdAndFileId : BaseSpecification<Share>
     {
-        public FindSharesByUserIdAndFileId(int userId, int fileId) : base(
-            share => share.SharedByUserId == userId
+        public FindSharesWithByUserIdAndFileId(int userId, int fileId) : base(
+            share => share.SharedWithUserId == userId
                     && share.FileId == fileId)
         {
-            AddInclude(share => share.SharedWithUserId);
-            ApplyOrderBy(share => share.SharedWithUserId);
+            // AddInclude(share => share.SharedWithUserId);
+            // ApplyOrderBy(share => share.SharedWithUserId);
         }
     }
 }

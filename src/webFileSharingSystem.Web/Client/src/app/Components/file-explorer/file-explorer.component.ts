@@ -27,14 +27,15 @@ enum ShareAccessMode {
 interface ShareRequestBody {
   UserNameToShareWith?: string,
   AccessMode?: ShareAccessMode,
-  AccessDuration?: any
+  AccessDuration?: any,
+  Update?: boolean
 }
+
 interface ShareRequestResponse {
   sharedWithUserName: string,
   accessMode: ShareAccessMode,
   validUntil: Date
 }
-
 
 @Component({
   selector: 'app-file-explorer',
@@ -60,6 +61,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   ProgressStatus = ProgressStatus;
   shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
   shares: ShareRequestResponse[] = [];
+  maxDate = '9999-12-31T23:59:59.9999999'
 
   private subscriptions: Subscription[] = []
 
@@ -84,7 +86,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.subscriptions.push(this.fileExplorerService.searchedText.subscribe(response => {
         if (!this.authenticationService.currentUserValue) return;
         this.searchedPhrase = response;
-        if (reloadSearchWhenEmpty || (response && response !== '')) {
+        if(reloadSearchWhenEmpty || (response && response !== '')){
           this.reloadData();
           reloadSearchWhenEmpty = true;
         }
@@ -143,7 +145,11 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   openModal(template: TemplateRef<any>) {
     this.getShares(this.fileExplorerService.filesToShare[0].id);
+
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
+    // @ts-ignore //TODO resolve in another way
+    if (template._declarationTContainer.localNames[0] === 'shareTemplate')
+      this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly});
   }
 
   confirm(): void {
@@ -198,7 +204,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   getShares(fileId: number): void {
     this.http.get<any>(`${environment.apiUrl}/Share/GetShares/${fileId}`).subscribe(response => {
-    this.shares = response;
+      this.shares = response;
     }, error => {
       console.log(error);
     })
@@ -256,7 +262,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
   }
 
-
   SetFavourite(file: File) {
     if (file.fileStatus === FileStatus.Completed && !file.loading) {
       file.loading = true;
@@ -274,7 +279,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.currentPage = event.page;
     this.reloadData();
   }
-
 
   isManyCheckboxesChecked(): boolean {
     return this.files.filter(x => x.checked).length > 1;
@@ -300,7 +304,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
   }
 
-
   moveCopyInit(file?: File) {
     var filesToMoveCopy: File[];
     if (file) {
@@ -310,7 +313,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
     this.fileExplorerService.filesToMoveCopy = filesToMoveCopy;
   }
-
 
   moveCopyFiles(copy: boolean, filesToMoveCopy: File[] = this.fileExplorerService.filesToMoveCopy) {
     const parentId = this.parentId ?? -1;
@@ -446,7 +448,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     return file.fileStatus === FileStatus.Completed;
   }
 
-
   shareConfirm() {
     const file = this.fileExplorerService.filesToShare[0];
     if (file.fileStatus === FileStatus.Completed && !file.loading) {
@@ -461,7 +462,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         file.loading = false;
 
       }, error => {
-        console.log(error);
+        this.toastr.error(error.error, "Share error")
         this.fileExplorerService.filesToShare = [];
         this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
         file.loading = false;
@@ -485,6 +486,19 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         return ShareAccessMode.FullAccess;
       default:
         return ShareAccessMode.ReadOnly;
+    }
+  }
+
+  getAccessModeNameFromNumber(shareType: number) {
+    switch (shareType) {
+      case 0:
+        return 'ReadOnly';
+      case 1:
+        return 'ReadWrite';
+      case 2:
+        return 'FullAccess';
+      default:
+        return 'ReadOnly';
     }
   }
 }

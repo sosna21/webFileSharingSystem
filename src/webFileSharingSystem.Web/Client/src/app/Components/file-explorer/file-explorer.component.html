@@ -81,7 +81,7 @@
             <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
               <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
                        [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
-              {{ file.fileName }} | {{file.id}} | {{file.mimeType}}
+              {{ file.fileName }} | FileId: {{file.id}}
             </div>
             <div *ngIf="!isCompleted(file)" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
               <div class="col p-0 d-none d-lg-block">
@@ -159,7 +159,10 @@
       </div>
     </div>
 
+
+
     <div *ngIf="!loadingData" class="d-flex justify-content-center">
+      <h2 class="text-center my-3" *ngIf="files.length <= 0">You do not have any files in this category</h2>
       <pagination [boundaryLinks]="true"
                   [totalItems]="totalItems"
                   [itemsPerPage]="itemsPerPage"
@@ -187,13 +190,14 @@
 
 <ng-template #shareTemplate>
   <div class="modal-header text-center">
-    <p>Please insert the userName/login of the user you want to share this file/files with.</p>
+    <p>Please insert the user name or email of the user you want to share with.</p>
   </div>
   <div class="modal-body">
     <form>
       <div class="form-group">
         <label for="recipient-name" class="col-form-label">Share with:</label>
-        <input [disabled]="!!shareRequestBody.UserNameToShareWith" type="text" class="form-control" id="recipient-name" [(ngModel)]="shareRequestBody.UserNameToShareWith"
+        <input [disabled]="!!shareRequestBody.Update" type="text" class="form-control" id="recipient-name"
+               [(ngModel)]="shareRequestBody.UserNameToShareWith"
                [ngModelOptions]="{standalone: true}"/>
       </div>
       <div class="form-group">
@@ -221,32 +225,39 @@
         </div>
       </div>
       <div class="form-group">
-        Select share duration: <br>
-        <ngx-duration-picker [options]="{ showPreview: true, showWeeks: false, showSeconds: false, showMinutes: false,
+        <div class="form-check form-switch" (click)="shareRequestBody.AccessDuration = undefined">
+          <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" #flexSwitchCheckDefault>
+          <label class="form-check-label" for="flexSwitchCheckDefault">
+            {{flexSwitchCheckDefault.checked ? 'Uncheck to remove time limitations' : 'Check to add time limitations'}}</label>
+        </div>
+        <div *ngIf="flexSwitchCheckDefault.checked" class="mt-3">
+          Select share duration: <br>
+          <ngx-duration-picker [options]="{ showPreview: false, showWeeks: false, showSeconds: false, showMinutes: false,
        previewFormat: '{{Y}},{{M}},{{D}},{{h}}'}" [(value)]="shareRequestBody.AccessDuration"></ngx-duration-picker>
+        </div>
       </div>
     </form>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-dark mr-2" (click)="shareConfirm()">{{!!shareRequestBody.UserNameToShareWith ? 'Update' : 'Yes'}}</button>
-    <button type="button" class="btn btn-secondary" (click)="shareDecline()">{{!!shareRequestBody.UserNameToShareWith ? 'Cancel' : 'No'}}</button>
+    <button type="button" class="btn btn-dark mr-2"
+            (click)="shareConfirm()">{{!!shareRequestBody.Update ? 'Update' : 'Share'}}</button>
+    <button type="button" class="btn btn-secondary"
+            (click)="shareDecline()">Cancel</button>
   </div>
 </ng-template>
 
 
 <ng-template #customizeSharesTemplate>
-  <div class="modal-header text-center">
-    <div class="d-flex flex-row align-middle pt-3 pb-2">
-      <div class="mr-3">
-        <p>Select existing share or create a new one</p>
-      </div>
-      <div>
-        <fa-icon size="2x" [icon]="['fas', 'plus-circle']"
-                 (click)="decline(); openModal(shareTemplate);"></fa-icon>
-      </div>
+
+  <div class="d-flex flex-row justify-content-center pt-3 pb-2">
+    <div class="align-self-center mr-3">
+      Select existing share to update or click to create a new one
+    </div>
+    <div *ngIf="mode === 'GetAll'" class="align-self-center mr-3">
+      <fa-icon size="2x" [icon]="['fas', 'plus-circle']" (click)="decline(); openModal(shareTemplate);"></fa-icon>
     </div>
   </div>
-  <div class="modal-body">
+  <div class="modal-body pb-0">
     <div class="table-responsive" style="overflow: visible">
       <table class="table table-sm table-hover">
         <thead>
@@ -257,10 +268,12 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let share of shares" (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName; decline() ;openModal(shareTemplate)" style="cursor: pointer">
+        <tr *ngFor="let share of shares" (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
+        shareRequestBody.Update = true; decline();
+        openModal(shareTemplate)" style="cursor: pointer">
           <td>{{share.sharedWithUserName}}</td>
-          <td>{{share.accessMode}}</td>
-          <td>{{share.validUntil | timeago}}</td>
+          <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
+          <td>{{share.validUntil.toString() === maxDate ? 'unlimited' : share.validUntil | timeago }}</td>
         </tr>
         </tbody>
       </table>

@@ -66,8 +66,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.type = type;
   }
 
-  toggleShareItemActive(): void {
-    this.isShareItemActive = !this.isShareItemActive;
+  toggleShareItemActive(active: boolean): void {
+    this.isShareItemActive = active;
   }
 
   getQuota() {
