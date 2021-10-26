@@ -28,7 +28,7 @@
               <br/> Click Register to create a new account! </p>
           </div>
           <div class="col-3">
-            <button class="btn btn-secondary btn-block" routerLink="/register">Register</button>
+            <button class="btn btn-secondary btn-block" [disabled]="loading" routerLink="/register">Register</button>
           </div>
         </div>
       </div>
