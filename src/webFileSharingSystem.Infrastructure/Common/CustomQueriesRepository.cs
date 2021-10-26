@@ -42,5 +42,16 @@ namespace webFileSharingSystem.Infrastructure.Common
         {
             return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfAllChildrenTvfAsFiles(parentId), spec);
         }
+        
+        public IQueryable<File> GetListOfFilesSharedByUserIdQuery(int userId, ISpecification<File> spec)
+        {
+            return SpecificationEvaluator<File>.GetQuery(_dbContext.GetListOfFilesSharedByUserId(userId), spec);
+        }
+        
+        public IQueryable<File> GetListOfFilesSharedForUserIdQuery(int userId, int? parentId, ISpecification<File> spec)
+        {
+            return SpecificationEvaluator<File>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
+        }
+
     }
 }

@@ -105,7 +105,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .WithMany(e => e.Shares)
                 .HasForeignKey(e => e.SharedByUserId)
                 .OnDelete(DeleteBehavior.NoAction);
-            
+
             builder.Entity<Share>().HasOne<ApplicationUser>()
                 .WithMany(e => e.Shares)
                 .HasForeignKey(e => e.SharedWithUserId)
@@ -193,13 +193,25 @@ namespace webFileSharingSystem.Infrastructure.Data
                     )
                     SELECT * FROM recursive_cte
                 ");
-        
+
         public IQueryable<File> GetListOfAllChildrenTvfAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
                 $@"
                     SELECT * FROM GetListOfAllChildrenTVF({parentId})
                 ");
         
+        public IQueryable<File> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
+            Set<File>().FromSqlInterpolated(
+                $@"
+                    SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})
+                ");
+        
+        public IQueryable<File> GetListOfFilesSharedByUserId(int userId) =>
+            Set<File>().FromSqlInterpolated(
+                $@"
+                      SELECT * FROM GetListOfFilesSharedByUserIdTVF({userId})
+                ");
+
         public IQueryable<File> GetListOfAllFilesFromLocations(IList<int> fileIds)
         {
             var placeholders = string.Join(",", Enumerable.Range(0, fileIds.Count)

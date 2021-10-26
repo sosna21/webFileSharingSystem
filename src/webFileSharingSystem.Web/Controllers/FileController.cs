@@ -120,10 +120,12 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<PaginatedList<FileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
-            return await _unitOfWork.Repository<Share>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
-                    share => ToFileResponse(share.File, userId!.Value)
-                    , new GetFilesSharedWithMeSpecs(userId!.Value,request.SearchedPhrase));
+            
+            return await _unitOfWork.Repository<File>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    file => ToFileResponse(file, userId!.Value)
+                    _unitOfWork.CustomQueriesRepository().GetListOfFilesSharedForUserIdQuery(userId!.Value, request.ParentId, 
+                        new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
         }
 
         [HttpGet]
@@ -131,10 +133,11 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<PaginatedList<FileResponse>> GetFilesSharedByMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
-            return await _unitOfWork.Repository<Share>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
-                    share => ToFileResponse(share.File, userId!.Value)
-                    , new GetFilesSharedByMeSpecs(userId!.Value,request.SearchedPhrase));
+            return await _unitOfWork.Repository<File>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    file => ToFileResponse(file, userId!.Value),
+                    _unitOfWork.CustomQueriesRepository().
+                        GetListOfFilesSharedByUserIdQuery(userId!.Value, new GetSharedFilesSpec(request.ParentId,request.SearchedPhrase)));
         }
         
         [HttpPut]
@@ -182,17 +185,7 @@ namespace webFileSharingSystem.Web.Controllers
             _unitOfWork.Repository<File>().Add(file);
             if (await _unitOfWork.Complete() <= 0) return BadRequest("Problem with creating directory");
 
-            return new FileResponse
-            {
-                Id = file.Id,
-                FileName = file.FileName,
-                MimeType = file.MimeType,
-                Size = file.Size,
-                IsShared = file.IsShared,
-                IsFavourite = file.IsFavourite,
-                IsDirectory = file.IsDirectory,
-                ModificationDate = file.LastModified ?? file.Created
-            };
+            return ToFileResponse(file, userId!.Value);
         }
 
         [HttpDelete]
