@@ -5,6 +5,6 @@ namespace webFileSharingSystem.Core.Interfaces
 {
     public interface ITokenService
     {
-        public Task<string> GenerateToken(ApplicationUser appUser);
+        public Task<string> GenerateJwtToken(ApplicationUser appUser);
     }
 }

@@ -31,7 +31,7 @@ namespace webFileSharingSystem.Web.Controllers
             switch (authenticationResult)
             {
                 case AuthenticationResult.Success:
-                    var token = _tokenService.GenerateToken(applicationUser!);
+                    var token = _tokenService.GenerateJwtToken(applicationUser!);
                     var userResponse = new AppUserResponse
                     {
                         Id = applicationUser!.Id,

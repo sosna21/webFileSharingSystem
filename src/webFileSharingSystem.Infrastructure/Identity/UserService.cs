@@ -209,6 +209,26 @@ public class UserService : IUserService
             return ToApplicationResult(result);
         }
         
+        public async Task<bool> RevokeRefreshToken(string token, string ipAddress)
+        {
+            var refreshToken = (await _unitOfWork.Repository<RefreshToken>()
+                .FindAsync(new Specification<RefreshToken>(x => x.Token == token && x.Revoked == null))).SingleOrDefault();
+            
+            if (refreshToken is null) return false;
+                
+            var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == refreshToken.IdentityUserId);
+           
+            if (identityUser is null)  throw new Exception($"Identity user not found, IdentityUserId: {refreshToken.IdentityUserId}");
+            
+            // Revoke Refresh token
+            refreshToken.RevokedByIp = ipAddress;
+            refreshToken.Revoked = DateTime.UtcNow;
+            _unitOfWork.Repository<RefreshToken>().Update(refreshToken);
+            if (await _unitOfWork.Complete() <= 0) throw new Exception("Problem with revoking refresh token");
+
+            return true;
+        }
+        
         private static Result ToApplicationResult(IdentityResult result)
         {
             return result.Succeeded

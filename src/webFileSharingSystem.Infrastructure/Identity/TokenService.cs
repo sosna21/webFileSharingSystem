@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
@@ -26,7 +27,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
             _userManager = userManager;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         }
-        public async Task<string> GenerateToken(ApplicationUser appUser)
+        public async Task<string> GenerateJwtToken(ApplicationUser appUser)
         {
             var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
             
@@ -61,6 +62,23 @@ namespace webFileSharingSystem.Infrastructure.Identity
             var token = tokenHandler.CreateToken(tokenDescriptor);
             
             return tokenHandler.WriteToken(token);
+        }
+        
+        private RefreshToken GenerateRefreshToken(string ipAddress, string identityUserId)
+        {
+            using (var rngCryptoServiceProvider = new RNGCryptoServiceProvider())
+            {
+                var randomBytes = new byte[64];
+                rngCryptoServiceProvider.GetBytes(randomBytes);
+                return new RefreshToken
+                {
+                    Token = Convert.ToBase64String(randomBytes),
+                    ValidUntil = DateTime.UtcNow.AddDays(_settings.RefreshTokenExpiryTimeInDays),
+                    Created = DateTime.UtcNow,
+                    CreatedByIp = ipAddress,
+                    IdentityUserId = identityUserId
+                };
+            }
         }
     }
 }

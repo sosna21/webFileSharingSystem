@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Infrastructure.Identity;
 using EntityState = Microsoft.EntityFrameworkCore.EntityState;
 
 namespace webFileSharingSystem.Infrastructure.Data
@@ -65,7 +66,13 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             base.OnModelCreating(builder);
 
+            builder.Entity<FilePathPart>().HasNoKey();
 
+            builder.Entity<RefreshToken>()
+                .HasOne<IdentityUser>()
+                .WithOne()
+                .HasForeignKey<RefreshToken>(e => e.IdentityUserId);
+            
             builder.Entity<ApplicationUser>()
                 .HasOne<IdentityUser>()
                 .WithOne()
@@ -86,8 +93,6 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .WithOne(e => e.PartialFileInfo)
                 .HasForeignKey<PartialFileInfo>(e => e.FileId);
 
-            builder.Entity<FilePathPart>().HasNoKey().ToView(null);
-            
             builder.Entity<Share>().HasOne<ApplicationUser>()
                 .WithMany(e => e.Shares)
                 .HasForeignKey(e => e.SharedByUserId)
