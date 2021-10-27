@@ -39,6 +39,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   @Input() mode: string = 'GetAll';
   @Input() title: string = 'All Files';
   @ViewChild("fileUpload", {static: false}) fileUpload: ElementRef | undefined;
+  loadingData: boolean = true;
   parentId: number | null = null;
   fileNameForm!: FormGroup;
   files: File[] = [];
@@ -172,11 +173,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.http.get<any>(`${environment.apiUrl}/File/${mode}?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
       ${parentId ? '&ParentId=' + parentId : ''}${(searchedPhrase && searchedPhrase !== '') ? '&SearchedPhrase=' + searchedPhrase : ''}`)
         .subscribe(response => {
+        this.loadingData = false;
         this.totalItems = response.totalCount;
         this.files = response.items;
         this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);
         callBack?.();
       }, error => {
+          this.loadingData = false;
         console.log(error);
       })
   }

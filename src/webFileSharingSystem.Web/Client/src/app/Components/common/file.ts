@@ -17,6 +17,7 @@ export interface File {
   rename: boolean;
   stopping: boolean;
   progressStatus: ProgressStatus;
+  loading: boolean
 }
 
 export enum FileStatus {
