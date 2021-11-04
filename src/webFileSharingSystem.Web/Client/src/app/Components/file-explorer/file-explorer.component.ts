@@ -229,11 +229,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
 
   SetFavourite(file: File) {
-    if (file.fileStatus === FileStatus.Completed) {
-      file.isFavourite = !file.isFavourite;
-      this.http.put<any>(`${environment.apiUrl}/File/SetFavourite/${file.id}?value=${file.isFavourite}`, {}).subscribe(() => {
+    if (file.fileStatus === FileStatus.Completed && !file.loading) {
+      file.loading = true;
+      this.http.put<any>(`${environment.apiUrl}/File/SetFavourite/${file.id}?value=${!file.isFavourite}`, {}).subscribe(() => {
+        file.isFavourite = !file.isFavourite;
+        file.loading = false;
       }, error => {
         console.log(error);
+        file.loading = false;
       });
     }
   }
@@ -353,6 +356,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     if (this.gRename) {
       this.gRename = false;
       if (!this.fileNameForm.get('fileName')?.invalid) {
+        file.loading = true;
         let filename = this.fileNameForm.get('fileName')?.value;
 
         this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
@@ -360,7 +364,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
           file.modificationDate = new Date();
           this.names.push(file.fileName);
           this.gRename = false;
+          file.loading = false;
         }, error => {
+          file.loading = false;
           console.log(error)
         })
         this.fileNameForm.reset();
@@ -414,19 +420,25 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
 
   shareConfirm() {
-    this.modalRef?.hide();
-    const fileId = this.fileExplorerService.filesToShare[0].id;
+    const file = this.fileExplorerService.filesToShare[0];
+    if (file.fileStatus === FileStatus.Completed && !file.loading) {
+      file.loading = true;
+      this.modalRef?.hide();
+      const fileId = this.fileExplorerService.filesToShare[0].id;
 
-    this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
-      this.files.find(file => file.id === fileId)!.isShared = true;
-      this.fileExplorerService.filesToShare = [];
-      this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+      this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
+        this.files.find(file => file.id === fileId)!.isShared = true;
+        this.fileExplorerService.filesToShare = [];
+        this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+        file.loading = false;
 
-    }, error => {
-      console.log(error);
-      this.fileExplorerService.filesToShare = [];
-      this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
-    });
+      }, error => {
+        console.log(error);
+        this.fileExplorerService.filesToShare = [];
+        this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+        file.loading = false;
+      });
+    }
   }
 
   shareDecline() {
