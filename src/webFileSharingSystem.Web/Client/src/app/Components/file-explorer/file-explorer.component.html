@@ -18,15 +18,18 @@
 <div>
   <nav *ngIf="mode==='GetAll'" aria-label="breadcrumb">
     <ol class="breadcrumb">
-      <li (click)="fileExplorerService.updateSearchText('')" class="breadcrumb-item"><a routerLink="/files" routerLinkActive="active">
+      <li (click)="fileExplorerService.updateSearchText('')" class="breadcrumb-item"><a routerLink="/files"
+                                                                                        routerLinkActive="active">
         <span><fa-icon [icon]="['fas', 'home']"></fa-icon></span>
         Home
       </a></li>
       <li *ngFor="let item of breadCrumbs" class="breadcrumb-item ">
-        <a (click)="fileExplorerService.updateSearchText('')" [routerLink]="['/files', item.id]">{{item.fileName}}</a></li>
+        <a (click)="fileExplorerService.updateSearchText('')" [routerLink]="['/files', item.id]">{{item.fileName}}</a>
+      </li>
     </ol>
   </nav>
 </div>
+
 
 <div id="table" class="row">
   <div class="table-responsive" style="overflow: visible">
@@ -64,10 +67,11 @@
       </tr>
       </thead>
       <tbody>
-      <tr *ngFor="let file of files; let fileIndex=index">
+      <tr [ngClass]="file.loading? 'table-inactive' : ''" *ngFor="let file of files; let fileIndex=index">
         <td>
-          <input type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
-                 (change)="file.checked = !file.checked" [checked]="file.checked">
+          <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
+                 (change)="file.checked = !file.checked" [checked]="file.checked"/>
+          <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
           <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
                    [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
@@ -88,9 +92,11 @@
                        [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
                 </div>
               </div>
-              <fa-icon  size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped" class="mr-sm-1 ml-sm-1"
+              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped"
+                       class="mr-sm-1 ml-sm-1"
                        [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
-              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started" [icon]="['fas', 'stop-circle']"
+              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started"
+                       [icon]="['fas', 'stop-circle']"
                        (click)="stopUpload(file)"></fa-icon>
             </div>
           </div>
@@ -107,20 +113,23 @@
           </form>
         </td>
         <td>
-          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'star']" (click)="SetFavourite(file)"
+          <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
+                   (click)="SetFavourite(file)"
                    [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
         </td>
         <td>
-          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
-                   (click)="openModal(shareTemplate); fileExplorerService.filesToShare = [file]"
+          <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
+                   (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
         <td>
 
-          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)" [isDisabled]="!isCompleted(file)"
+          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
+               [isDisabled]="!isCompleted(file) || file.loading"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
-            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'ellipsis-h']"
+            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file) || file.loading"
+                     [icon]="['fas', 'ellipsis-h']"
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
@@ -143,7 +152,14 @@
       </tr>
       </tbody>
     </table>
-    <div class="d-flex justify-content-center">
+
+    <div *ngIf="loadingData" class="d-flex justify-content-center d-flex align-items-center m-5">
+      <div class="spinner-border" style="width: 3.4rem; height: 3.4rem;" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!loadingData" class="d-flex justify-content-center">
       <pagination [boundaryLinks]="true"
                   [totalItems]="totalItems"
                   [itemsPerPage]="itemsPerPage"
@@ -177,29 +193,36 @@
     <form>
       <div class="form-group">
         <label for="recipient-name" class="col-form-label">Share with:</label>
-        <input type="text" class="form-control" id="recipient-name" [(ngModel)]="shareRequestBody.UserNameToShareWith" [ngModelOptions]="{standalone: true}"/>
+        <input type="text" class="form-control" id="recipient-name" [(ngModel)]="shareRequestBody.UserNameToShareWith"
+               [ngModelOptions]="{standalone: true}"/>
       </div>
       <div class="form-group">
         Select access mode: <br>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" [value]="shareGetItemAccessMode('read')"
-                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('read')" (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('read')">
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1"
+                 [value]="shareGetItemAccessMode('read')"
+                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('read')"
+                 (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('read')">
           <label class="form-check-label" for="inlineRadio1">Read</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" [value]="shareGetItemAccessMode('write')"
-                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('write')" (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('write')">
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2"
+                 [value]="shareGetItemAccessMode('write')"
+                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('write')"
+                 (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('write')">
           <label class="form-check-label" for="inlineRadio2">Read/Write</label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" [value]="shareGetItemAccessMode('full')"
-                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('full')" (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('full')">
+          <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3"
+                 [value]="shareGetItemAccessMode('full')"
+                 [checked]="shareRequestBody.AccessMode === shareGetItemAccessMode('full')"
+                 (change)="shareRequestBody.AccessMode = shareGetItemAccessMode('full')">
           <label class="form-check-label" for="inlineRadio3">Full access</label>
         </div>
       </div>
       <div class="form-group">
         Select share duration: <br>
-      <ngx-duration-picker [options]="{ showPreview: true, showWeeks: false, showSeconds: false, showMinutes: false,
+        <ngx-duration-picker [options]="{ showPreview: true, showWeeks: false, showSeconds: false, showMinutes: false,
        previewFormat: '{{Y}},{{M}},{{D}},{{h}}'}" [(value)]="shareRequestBody.AccessDuration"></ngx-duration-picker>
 
       </div>
