@@ -53,26 +53,33 @@ namespace webFileSharingSystem.Infrastructure
             
             var storageSection = configuration.GetSection(nameof(StorageSettings));
             services.Configure<StorageSettings>(storageSection);
+            
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+                ValidAlgorithms = new []{ SecurityAlgorithms.HmacSha512 },
+                ValidIssuer = jwtSettings.Issuer,
+                ValidAudience = jwtSettings.Audience,
+                ClockSkew = TimeSpan.Zero,
+                ValidateLifetime = true
+            };
+
+            services.AddSingleton(tokenValidationParameters);
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
                 options =>
                 {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                        ValidIssuer = jwtSettings.Issuer,
-                        ValidAudience = jwtSettings.Audience,
-                        ClockSkew = TimeSpan.Zero
-                    };
+                    options.TokenValidationParameters = tokenValidationParameters;
                 });
             
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IFilePersistenceService, FilePersistenceService>();
+            services.AddScoped<InternalCustomQueriesRepository>();
             
             services.AddTransient<IUserService, UserService>();
-            services.AddTransient<ITokenService, TokenService>();
+            services.AddTransient<TokenService>();
 
 
             services.AddAuthorization(options =>

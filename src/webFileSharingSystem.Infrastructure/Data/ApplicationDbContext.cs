@@ -70,8 +70,16 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             builder.Entity<RefreshToken>()
                 .HasOne<IdentityUser>()
-                .WithOne()
-                .HasForeignKey<RefreshToken>(e => e.IdentityUserId);
+                .WithMany()
+                .HasForeignKey(e => e.IdentityUserId);
+            
+            builder.Entity<RefreshToken>()
+                .HasIndex( t => t.Token )
+                .IsUnique();
+
+            builder.Entity<RefreshToken>()
+                .HasIndex( t => t.ReplacedByToken )
+                .IsUnique();
             
             builder.Entity<ApplicationUser>()
                 .HasOne<IdentityUser>()
@@ -124,6 +132,21 @@ namespace webFileSharingSystem.Infrastructure.Data
                 await _domainEventService.Publish(domainEventEntity);
             }
         }
+        
+        public IQueryable<RefreshToken> GetListOfAllDescendantActiveRefreshTokens(string refreshToken) =>
+            Set<RefreshToken>().FromSqlInterpolated(
+                $@"
+                    WITH recursive_cte AS
+                    (
+                        SELECT *
+                        FROM [RefreshToken] WHERE [Token] = {refreshToken}
+                        UNION All
+                        SELECT [t].*
+                        FROM [RefreshToken] AS [t]
+                        INNER JOIN recursive_cte AS [cte] ON [t].[Token] = [cte].[ReplacedByToken] 
+                    )
+                    SELECT * FROM recursive_cte WHERE [Revoked] IS NULL
+                ");
 
         public IQueryable<File> GetListOfAllParentsAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(

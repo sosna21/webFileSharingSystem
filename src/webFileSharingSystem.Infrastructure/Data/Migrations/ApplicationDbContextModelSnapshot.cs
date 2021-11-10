@@ -412,6 +412,13 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("JwtId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReplacedByToken")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTime?>("Revoked")
                         .HasColumnType("datetime2");
 
@@ -420,14 +427,20 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("ValidUntil")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdentityUserId")
+                    b.HasIndex("IdentityUserId");
+
+                    b.HasIndex("ReplacedByToken")
+                        .IsUnique()
+                        .HasFilter("[ReplacedByToken] IS NOT NULL");
+
+                    b.HasIndex("Token")
                         .IsUnique();
 
                     b.ToTable("RefreshToken");
@@ -535,8 +548,8 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
             modelBuilder.Entity("webFileSharingSystem.Infrastructure.Identity.RefreshToken", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
-                        .WithOne()
-                        .HasForeignKey("webFileSharingSystem.Infrastructure.Identity.RefreshToken", "IdentityUserId")
+                        .WithMany()
+                        .HasForeignKey("IdentityUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

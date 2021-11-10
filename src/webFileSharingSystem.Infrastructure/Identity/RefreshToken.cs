@@ -6,6 +6,8 @@ namespace webFileSharingSystem.Infrastructure.Identity
     public class RefreshToken : BaseEntity
     {
         public string Token { get; set; } = null!;
+        
+        public string JwtId { get; set; } = null!;
 
         public string IdentityUserId { get; set; } = null!;
 
@@ -18,5 +20,11 @@ namespace webFileSharingSystem.Infrastructure.Identity
         public DateTime? Revoked { get; set; }
 
         public string? RevokedByIp { get; set; }
+        
+        public string? ReplacedByToken { get; set; }
+        
+        public bool IsRevoked => Revoked is not null;
+        
+        public bool IsActive => !IsRevoked && DateTime.UtcNow < ValidUntil;
     }
 }

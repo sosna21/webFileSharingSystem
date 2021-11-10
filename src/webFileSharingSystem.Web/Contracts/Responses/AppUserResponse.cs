@@ -12,6 +12,6 @@
         
         public ulong Quota { get; set; }
         
-        public string Token { get; set; } = null!;
+        public TokenResponse Tokens { get; set; } = null!;
     }
 }
