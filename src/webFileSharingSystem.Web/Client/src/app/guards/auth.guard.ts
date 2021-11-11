@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { ActivatedRouteSnapshot, CanActivate, RouterStateSnapshot } from '@angular/router';
 import { Router } from '@angular/router';
 import { AuthenticationService } from "../services/authentication.service";
 import {JwtTokenService} from "../services/jwt-token.service";
@@ -19,11 +18,12 @@ export class AuthGuard implements CanActivate {
 
     const user = this.authenticationService.currentUserValue;
     if (user) {
-      if(this.jwtService.isTokenExpired()) {
-        this.authenticationService.logout();
-        this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
-        return false;
-      }
+      // TODO: Consider what to do will this functionality, regarding refresh tokens
+      // if(this.jwtService.isTokenExpired()) {
+      //   this.authenticationService.logout();
+      //   this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
+      //   return false;
+      // }
       // check if route is restricted by role
       if (route.data.roles && !route.data.roles.some((r:string) => user.roles.includes(r))) {
         // role not authorized so redirect to home page
@@ -35,8 +35,9 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    // not logged in so redirect to login page with the return url
-    this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
+    // TODO: Fix not logged in so redirect to login page with the return url
+    //this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
+    this.router.navigate(['/login']);
     return false;
   }
 

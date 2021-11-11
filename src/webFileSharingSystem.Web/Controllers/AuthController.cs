@@ -45,10 +45,9 @@ namespace webFileSharingSystem.Web.Controllers
                         EmailAddress = applicationUser.EmailAddress,
                         UsedSpace = applicationUser.UsedSpace,
                         Quota = applicationUser.Quota,
-                        Tokens = new TokenResponse{ Token = token!, RefreshToken = refreshToken! }
                     };
                     SetRefreshTokenCookie(refreshToken!);
-                    return Ok(userResponse);
+                    return Ok(new {User = userResponse, Tokens = new TokenResponse{Token = token!, RefreshToken = refreshToken!}});
                 case AuthenticationResult.NotFound:
                 case AuthenticationResult.Failed:
                     return BadRequest(new {Message = "Invalid username or password"});
@@ -66,10 +65,15 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("Refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken = default)
         {
-            var (refreshResult, token, refreshToken ) =
-                await _userService.RefreshTokenAsync(request.Token, request.RefreshToken, GetIpAddress(), cancellationToken );
 
-            if (!refreshResult.Succeeded) return BadRequest(refreshResult.Errors);
+            var currentRefreshToken = request.RefreshToken ?? Request.Cookies["refreshToken"];
+
+            if (currentRefreshToken is null) return BadRequest(new {Message = "Invalid token"});
+            
+            var (result, token, refreshToken ) =
+                await _userService.RefreshTokenAsync(request.Token, currentRefreshToken , GetIpAddress(), cancellationToken);
+
+            if (!result.Succeeded) return BadRequest(result.Errors);
 
             var tokenResponse = new TokenResponse { Token = token!, RefreshToken = refreshToken! };
             SetRefreshTokenCookie(refreshToken!);
@@ -92,6 +96,8 @@ namespace webFileSharingSystem.Web.Controllers
             var revoked = await _userService.RevokeRefreshTokenAsync(token, appUser.IdentityUserId, GetIpAddress());
             if (!revoked) return BadRequest(new {Message = "Token can't be revoked"});
             
+            Response.Cookies.Delete("refreshToken");
+            
             return Ok();
         }
         
@@ -108,7 +114,7 @@ namespace webFileSharingSystem.Web.Controllers
             return Ok(new {UserId = applicationUserId});
         }
         
-        private void SetRefreshTokenCookie(string refresh)
+        private void SetRefreshTokenCookie(string refreshToken)
         {
             // append cookie with refresh token to the http response
             var cookieOptions = new CookieOptions
@@ -116,7 +122,7 @@ namespace webFileSharingSystem.Web.Controllers
                 HttpOnly = true,
                 Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryTimeInDays)
             };
-            Response.Cookies.Append("refreshToken", refresh, cookieOptions);
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
         }
         
         private string GetIpAddress()

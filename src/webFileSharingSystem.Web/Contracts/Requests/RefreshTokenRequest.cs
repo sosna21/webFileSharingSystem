@@ -6,8 +6,7 @@ namespace webFileSharingSystem.Web.Contracts.Requests
     {
         [Required]
         public string Token { get; set; } = null!;
-
-        [Required]
-        public string RefreshToken { get; set; } = null!;
+        
+        public string? RefreshToken { get; set; }
     }
 }

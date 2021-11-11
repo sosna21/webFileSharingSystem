@@ -1,7 +1,7 @@
 ﻿import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {map, tap} from 'rxjs/operators';
 import {User} from '../models/user';
 import {JwtTokenService} from "./jwt-token.service";
 import {environment} from "../../environments/environment";
@@ -33,10 +33,13 @@ export class AuthenticationService {
     return this.http.post<any>(`${environment.apiUrl}/Auth/Login`, {username, password})
       .pipe(map(response => {
         // store user details and basic auth credentials in local storage to keep user logged in between page refreshes
-        this.jwtService.setTokenAndUpdateUserInfo(response.user);
-        localStorage.setItem('currentUser', JSON.stringify(response.user));
-        this.currentUserSubject.next(response.user);
-        return response.user;
+        let user = <User>response.user;
+        user.token = response.tokens.token;
+
+        this.jwtService.setTokenAndUpdateUserInfo(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+        return user;
       }));
   }
 
@@ -46,8 +49,27 @@ export class AuthenticationService {
   }
 
   logout() {
-    // remove user from local storage to log user out
-    localStorage.removeItem('currentUser');
-    this.currentUserSubject.next(undefined!);
+    this.http.put<any>(`${environment.apiUrl}/Auth/Revoke`, {}).subscribe(
+    () => {
+      localStorage.removeItem('currentUser')
+      this.currentUserSubject.next(undefined!)
+    },
+      () => {
+        localStorage.removeItem('currentUser')
+        this.currentUserSubject.next(undefined!)
+    });
+  }
+
+  refreshToken() {
+    let user = this.currentUserSubject.value;
+    return this.http.post<any>(`${environment.apiUrl}/Auth/Refresh`, { token: user.token })
+      .pipe(map(tokens => {
+        // update basic auth credentials and store in local storage
+        this.jwtService.setToken(tokens.token)
+        this.jwtService.updateUserInfo(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+        return user.token;
+      }));
   }
 }
