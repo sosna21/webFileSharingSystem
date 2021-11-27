@@ -9,6 +9,8 @@ import {BehaviorSubject, Observable, throwError} from 'rxjs';
 import {catchError, filter, switchMap, take} from "rxjs/operators";
 import {environment} from "../../environments/environment";
 import {AuthenticationService} from "../services/authentication.service";
+import {JwtTokenService} from "../services/jwt-token.service";
+import {Router} from "@angular/router";
 
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
@@ -16,7 +18,7 @@ export class JwtInterceptor implements HttpInterceptor {
   private isRefreshing = false;
   private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
 
-  constructor(private authenticationService: AuthenticationService) {}
+  constructor(private router: Router, private authenticationService: AuthenticationService, private jwtService: JwtTokenService) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
 
@@ -28,10 +30,12 @@ export class JwtInterceptor implements HttpInterceptor {
       request = this.addToken(request, user.token);
     }
     return next.handle(request).pipe(catchError(error => {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
-        return this.handle401Error(request, next);
+      if (error instanceof HttpErrorResponse && error.status === 401
+          && this.jwtService.isTokenExpired()) {
+        return this.handle401Error(request, next)
       }
       else {
+        this.router.navigate(['/'])
         return throwError(error);
       }
     }));

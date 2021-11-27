@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpEvent, HttpEventType} from "@angular/common/http";
-import {BehaviorSubject, EMPTY, from, Observable, Subscription} from "rxjs";
+import {BehaviorSubject, EMPTY, from, Observable, Subscription, throwError} from "rxjs";
 import {environment} from "../../environments/environment";
 import {UploadFileInfo} from "../models/uploadFileInfo";
 import {PartialFileInfo} from "../models/partialFileInfo";
@@ -184,8 +184,8 @@ export class FileUploaderService {
     return from(chunksToUpload).pipe(concatMap((element) => {
       const chunk = file.slice(element[1][0], element[1][1]);
       return this.sendChunk(chunk, partialFileInfo.fileId, element[0]).pipe(retry(4))
-        .pipe(tap(event => updateProgress(event, element[0], this.uploadingFiles)))
-        .pipe(catchError(error => error));
+        .pipe(tap(event => updateProgress(event, element[0], this.uploadingFiles))
+          ,catchError(error => throwError(error)));
     })).pipe(last());
   }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -21,6 +22,8 @@ namespace webFileSharingSystem.Infrastructure.Identity
         private readonly SymmetricSecurityKey _key;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
+        private static readonly ConcurrentDictionary<string, int> IdentityUserRefreshCount = new();
+
         public TokenService(IOptions<JwtSettings> jwtSettings, UserManager<IdentityUser> userManager, TokenValidationParameters tokenValidationParameters)
         {
             _jwtSettings = jwtSettings.Value;
@@ -28,16 +31,19 @@ namespace webFileSharingSystem.Infrastructure.Identity
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             _tokenValidationParameters = tokenValidationParameters;
         }
-        public async Task<(string token, RefreshToken refreshToken)> GenerateTokens(ApplicationUser appUser, string ipAddress)
+        
+        public async Task<(string? token, RefreshToken? refreshToken)> GenerateTokens(ApplicationUser appUser, string ipAddress)
         {
             var identityUser = _userManager.Users.SingleOrDefault(u => u.Id == appUser.IdentityUserId);
-            
-            if(identityUser is null)
+
+            if (identityUser is null)
             {
                 throw new Exception($"Identity user not found, IdentityUserId: {appUser.IdentityUserId}");
                 //throw new ApplicationUnhandledException( $"Identity user not found, IdentityUserId: {appUser.IdentityUserId}" );
             }
-            
+
+            if (!IncreaseRefreshTokenCount(identityUser.Id)) return (null, null);
+
             var claims = new List<Claim>
             {
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -45,7 +51,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
             };
 
             var roles = await _userManager.GetRolesAsync(identityUser);
-            
+
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var credentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
@@ -94,6 +100,29 @@ namespace webFileSharingSystem.Infrastructure.Identity
             } catch
             {
                 return null;
+            }
+        }
+
+        private bool IncreaseRefreshTokenCount(string identityUser)
+        {
+            var maxNumberOfRefreshTokens = _jwtSettings.MaxRefreshTokensPerUserPerDay;
+            var currentRefreshTokenCount = IdentityUserRefreshCount.GetValueOrDefault(identityUser);
+
+            if (currentRefreshTokenCount >= maxNumberOfRefreshTokens)
+            {
+                return false;
+            }
+
+            IdentityUserRefreshCount[identityUser] = ++currentRefreshTokenCount;
+
+            return true;
+        }
+        
+        internal static void UpdateRefreshTokensCount(IEnumerable<UserRefreshTokensCount> counts)
+        {
+            foreach (var userTokensCount in counts)
+            {
+                IdentityUserRefreshCount[userTokensCount.IdentityUserId] = userTokensCount.Count;
             }
         }
     }

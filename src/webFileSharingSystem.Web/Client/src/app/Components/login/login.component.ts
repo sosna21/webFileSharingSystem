@@ -4,8 +4,6 @@ import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {first} from 'rxjs/operators';
 import {AuthenticationService} from '../../services/authentication.service';
 
-//import { AuthenticationService } from '@app/_services';
-
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -29,7 +27,7 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loginForm = this.formBuilder.group({
       username: ['', Validators.required],
       password: ['', Validators.required]

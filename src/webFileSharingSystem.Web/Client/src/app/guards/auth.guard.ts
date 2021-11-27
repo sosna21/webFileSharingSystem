@@ -9,8 +9,7 @@ import {JwtTokenService} from "../services/jwt-token.service";
 })
 export class AuthGuard implements CanActivate {
   constructor(private router: Router,
-              private authenticationService: AuthenticationService,
-              private jwtService: JwtTokenService) {
+              private authenticationService: AuthenticationService) {
   }
   canActivate(
     route: ActivatedRouteSnapshot,
@@ -18,12 +17,6 @@ export class AuthGuard implements CanActivate {
 
     const user = this.authenticationService.currentUserValue;
     if (user) {
-      // TODO: Consider what to do will this functionality, regarding refresh tokens
-      // if(this.jwtService.isTokenExpired()) {
-      //   this.authenticationService.logout();
-      //   this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
-      //   return false;
-      // }
       // check if route is restricted by role
       if (route.data.roles && !route.data.roles.some((r:string) => user.roles.includes(r))) {
         // role not authorized so redirect to home page
@@ -35,9 +28,7 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    // TODO: Fix not logged in so redirect to login page with the return url
-    //this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});
     return false;
   }
 

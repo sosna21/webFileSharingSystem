@@ -9,9 +9,10 @@ using System.Linq.Expressions;
 
 namespace webFileSharingSystem.Core.Interfaces
 {
-    public interface ISpecification<T> 
+    public interface ISpecification<T> : ISpecification<T, T> { }
+
+    public interface ISpecification<T, TOut> 
     {
-        
         Expression<Func<T, bool>>? Criteria { get; }
         
         List<Expression<Func<T, object>>> Includes { get; }
@@ -23,6 +24,8 @@ namespace webFileSharingSystem.Core.Interfaces
         Expression<Func<T, object>>? OrderByDescending { get; }
         
         Expression<Func<T, object>>? GroupBy { get; }
+        
+        Expression<Func<object, IEnumerable<T>, TOut>>? GroupByResult { get; }
 
         int? Take { get; }
         

@@ -139,11 +139,15 @@ namespace webFileSharingSystem.Infrastructure.Identity
                 //throw new UserNotFoundException( userId );
             }
             
-            (var token, string refreshToken) = await GenerateTokens(appUser, ipAddress);
+            (var token, RefreshToken? refreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
+
+            if (refreshToken is null) return (AuthenticationResult.IsBlocked, null, null, null);
+            
+            _unitOfWork.Repository<RefreshToken>().Add(refreshToken);
 
             if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing refresh token");
 
-            return (AuthenticationResult.Success, appUser, token, refreshToken);
+            return (AuthenticationResult.Success, appUser, token, refreshToken.Token);
         }
 
         public async Task<(Result Result, string? Token, string? RefreshToken)> RefreshTokenAsync(string token, string refreshToken, string ipAddress, CancellationToken cancellationToken = default)
@@ -161,7 +165,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             if (storedRefreshToken is null) return (Result.Failure("Invalid token"), null, null);
 
-            if (storedRefreshToken.IsRevoked)
+            if (storedRefreshToken.Revoked is not null)
             {
                 var refreshTokensToRevoke = await _internalCustomQueries.GetListOfAllDescendantActiveRefreshTokens(refreshToken, cancellationToken);
 
@@ -173,7 +177,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
                 if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing tokens");
             }
             
-            if(!storedRefreshToken.IsActive) return (Result.Failure("Invalid token"), null, null);
+            if(storedRefreshToken.Revoked is not null || storedRefreshToken.ValidUntil < DateTime.UtcNow) return (Result.Failure("Invalid token"), null, null);
             
             var jwtId = validateTokenPrincipal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
             
@@ -185,14 +189,19 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
             
-            (var newToken, string newRefreshToken) = await GenerateTokens(appUser, ipAddress);
+            
+            (var newToken, RefreshToken? newRefreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
 
-            storedRefreshToken.ReplacedByToken = newRefreshToken;
+            if (newRefreshToken is null) return (Result.Failure("User is blocked"), null, null);
+            
+            _unitOfWork.Repository<RefreshToken>().Add(newRefreshToken);
+
+            storedRefreshToken.ReplacedByToken = newRefreshToken.Token;
             RevokeRefreshToken(storedRefreshToken, ipAddress);
             
             if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing tokens");
             
-            return (Result.Success(), newToken, newRefreshToken);
+            return (Result.Success(), newToken, newRefreshToken.Token);
         }
 
         public async Task<bool> IsInRoleAsync(int userId, string role, CancellationToken cancellationToken = default)
@@ -286,23 +295,13 @@ namespace webFileSharingSystem.Infrastructure.Identity
             return true;
         }
 
-        private async Task<(string token, string refreshToken)> GenerateTokens(ApplicationUser appUser, string ipAddress)
-        {
-            (var token, RefreshToken refreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
-            
-            _unitOfWork.Repository<RefreshToken>().Add(refreshToken);
-
-            return (token, refreshToken.Token);
-        }
-        
         private void RevokeRefreshToken(RefreshToken refreshToken, string ipAddress)
         {
             refreshToken.RevokedByIp = ipAddress;
             refreshToken.Revoked = DateTime.UtcNow;
             _unitOfWork.Repository<RefreshToken>().Update(refreshToken);
         }
-
-
+        
         private static Result ToApplicationResult(IdentityResult result)
         {
             return result.Succeeded

@@ -11,22 +11,27 @@ using webFileSharingSystem.Core.Interfaces;
 
 namespace webFileSharingSystem.Core.Specifications
 {
-    
-    public abstract class BaseSpecification<T> : ISpecification<T>
+
+    public abstract class BaseSpecification<T> : BaseSpecification<T, T>, ISpecification<T>
+    {
+        protected BaseSpecification(Expression<Func<T, bool>> criteria): base( criteria ) { }
+    }
+
+    public abstract class BaseSpecification<T, TOut> : ISpecification<T, TOut>
     {
         protected BaseSpecification(Expression<Func<T, bool>> criteria)
         {
             Criteria = criteria;
         }
-        protected BaseSpecification()
-        {
-        }
+
         public Expression<Func<T, bool>>? Criteria { get; }
         public List<Expression<Func<T, object>>> Includes { get; } = new();
         public List<string> IncludeStrings { get; } = new();
         public Expression<Func<T, object>>? OrderBy { get; private set; }
         public Expression<Func<T, object>>? OrderByDescending { get; private set; }
         public Expression<Func<T, object>>? GroupBy { get; private set; }
+
+        public Expression<Func<object, IEnumerable<T>, TOut>>? GroupByResult { get; private set; }
 
         public int? Take { get; private set; }
         public int? Skip { get; private set; }
@@ -61,9 +66,10 @@ namespace webFileSharingSystem.Core.Specifications
             OrderByDescending = orderByDescendingExpression;
         }
 
-        protected virtual void ApplyGroupBy(Expression<Func<T, object>> groupByExpression)
+        protected virtual void ApplyGroupBy(Expression<Func<T, object>> groupByExpression, Expression<Func<object, IEnumerable<T>, TOut>> groupByResult)
         {
             GroupBy = groupByExpression;
+            GroupByResult = groupByResult;
         }
     }
 }

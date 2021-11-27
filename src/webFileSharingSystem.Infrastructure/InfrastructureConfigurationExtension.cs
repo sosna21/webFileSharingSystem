@@ -80,6 +80,8 @@ namespace webFileSharingSystem.Infrastructure
             
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<TokenService>();
+            
+            services.AddHostedService(sp => new MaintainRefreshTokensService(sp));
 
 
             services.AddAuthorization(options =>

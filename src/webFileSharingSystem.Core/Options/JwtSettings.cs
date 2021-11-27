@@ -7,5 +7,7 @@
         public string Issuer { get; set; } = null!;
         public int ExpiryTimeInSeconds { get; set; }
         public int RefreshTokenExpiryTimeInDays { get; set; }
+        public int RefreshTokenTimeToLiveInDays { get; set; }
+        public int MaxRefreshTokensPerUserPerDay { get; set; }
     }
 }

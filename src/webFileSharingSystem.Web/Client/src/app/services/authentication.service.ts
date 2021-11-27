@@ -1,7 +1,7 @@
 ﻿import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {BehaviorSubject, Observable} from 'rxjs';
-import {map, tap} from 'rxjs/operators';
+import {BehaviorSubject, Observable, throwError} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
 import {User} from '../models/user';
 import {JwtTokenService} from "./jwt-token.service";
 import {environment} from "../../environments/environment";
@@ -49,15 +49,15 @@ export class AuthenticationService {
   }
 
   logout() {
-    this.http.put<any>(`${environment.apiUrl}/Auth/Revoke`, {}).subscribe(
+    return this.http.put<any>(`${environment.apiUrl}/Auth/Revoke`, {}).pipe(map(
     () => {
-      localStorage.removeItem('currentUser')
-      this.currentUserSubject.next(undefined!)
-    },
-      () => {
-        localStorage.removeItem('currentUser')
-        this.currentUserSubject.next(undefined!)
-    });
+      localStorage.removeItem('currentUser');
+      this.currentUserSubject.next(undefined!);
+    }), catchError( error => {
+      localStorage.removeItem('currentUser');
+      this.currentUserSubject.next(undefined!);
+      return throwError(error);
+    }));
   }
 
   refreshToken() {
@@ -70,6 +70,10 @@ export class AuthenticationService {
         localStorage.setItem('currentUser', JSON.stringify(user));
         this.currentUserSubject.next(user);
         return user.token;
+      }), catchError( error => {
+        localStorage.removeItem('currentUser');
+        this.currentUserSubject.next(undefined!);
+        return throwError(error);
       }));
   }
 }

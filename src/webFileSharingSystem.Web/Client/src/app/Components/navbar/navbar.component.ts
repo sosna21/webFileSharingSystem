@@ -13,7 +13,8 @@ import {FileExplorerService} from "../../services/file-explorer.service";
 export class NavbarComponent implements OnInit, AfterViewInit {
   @ViewChild(('filter')) filter: ElementRef | undefined;
 
-  constructor(private authenticationService: AuthenticationService, private router: Router, private fileExplorerService: FileExplorerService) {
+  constructor(private authenticationService: AuthenticationService,
+              private router: Router, private fileExplorerService: FileExplorerService) {
   }
 
   ngAfterViewInit() {
@@ -33,8 +34,13 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   }
 
   logout() {
-    this.authenticationService.logout();
-    this.router.navigate(['/login']);
+    this.authenticationService.logout().subscribe(
+      () =>
+        this.router.navigate(['/login']),
+      () =>
+        this.router.navigate(['/login'])
+    )
+
   }
 
   public get authenticated(): boolean {

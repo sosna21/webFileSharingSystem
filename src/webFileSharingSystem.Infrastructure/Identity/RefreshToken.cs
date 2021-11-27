@@ -22,9 +22,5 @@ namespace webFileSharingSystem.Infrastructure.Identity
         public string? RevokedByIp { get; set; }
         
         public string? ReplacedByToken { get; set; }
-        
-        public bool IsRevoked => Revoked is not null;
-        
-        public bool IsActive => !IsRevoked && DateTime.UtcNow < ValidUntil;
     }
 }
