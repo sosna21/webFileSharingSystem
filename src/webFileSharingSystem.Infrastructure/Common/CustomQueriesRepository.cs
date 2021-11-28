@@ -40,7 +40,7 @@ namespace webFileSharingSystem.Infrastructure.Common
 
         public IQueryable<File> GetFilteredListOfAllChildrenAsFilesQuery(int parentId, ISpecification<File> spec)
         {
-            return SpecificationEvaluator<File>.GetQuery(_dbContext.GetListOfAllChildrenTvfAsFiles(parentId), spec);
+            return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfAllChildrenTvfAsFiles(parentId), spec);
         }
     }
 }

@@ -10,8 +10,7 @@
   </div>
 
   <div *ngIf="!authenticated" class="mainView">
-    <app-login id="appLogin" *ngIf="router.url === '/login'"></app-login>
-    <app-register *ngIf="router.url === '/register'"></app-register>
+    <router-outlet></router-outlet>
   </div>
 
     <div class="footer container-fluid text-center p-2 bg-light fixed-bottom">

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -15,16 +17,20 @@ using webFileSharingSystem.Infrastructure.Common;
 
 namespace webFileSharingSystem.Infrastructure.Identity
 {
-public class UserService : IUserService
+    
+    internal class UserService : IUserService
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IUserClaimsPrincipalFactory<IdentityUser> _identityUserClaimsPrincipalFactory;
         private readonly IAuthorizationService _authorizationService;
+
+        private readonly TokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IOptions<StorageSettings> _options;
-
+        private readonly InternalCustomQueriesRepository _internalCustomQueries;
+        
         public UserService(
             UserManager<IdentityUser> userManager,
             SignInManager<IdentityUser> signInManager,
@@ -32,7 +38,9 @@ public class UserService : IUserService
             IAuthorizationService authorizationService,
             IUnitOfWork unitOfWork,
             RoleManager<IdentityRole> roleManager,
-            IOptions<StorageSettings> options)
+            IOptions<StorageSettings> options,
+            TokenService tokenService,
+            InternalCustomQueriesRepository internalCustomQueries)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -41,9 +49,11 @@ public class UserService : IUserService
             _unitOfWork = unitOfWork;
             _roleManager = roleManager;
             _options = options;
+            _tokenService = tokenService;
+            _internalCustomQueries = internalCustomQueries;
         }
 
-        public async Task<string> GetUserNameAsync(int userId, CancellationToken cancellationToken = default)
+        public async Task<ApplicationUser> GetUserAsync(int userId, CancellationToken cancellationToken = default)
         {
             var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
             
@@ -52,8 +62,8 @@ public class UserService : IUserService
                 throw new Exception($"User not found, userId: {userId}");
                 //throw new UserNotFoundException( userId );
             }
-            
-            return (appUser.UserName ?? appUser.EmailAddress)!;
+
+            return appUser;
         }
 
 
@@ -89,33 +99,32 @@ public class UserService : IUserService
                 return (Result.Success(), applicationUser.Id);
             } 
         }
-        
 
-        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser)> AuthenticateAsync(string userName, string password, CancellationToken cancellationToken = default)
+        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)> AuthenticateAsync(string userName, string password, string ipAddress, CancellationToken cancellationToken)
         {
             var identityUser = await _userManager.Users
                 .SingleOrDefaultAsync(x => x.UserName == userName || x.Email == userName, cancellationToken);
 
             if (identityUser is null)
             {
-                return (AuthenticationResult.NotFound, null);
+                return (AuthenticationResult.NotFound, null, null, null);
             }
 
             var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, true);
 
             if (result.IsLockedOut)
             {
-                return (AuthenticationResult.LockedOut, null);
+                return (AuthenticationResult.LockedOut, null, null, null);
             }
             
             if (result.IsNotAllowed)
             {
-                return (AuthenticationResult.IsBlocked, null);
+                return (AuthenticationResult.IsBlocked, null, null, null);
             }
 
             if (!result.Succeeded)
             {
-                return (AuthenticationResult.Failed, null);
+                return (AuthenticationResult.Failed, null, null, null);
             }
             
             var userByIdentityIdSpecs =
@@ -130,8 +139,69 @@ public class UserService : IUserService
                 //throw new UserNotFoundException( userId );
             }
             
+            (var token, RefreshToken? refreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
 
-            return (AuthenticationResult.Success, appUser);
+            if (refreshToken is null) return (AuthenticationResult.IsBlocked, null, null, null);
+            
+            _unitOfWork.Repository<RefreshToken>().Add(refreshToken);
+
+            if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing refresh token");
+
+            return (AuthenticationResult.Success, appUser, token, refreshToken.Token);
+        }
+
+        public async Task<(Result Result, string? Token, string? RefreshToken)> RefreshTokenAsync(string token, string refreshToken, string ipAddress, CancellationToken cancellationToken = default)
+        {
+            var validateTokenPrincipal = _tokenService.ValidateJwtToken(token);
+            if (validateTokenPrincipal is null) return (Result.Failure("Invalid token"), null, null);
+
+            var expiryDate = long.Parse(validateTokenPrincipal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
+
+            var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(expiryDate);
+
+            if (expiryDateTimeUtc > DateTime.UtcNow) return (Result.Failure("Token hasn't expired yet"), null, null);
+            
+            var storedRefreshToken = (await _unitOfWork.Repository<RefreshToken>().FindAsync(new Specification<RefreshToken>(x => x.Token == refreshToken), cancellationToken)).SingleOrDefault();
+
+            if (storedRefreshToken is null) return (Result.Failure("Invalid token"), null, null);
+
+            if (storedRefreshToken.Revoked is not null)
+            {
+                var refreshTokensToRevoke = await _internalCustomQueries.GetListOfAllDescendantActiveRefreshTokens(refreshToken, cancellationToken);
+
+                foreach (var refreshTokenToRevoke in refreshTokensToRevoke)
+                {
+                    RevokeRefreshToken(refreshTokenToRevoke, ipAddress);
+                }
+                
+                if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing tokens");
+            }
+            
+            if(storedRefreshToken.Revoked is not null || storedRefreshToken.ValidUntil < DateTime.UtcNow) return (Result.Failure("Invalid token"), null, null);
+            
+            var jwtId = validateTokenPrincipal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
+            
+            if(storedRefreshToken.JwtId != jwtId) return (Result.Failure("Invalid token"), null, null);
+
+            if (!int.TryParse(validateTokenPrincipal.Claims.SingleOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value, out var userId))
+                return (Result.Failure("Invalid token"), null, null);
+
+
+            var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
+            
+            
+            (var newToken, RefreshToken? newRefreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
+
+            if (newRefreshToken is null) return (Result.Failure("User is blocked"), null, null);
+            
+            _unitOfWork.Repository<RefreshToken>().Add(newRefreshToken);
+
+            storedRefreshToken.ReplacedByToken = newRefreshToken.Token;
+            RevokeRefreshToken(storedRefreshToken, ipAddress);
+            
+            if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing tokens");
+            
+            return (Result.Success(), newToken, newRefreshToken.Token);
         }
 
         public async Task<bool> IsInRoleAsync(int userId, string role, CancellationToken cancellationToken = default)
@@ -207,6 +277,29 @@ public class UserService : IUserService
             var result = await _userManager.DeleteAsync(identityUser);
 
             return ToApplicationResult(result);
+        }
+        
+        public async Task<bool> RevokeRefreshTokenAsync(string token, string identityUserId, string ipAddress)
+        {
+            var refreshToken = (await _unitOfWork.Repository<RefreshToken>()
+                .FindAsync(new Specification<RefreshToken>(x => x.Token == token && x.Revoked == null))).SingleOrDefault();
+
+            if (refreshToken is null) return false;
+
+            if (refreshToken.IdentityUserId != identityUserId) return false;
+            
+            RevokeRefreshToken(refreshToken, ipAddress);
+            
+            if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with revoking refresh token");
+            
+            return true;
+        }
+
+        private void RevokeRefreshToken(RefreshToken refreshToken, string ipAddress)
+        {
+            refreshToken.RevokedByIp = ipAddress;
+            refreshToken.Revoked = DateTime.UtcNow;
+            _unitOfWork.Repository<RefreshToken>().Update(refreshToken);
         }
         
         private static Result ToApplicationResult(IdentityResult result)

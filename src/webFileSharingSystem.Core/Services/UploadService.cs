@@ -356,19 +356,18 @@ namespace webFileSharingSystem.Core.Services
             return (int) calculatedChunkSize;
         }
 
-        public static async Task SaveCacheData(IRepository<PartialFileInfo> partialFileInfoRepository,
-            IApplicationDbContext applicationDbContext, CancellationToken cancellationToken)
+        internal static async Task SaveCacheData(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
         {
             foreach (var cache in UserFileCache.Values.Where(t => t.IsDirty))
             {
                 lock (cache.PartialFileInfo)
                 {
-                    partialFileInfoRepository.Update(cache.PartialFileInfo);
+                    unitOfWork.Repository<PartialFileInfo>().Update(cache.PartialFileInfo);
                     cache.IsDirty = false;
                 }
             }
 
-            await applicationDbContext.SaveChangesAsync(cancellationToken);
+            await unitOfWork.Complete(cancellationToken);
         }
 
         private class PartialFileInfoCache

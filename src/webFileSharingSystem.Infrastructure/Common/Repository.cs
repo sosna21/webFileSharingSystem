@@ -37,6 +37,14 @@ namespace webFileSharingSystem.Infrastructure.Common
         {
             return await ApplySpecification(specification).ToListAsync(cancellationToken);
         }
+        
+        public async Task<IEnumerable<TResult>> FindAsync<TResult>(ISpecification<TEntity, TResult> specification, CancellationToken cancellationToken = default)
+        {
+            if (specification.GroupBy is null || specification.GroupByResult is null)
+                throw new InvalidOperationException("This method can be used only when grouping is applied");
+            
+            return await ApplySpecificationWithGroupBy(specification).ToListAsync(cancellationToken);
+        }
 
         public async Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
         {
@@ -102,7 +110,12 @@ namespace webFileSharingSystem.Infrastructure.Common
 
         private IQueryable<TEntity> ApplySpecification(ISpecification<TEntity>? spec)
         {
-            return SpecificationEvaluator<TEntity>.GetQuery(_context.Set<TEntity>().AsQueryable(), spec);
+            return SpecificationEvaluator<TEntity, TEntity>.GetQuery(_context.Set<TEntity>().AsQueryable(), spec);
+        }
+        
+        private IQueryable<TResult> ApplySpecificationWithGroupBy<TResult>(ISpecification<TEntity, TResult> spec)
+        {
+            return SpecificationEvaluator<TEntity, TResult>.GetGroupedQuery(_context.Set<TEntity>().AsQueryable(), spec);
         }
     }
 }

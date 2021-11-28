@@ -11,7 +11,5 @@
         public ulong UsedSpace { get; set; }
         
         public ulong Quota { get; set; }
-        
-        public string Token { get; set; } = null!;
     }
 }

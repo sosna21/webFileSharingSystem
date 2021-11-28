@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using webFileSharingSystem.Core.Entities;
+
 using webFileSharingSystem.Core.Interfaces;
 
 
@@ -12,7 +12,7 @@ namespace webFileSharingSystem.Core.Services
     public class RefreshUploadCacheService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-
+        
         public RefreshUploadCacheService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
@@ -23,7 +23,7 @@ namespace webFileSharingSystem.Core.Services
             while (!cancellationToken.IsCancellationRequested)
             {
                 await DoWorkAsync(cancellationToken);
-                await Task.Delay(30_000, cancellationToken);
+                await Task.Delay(30_000, cancellationToken); // Delay 30 seconds
             }
         }
 
@@ -31,12 +31,10 @@ namespace webFileSharingSystem.Core.Services
         {
             using (IServiceScope scope = _serviceProvider.CreateScope())
             {
-                var applicationDbContext =
-                    scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
-                var partialFileInfoRepository =
-                    scope.ServiceProvider.GetRequiredService<IRepository<PartialFileInfo>>();
-
-                await UploadService.SaveCacheData(partialFileInfoRepository, applicationDbContext, cancellationToken);
+                var unitOfWork =
+                    scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                
+                await UploadService.SaveCacheData( unitOfWork, cancellationToken);
             }
         }
     }
