@@ -468,7 +468,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   shareDecline() {
     this.modalRef?.hide();
     this.fileExplorerService.filesToShare = [];
-    this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+    //Tutaj
+    this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
   }
 
   shareGetItemAccessMode(shareType: string) {

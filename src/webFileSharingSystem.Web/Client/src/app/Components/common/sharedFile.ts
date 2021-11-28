@@ -17,11 +17,11 @@ export interface SharedFile {
   validUntil: Date;
   sharedUserName: string;
 
-
   checked: boolean;
   rename: boolean;
   stopping: boolean;
   progressStatus: ProgressStatus;
+  loading: boolean
 }
 
 export enum AccessMode {
