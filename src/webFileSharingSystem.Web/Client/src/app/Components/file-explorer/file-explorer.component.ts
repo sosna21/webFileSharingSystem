@@ -12,28 +12,24 @@ import {FileUploaderService} from "../../services/file-uploader.service";
 import {UploadStatus} from "../common/fileUploadProgress";
 import {AuthenticationService} from "../../services/authentication.service";
 import {ToastrService} from "ngx-toastr";
+import { AccessMode } from '../common/sharedFile';
 
 interface BreadCrumb {
   id: number;
   fileName: string;
 }
 
-enum ShareAccessMode {
-  ReadOnly,
-  ReadWrite,
-  FullAccess,
-}
 
 interface ShareRequestBody {
   UserNameToShareWith?: string,
-  AccessMode?: ShareAccessMode,
+  AccessMode?: AccessMode,
   AccessDuration?: any,
   Update?: boolean
 }
 
 interface ShareRequestResponse {
   sharedWithUserName: string,
-  accessMode: ShareAccessMode,
+  accessMode: AccessMode,
   validUntil: Date
 }
 
@@ -59,7 +55,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   breadCrumbs: BreadCrumb[] = [];
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
-  shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+  shareRequestBody: ShareRequestBody = {AccessMode: AccessMode.ReadOnly};
   shares: ShareRequestResponse[] = [];
   maxDate = '9999-12-31T23:59:59.9999999'
 
@@ -149,7 +145,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
     // @ts-ignore //TODO resolve in another way
     if (template._declarationTContainer.localNames[0] === 'shareTemplate')
-      this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly});
+      this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: AccessMode.ReadOnly});
   }
 
   confirm(): void {
@@ -455,16 +451,15 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.modalRef?.hide();
       const fileId = this.fileExplorerService.filesToShare[0].id;
 
-      this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
+      this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody).subscribe(() => {
         this.files.find(file => file.id === fileId)!.isShared = true;
         this.fileExplorerService.filesToShare = [];
-        this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+        this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
         file.loading = false;
-
       }, error => {
         this.toastr.error(error.error, "Share error")
         this.fileExplorerService.filesToShare = [];
-        this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+        this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
         file.loading = false;
       });
     }
@@ -479,13 +474,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   shareGetItemAccessMode(shareType: string) {
     switch (shareType) {
       case "read":
-        return ShareAccessMode.ReadOnly;
+        return AccessMode.ReadOnly;
       case "write":
-        return ShareAccessMode.ReadWrite;
+        return AccessMode.ReadWrite;
       case "full":
-        return ShareAccessMode.FullAccess;
+        return AccessMode.FullAccess;
       default:
-        return ShareAccessMode.ReadOnly;
+        return AccessMode.ReadOnly;
     }
   }
 

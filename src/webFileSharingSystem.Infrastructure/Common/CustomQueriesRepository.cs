@@ -48,9 +48,9 @@ namespace webFileSharingSystem.Infrastructure.Common
             return SpecificationEvaluator<File>.GetQuery(_dbContext.GetListOfFilesSharedByUserId(userId), spec);
         }
         
-        public IQueryable<File> GetListOfFilesSharedForUserIdQuery(int userId, int? parentId, ISpecification<File> spec)
+        public IQueryable<SharedFile> GetListOfSharedFilesQuery(int userId, int? parentId, ISpecification<SharedFile> spec)
         {
-            return SpecificationEvaluator<File>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
+            return SpecificationEvaluator<SharedFile>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
         }
 
     }

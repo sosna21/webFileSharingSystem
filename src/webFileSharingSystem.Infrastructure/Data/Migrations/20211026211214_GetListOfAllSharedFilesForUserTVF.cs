@@ -8,28 +8,35 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
         {
             migrationBuilder.Sql(
 				@"CREATE FUNCTION GetListOfAllSharedFilesForUserTVF (@userId INT, @parentId INT)
-	                  WITH recursive_cte_inner AS
-						(
-							SELECT DISTINCT [F].*
-							FROM [Share] AS [S]
-							INNER JOIN [File] AS [F] 
-							ON [F].[Id] = [S].[FileId]
-							WHERE [S].[SharedWithUserId] = @userId
-							UNION ALL
-							SELECT [f].*
-							FROM [File] AS [f]
-							INNER JOIN recursive_cte_inner AS [cte_i] ON [f].[ParentId] = [cte_i].[Id]
-						), recursive_cte_outer AS
-						(
-							SELECT * 
-							FROM recursive_cte_inner WHERE (@parentId IS NULL OR [Id] = @parentId)
-							UNION ALL
-							SELECT [cte_i].*
-							FROM recursive_cte_inner [cte_i]
-							INNER JOIN recursive_cte_outer AS [cte_o] ON [cte_i].[ParentId] = [cte_o].[Id]
-						)
+					RETURNS TABLE
+		            AS
+			            RETURN
+					WITH recursive_cte_inner AS
+					(
+						SELECT DISTINCT [F].*, [S].[AccessMode], [S].[ValidUntil], [S].[CreatedBy] AS [ShareCreatedBy]
+						FROM [Share] AS [S]
+						INNER JOIN [File] AS [F] 
+						ON [F].[Id] = [S].[FileId]
+						WHERE [S].[SharedWithUserId] = @userId
+						UNION ALL
+						SELECT [F].*, [S].[AccessMode], [S].[ValidUntil], [S].[CreatedBy] AS [ShareCreatedBy]
+						FROM [Share] AS [S]
+						INNER JOIN [File] AS [F] 
+						ON [F].[Id] = [S].[FileId]
+						INNER JOIN recursive_cte_inner AS [cte_i] ON [f].[ParentId] = [cte_i].[Id]
+					), recursive_cte_outer AS
+					(
+						SELECT * 
+						FROM recursive_cte_inner WHERE (@parentId IS NULL OR [Id] = @parentId)
+						UNION ALL
+						SELECT [cte_i].*
+						FROM recursive_cte_inner [cte_i]
+						INNER JOIN recursive_cte_outer AS [cte_o] ON [cte_i].[ParentId] = [cte_o].[Id]
+					)
 
-						SELECT DISTINCT * FROM recursive_cte_outer"
+					SELECT DISTINCT [cte].*, [U].[UserName] AS [SharedUserName] FROM recursive_cte_outer AS [cte]
+					INNER JOIN [ApplicationUsers] AS [U]
+					ON [cte].[ShareCreatedBy] = [U].[Id]"
                  );
 
             migrationBuilder.Sql(

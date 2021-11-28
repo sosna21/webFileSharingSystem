@@ -9,6 +9,10 @@ tr {
   text-align: center;
 }
 
+.trim {
+  display: inline-block;
+}
+
 .header {
   font-family: "fantasy", serif;
 }
@@ -39,14 +43,4 @@ input[type=checkbox], fa-icon, #actionBtn:hover {
 td {
   text-align: center;
   vertical-align: middle;
-}
-
-.table-inactive {
-  background-color: #ececec;
-  color: #b9b9b9;
-}
-
-.table-inactive:hover {
-  background-color: #ececec;
-  color: #b9b9b9;
 }

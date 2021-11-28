@@ -100,6 +100,8 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .HasOne<File>()
                 .WithOne(e => e.PartialFileInfo)
                 .HasForeignKey<PartialFileInfo>(e => e.FileId);
+            
+            builder.Entity<SharedFile>().HasNoKey().ToView(null);
 
             builder.Entity<Share>().HasOne<ApplicationUser>()
                 .WithMany(e => e.Shares)
@@ -200,8 +202,8 @@ namespace webFileSharingSystem.Infrastructure.Data
                     SELECT * FROM GetListOfAllChildrenTVF({parentId})
                 ");
         
-        public IQueryable<File> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
-            Set<File>().FromSqlInterpolated(
+        public IQueryable<SharedFile> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
+            Set<SharedFile>().FromSqlInterpolated(
                 $@"
                     SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})
                 ");

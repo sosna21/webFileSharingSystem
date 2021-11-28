@@ -1,6 +1,7 @@
 ﻿import {PartialFileInfo} from "../../models/partialFileInfo";
+import {FileStatus, ProgressStatus} from "./file";
 
-export interface File {
+export interface SharedFile {
   id: number;
   fileName: string;
   mimeType?: string;
@@ -12,22 +13,21 @@ export interface File {
   fileStatus: FileStatus;
   uploadProgress: number;
   partialFileInfo?: PartialFileInfo;
+  accessMode: AccessMode;
+  validUntil: Date;
+  sharedUserName: string;
 
 
   checked: boolean;
   rename: boolean;
   stopping: boolean;
   progressStatus: ProgressStatus;
-  loading: boolean
 }
 
-export enum FileStatus {
-  Completed,
-  Incomplete
+export enum AccessMode {
+  ReadOnly,
+  ReadWrite,
+  FullAccess,
 }
 
-export enum ProgressStatus {
-  Started,
-  Stopping,
-  Stopped,
-}
+

@@ -20,6 +20,7 @@ namespace webFileSharingSystem.Core.Interfaces
 
         IQueryable<File> GetListOfFilesSharedByUserIdQuery(int userId, ISpecification<File> spec);
 
-        IQueryable<File> GetListOfFilesSharedForUserIdQuery(int userId, int? parentId, ISpecification<File> spec);
+        IQueryable<SharedFile> GetListOfSharedFilesQuery(int userId, int? parentId,
+            ISpecification<SharedFile> spec);
     }
 }

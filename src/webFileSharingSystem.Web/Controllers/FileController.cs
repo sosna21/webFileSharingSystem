@@ -117,15 +117,14 @@ namespace webFileSharingSystem.Web.Controllers
 
         [HttpGet]
         [Route("GetSharedWithMe")]
-        public async Task<PaginatedList<FileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
+        public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
-            
-            return await _unitOfWork.Repository<File>()
+            return await _unitOfWork.Repository<SharedFile>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    file => ToFileResponse(file, userId!.Value)
-                    _unitOfWork.CustomQueriesRepository().GetListOfFilesSharedForUserIdQuery(userId!.Value, request.ParentId, 
-                        new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
+                    sharedFile => ToFileResponse(sharedFile, userId!.Value),
+                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId, 
+                        new GetSharedFilesSpec2<SharedFile>(request.ParentId, request.SearchedPhrase)));
         }
 
         [HttpGet]
@@ -137,7 +136,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value),
                     _unitOfWork.CustomQueriesRepository().
-                        GetListOfFilesSharedByUserIdQuery(userId!.Value, new GetSharedFilesSpec(request.ParentId,request.SearchedPhrase)));
+                        GetListOfFilesSharedByUserIdQuery(userId!.Value, new GetSharedFilesSpec<File>(request.ParentId,request.SearchedPhrase)));
         }
         
         [HttpPut]
@@ -442,6 +441,25 @@ namespace webFileSharingSystem.Web.Controllers
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
                     _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+            };
+        }
+        
+        private SharedFileResponse ToSharedFileResponse(SharedFile sharedFile)
+        {
+            return new SharedFileResponse
+            {
+                Id = sharedFile.Id,
+                FileName = sharedFile.FileName,
+                MimeType = sharedFile.MimeType,
+                Size = sharedFile.Size,
+                IsShared = sharedFile.IsShared,
+                IsFavourite = sharedFile.IsFavourite,
+                IsDirectory = sharedFile.IsDirectory,
+                ModificationDate = DateTime.Now,
+                FileStatus = sharedFile.FileStatus,
+                SharedUserName = sharedFile.SharedUserName,
+                AccessMode = sharedFile.AccessMode,
+                ValidUntil = sharedFile.ValidUntil
             };
         }
         
