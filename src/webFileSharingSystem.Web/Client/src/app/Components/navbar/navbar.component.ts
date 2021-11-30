@@ -20,9 +20,6 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   @Output() toggleCollapsed = new EventEmitter<boolean>();
   private isCollapsed: boolean = true;
 
-  constructor(private authenticationService: AuthenticationService,
-              private router: Router, private fileExplorerService: FileExplorerService) {
-  }
   ngAfterViewInit() {
     fromEvent(this.filter?.nativeElement, 'keyup')
       .pipe(
