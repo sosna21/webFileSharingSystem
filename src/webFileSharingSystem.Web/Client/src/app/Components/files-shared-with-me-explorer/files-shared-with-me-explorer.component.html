@@ -3,7 +3,7 @@
     <h2>Shared with me</h2>
   </div>
   <div class="align-self-center mr-3">
-    <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
+    <fa-icon *ngIf="parentAccessMode !== 0" size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
              (click)="initDirCreate(form); createDirTextInput.setFocus();"></fa-icon>
   </div>
   <div class="align-self-end pt-3">
@@ -15,6 +15,21 @@
   </div>
 </div>
 
+<div>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li (click)="fileExplorerService.updateSearchText('')" class="breadcrumb-item"><a routerLink="/shared-with-me"
+                                                                                        routerLinkActive="active">
+        <span><fa-icon [icon]="['fas', 'home']"></fa-icon></span>
+        Home
+      </a></li>
+      <li *ngFor="let item of breadCrumbs" class="breadcrumb-item ">
+        <a (click)="fileExplorerService.updateSearchText('')"
+           [routerLink]="['/shared-with-me', item.id]">{{item.fileName}}</a>
+      </li>
+    </ol>
+  </nav>
+</div>
 
 <div id="table" class="row">
   <div class="table-responsive" style="overflow: visible">
@@ -32,8 +47,11 @@
             Actions  </span>
             <span class="dropdown-menu mt-3" *dropdownMenu>
               <a class="dropdown-item" [href]="downloadMultipleFiles()">Download</a>
-              <a class="dropdown-item" (click)="moveCopyInit()">Move / Copy</a>
-              <a class="dropdown-item" (click)="openModal(deleteTemplate) ;markCheckedFiles()">Delete</a>
+              <a *ngIf="minAccessModeInCheckedFiles() !== 0" class="dropdown-item"
+                 (click)="moveCopyInit()">Move / Copy</a>
+              <a class="dropdown-item" (click)="removeShare()"> Remove from shares</a>
+              <a *ngIf="minAccessModeInCheckedFiles() === 2" class="dropdown-item"
+                 (click)="openModal(deleteTemplate) ;markCheckedFiles()">Delete</a>
             </span>
           </span>
           <div *ngIf="fileExplorerService.filesToMoveCopy.length>0" class="custom-control-inline ml-3">
@@ -55,15 +73,17 @@
 
         <!--Checkobox-->
         <td>
-          <input type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
-                 (change)="file.checked = !file.checked" [checked]="file.checked">
+          <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
+                 (change)="file.checked = !file.checked" [checked]="file.checked"/>
+          <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
           <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
                    [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
 
-      <!--FileName + upload progress-->
+        <!--FileName + upload progress-->
         <td *ngIf="!file.rename" class="text-left">
-          <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
+          <div [routerLink]="file.isDirectory ? ['/shared-with-me',file.id] : null"
+               class="row col-12 align-items-center"
                [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
             <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
               <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
@@ -105,27 +125,32 @@
 
         <!--Actions-->
         <td>
-
-          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)" [isDisabled]="!isCompleted(file)"
+          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
+               [isDisabled]="!isCompleted(file) || file.loading"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
-            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'ellipsis-h']"
+            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file) || file.loading"
+                     [icon]="['fas', 'ellipsis-h']"
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
               <li role="menuitem"><a class="dropdown-item" [href]="downloadFile(file)">Download</a></li>
-              <li role="menuitem"><a class="dropdown-item"
-                                     (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
+              <li *ngIf="file.accessMode !== 0" role="menuitem"><a class="dropdown-item"
+                                                                   (click)="renameInit(file); renameInput.hidden = false;
+                                                                    renameTextInput.setFocus();">Rename</a>
               </li>
-              <li role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(file)">Move / Copy</a></li>
-              <li role="menuitem"><a class="dropdown-item"
-                                     (click)="openModal(deleteTemplate); fileExplorerService.filesToDelete = [file]">Delete</a>
+              <li *ngIf="file.accessMode !== 0" role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(file)">
+                Move / Copy</a></li>
+              <li role="menuitem"><a class="dropdown-item" (click)="removeShare([file])"> Remove from shares</a></li>
+              <li *ngIf="file.accessMode === 2" role="menuitem"><a class="dropdown-item"
+                                                                   (click)="openModal(deleteTemplate);
+                                                                   fileExplorerService.filesToDelete = [file]">Delete file</a>
               </li>
             </ul>
           </div>
         </td>
 
         <!--Access Mode-->
-        <td> {{file.accessMode}} </td>
+        <td>{{getAccessModeNameFromNumber(file.accessMode)}}</td>
 
         <!--Size-->
 
@@ -133,21 +158,31 @@
 
         <!--Shared By-->
 
-        <td> {{file.sharedUserName}} </td>
+        <td>{{file.sharedUserName}}</td>
 
         <!--Valid until-->
-
         <td>
-          <div class="trim" popover="{{file.validUntil | date :'medium'}}"
-               triggers="mouseenter:mouseleave">{{file.validUntil | timeago}}</div>
+          <div class="trim"
+               popover="{{file.validUntil.toString() === maxDate ? 'Unlimited' : file.validUntil | date :'medium'}}"
+               triggers="mouseenter:mouseleave">{{file.validUntil.toString() === maxDate ? 'Unlimited' : file.validUntil | timeago }}</div>
         </td>
 
       </tr>
       </tbody>
     </table>
-    <h2 class="text-center my-3" *ngIf="files.length <= 0">You do not have any files in this category</h2>
-    <div class="d-flex justify-content-center" *ngIf="files.length > 0">
-      <pagination [boundaryLinks]="true"
+
+    <div *ngIf="loadingData" class="d-flex justify-content-center d-flex align-items-center m-5">
+      <div class="spinner-border" style="width: 3.4rem; height: 3.4rem;" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!loadingData" class="d-flex justify-content-center">
+      <h2 *ngIf="files.length <= 0" class="text-center my-3">
+        {{searchedPhrase ? "We can't find any files that fit your criteria"
+        : "You do not have any files in this category"}}</h2>
+      <pagination *ngIf="files.length > 0"
+                  [boundaryLinks]="true"
                   [totalItems]="totalItems"
                   [itemsPerPage]="itemsPerPage"
                   [(ngModel)]="currentPage"
@@ -169,3 +204,5 @@
     <button type="button" class="btn btn-secondary" (click)="decline()">No</button>
   </div>
 </ng-template>
+
+<input [hidden]="true" type="file" #fileUpload id="fileUpload" name="fileUpload"/>

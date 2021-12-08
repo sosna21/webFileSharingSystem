@@ -30,7 +30,6 @@
   </nav>
 </div>
 
-
 <div id="table" class="row">
   <div class="table-responsive" style="overflow: visible">
     <table class="table table-sm table-hover">
@@ -68,6 +67,8 @@
       </thead>
       <tbody>
       <tr [ngClass]="file.loading? 'table-inactive' : ''" *ngFor="let file of files; let fileIndex=index">
+
+        <!--Checkobox-->
         <td>
           <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
                  (change)="file.checked = !file.checked" [checked]="file.checked"/>
@@ -75,6 +76,8 @@
           <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
                    [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
+
+        <!--FileName + upload progress-->
         <td *ngIf="!file.rename" class="text-left">
           <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
                [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
@@ -101,6 +104,7 @@
             </div>
           </div>
 
+          <!--FileName when rename mode is enabled-->
         </td>
         <td #renameInput hidden class="text-left">
           <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
@@ -112,19 +116,23 @@
                             [value]="file.fileName"></app-text-input>
           </form>
         </td>
+
+        <!--Favorites -->
         <td>
           <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
                    (click)="SetFavourite(file)"
                    [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
         </td>
+
+        <!--Share-->
         <td>
           <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
                    (click)="file.loading ? null : fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
+        <!--Actions-->
         <td>
-
           <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
                [isDisabled]="!isCompleted(file) || file.loading"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
@@ -144,7 +152,11 @@
             </ul>
           </div>
         </td>
+
+        <!--File size-->
         <td>{{file.size | convertSizeToReadable}}</td>
+
+        <!--Last modification date-->
         <td>
           <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
                triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>
@@ -160,10 +172,12 @@
     </div>
 
 
-
     <div *ngIf="!loadingData" class="d-flex justify-content-center">
-      <h2 class="text-center my-3" *ngIf="files.length <= 0">You do not have any files in this category</h2>
-      <pagination [boundaryLinks]="true"
+      <h2 *ngIf="files.length <= 0" class="text-center my-3" >
+        {{searchedPhrase ? "We can't find any files that fit your criteria"
+        : "You do not have any files in this category"}}</h2>
+      <pagination *ngIf="files.length > 0"
+                  [boundaryLinks]="true"
                   [totalItems]="totalItems"
                   [itemsPerPage]="itemsPerPage"
                   [(ngModel)]="currentPage"
@@ -242,7 +256,8 @@
     <button type="button" class="btn btn-dark mr-2"
             (click)="shareConfirm()">{{!!shareRequestBody.Update ? 'Update' : 'Share'}}</button>
     <button type="button" class="btn btn-secondary"
-            (click)="shareDecline()">Cancel</button>
+            (click)="shareDecline()">Cancel
+    </button>
   </div>
 </ng-template>
 
@@ -273,7 +288,7 @@
         openModal(shareTemplate)" style="cursor: pointer">
           <td>{{share.sharedWithUserName}}</td>
           <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
-          <td>{{share.validUntil.toString() === maxDate ? 'unlimited' : share.validUntil | timeago }}</td>
+          <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : share.validUntil | timeago }}</td>
         </tr>
         </tbody>
       </table>

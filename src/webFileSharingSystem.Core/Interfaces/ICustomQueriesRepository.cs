@@ -11,6 +11,9 @@ namespace webFileSharingSystem.Core.Interfaces
         Task<IEnumerable<FilePathPart>> FindPathToAllParents(int fileId, CancellationToken cancellationToken = default);
 
         Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default);
+
+        Task<FileAccessMode?> GetSharedFileAccessMode(int fileId, int userId,
+            CancellationToken cancellationToken = default);
         
         Task<List<File>> GetListOfAllParentsAsFiles(int parentId, CancellationToken cancellationToken = default);
         

@@ -19,7 +19,6 @@ interface BreadCrumb {
   fileName: string;
 }
 
-
 interface ShareRequestBody {
   UserNameToShareWith?: string,
   AccessMode?: AccessMode,
@@ -140,14 +139,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   openModal(template: TemplateRef<any>) {
-    this.getShares(this.fileExplorerService.filesToShare[0].id);
+    this.getShares(this.fileExplorerService.filesToShare[0]?.id);
 
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
     // @ts-ignore //TODO resolve in another way
-    if (template._declarationTContainer.localNames[0] === 'shareTemplate')
+    if (template._declarationTContainer.localNames[0] === 'shareTemplate'){
       this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: AccessMode.ReadOnly});
+    }
   }
-
   confirm(): void {
     this.modalRef?.hide();
 
@@ -287,7 +286,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        console.log(error)
+        this.toastr.error(error.error, "Directory delete error");
       })
     } else {
       this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
@@ -295,7 +294,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        console.log(error)
+        this.toastr.error(error.error, "Directory delete error");
       })
     }
   }
@@ -488,13 +487,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   getAccessModeNameFromNumber(shareType: number) {
     switch (shareType) {
       case 0:
-        return 'ReadOnly';
+        return 'Read only';
       case 1:
-        return 'ReadWrite';
+        return 'Read write';
       case 2:
-        return 'FullAccess';
+        return 'Full access';
       default:
-        return 'ReadOnly';
+        return 'Read only';
     }
   }
 }

@@ -27,6 +27,7 @@ const routes: Routes = [
       { path: 'tags', component: TagsComponent },
       { path: 'deleted', component: DeletedComponent },
       { path: 'shared-with-me', component: SharedWithMeComponent },
+      { path: 'shared-with-me/:id', component: SharedWithMeComponent },
       { path: 'shared-by-me', component: SharedByMeComponent },
     ]
   },

@@ -23,6 +23,11 @@ namespace webFileSharingSystem.Infrastructure.Common
             return await _dbContext.GetFilePathParts(fileId).ToListAsync(cancellationToken);
         }
         
+        public async Task<FileAccessMode?> GetSharedFileAccessMode(int fileId, int userId, CancellationToken cancellationToken = default) 
+        {
+            return (await _dbContext.GetSharedFileAccessMode(fileId,userId).ToListAsync(cancellationToken)).FirstOrDefault();
+        }
+
         public async Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default)
         {
             return await _dbContext.GetListOfAllChildrenAsFiles(parentId).ToListAsync(cancellationToken);

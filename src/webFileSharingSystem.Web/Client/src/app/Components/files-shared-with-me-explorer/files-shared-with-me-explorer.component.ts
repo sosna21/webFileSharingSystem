@@ -10,7 +10,14 @@ import {ToastrService} from "ngx-toastr";
 import {FileUploaderService} from "../../services/file-uploader.service";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
 import {AccessMode, SharedFile} from '../common/sharedFile';
+import {Subscription} from "rxjs";
+import {ActivatedRoute} from "@angular/router";
 
+
+interface BreadCrumb {
+  id: number;
+  fileName: string;
+}
 
 interface ShareRequestResponse {
   sharedWithUserName: string,
@@ -38,6 +45,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   modalRef?: BsModalRef;
   shareRequestBody: ShareRequestBody = {AccessMode: AccessMode.ReadOnly};
   parentId: number | null = null;
+  parentAccessMode: AccessMode  = AccessMode.ReadOnly;
   itemsPerPage = 15;
   currentPage = 1;
   totalItems!: number;
@@ -47,18 +55,52 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   @ViewChild("fileUpload", {static: false}) fileUpload: ElementRef | undefined;
   gRename: boolean = false;
   fileNameForm!: FormGroup;
+  breadCrumbs: BreadCrumb[] = [];
+  loadingData: boolean = true;
+  maxDate = '9999-12-31T23:59:59.9999999'
+  userSubscription!: Subscription;
 
 
-  constructor(private http: HttpClient, private downloadService: DownloadService,  public fileExplorerService: FileExplorerService, private modalService: BsModalService,
+  constructor(private http: HttpClient, private downloadService: DownloadService, public fileExplorerService: FileExplorerService, private modalService: BsModalService,
               private authenticationService: AuthenticationService, private toastr: ToastrService, private uploadService: FileUploaderService, private formBuilder: FormBuilder,
-              ) { }
-
-  ngOnInit(): void {
-    this.reloadData();
-    this.getNames();
-    this.initializeForm();
+              private route: ActivatedRoute
+  ) {
   }
 
+  ngOnInit(): void {
+    this.userSubscription = this.route.params.subscribe(params => {
+
+      if (params['id']) {
+        this.parentId = +params['id'];
+      }
+      let reloadSearchWhenEmpty = false;
+      this.fileExplorerService.searchedText.subscribe(response => {
+        this.searchedPhrase = response;
+        if (reloadSearchWhenEmpty || (response && response !== '')) {
+          this.reloadData();
+          reloadSearchWhenEmpty = true;
+        }
+      })
+
+      this.reloadData();
+      this.getNames();
+      if (this.parentId)
+        this.getFilePath(this.parentId);
+    });
+
+    this.initializeForm();
+    this.toastr.toastrConfig.preventDuplicates = true;
+  }
+
+
+  getFilePath(fileId: number) {
+    this.http.get<any>(`${environment.apiUrl}/File/GetFilePath/${fileId}`).subscribe(response => {
+      this.breadCrumbs = response;
+      console.log(this.breadCrumbs);
+    }, error => {
+      console.log(error);
+    })
+  }
 
   isAllCheckBoxChecked() {
     if (this.files.length > 0)
@@ -87,6 +129,10 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     return this.downloadService.downloadMultipleFilesDirectUrl(fileIdsToDownload);
   }
 
+  minAccessModeInCheckedFiles(){
+    return Math.min.apply(null, this.files.filter(x => x.checked).map(file => file.accessMode));
+  }
+
   moveCopyInit(file?: File) {
     var filesToMoveCopy: File[];
     if (file) {
@@ -98,26 +144,12 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   openModal(template: TemplateRef<any>) {
-    this.getShares(this.fileExplorerService.filesToShare[0].id);
-
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
-    // @ts-ignore //TODO resolve in another way
-    if (template._declarationTContainer.localNames[0] === 'shareTemplate')
-      this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: AccessMode.ReadOnly});
-  }
-
-  getShares(fileId: number): void {
-    this.http.get<any>(`${environment.apiUrl}/Share/GetShares/${fileId}`).subscribe(response => {
-      this.shares = response;
-    }, error => {
-      console.log(error);
-    })
   }
 
   markCheckedFiles() {
     this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
   }
-
 
   moveCopyFiles(copy: boolean, filesToMoveCopy: File[] = this.fileExplorerService.filesToMoveCopy) {
     const parentId = this.parentId ?? -1;
@@ -145,11 +177,16 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     this.http.get<any>(`${environment.apiUrl}/File/GetSharedWithMe?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
       ${parentId ? '&ParentId=' + parentId : ''}${(searchedPhrase && searchedPhrase !== '') ? '&SearchedPhrase=' + searchedPhrase : ''}`)
       .subscribe(response => {
+        this.loadingData = false;
         this.totalItems = response.totalCount;
+        const parentFile = this.files.find(file => file.id === parentId);
+        this.parentAccessMode = AccessMode.ReadOnly;
+        if(parentFile !== undefined) this.parentAccessMode = parentFile.accessMode
         this.files = response.items;
         this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);
         callBack?.();
       }, error => {
+        this.loadingData = false;
         console.log(error);
       })
   }
@@ -165,22 +202,38 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     this.files = this.files.filter(x => x != file);
   }
 
+
+  removeShare(files?: File[]) {
+
+    if(files === undefined) files = this.files.filter(file => file.checked);
+    files.some((file, index, array) => {
+      this.http.delete(`${environment.apiUrl}/Share/RemoveShare/${file.id}`).subscribe(() => {
+        if (index == array.length - 1) {
+          this.reloadData();
+        }
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+        this.toastr.success("Share removed successfully","Share remove status");
+      }, error => {
+        //TODO break forEach
+        this.toastr.error(error.error,"Share remove error");
+      });
+    })
+  }
+
   deleteFile(file: File, reload: boolean = true) {
     if (file.isDirectory) {
-      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
+      this.http.delete(`${environment.apiUrl}/Share/DeleteDir/${file.id}`).subscribe(() => {
         reload ? this.reloadData() : null;
-        this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        console.log(error)
+        this.toastr.error(error.error, "Directory delete error");
       })
     } else {
-      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
+      this.http.delete(`${environment.apiUrl}/Share/DeleteFile/${file.id}`).subscribe(() => {
         reload ? this.reloadData() : null;
-        this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        console.log(error)
+        this.toastr.error(error.error, "File delete error");
       })
     }
   }
@@ -226,7 +279,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
       if (!this.fileNameForm.get('fileName')?.invalid) {
         let filename = this.fileNameForm.get('fileName')?.value;
 
-        this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
+        this.http.put(`${environment.apiUrl}/Share/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
           file.fileName = filename;
           file.modificationDate = new Date();
           this.names.push(file.fileName);
@@ -275,12 +328,13 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
 
   getNames(): void {
     let parentId = this.parentId ?? -1;
-    this.http.get<any>(`${environment.apiUrl}/File/GetNames/${parentId}`).subscribe(response => {
+    this.http.get<any>(`${environment.apiUrl}/Share/GetNames/${parentId}`).subscribe(response => {
       this.names = response;
     }, error => {
       console.log(error);
     })
   }
+
 
   initDirCreate(form: any) {
     if (!this.gRename) {
@@ -292,25 +346,17 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   createDirectory() {
-    if (!this.fileNameForm.get('dirName')?.invalid) {
+    if (!this.fileNameForm.get('dirName')?.invalid && this.parentId) {
 
       let name = this.fileNameForm.get('dirName')?.value;
-      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}${this.parentId ? '?parentId=' + this.parentId : ''}`, {}).subscribe(response => {
-        let file: SharedFile = response;
-
-        this.files.length >= this.itemsPerPage ? this.files.pop() : null;
-        file.checked = false;
-        file.rename = false;
-        file.fileStatus = FileStatus.Completed;
-        file.progressStatus = ProgressStatus.Stopped;
-
-        this.files.unshift(file)
-        this.names.push(file.fileName);
-        this.totalItems++;
-
+      let parentFile = this.files.find(file => file.id == this.parentId);
+      this.http.post<any>(`${environment.apiUrl}/Share/CreateDir/${name}?parentId=${this.parentId}`, {}).subscribe(() => {
+        this.reloadData();
         this.gRename = false;
       }, error => {
-        console.log(error);
+        console.log(error)
+        this.toastr.error(error.error ? error.error
+          :'Something went wrong while creating directory','Directory creation error')
       });
     }
   }
@@ -332,4 +378,16 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     }
   }
 
+  getAccessModeNameFromNumber(shareType: number) {
+    switch (shareType) {
+      case 0:
+        return 'Read only';
+      case 1:
+        return 'Read write';
+      case 2:
+        return 'Full access';
+      default:
+        return 'Read only';
+    }
+  }
 }

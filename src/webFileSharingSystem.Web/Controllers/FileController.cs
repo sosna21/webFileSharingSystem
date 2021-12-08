@@ -36,7 +36,8 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
             var fileToGetPath = await _unitOfWork.Repository<File>().FindByIdAsync(fileId);
             if (fileToGetPath is null) return BadRequest(ErrorMessage);
-            if (fileToGetPath.UserId != userId) return Unauthorized(ErrorMessage);
+            //TODO restore UserId check taking into the account shares
+            // if (fileToGetPath.UserId != userId) return Unauthorized(ErrorMessage);
 
             var filePathParts = await _unitOfWork.CustomQueriesRepository().FindPathToAllParents(fileId);
             return Ok(filePathParts.Reverse().Select(part => new FilePathPartResponse
@@ -155,12 +156,12 @@ namespace webFileSharingSystem.Web.Controllers
 
         [HttpPut]
         [Route("Rename/{id:int}")]
-        public async Task<ActionResult> SetFavourite(int id, [FromQuery] string name)
+        public async Task<ActionResult> Rename(int id, [FromQuery] string name)
         {
             var userId = _currentUserService.UserId;
             var fileToUpdate = await _unitOfWork.Repository<File>().FindByIdAsync(id);
             if (fileToUpdate is null) return BadRequest(ErrorMessage);
-            if (fileToUpdate.UserId != userId) return Unauthorized(ErrorMessage);
+            //if (fileToUpdate.UserId != userId) return Unauthorized(ErrorMessage);
             fileToUpdate.FileName = name;
             _unitOfWork.Repository<File>().Update(fileToUpdate);
             if (await _unitOfWork.Complete() > 0) return Ok();

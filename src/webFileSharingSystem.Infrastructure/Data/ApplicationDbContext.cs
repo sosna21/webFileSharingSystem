@@ -67,6 +67,7 @@ namespace webFileSharingSystem.Infrastructure.Data
             base.OnModelCreating(builder);
 
             builder.Entity<FilePathPart>().HasNoKey();
+            builder.Entity<FileAccessMode>().HasNoKey();
 
             builder.Entity<RefreshToken>()
                 .HasOne<IdentityUser>()
@@ -178,6 +179,25 @@ namespace webFileSharingSystem.Infrastructure.Data
                         INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
                     )
                     SELECT [Id], [FileName] FROM recursive_cte
+                ");
+        
+        public IQueryable<FileAccessMode> GetSharedFileAccessMode(int fileId, int userId) =>
+            Set<FileAccessMode>().FromSqlInterpolated(
+                $@"
+                   WITH recursive_cte AS
+                    (
+                        SELECT [Id], [ParentId], 0 AS [level]
+                        FROM [File] WHERE Id = {fileId}
+                        UNION ALL
+                        SELECT [F].[Id], [F].[ParentId], [cte].[level] + 1
+                        FROM [File] AS [F]
+                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [F].[Id] 
+                    )
+                    SELECT TOP(1) [S].[Id], [S].[AccessMode] FROM recursive_cte AS [cte]
+					INNER JOIN [Share] AS [S]
+					ON [S].[FileId] = [cte].[Id]
+					WHERE [S].[ValidUntil] > CURRENT_TIMESTAMP AND [S].[SharedWithUserId] = {userId}
+					ORDER BY [cte].[level]
                 ");
 
 

@@ -8,7 +8,7 @@ namespace webFileSharingSystem.Core.Specifications
             share => share.SharedWithUserId == userId
                     && share.FileId == fileId)
         {
-            // AddInclude(share => share.SharedWithUserId);
+            //AddInclude(share => share.SharedByUserId);
             // ApplyOrderBy(share => share.SharedWithUserId);
         }
     }
