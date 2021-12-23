@@ -57,7 +57,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
         private async Task GetRefreshTokensCount(IUnitOfWork unitOfWork, CancellationToken cancellationToken = default)
         {
-            var refreshTokenCounts = await unitOfWork.Repository<RefreshToken>().FindAsync(new CountTodayRefreshTokensPerUserSpec(), cancellationToken);
+            var refreshTokenCounts = await unitOfWork.Repository<RefreshToken>().FindAsync(new CountDailyRefreshTokensPerUserSpec(), cancellationToken);
             
             TokenService.UpdateRefreshTokensCount( refreshTokenCounts );
         }

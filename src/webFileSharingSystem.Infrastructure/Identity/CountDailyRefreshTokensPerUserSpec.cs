@@ -4,9 +4,9 @@ using webFileSharingSystem.Core.Specifications;
 
 namespace webFileSharingSystem.Infrastructure.Identity
 {
-    internal sealed class CountTodayRefreshTokensPerUserSpec : BaseSpecification<RefreshToken, UserRefreshTokensCount>
+    internal sealed class CountDailyRefreshTokensPerUserSpec : BaseSpecification<RefreshToken, UserRefreshTokensCount>
     {
-        public CountTodayRefreshTokensPerUserSpec() : base(token =>
+        public CountDailyRefreshTokensPerUserSpec() : base(token =>
             token.Created > DateTime.UtcNow.Date)
         {
             ApplyGroupBy( g => g.IdentityUserId, (userId , tokens) => new UserRefreshTokensCount{ IdentityUserId = (string)userId, Count = tokens.Count()}  );

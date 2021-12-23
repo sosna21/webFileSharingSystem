@@ -47,7 +47,7 @@
             <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': 'black'}"></fa-icon>
             Actions  </span>
             <span class="dropdown-menu mt-3" *dropdownMenu>
-              <a class="dropdown-item" [href]="downloadMultipleFiles()">Download</a>
+              <a class="dropdown-item" (click)="downloadMultipleFiles()">Download</a>
               <a class="dropdown-item" (click)="moveCopyInit()">Move / Copy</a>
               <a class="dropdown-item" (click)="openModal(deleteTemplate) ;markCheckedFiles()">Delete</a>
             </span>
@@ -133,7 +133,7 @@
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
-              <li role="menuitem"><a class="dropdown-item" [href]="downloadFile(file)">Download</a></li>
+              <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
               <li role="menuitem"><a class="dropdown-item"
                                      (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
               </li>
