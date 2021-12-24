@@ -1,7 +1,7 @@
 <div class="d-flex justify-content-center align-items-center" >
-  <div class="col-4 card">
+  <div class="col-12 col-sm-11 col-md-8 col-lg-7 col-xl-4 card">
     <form [formGroup]="registerForm!" (ngSubmit)="onSubmit()" autocomplete="off">
-      <h2 class="text-center text-primary">Sign up</h2>
+      <h2 class="text-center text-dark">Sign up</h2>
       <hr>
       <app-text-input [formControl]="$any(registerForm).controls['username']" [label]="'Username'"></app-text-input>
       <app-text-input [formControl]="$any(registerForm).controls['email']" [label]="'Email (optional)'"></app-text-input>
