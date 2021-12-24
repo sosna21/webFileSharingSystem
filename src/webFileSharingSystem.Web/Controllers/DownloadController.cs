@@ -36,8 +36,8 @@ namespace webFileSharingSystem.Web.Controllers
         }
         
         [HttpPost]
-        [Route(GenerateDownloadUrlActionName + "/{parentId:int}")]
-        public async Task<ActionResult> GenerateDownloadUrl(int parentId, CancellationToken cancellationToken = default)
+        [Route(GenerateDownloadUrlActionName + "/{fileId:int}")]
+        public async Task<ActionResult> GenerateDownloadUrl(int fileId, CancellationToken cancellationToken = default)
         {
             var downloadUrl = GetDownloadUrl(GenerateDownloadUrlActionName, DownloadSingleFileActionName);
             
