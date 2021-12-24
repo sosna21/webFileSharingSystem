@@ -51,7 +51,12 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            var credentials = new SigningCredentials(_tokenValidationParameters.IssuerSigningKey, _tokenValidationParameters.ValidAlgorithms.FirstOrDefault());
+            if (_tokenValidationParameters.ValidAlgorithms.Count() != 1)
+            {
+                throw new Exception("Invalid JWT configuration");
+            }
+
+            var credentials = new SigningCredentials(_tokenValidationParameters.IssuerSigningKey, _tokenValidationParameters.ValidAlgorithms.First());
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {

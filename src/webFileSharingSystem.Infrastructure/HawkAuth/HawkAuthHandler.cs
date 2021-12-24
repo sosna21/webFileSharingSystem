@@ -22,8 +22,7 @@ namespace webFileSharingSystem.Infrastructure.HawkAuth
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // Hawk authentication for HTTP GET methods using Bewit authentication token
-            if (!Request.Method.Equals("GET", StringComparison.InvariantCultureIgnoreCase) 
-                || !Request.Query.Any() 
+            if (!Request.Method.Equals("GET", StringComparison.InvariantCultureIgnoreCase)
                 || !Request.Query.TryGetValue("bewit", out var bewit) ) 
                 return AuthenticateResult.Fail("Bewit Not Found.");
             
