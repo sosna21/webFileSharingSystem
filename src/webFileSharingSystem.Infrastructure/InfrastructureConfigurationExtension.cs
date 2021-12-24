@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
-
+using System.Threading.Tasks;
+using HawkNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Common;
 using webFileSharingSystem.Infrastructure.Data;
+using webFileSharingSystem.Infrastructure.HawkAuth;
 using webFileSharingSystem.Infrastructure.Identity;
 using webFileSharingSystem.Infrastructure.Storage.OnPremise;
 
@@ -67,18 +69,32 @@ namespace webFileSharingSystem.Infrastructure
 
             services.AddSingleton(tokenValidationParameters);
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
-                options =>
-                {
-                    options.TokenValidationParameters = tokenValidationParameters;
-                });
+            var hawkSection = configuration.GetSection(nameof(HawkSettings));
+            services.Configure<HawkSettings>(hawkSection);
+
+            // configure hawk authentication
+            var hawkSettings = hawkSection.Get<HawkSettings>();
+
+            var hawkCredential = new HawkCredential
+            {
+                Key = hawkSettings.Secret,
+                Algorithm = SecurityAlgorithms.Sha256
+            };
+
+            services.AddSingleton(hawkCredential);
             
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
+                    options => options.TokenValidationParameters = tokenValidationParameters)
+                .AddScheme<HawkAuthSchemeOptions, HawkAuthHandler>(HawkSettings.Scheme, options =>
+                    options.Credentials = _ => Task.FromResult(hawkCredential));
+
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IFilePersistenceService, FilePersistenceService>();
             services.AddScoped<InternalCustomQueriesRepository>();
             
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IHawkAuthService, HawkAuthService>();
             services.AddTransient<TokenService>();
             
             services.AddHostedService(sp => new MaintainRefreshTokensService(sp));

@@ -5,7 +5,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -19,7 +18,6 @@ namespace webFileSharingSystem.Infrastructure.Identity
     {
         private readonly JwtSettings _jwtSettings;
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly SymmetricSecurityKey _key;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
         private static readonly ConcurrentDictionary<string, int> IdentityUserRefreshCount = new();
@@ -28,7 +26,6 @@ namespace webFileSharingSystem.Infrastructure.Identity
         {
             _jwtSettings = jwtSettings.Value;
             _userManager = userManager;
-            _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             _tokenValidationParameters = tokenValidationParameters;
         }
         
@@ -54,7 +51,12 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            var credentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
+            if (_tokenValidationParameters.ValidAlgorithms.Count() != 1)
+            {
+                throw new Exception("Invalid JWT configuration");
+            }
+
+            var credentials = new SigningCredentials(_tokenValidationParameters.IssuerSigningKey, _tokenValidationParameters.ValidAlgorithms.First());
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {

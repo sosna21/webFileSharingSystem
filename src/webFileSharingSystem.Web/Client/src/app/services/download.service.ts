@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import {environment} from "../../environments/environment";
+import {EMPTY} from "rxjs";
+import {HttpClient} from "@angular/common/http";
 
 @Injectable({
   providedIn: 'root'
@@ -7,18 +9,22 @@ import {environment} from "../../environments/environment";
 
 export class DownloadService {
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
-  public downloadSingleFileDirectUrl(fileId: number) {
-    return `${environment.apiUrl}/Download/${fileId}/Anonymous`
-  }
+  public getDownloadLink(fileId: number|null, fileIds: number[]|null) {
 
-  public downloadMultipleFilesDirectUrl(fileIds: number[]) {
-    let queryParams = `${fileIds[0]}`;
-    for (let i = 1; i < fileIds.length; i++) {
-      queryParams += `&fileIds=${fileIds[i]}`
+    if(fileId)
+      return this.http.post<any>(`${environment.apiUrl}/Download/GenerateUrl/${fileId}`, {});
+
+    if(fileIds && fileIds.length > 0) {
+      let queryParams = `${fileIds[0]}`;
+      for (let i = 1; i < fileIds.length; i++) {
+        queryParams += `&fileIds=${fileIds[i]}`
+      }
+      return this.http.post<any>(`${environment.apiUrl}/Download/GenerateUrl?fileIds=${queryParams}`, {});
     }
-    return `${environment.apiUrl}/Download/Multiple?fileIds=${queryParams}`
+
+    return EMPTY;
   }
 
 }
