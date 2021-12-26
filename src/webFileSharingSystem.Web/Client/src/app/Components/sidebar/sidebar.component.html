@@ -1,13 +1,9 @@
-<!--<button class="navbar-toggler bg-warning" type="button" aria-controls="sidebarMenu" aria-label="Toggle navigation" (click)="isCollapsed = !isCollapsed"-->
-<!--        [attr.aria-expanded]="isCollapsed">-->
-<!--  <span class="navbar-toggler-icon"></span>-->
-<!--</button>-->
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse" [collapse]="isCollapsed">
   <div class="d-flex flex-column sidebar-sticky pb-md-3 pt-md-3">
     <div>
       <ul class="nav flex-column">
         <li class="nav-item">
-          <a class="nav-link" routerLink="files"  routerLinkActive="active">
+          <a class="nav-link" routerLink="files" routerLinkActive="active">
             <span><fa-icon [icon]="['fas', 'file']"></fa-icon></span>
             Files
           </a>
@@ -26,8 +22,6 @@
             </li>
           </ul>
         </li>
-
-
         <li class="nav-item">
           <a class="nav-link" routerLink="favourite" routerLinkActive="active">
             <span><fa-icon [icon]="['fas', 'heart']"></fa-icon></span>
@@ -52,7 +46,6 @@
             Deleted
           </a>
         </li>
-
         <li class="nav-item">
           <p class="nav-link">
             <span><fa-icon [icon]="['fas', 'hdd']"></fa-icon></span>
@@ -60,17 +53,23 @@
           </p>
         </li>
       </ul>
-
-      <div class="progress progress-sm bg-dark mx-3">
-        <div class="progress-bar " [ngClass]="type" role="progressbar" [ngStyle]="{ 'width': dynamic + '%'}">{{dynamic}}%</div>
+      <div class="col-9 col-sm-6 col-md-12">
+        <div class="progress progress-sm bg-dark">
+          <div class="progress-bar" [ngClass]="type" role="progressbar"
+               [ngStyle]="{ 'width': dynamic + '%'}">{{dynamic}}
+            %
+          </div>
+        </div>
       </div>
-      <div *ngIf="dynamic >= 90" class="alert alert-danger mx-3 mt-2 p-0">{{dynamic >= 100 ? "No free space left." : "Available space is low."}}<br> Consider deleting some files.</div>
-
+      <div *ngIf="dynamic >= 90"
+           class="alert alert-danger mx-3 mt-2 p-0">{{dynamic >= 100 ? "No free space left." : "Available space is low."}}
+        <br> Consider deleting some files.
+      </div>
     </div>
-
-    <div class="mt-auto mb-2">
-      <app-file-upload></app-file-upload>
-
+    <div class="mt-5 mt-md-auto mb-2">
+      <div class="col-9 col-sm-6 col-md-12 p-md-0">
+        <app-file-upload></app-file-upload>
+      </div>
     </div>
   </div>
 </nav>

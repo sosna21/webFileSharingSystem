@@ -1,8 +1,8 @@
- <app-navbar></app-navbar>
+ <app-navbar #navbarComponent></app-navbar>
 
-  <div *ngIf="authenticated" class="container-fluid mainView">
+  <div *ngIf="authenticated" class="container-fluid mainViewCollapsed mainView px-3">
     <div class="row">
-      <app-sidebar></app-sidebar>
+      <app-sidebar [toggleCollapsed]="navbarComponent.toggleCollapsed"></app-sidebar>
       <main id="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
         <router-outlet></router-outlet>
       </main>
