@@ -50,10 +50,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   names: string[] = [];
   searchedPhrase: string | null = null;
   breadCrumbs: BreadCrumb[] = [];
-  userSubscription!: Subscription;
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
   shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+
+  private routeParamsSub?: Subscription;
+  private searchedTextSub?: Subscription;
+  private uploadProgressSub?: Subscription;
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
     , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService
@@ -64,13 +67,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
 
-    this.userSubscription = this.route.params.subscribe(params => {
-
+    this.routeParamsSub = this.route.params.subscribe(params => {
       if (params['id']) {
         this.parentId = +params['id'];
       }
       let reloadSearchWhenEmpty = false;
-      this.fileExplorerService.searchedText.subscribe(response => {
+      this.searchedTextSub = this.fileExplorerService.searchedText.subscribe(response => {
+        if(!this.authenticationService.currentUserValue) return;
         this.searchedPhrase = response;
         if(reloadSearchWhenEmpty || (response && response !== '')){
           this.reloadData();
@@ -83,11 +86,10 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       if (this.parentId)
         this.getFilePath(this.parentId);
     });
+
     this.initializeForm();
 
-    this.uploadService.reportUploadProgress.subscribe(progress => {
-      // console.log(progress?.status);
-      // console.log(progress?.progress);
+    this.uploadProgressSub = this.uploadService.reportUploadProgress.subscribe(progress => {
       if (progress?.status === UploadStatus.Started) {
         if (progress.parentId === this.parentId) {
           this.getFiles(this.mode, this.parentId, this.searchedPhrase,() => {
@@ -127,7 +129,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.userSubscription.unsubscribe();
+    this.routeParamsSub?.unsubscribe();
+    this.searchedTextSub?.unsubscribe();
+    this.uploadProgressSub?.unsubscribe();
   }
 
   openModal(template: TemplateRef<any>) {
@@ -196,7 +200,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   getFilePath(fileId: number) {
     this.http.get<any>(`${environment.apiUrl}/File/GetFilePath/${fileId}`).subscribe(response => {
       this.breadCrumbs = response;
-      console.log(this.breadCrumbs);
     }, error => {
       console.log(error);
     })
@@ -316,7 +319,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.openDropdownToBeHidden.hide();
     }
     this.openDropdownToBeHidden = dropdown;
-    console.log(dropdown);
   }
 
 

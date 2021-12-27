@@ -120,7 +120,10 @@ namespace webFileSharingSystem.Web.Controllers
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryTimeInDays)
+                Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryTimeInDays),
+                SameSite = SameSiteMode.Strict,
+                Secure = true
+
             };
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
         }

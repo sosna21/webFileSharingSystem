@@ -21,7 +21,6 @@ import {DeletedComponent} from './Components/deleted/deleted.component';
 import {RegisterComponent} from './Components/register/register.component';
 import {TextInputComponent} from './Components/common/text-input/text-input.component';
 import {JwtInterceptor} from "./interceptors/jwt.interceptor";
-import {FileUploadModule} from "ng2-file-upload";
 import {PaginationModule} from "ngx-bootstrap/pagination";
 import {TimeagoModule} from 'ngx-timeago';
 import {PopoverModule} from "ngx-bootstrap/popover";
@@ -70,7 +69,6 @@ import {ButtonsModule} from "ngx-bootstrap/buttons";
     BrowserAnimationsModule,
     FontAwesomeModule,
     CollapseModule.forRoot(),
-    FileUploadModule,
     PaginationModule.forRoot(),
     FormsModule,
     TimeagoModule.forRoot(),
