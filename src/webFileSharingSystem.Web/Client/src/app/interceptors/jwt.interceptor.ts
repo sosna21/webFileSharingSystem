@@ -27,7 +27,7 @@ export class JwtInterceptor implements HttpInterceptor {
     const isApiUrl = request.url.startsWith(environment.apiUrl);
 
     if (isLoggedIn && isApiUrl) {
-      request = this.addToken(request, user.token);
+      request = JwtInterceptor.addToken(request, user.token);
     }
     return next.handle(request).pipe(catchError(error => {
       if (error instanceof HttpErrorResponse && error.status === 401
@@ -41,7 +41,7 @@ export class JwtInterceptor implements HttpInterceptor {
     }));
   }
 
-  private addToken(request: HttpRequest<any>, token: string) {
+  private static addToken(request: HttpRequest<any>, token: string) {
     return request.clone({
       setHeaders: {
         'Authorization': `Bearer ${token}`
@@ -58,7 +58,7 @@ export class JwtInterceptor implements HttpInterceptor {
         switchMap((token: any) => {
           this.isRefreshing = false;
           this.refreshTokenSubject.next(token);
-          return next.handle(this.addToken(request, token));
+          return next.handle(JwtInterceptor.addToken(request, token));
         }));
 
     } else {
@@ -66,7 +66,7 @@ export class JwtInterceptor implements HttpInterceptor {
         filter(token => token != null),
         take(1),
         switchMap(jwt => {
-          return next.handle(this.addToken(request, jwt));
+          return next.handle(JwtInterceptor.addToken(request, jwt));
         }));
     }
   }

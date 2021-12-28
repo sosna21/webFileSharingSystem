@@ -3,7 +3,7 @@ import {AuthenticationService} from "../../services/authentication.service";
 import {SizeConverterPipe} from "../common/sizeConverterPipe";
 import {Observable, Subscription} from "rxjs";
 import {Router, NavigationStart} from "@angular/router";
-import { filter } from 'rxjs/operators';
+import {filter} from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -20,32 +20,36 @@ export class SidebarComponent implements OnInit, OnDestroy {
   type: 'bg-success' | 'bg-info' | 'bg-warning' | 'bg-danger' = 'bg-info';
 
   constructor(private authenticationService: AuthenticationService, private router: Router) {
-    this.router.events
-      .pipe(filter(event => event instanceof NavigationStart))
-      .subscribe( _ => this.isCollapsed = true );
   }
 
-  private userChangedSub?: Subscription;
+  private subscriptions: Subscription[] = []
 
   ngOnInit(): void {
-    this.userChangedSub = this.authenticationService.currentUser.subscribe(user => {
-      if(!user) return;
+    this.subscriptions.push(this.authenticationService.currentUser.subscribe(user => {
+      if (!user) return;
       this.usedSpace = user.usedSpace;
       this.quota = user.quota;
       this.calculateProgressPercent();
-    });
+    }));
 
-    this.toggleCollapsed?.subscribe(_ => {
-      this.isCollapsed = !this.isCollapsed;
-    });
+
+    if (this.toggleCollapsed)
+      this.subscriptions.push(this.toggleCollapsed.subscribe(_ => {
+        this.isCollapsed = !this.isCollapsed;
+      }));
+
+
+    this.subscriptions.push(this.router.events
+      .pipe(filter(event => event instanceof NavigationStart))
+      .subscribe(_ => this.isCollapsed = true));
   }
 
   ngOnDestroy() {
-    this.userChangedSub?.unsubscribe();
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
 
   calculateProgressPercent(): void {
-    let value = Math.round(this.usedSpace/this.quota * 100);
+    let value = Math.round(this.usedSpace / this.quota * 100);
     let type: 'bg-success' | 'bg-info' | 'bg-warning' | 'bg-danger';
 
     if (value < 25) {

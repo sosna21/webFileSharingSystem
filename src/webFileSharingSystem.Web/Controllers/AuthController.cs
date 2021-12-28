@@ -119,6 +119,7 @@ namespace webFileSharingSystem.Web.Controllers
             // append cookie with refresh token to the http response
             var cookieOptions = new CookieOptions
             {
+                IsEssential = true,
                 HttpOnly = true,
                 Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryTimeInDays),
                 SameSite = SameSiteMode.Strict,
