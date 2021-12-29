@@ -17,15 +17,14 @@ export class NavbarComponent implements OnInit, AfterViewInit {
               private router: Router, private fileExplorerService: FileExplorerService) {
   }
 
-  @Output() toggleCollapsed = new EventEmitter<boolean>();
-  private isCollapsed: boolean = true;
+  @Output() toggleCollapsed = new EventEmitter<any>();
 
   ngAfterViewInit() {
     fromEvent(this.filter?.nativeElement, 'keyup')
       .pipe(
         debounceTime<any>(1000),
         map((event: Event) => (<HTMLInputElement>event.target).value),
-        map(value => this.fileExplorerService.updateSearchText(value))
+        map(value => this.filter && this.fileExplorerService.updateSearchText(value))
       ).subscribe()
 
     this.fileExplorerService.searchedText.subscribe(response => {
@@ -47,8 +46,7 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   }
 
   toggleSidebarCollapse(){
-    this.isCollapsed = !this.isCollapsed;
-    this.toggleCollapsed.emit(this.isCollapsed)
+    this.toggleCollapsed.emit()
 }
 
   public get authenticated(): boolean {

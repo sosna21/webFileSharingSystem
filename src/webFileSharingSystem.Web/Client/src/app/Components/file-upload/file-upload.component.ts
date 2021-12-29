@@ -28,7 +28,6 @@ export class FileUploadComponent implements OnInit {
       fileElement.files.length <= 0) {
       return;
     }
-    console.log(fileElement.files);
     if (this.radioModel === 'files') {
       for (let i = 0; i < fileElement.files.length; i++) {
         this.fileUploader.upload(fileElement.files[i], this.parentId).subscribe();

@@ -1,18 +1,22 @@
  <app-navbar #navbarComponent></app-navbar>
 
-  <div *ngIf="authenticated" class="container-fluid mainViewCollapsed mainView px-3">
+ <ng-template #outlet>
+   <router-outlet></router-outlet>
+ </ng-template>
+
+  <div *ngIf="authenticated" class="container-fluid mainViewCollapsed mainView px-3" >
     <div class="row">
       <app-sidebar [toggleCollapsed]="navbarComponent.toggleCollapsed"></app-sidebar>
       <main id="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-        <router-outlet></router-outlet>
+        <ng-template [ngTemplateOutlet]="outlet"></ng-template>
       </main>
     </div>
   </div>
 
   <div *ngIf="!authenticated" class="mainView">
-    <router-outlet></router-outlet>
+    <ng-template [ngTemplateOutlet]="outlet"></ng-template>
   </div>
 
-    <div class="footer container-fluid text-center p-2 bg-light fixed-bottom">
-      <span class="text-muted">Place sticky footer content here.</span>
-    </div>
+ <div class="footer container-fluid text-center p-2 bg-light fixed-bottom">
+   <span class="text-muted">Created by <a href="https://github.com/sosna21">Maciej</a> as a part of bachelor thesis 2021, All Rights Reserved</span>
+ </div>

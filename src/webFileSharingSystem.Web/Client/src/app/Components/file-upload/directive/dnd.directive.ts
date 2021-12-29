@@ -28,6 +28,7 @@ export class DndDirective {
     this.fileOver = false;
   }
 
+  // Below first try to unify dropzone to accept files and folders at the same time
 
   // private parseFileEntry(fileEntry: any) {
   //   return new Promise((resolve, reject) => {
