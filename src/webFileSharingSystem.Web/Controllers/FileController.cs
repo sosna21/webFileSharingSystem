@@ -69,14 +69,7 @@ namespace webFileSharingSystem.Web.Controllers
                     _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
                         request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
         }
-
-        private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
-        {
-            if (partialFileInfo is null) return null;
-            var uploadedChunks = partialFileInfo.PersistenceMap
-                .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
-            return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
-        }
+        
         
         [HttpGet]
         [Route("GetNames/{parentId:int?}")]
@@ -95,17 +88,9 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => new FileResponse
-                {
-                    Id = file.Id,
-                    FileName = file.FileName,
-                    MimeType = file.MimeType,
-                    Size = file.Size,
-                    IsShared = file.IsShared,
-                    IsFavourite = file.IsFavourite,
-                    IsDirectory = file.IsDirectory,
-                    ModificationDate = file.LastModified ?? file.Created
-                }, new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                    file => ToFileResponse(file, userId!.Value),
+                    new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
 
         [HttpGet]
@@ -114,17 +99,9 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => new FileResponse
-                {
-                    Id = file.Id,
-                    FileName = file.FileName,
-                    MimeType = file.MimeType,
-                    Size = file.Size,
-                    IsShared = file.IsShared,
-                    IsFavourite = file.IsFavourite,
-                    IsDirectory = file.IsDirectory,
-                    ModificationDate = file.LastModified ?? file.Created
-                }, new GetDeletedFilesSpecs(userId!.Value, request.ParentId!.Value));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                    file => ToFileResponse(file, userId!.Value)
+                    ,  new GetDeletedFilesSpecs(userId!.Value, request.ParentId!.Value));
         }
         
         [HttpGet]
@@ -133,17 +110,9 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, file => new FileResponse
-                {
-                    Id = file.Id,
-                    FileName = file.FileName,
-                    MimeType = file.MimeType,
-                    Size = file.Size,
-                    IsShared = file.IsShared,
-                    IsFavourite = file.IsFavourite,
-                    IsDirectory = file.IsDirectory,
-                    ModificationDate = file.LastModified ?? file.Created
-                }, new GetRecentFilesSpecs(userId!.Value,request.SearchedPhrase));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                    file => ToFileResponse(file, userId!.Value)
+                    , new GetRecentFilesSpecs(userId!.Value,request.SearchedPhrase));
         }
 
         [HttpGet]
@@ -152,21 +121,9 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<Share>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, share =>
-                {
-                    var file = share.File;
-                    return new FileResponse
-                    {
-                        Id = file.Id,
-                        FileName = file.FileName,
-                        MimeType = file.MimeType,
-                        Size = file.Size,
-                        IsShared = file.IsShared,
-                        IsFavourite = file.IsFavourite,
-                        IsDirectory = file.IsDirectory,
-                        ModificationDate = file.LastModified ?? file.Created
-                    };
-                }, new GetFilesSharedWithMeSpecs(userId!.Value,request.SearchedPhrase));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                    share => ToFileResponse(share.File, userId!.Value)
+                    , new GetFilesSharedWithMeSpecs(userId!.Value,request.SearchedPhrase));
         }
 
         [HttpGet]
@@ -175,21 +132,9 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<Share>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, share =>
-                {
-                    var file = share.File;
-                    return new FileResponse
-                    {
-                        Id = file.Id,
-                        FileName = file.FileName,
-                        MimeType = file.MimeType,
-                        Size = file.Size,
-                        IsShared = file.IsShared,
-                        IsFavourite = file.IsFavourite,
-                        IsDirectory = file.IsDirectory,
-                        ModificationDate = file.LastModified ?? file.Created
-                    };
-                }, new GetFilesSharedByMeSpecs(userId!.Value,request.SearchedPhrase));
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                    share => ToFileResponse(share.File, userId!.Value)
+                    , new GetFilesSharedByMeSpecs(userId!.Value,request.SearchedPhrase));
         }
         
         [HttpPut]
@@ -505,6 +450,14 @@ namespace webFileSharingSystem.Web.Controllers
                 UploadProgress = CalculateUploadProgress(
                     _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
             };
+        }
+        
+        private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
+        {
+            if (partialFileInfo is null) return null;
+            var uploadedChunks = partialFileInfo.PersistenceMap
+                .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
+            return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
         }
     }
 }

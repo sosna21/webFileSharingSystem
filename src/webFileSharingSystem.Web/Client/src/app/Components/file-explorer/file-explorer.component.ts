@@ -67,8 +67,12 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(this.route.params.subscribe(params => {
       if (params['id']) {
-        this.parentId = +params['id'];
+        this.fileExplorerService.updateParentId(+params['id']);
+      } else {
+        this.fileExplorerService.updateParentId(null);
       }
+      this.parentId = this.fileExplorerService.currentParentIdValue;
+
       let reloadSearchWhenEmpty = false;
       this.subscriptions.push(this.fileExplorerService.searchedText.subscribe(response => {
         if (!this.authenticationService.currentUserValue) return;
@@ -87,34 +91,34 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
     this.initializeForm();
 
-    this.subscriptions.push(this.uploadService.reportUploadProgress.subscribe(progress => {
-      if (progress?.status === UploadStatus.Started) {
-        if (progress.parentId === this.parentId) {
+    this.subscriptions.push(this.uploadService.reportUploadProgress.subscribe(info => {
+      if (info?.status === UploadStatus.Started || info?.fileId === null) {
+        if (info.parentId === this.parentId || this.mode === "GetFavourites") {
           this.getFiles(this.mode, this.parentId, this.searchedPhrase, () => {
-            const uploadingFile = this.files.find(f => f.id === progress.fileId);
+            const uploadingFile = this.files.find(f => f.id === info.fileId);
             if (uploadingFile) uploadingFile.progressStatus = ProgressStatus.Started;
           });
         }
-      } else if (progress) {
-        const uploadingFile = this.files.find(f => f.id === progress.fileId);
+      } else if (info) {
+        const uploadingFile = this.files.find(f => f.id === info.fileId);
         if (uploadingFile) {
 
-          switch (progress.status) {
+          switch (info.status) {
             case UploadStatus.InProgress:
               uploadingFile.fileStatus = FileStatus.Incomplete;
-              uploadingFile.uploadProgress = progress.progress!;
+              uploadingFile.uploadProgress = info.progress!;
               uploadingFile.progressStatus = ProgressStatus.Started;
               break;
             case UploadStatus.Stopping:
               uploadingFile.progressStatus = ProgressStatus.Stopping;
-              uploadingFile.uploadProgress = progress.progress!;
+              uploadingFile.uploadProgress = info.progress!;
               break;
             case UploadStatus.Stopped:
               uploadingFile.progressStatus = ProgressStatus.Stopped;
               break;
             case UploadStatus.Resumed:
               uploadingFile.progressStatus = ProgressStatus.Started;
-              uploadingFile.uploadProgress = progress.progress!;
+              uploadingFile.uploadProgress = info.progress ?? uploadingFile.uploadProgress;
               break;
             case UploadStatus.Completed:
               uploadingFile.progressStatus = ProgressStatus.Stopped;

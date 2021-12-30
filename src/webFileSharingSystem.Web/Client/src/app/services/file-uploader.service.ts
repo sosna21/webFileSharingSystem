@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpEvent, HttpEventType} from "@angular/common/http";
-import {BehaviorSubject, EMPTY, from, Observable, Subscription, throwError} from "rxjs";
+import {BehaviorSubject, from, Observable, of, Subscription, throwError} from "rxjs";
 import {environment} from "../../environments/environment";
 import {UploadFileInfo} from "../models/uploadFileInfo";
 import {PartialFileInfo} from "../models/partialFileInfo";
@@ -21,8 +21,7 @@ export class FileUploaderService {
   constructor(private http: HttpClient, private authenticationService: AuthenticationService, private toastr: ToastrService) {
   }
 
-  public upload(file: File, parentId: number | null = null) {
-
+  public upload(file: File, parentId: number | null ) {
     return new Observable(subscriber => {
       this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
         if (file.size === 0) return;
@@ -71,6 +70,16 @@ export class FileUploaderService {
     })
   }
 
+  public newDirectoryCreatedForUpload( parentId: number | null ){
+    const progress: UploadProgressInfo = {
+      status: UploadStatus.Completed,
+      parentId: parentId,
+      fileId: null,
+      progress: 1
+    }
+    this.reportUploadProgressSource.next(progress);
+  }
+
   public getCachedFileInfo(fileId: number) {
     return this.filesInfo[fileId];
   }
@@ -83,7 +92,7 @@ export class FileUploaderService {
         status: UploadStatus.Resumed,
         parentId: parentId,
         fileId: fileId,
-        progress: 1
+        progress: null
       }
       this.reportUploadProgressSource.next(progress);
 
@@ -222,7 +231,7 @@ export class FileUploaderService {
 
   ensureDirectoryExists(path: string, parentId: number | null) {
     let folders = path.split("/").slice(0, -1);
-    if (folders.length <= 0) return EMPTY;
+    if (folders.length <= 0) return of(null);
     return this.http.post<number | null>(`${environment.apiUrl}/Upload/EnsureDirectory`, {parentId, folders});
   }
 }

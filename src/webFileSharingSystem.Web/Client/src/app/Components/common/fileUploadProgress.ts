@@ -1,7 +1,7 @@
 export interface UploadProgressInfo {
   status: UploadStatus,
   parentId?: number | null,
-  fileId: number,
+  fileId: number | null,
   progress: number | null
 }
 
