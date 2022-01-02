@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
 using HawkNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +15,7 @@ using webFileSharingSystem.Infrastructure.Common;
 using webFileSharingSystem.Infrastructure.Data;
 using webFileSharingSystem.Infrastructure.HawkAuth;
 using webFileSharingSystem.Infrastructure.Identity;
-using webFileSharingSystem.Infrastructure.Storage.OnPremise;
+using webFileSharingSystem.Infrastructure.Storage;
 
 namespace webFileSharingSystem.Infrastructure
 {
@@ -32,8 +33,18 @@ namespace webFileSharingSystem.Infrastructure
             {
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(
-                        configuration.GetConnectionString("DefaultConnection"),
+                        configuration.GetConnectionString("DbConnection"),
                         b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+            }
+
+            if (configuration.GetValue<bool>("UzeAzureBlobStorage"))
+            {
+                services.AddSingleton(x => new BlobServiceClient(configuration.GetConnectionString("AzureBlobStorageConnection")));
+                services.AddScoped<IFilePersistenceService, AzureFilePersistenceService>();
+            }
+            else
+            {
+                services.AddScoped<IFilePersistenceService, LocalFilePersistenceService>();
             }
 
             services.AddScoped<IApplicationDbContext>(provider => provider.GetService<ApplicationDbContext>()!);
@@ -90,7 +101,6 @@ namespace webFileSharingSystem.Infrastructure
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<IFilePersistenceService, FilePersistenceService>();
             services.AddScoped<InternalCustomQueriesRepository>();
             
             services.AddTransient<IUserService, UserService>();

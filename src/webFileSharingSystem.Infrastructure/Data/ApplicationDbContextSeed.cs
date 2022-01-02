@@ -112,6 +112,8 @@ namespace webFileSharingSystem.Infrastructure.Data
 
                 await _applicationDbContext.SaveChangesAsync();
                 await _filePersistenceService.GenerateNewFile(userId, file.FileGuid!.Value);
+                await _filePersistenceService.SaveChunk(userId, file.FileGuid!.Value, 0, 0, new MemoryStream());
+                await _filePersistenceService.CommitSavedChunks(userId, file.FileGuid!.Value, new[] {0}, null);
             }
 
             return totalSize;

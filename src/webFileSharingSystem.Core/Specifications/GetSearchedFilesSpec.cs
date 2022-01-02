@@ -8,7 +8,7 @@ namespace webFileSharingSystem.Core.Specifications
             e => e.UserId == userId
                  && e.FileName.Contains(searchedPhrase))
         {
-            AddInclude(file => file.PartialFileInfo);
+            AddInclude(file => file.PartialFileInfo!);
             ApplyOrderBy(file => file.Id);
         }
     }

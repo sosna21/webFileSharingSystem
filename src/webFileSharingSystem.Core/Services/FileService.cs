@@ -100,7 +100,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (await _unitOfWork.Repository<File>().CountAsync(new FindFileByFileGuidSpecs(guidToRemove), cancellationToken) <= 1)
             {
-                _filePersistenceService.DeleteExistingFile(userId, guidToRemove);
+               await _filePersistenceService.DeleteExistingFile(userId, guidToRemove);
             }
 
             return await _unitOfWork.Complete(cancellationToken) > 0
@@ -143,7 +143,7 @@ namespace webFileSharingSystem.Core.Services
 
             foreach (var guidFilesCount in fileGuidsToRemove.Where(g => g.Count <= 1))
             {
-                _filePersistenceService.DeleteExistingFile(userId, guidFilesCount.FileGuid);
+                await _filePersistenceService.DeleteExistingFile(userId, guidFilesCount.FileGuid);
             }
 
             return await _unitOfWork.Complete(cancellationToken) > 0
