@@ -24,6 +24,9 @@ input[type=checkbox], fa-icon, #actionBtn:hover {
 }
 
 #table {
+  @media (max-width: 518px) {
+    margin-bottom: 60px;
+  }
   margin-bottom: 38px;
 }
 

@@ -30,18 +30,17 @@
   </nav>
 </div>
 
-<div id="table" class="row">
-  <div class="table-responsive" style="overflow: visible">
-    <table class="table table-sm table-hover">
-      <thead>
-      <tr>
-        <th scope="col" style="width: 2%">
-          <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
-        </th>
-        <th scope="col" style="width: 60%" class="text-left">File Name
+<div class="table-responsive">
+  <table class="table table-sm table-hover">
+    <thead>
+    <tr>
+      <th scope="col" style="width: 2%">
+        <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
+      </th>
+      <th scope="col" style="width: 60%" class="text-left">File Name
 
-          <span *ngIf="isManyCheckboxesChecked()" class="dropdown ml-3" dropdown #dropdown="bs-dropdown"
-                (onShown)="hideOnSecondOpen(dropdown)">
+        <span *ngIf="isManyCheckboxesChecked()" class="dropdown ml-3" dropdown #dropdown="bs-dropdown"
+              (onShown)="hideOnSecondOpen(dropdown)">
             <span id="actionBtn" dropdownToggle>
             <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': 'black'}"></fa-icon>
             Actions  </span>
@@ -51,147 +50,151 @@
               <a class="dropdown-item" (click)="openModal(deleteTemplate) ;markCheckedFiles()">Delete</a>
             </span>
           </span>
-          <div *ngIf="fileExplorerService.filesToMoveCopy.length>0 && mode === 'GetAll'" class="custom-control-inline ml-3">
-            <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(false)">Move here</button>
-            <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(true)">Copy here</button>
-            <button class="btn btn-secondary btn-sm" (click)="this.fileExplorerService.filesToMoveCopy = []">Cancel
-            </button>
+        <div *ngIf="fileExplorerService.filesToMoveCopy.length>0 && mode === 'GetAll'"  class="custom-control-inline ml-3">
+          <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(false)">Move here</button>
+          <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(true)">Copy here</button>
+          <button class="btn btn-secondary btn-sm" (click)="this.fileExplorerService.filesToMoveCopy = []">Cancel
+          </button>
+        </div>
+      </th>
+      <th scope="col" class="d-none d-md-table-cell" style="width: 4%">Favourite</th>
+      <th scope="col" class="d-none d-md-table-cell" style="width: 4%">Share</th>
+      <th scope="col" style="width: 4%">Actions</th>
+      <th scope="col" style="width: 8%">Size</th>
+      <th scope="col" style="width: 16%">Last Modification</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr [ngClass]="file.loading? 'table-inactive' : ''" *ngFor="let file of files; let fileIndex=index">
+
+      <!--Checkobox-->
+      <td>
+        <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
+               (change)="file.checked = !file.checked" [checked]="file.checked"/>
+        <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
+        <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
+                 [styles]="{'color': '#8c2e2e'}"></fa-icon>
+      </td>
+
+      <!--FileName + upload progress-->
+      <td *ngIf="!file.rename" class="text-left">
+        <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
+             [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
+          <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
+            <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
+                     [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
+            {{ file.fileName }}
           </div>
-        </th>
-        <th scope="col" style="width: 4%">Favourite</th>
-        <th scope="col" style="width: 4%">Share</th>
-        <th scope="col" style="width: 4%">Actions</th>
-        <th scope="col" style="width: 8%">Size</th>
-        <th scope="col" style="width: 16%">Last Modification</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr [ngClass]="file.loading? 'table-inactive' : ''" *ngFor="let file of files; let fileIndex=index">
-
-        <!--Checkobox-->
-        <td>
-          <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
-                 (change)="file.checked = !file.checked" [checked]="file.checked"/>
-          <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
-          <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
-                   [styles]="{'color': '#8c2e2e'}"></fa-icon>
-        </td>
-
-        <!--FileName + upload progress-->
-        <td *ngIf="!file.rename" class="text-left">
-          <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
-               [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
-            <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
-              <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
-                       [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
-              {{ file.fileName }} | FileId: {{file.id}}
-            </div>
-            <div *ngIf="!isCompleted(file)" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
-              <div class="col p-0 d-none d-lg-block">
-                <div class="progress progress-sm bg-dark ">
-                  <div [class]="file.progressStatus === ProgressStatus.Stopped ? 'bg-danger' :
+          <div *ngIf="!isCompleted(file)" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
+            <div class="col p-0 d-none d-lg-block">
+              <div class="progress progress-sm bg-dark ">
+                <div [class]="file.progressStatus === ProgressStatus.Stopped ? 'bg-danger' :
                   file.progressStatus === ProgressStatus.Stopping ? 'bg-warning progress-bar-animated' : 'progress-bar-animated'"
-                       class="progress-bar progress-bar-striped bg-info" role="progressbar"
-                       [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
-                </div>
+                     class="progress-bar progress-bar-striped bg-info" role="progressbar"
+                     [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
               </div>
-              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped"
-                       class="mr-sm-1 ml-sm-1"
-                       [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
-              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started"
-                       [icon]="['fas', 'stop-circle']"
-                       (click)="stopUpload(file)"></fa-icon>
             </div>
+            <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped"
+                     class="mr-sm-1 ml-sm-1"
+                     [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
+            <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started"
+                     [icon]="['fas', 'stop-circle']"
+                     (click)="stopUpload(file)"></fa-icon>
           </div>
+        </div>
 
-          <!--FileName when rename mode is enabled-->
-        </td>
-        <td #renameInput hidden class="text-left">
-          <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
-            <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
-                            (focusout)="rename(file); renameInput.hidden = true"
-                            (keydown.enter)="rename(file); renameInput.hidden = true"
-                            [formControl]="$any(fileNameForm).controls['fileName']"
-                            [label]="file.fileName"
-                            [value]="file.fileName"></app-text-input>
-          </form>
-        </td>
+        <!--FileName when rename mode is enabled-->
+      </td>
+      <td #renameInput hidden class="text-left">
+        <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
+          <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
+                          (focusout)="rename(file); renameInput.hidden = true"
+                          (keydown.enter)="rename(file); renameInput.hidden = true"
+                          [formControl]="$any(fileNameForm).controls['fileName']"
+                          [label]="file.fileName"
+                          [value]="file.fileName"></app-text-input>
+        </form>
+      </td>
 
-        <!--Favorites -->
-        <td>
-          <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
-                   (click)="SetFavourite(file)"
-                   [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
-        </td>
+      <!--Favorites -->
+      <td class="d-none d-md-table-cell">
+        <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
+                 (click)="SetFavourite(file)"
+                 [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
+      </td>
 
-        <!--Share-->
-        <td>
-          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
-                   (click)="file.loading ? null : fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
-                   [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
-        </td>
+      <!--Share-->
+      <td class="d-none d-md-table-cell">
+        <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
+                 (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
+                 [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
+      </td>
 
-        <!--Actions-->
-        <td>
-          <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
-               [isDisabled]="!isCompleted(file) || file.loading"
-               class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
-            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file) || file.loading"
-                     [icon]="['fas', 'ellipsis-h']"
-                     [styles]="{'color': '#60646b'}"></fa-icon>
+      <!--Actions-->
+      <td>
+        <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
+             [isDisabled]="!isCompleted(file) || file.loading"
+             class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
+          <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file) || file.loading"
+                   [icon]="['fas', 'ellipsis-h']"
+                   [styles]="{'color': '#60646b'}"></fa-icon>
 
-            <ul *dropdownMenu class="dropdown-menu" role="menu">
-              <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
-              <li role="menuitem"><a class="dropdown-item" (click)="generateShareLink(file)">Generate share link</a></li>
-              <li role="menuitem"><a class="dropdown-item"
-                                     (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
-              </li>
-              <li role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(file)">Move / Copy</a></li>
-              <li role="menuitem"><a class="dropdown-item"
-                                     (click)="openModal(deleteTemplate); fileExplorerService.filesToDelete = [file]">Delete</a>
-              </li>
-            </ul>
-          </div>
-        </td>
+          <ul *dropdownMenu class="dropdown-menu" role="menu">
+            <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
+            <li role="menuitem"><a class="dropdown-item" (click)="generateShareLink(file)">Generate share link</a></li>
+            <li role="menuitem"><a class="dropdown-item d-md-none" (click)="SetFavourite(file)">
+              {{file.isFavourite ? "Remove favourite" : "Add favourite"}}</a></li>
+            <li role="menuitem"><a class="dropdown-item d-md-none" (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]">
+              Add share</a></li>
+            <li role="menuitem"><a class="dropdown-item"
+                                   (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
+            </li>
+            <li role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(file)">Move / Copy</a></li>
+            <li role="menuitem"><a class="dropdown-item"
+                                   (click)="openModal(deleteTemplate); fileExplorerService.filesToDelete = [file]">Delete</a>
+            </li>
+          </ul>
+        </div>
+      </td>
 
-        <!--File size-->
-        <td>{{file.size | convertSizeToReadable}}</td>
+      <!--File size-->
+      <td>{{file.size | convertSizeToReadable}}</td>
 
-        <!--Last modification date-->
-        <td>
-          <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
-               triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+      <!--Last modification date-->
+      <td>
+        <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
+             triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
 
-    <div *ngIf="loadingData" class="d-flex justify-content-center d-flex align-items-center m-5">
-      <div class="spinner-border" style="width: 3.4rem; height: 3.4rem;" role="status">
-        <span class="sr-only">Loading...</span>
-      </div>
-    </div>
-
-
-    <div *ngIf="!loadingData" class="d-flex justify-content-center">
-      <h2 *ngIf="files.length <= 0" class="text-center my-3" >
-        {{searchedPhrase ? "We can't find any files that fit your criteria"
-        : "You do not have any files in this category"}}</h2>
-      <pagination *ngIf="files.length > 0"
-                  [boundaryLinks]="true"
-                  [totalItems]="totalItems"
-                  [itemsPerPage]="itemsPerPage"
-                  [(ngModel)]="currentPage"
-                  (pageChanged)="pageChanged($event)"
-                  previousText="&lsaquo;"
-                  nextText="&rsaquo;"
-                  firstText="&laquo;"
-                  lastText="&raquo;">
-      </pagination>
+  <div *ngIf="loadingData" class="d-flex justify-content-center d-flex align-items-center m-5">
+    <div class="spinner-border" style="width: 3.4rem; height: 3.4rem;" role="status">
+      <span class="sr-only">Loading...</span>
     </div>
   </div>
+
 </div>
 
+<div id="table">
+  <div *ngIf="!loadingData" class="d-flex justify-content-center">
+    <h2 *ngIf="files.length <= 0" class="text-center my-3" >
+      {{searchedPhrase ? "We can't find any files that fit your criteria"
+      : "You do not have any files in this category"}}</h2>
+    <pagination  *ngIf="files.length > 0"
+                [boundaryLinks]="true"
+                [totalItems]="totalItems"
+                [itemsPerPage]="itemsPerPage"
+                [(ngModel)]="currentPage"
+                (pageChanged)="pageChanged($event)"
+                previousText="&lsaquo;"
+                nextText="&rsaquo;"
+                firstText="&laquo;"
+                lastText="&raquo;">
+    </pagination>
+  </div>
+</div>
 
 <ng-template #deleteTemplate>
   <div class="modal-body text-center">
