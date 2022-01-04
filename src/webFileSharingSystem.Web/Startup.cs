@@ -61,7 +61,7 @@ namespace webFileSharingSystem.Web
                 });
 
             // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration => { configuration.RootPath = "Client/dist"; });
+            services.AddSpaStaticFiles(configuration => configuration.RootPath = "Client/dist");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -85,7 +85,14 @@ namespace webFileSharingSystem.Web
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-
+            
+            app.UseStaticFiles();
+            
+            if (!env.IsDevelopment())
+            {
+                app.UseSpaStaticFiles();
+            }
+            
             app.UseSpa(spa =>
             {
                 // To learn more about options for serving an Angular SPA from ASP.NET Core,
