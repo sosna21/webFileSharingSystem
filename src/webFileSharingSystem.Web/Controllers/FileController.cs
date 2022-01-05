@@ -123,7 +123,7 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<SharedFile>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    sharedFile => ToFileResponse(sharedFile, userId!.Value),
+                    ToSharedFileResponse,
                     _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId, 
                         new GetSharedFilesSpec2<SharedFile>(request.ParentId, request.SearchedPhrase)));
         }
@@ -456,7 +456,6 @@ namespace webFileSharingSystem.Web.Controllers
                 IsShared = sharedFile.IsShared,
                 IsFavourite = sharedFile.IsFavourite,
                 IsDirectory = sharedFile.IsDirectory,
-                ModificationDate = DateTime.Now,
                 FileStatus = sharedFile.FileStatus,
                 SharedUserName = sharedFile.SharedUserName,
                 AccessMode = sharedFile.AccessMode,

@@ -41,7 +41,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(this.router.events
       .pipe(filter(event => event instanceof NavigationStart))
-      .subscribe(_ => this.isCollapsed = true));
+      .subscribe( event => {
+        this.isCollapsed = true;
+        (event as NavigationStart).url.split('/')[1] === 'shared'
+          ? this.isShareItemActive = true
+          : this.isShareItemActive = false;
+      }));
   }
 
   ngOnDestroy() {
@@ -64,10 +69,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
     this.dynamic = value;
     this.type = type;
-  }
-
-  toggleShareItemActive(active: boolean): void {
-    this.isShareItemActive = active;
   }
 
   getQuota() {

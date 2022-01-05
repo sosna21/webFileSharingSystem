@@ -8,17 +8,17 @@
             Files
           </a>
         </li>
-        <li class="nav-item" (click)="toggleShareItemActive()" [ngClass]="{'active': isShareItemActive}">
-          <a class="nav-link dropdown-toggle">
+        <li class="nav-item" [ngClass]="{'active': isShareItemActive}">
+          <a class="nav-link dropdown-toggle" (click)="isShareItemActive = !isShareItemActive">
             <span><fa-icon [icon]="['fas', 'share-alt']"></fa-icon></span>
             Shares
           </a>
           <ul class="sl-menu-sub nav flex-column submenu">
             <li>
-              <a class="nav-link" routerLink="shared-with-me" routerLinkActive="active">Shared with me</a>
+              <a class="nav-link" routerLink="shared/with-me" routerLinkActive="active">Shared with me</a>
             </li>
             <li>
-              <a class="nav-link" routerLink="shared-by-me" routerLinkActive="active">Shared by me</a>
+              <a class="nav-link" routerLink="shared/by-me" routerLinkActive="active">Shared by me</a>
             </li>
           </ul>
         </li>

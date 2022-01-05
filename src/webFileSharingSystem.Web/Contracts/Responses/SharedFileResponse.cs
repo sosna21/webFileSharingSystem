@@ -8,5 +8,6 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public string SharedUserName { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
         public DateTime ValidUntil { get; set; }
+        private new DateTime? ModificationDate { get; } = null;
     }
 }
