@@ -4,7 +4,18 @@ th {
   font-family: "Segoe UI", serif;
 }
 
+.breadcrumb li {
+  display: inline;         // force the inlining
+  max-width: 100%;        // the actual width, you can make this bit responsive, increasing the width as your viewport increases. I suggest to utilize the native Bootstrap media-breakpoints (i.e. media-breakpoint-up(md)).
+  white-space: nowrap;     // remove the wrapping and breaking of text in the breadcrumbs
+  overflow: hidden;        // hide our overflow
+  text-overflow: ellipsis; // return ellipsis for the overflow.
+}
+
 tr {
+  @media (max-width: 992px) {
+    font-size: 0.85rem;
+  }
   cursor: default;
   text-align: center;
 }
@@ -21,6 +32,18 @@ tr {
 
 input[type=checkbox], fa-icon, #actionBtn:hover {
   cursor: pointer;
+}
+
+.absolutePositioning{
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.fileNameCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #table {

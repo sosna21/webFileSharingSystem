@@ -8,6 +8,9 @@
 }
 
 .sidebar {
+  @media (max-width: 538px) {
+    margin-bottom: 60px;
+  }
   position: fixed;
   top: 0;
   bottom: 0;
@@ -20,7 +23,7 @@
 
 @media (max-width: 767.98px) {
   .sidebar {
-    top: 5rem;
+    top: 3rem;
   }
 }
 
@@ -28,7 +31,7 @@
   position: relative;
   top: 0;
   height: 100%;
-  padding-top: .5rem;
+  padding-top: .1rem;
   overflow-x: hidden;
   overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
 }
@@ -83,3 +86,4 @@ cursor: pointer;
   height: 0.7rem!important;
   font-size:0.7rem;
 }
+
