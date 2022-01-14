@@ -359,7 +359,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
     }
 
     if(this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
-      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly
+      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly;
     }
 
     return true;
@@ -371,7 +371,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
     }
 
     if(this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
-      return this.fileExplorerService.lastStoredSharedFile.accessMode === AccessMode.FullAccess
+      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly;
     }
 
     return true;
