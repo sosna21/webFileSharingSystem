@@ -30,7 +30,6 @@
   </nav>
 </div>
 
-
 <div id="table" class="row">
   <div class="table-responsive" style="overflow: visible">
     <table class="table table-sm table-hover">
@@ -52,7 +51,7 @@
               <a class="dropdown-item" (click)="openModal(deleteTemplate) ;markCheckedFiles()">Delete</a>
             </span>
           </span>
-          <div *ngIf="fileExplorerService.filesToMoveCopy.length>0" class="custom-control-inline ml-3">
+          <div *ngIf="fileExplorerService.filesToMoveCopy.length>0 && mode === 'GetAll'" class="custom-control-inline ml-3">
             <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(false)">Move here</button>
             <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(true)">Copy here</button>
             <button class="btn btn-secondary btn-sm" (click)="this.fileExplorerService.filesToMoveCopy = []">Cancel
@@ -68,6 +67,8 @@
       </thead>
       <tbody>
       <tr [ngClass]="file.loading? 'table-inactive' : ''" *ngFor="let file of files; let fileIndex=index">
+
+        <!--Checkobox-->
         <td>
           <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
                  (change)="file.checked = !file.checked" [checked]="file.checked"/>
@@ -75,13 +76,15 @@
           <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
                    [styles]="{'color': '#8c2e2e'}"></fa-icon>
         </td>
+
+        <!--FileName + upload progress-->
         <td *ngIf="!file.rename" class="text-left">
           <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row col-12 align-items-center"
                [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
             <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
               <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
                        [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
-              {{ file.fileName }} | {{file.id}} | {{file.mimeType}}
+              {{ file.fileName }} | FileId: {{file.id}}
             </div>
             <div *ngIf="!isCompleted(file)" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
               <div class="col p-0 d-none d-lg-block">
@@ -101,6 +104,7 @@
             </div>
           </div>
 
+          <!--FileName when rename mode is enabled-->
         </td>
         <td #renameInput hidden class="text-left">
           <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
@@ -112,19 +116,23 @@
                             [value]="file.fileName"></app-text-input>
           </form>
         </td>
+
+        <!--Favorites -->
         <td>
           <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
                    (click)="SetFavourite(file)"
                    [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
         </td>
+
+        <!--Share-->
         <td>
-          <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
-                   (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]"
+          <fa-icon [class.fa-disabled]="!isCompleted(file)" [icon]="['fas', 'share-alt']"
+                   (click)="file.loading ? null : fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
                    [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
         </td>
 
+        <!--Actions-->
         <td>
-
           <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
                [isDisabled]="!isCompleted(file) || file.loading"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
@@ -134,6 +142,7 @@
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
               <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
+              <li role="menuitem"><a class="dropdown-item" (click)="generateShareLink(file)">Generate share link</a></li>
               <li role="menuitem"><a class="dropdown-item"
                                      (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
               </li>
@@ -144,7 +153,11 @@
             </ul>
           </div>
         </td>
+
+        <!--File size-->
         <td>{{file.size | convertSizeToReadable}}</td>
+
+        <!--Last modification date-->
         <td>
           <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
                triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>
@@ -159,8 +172,13 @@
       </div>
     </div>
 
+
     <div *ngIf="!loadingData" class="d-flex justify-content-center">
-      <pagination [boundaryLinks]="true"
+      <h2 *ngIf="files.length <= 0" class="text-center my-3" >
+        {{searchedPhrase ? "We can't find any files that fit your criteria"
+        : "You do not have any files in this category"}}</h2>
+      <pagination *ngIf="files.length > 0"
+                  [boundaryLinks]="true"
                   [totalItems]="totalItems"
                   [itemsPerPage]="itemsPerPage"
                   [(ngModel)]="currentPage"
@@ -187,13 +205,14 @@
 
 <ng-template #shareTemplate>
   <div class="modal-header text-center">
-    <p>Please insert the userName/login of the user you want to share this file/files with.</p>
+    <p>Please insert the user name or email of the user you want to share with.</p>
   </div>
   <div class="modal-body">
     <form>
       <div class="form-group">
         <label for="recipient-name" class="col-form-label">Share with:</label>
-        <input type="text" class="form-control" id="recipient-name" [(ngModel)]="shareRequestBody.UserNameToShareWith"
+        <input [disabled]="!!shareRequestBody.Update" type="text" class="form-control" id="recipient-name"
+               [(ngModel)]="shareRequestBody.UserNameToShareWith"
                [ngModelOptions]="{standalone: true}"/>
       </div>
       <div class="form-group">
@@ -221,19 +240,70 @@
         </div>
       </div>
       <div class="form-group">
-        Select share duration: <br>
-        <ngx-duration-picker [options]="{ showPreview: true, showWeeks: false, showSeconds: false, showMinutes: false,
+        <div class="form-check form-switch" (click)="shareRequestBody.AccessDuration = undefined">
+          <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" #flexSwitchCheckDefault>
+          <label class="form-check-label" for="flexSwitchCheckDefault">
+            {{flexSwitchCheckDefault.checked ? 'Uncheck to remove time limitations' : 'Check to add time limitations'}}</label>
+        </div>
+        <div *ngIf="flexSwitchCheckDefault.checked" class="mt-3">
+          Select share duration: <br>
+          <ngx-duration-picker [options]="{ showPreview: false, showWeeks: false, showSeconds: false, showMinutes: false,
        previewFormat: '{{Y}},{{M}},{{D}},{{h}}'}" [(value)]="shareRequestBody.AccessDuration"></ngx-duration-picker>
-
+        </div>
       </div>
-
     </form>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-dark mr-2" (click)="shareConfirm()">Yes</button>
-    <button type="button" class="btn btn-secondary" (click)="shareDecline()">No</button>
+    <button type="button" class="btn btn-dark mr-2"
+            (click)="shareConfirm()">{{!!shareRequestBody.Update ? 'Update' : 'Share'}}</button>
+    <button type="button" class="btn btn-secondary"
+            (click)="shareDecline()">Cancel
+    </button>
   </div>
+</ng-template>
 
+
+<ng-template #customizeSharesTemplate>
+
+  <div class="d-flex flex-row justify-content-center pt-3 pb-2">
+    <div class="align-self-center mr-3">
+      Select existing share to update or click to create a new one
+    </div>
+    <div class="align-self-center mr-3">
+      <fa-icon size="2x" [icon]="['fas', 'plus-circle']" (click)="decline(); openModal(shareTemplate);"></fa-icon>
+    </div>
+  </div>
+  <div class="modal-body pb-0">
+    <div class="table-responsive" style="overflow: visible">
+      <table class="table table-sm table-hover">
+        <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Shared with:</th>
+          <th scope="col">Access mode:</th>
+          <th scope="col">Valid until:</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let share of shares"  style="cursor: pointer">
+          <td>
+            <fa-icon [icon]="['far', 'trash-alt']" (click)="this.deleteShare(share)"
+                     [styles]="{'color': '#8c2e2e'}"></fa-icon>
+          </td>
+
+          <td (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
+        shareRequestBody.Update = true; decline();
+        openModal(shareTemplate)">{{share.sharedWithUserName}}</td>
+          <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
+          <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : share.validUntil | timeago }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-danger" (click)="decline()">Exit</button>
+  </div>
 </ng-template>
 
 <input [hidden]="true" type="file" #fileUpload id="fileUpload" name="fileUpload"/>

@@ -66,7 +66,10 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             base.OnModelCreating(builder);
 
-            builder.Entity<FilePathPart>().HasNoKey();
+            //Todo most likely some of the ef migration files are slightly broken that's wy the 'FilePathPart' entity don't need the view
+            builder.Entity<FilePathPart>().HasNoKey();//.ToView(null);
+            builder.Entity<FileAccessMode>().HasNoKey().ToView(null);
+            builder.Entity<SharedFile>().HasNoKey().ToView(null);
 
             builder.Entity<RefreshToken>()
                 .HasOne<IdentityUser>()
@@ -105,7 +108,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .WithMany(e => e.Shares)
                 .HasForeignKey(e => e.SharedByUserId)
                 .OnDelete(DeleteBehavior.NoAction);
-            
+
             builder.Entity<Share>().HasOne<ApplicationUser>()
                 .WithMany(e => e.Shares)
                 .HasForeignKey(e => e.SharedWithUserId)
@@ -177,6 +180,25 @@ namespace webFileSharingSystem.Infrastructure.Data
                     )
                     SELECT [Id], [FileName] FROM recursive_cte
                 ");
+        
+        public IQueryable<FileAccessMode> GetSharedFileAccessMode(int fileId, int userId) =>
+            Set<FileAccessMode>().FromSqlInterpolated(
+                $@"
+                   WITH recursive_cte AS
+                    (
+                        SELECT [Id], [ParentId], 0 AS [level]
+                        FROM [File] WHERE Id = {fileId}
+                        UNION ALL
+                        SELECT [F].[Id], [F].[ParentId], [cte].[level] + 1
+                        FROM [File] AS [F]
+                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [F].[Id] 
+                    )
+                    SELECT TOP(1) [S].[Id], [S].[AccessMode] FROM recursive_cte AS [cte]
+					INNER JOIN [Share] AS [S]
+					ON [S].[FileId] = [cte].[Id]
+					WHERE [S].[ValidUntil] > CURRENT_TIMESTAMP AND [S].[SharedWithUserId] = {userId}
+					ORDER BY [cte].[level]
+                ");
 
 
         public IQueryable<File> GetListOfAllChildrenAsFiles(int parentId) =>
@@ -193,13 +215,25 @@ namespace webFileSharingSystem.Infrastructure.Data
                     )
                     SELECT * FROM recursive_cte
                 ");
-        
+
         public IQueryable<File> GetListOfAllChildrenTvfAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
                 $@"
                     SELECT * FROM GetListOfAllChildrenTVF({parentId})
                 ");
         
+        public IQueryable<SharedFile> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
+            Set<SharedFile>().FromSqlInterpolated(
+                $@"
+                    SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})
+                ");
+        
+        public IQueryable<File> GetListOfFilesSharedByUserId(int userId) =>
+            Set<File>().FromSqlInterpolated(
+                $@"
+                      SELECT * FROM GetListOfFilesSharedByUserIdTVF({userId})
+                ");
+
         public IQueryable<File> GetListOfAllFilesFromLocations(IList<int> fileIds)
         {
             var placeholders = string.Join(",", Enumerable.Range(0, fileIds.Count)

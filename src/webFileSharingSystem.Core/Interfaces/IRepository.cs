@@ -17,7 +17,7 @@ namespace webFileSharingSystem.Core.Interfaces
     {
         //Queries
         Task<TEntity?> FindByIdAsync(int id, CancellationToken cancellationToken = default);
-
+        
         Task<IEnumerable<TEntity>> FindAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
         
         Task<IEnumerable<TResult>> FindAsync<TResult>(ISpecification<TEntity, TResult> specification, CancellationToken cancellationToken = default);

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
 using File = webFileSharingSystem.Core.Entities.File;
@@ -24,15 +25,17 @@ namespace webFileSharingSystem.Web.Controllers
 
         private readonly IFilePersistenceService _filePersistenceService;
         private readonly IHawkAuthService _hawkAuthService;
+        private readonly IGuardService _guardService;
 
 
         public DownloadController(IUnitOfWork unitOfWork, ICurrentUserService currentUserService,
-            IFilePersistenceService filePersistenceService, IHawkAuthService hawkAuthService)
+            IFilePersistenceService filePersistenceService, IHawkAuthService hawkAuthService, IGuardService guardService)
         {
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _filePersistenceService = filePersistenceService;
             _hawkAuthService = hawkAuthService;
+            _guardService = guardService;
         }
         
         [HttpPost]
@@ -64,14 +67,16 @@ namespace webFileSharingSystem.Web.Controllers
         {
             const string ErrorMessage = "File does not exist or you do not have access";
 
-            var userId = _currentUserService.UserId;
+            var userId = _currentUserService.UserId!.Value;
             var fileToDownload = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
             if (fileToDownload is null) return BadRequest(ErrorMessage);
-            if (fileToDownload.UserId != userId) return Unauthorized(ErrorMessage);
+            
+            if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly, cancellationToken))
+                return Unauthorized(ErrorMessage);
 
             if (fileToDownload.IsDirectory) return BadRequest("Directory can't be downloaded");
 
-            var filePath = _filePersistenceService.GetFilePath(userId.Value, fileToDownload.FileId!.Value);
+            var filePath = _filePersistenceService.GetFilePath(fileToDownload.UserId, fileToDownload.FileId!.Value);
 
             return new FileStreamResult(_filePersistenceService.GetFileStream(filePath), fileToDownload.MimeType)
             {
@@ -96,13 +101,17 @@ namespace webFileSharingSystem.Web.Controllers
                 (await _unitOfWork.CustomQueriesRepository().GetListOfAllFilesFromLocations(fileIds, cancellationToken))
                 .ToDictionary(k => k.Id);
             
-            var userId = _currentUserService.UserId;
+            var userId = _currentUserService.UserId!.Value;
 
             if (fileIds.Except(filesToDownload.Keys).Any()) return BadRequest(ErrorMessage);
 
-            var usersIds = filesToDownload.Select(f => f.Value.UserId).Distinct().ToList();
-            
-            if (usersIds.Count > 1 || usersIds.SingleOrDefault() != userId) return Unauthorized(ErrorMessage);
+            var fileUserIds = filesToDownload.Select(f => f.Value.UserId).Distinct().ToList();
+
+            foreach (var (_, fileToDownload) in filesToDownload.Where(f => fileIds.Contains(f.Key)))
+            {
+                if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly, cancellationToken))
+                    return Unauthorized(ErrorMessage);
+            }
             
             using (var archive = new ZipArchive(Response.BodyWriter.AsStream(), ZipArchiveMode.Create))
             {

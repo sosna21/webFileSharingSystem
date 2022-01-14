@@ -17,7 +17,7 @@ namespace webFileSharingSystem.Web.Controllers
     public class AuthController : BaseController
     {
         private readonly IUserService _userService;
-        private ICurrentUserService _currentUserService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly JwtSettings _jwtSettings;
 
         public AuthController(IUserService userService, IOptions<JwtSettings> jwtSettings, ICurrentUserService currentUserService)
@@ -134,7 +134,7 @@ namespace webFileSharingSystem.Web.Controllers
             // get source ip address for the current request
             if (Request.Headers.ContainsKey("X-Forwarded-For")) return Request.Headers["X-Forwarded-For"];
             
-            return HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+            return HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? string.Empty;
         }
     }
 }

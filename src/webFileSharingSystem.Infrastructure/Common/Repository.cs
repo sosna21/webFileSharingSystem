@@ -62,12 +62,12 @@ namespace webFileSharingSystem.Infrastructure.Common
 
         public async Task<bool> ContainsAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
         {
-            return await CountAsync(specification, cancellationToken ) > 0;
+            return await ApplySpecification(specification).AnyAsync(cancellationToken);
         }
         
         public async Task<bool> ContainsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await CountAsync(predicate, cancellationToken ) > 0;
+            return await _context.Set<TEntity>().AnyAsync(predicate, cancellationToken);
         }
 
         public Task<int> CountAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)

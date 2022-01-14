@@ -23,6 +23,11 @@ namespace webFileSharingSystem.Infrastructure.Common
             return await _dbContext.GetFilePathParts(fileId).ToListAsync(cancellationToken);
         }
         
+        public async Task<FileAccessMode?> GetSharedFileAccessMode(int fileId, int userId, CancellationToken cancellationToken = default) 
+        {
+            return (await _dbContext.GetSharedFileAccessMode(fileId,userId).ToListAsync(cancellationToken)).FirstOrDefault();
+        }
+
         public async Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default)
         {
             return await _dbContext.GetListOfAllChildrenAsFiles(parentId).ToListAsync(cancellationToken);
@@ -42,5 +47,16 @@ namespace webFileSharingSystem.Infrastructure.Common
         {
             return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfAllChildrenTvfAsFiles(parentId), spec);
         }
+        
+        public IQueryable<File> GetListOfFilesSharedByUserIdQuery(int userId, ISpecification<File> spec)
+        {
+            return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfFilesSharedByUserId(userId), spec);
+        }
+        
+        public IQueryable<SharedFile> GetListOfSharedFilesQuery(int userId, int? parentId, ISpecification<SharedFile> spec)
+        {
+            return SpecificationEvaluator<SharedFile, SharedFile>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
+        }
+
     }
 }

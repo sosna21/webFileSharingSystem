@@ -2,7 +2,7 @@
 {
     public enum FileStatus
     {
-        Completed,
+        Completed = 0,
         Incomplete
     }
 }

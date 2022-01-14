@@ -13,6 +13,7 @@ export interface File {
   uploadProgress: number;
   partialFileInfo?: PartialFileInfo;
 
+
   checked: boolean;
   rename: boolean;
   stopping: boolean;

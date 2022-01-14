@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using webFileSharingSystem.Infrastructure.Data;
 
 namespace webFileSharingSystem.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20211026211214_GetListOfAllSharedFilesForUserTVF")]
+    partial class GetListOfAllSharedFilesForUserTVF
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -311,15 +313,6 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.ToTable("File");
                 });
 
-            modelBuilder.Entity("webFileSharingSystem.Core.Entities.FileAccessMode", b =>
-                {
-                    b.Property<int>("AccessMode")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-                });
-
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.FilePathPart", b =>
                 {
                     b.Property<string>("FileName")
@@ -328,8 +321,6 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.Property<int>("Id")
                         .HasColumnType("int");
-
-                    b.ToTable("FilePathPart");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.PartialFileInfo", b =>
@@ -401,99 +392,6 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("SharedWithUserId");
 
                     b.ToTable("Share");
-                });
-
-            modelBuilder.Entity("webFileSharingSystem.Core.Entities.SharedFile", b =>
-                {
-                    b.Property<int>("AccessMode")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("FileId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDirectory")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MimeType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ShareId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SharedUserName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Size")
-                        .HasColumnType("decimal(20,0)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("datetime2");
-                });
-
-            modelBuilder.Entity("webFileSharingSystem.Infrastructure.Identity.RefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedByIp")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IdentityUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("JwtId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReplacedByToken")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("Revoked")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RevokedByIp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdentityUserId");
-
-                    b.HasIndex("ReplacedByToken")
-                        .IsUnique()
-                        .HasFilter("[ReplacedByToken] IS NOT NULL");
-
-                    b.HasIndex("Token")
-                        .IsUnique();
-
-                    b.ToTable("RefreshToken");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -593,15 +491,6 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("File");
-                });
-
-            modelBuilder.Entity("webFileSharingSystem.Infrastructure.Identity.RefreshToken", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
-                        .WithMany()
-                        .HasForeignKey("IdentityUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.ApplicationUser", b =>

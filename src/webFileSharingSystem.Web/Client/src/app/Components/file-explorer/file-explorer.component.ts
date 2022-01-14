@@ -12,22 +12,25 @@ import {FileUploaderService} from "../../services/file-uploader.service";
 import {UploadStatus} from "../common/fileUploadProgress";
 import {AuthenticationService} from "../../services/authentication.service";
 import {ToastrService} from "ngx-toastr";
+import { AccessMode } from '../common/sharedFile';
 
 interface BreadCrumb {
   id: number;
   fileName: string;
 }
 
-enum ShareAccessMode {
-  ReadOnly,
-  ReadWrite,
-  FullAccess,
-}
-
 interface ShareRequestBody {
   UserNameToShareWith?: string,
-  AccessMode?: ShareAccessMode,
-  AccessDuration?: any
+  AccessMode?: AccessMode,
+  AccessDuration?: any,
+  Update?: boolean
+}
+
+interface ShareResponse {
+  shareId: number;
+  sharedWithUserName: string,
+  accessMode: AccessMode,
+  validUntil: Date
 }
 
 @Component({
@@ -52,7 +55,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   breadCrumbs: BreadCrumb[] = [];
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
-  shareRequestBody: ShareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+  shareRequestBody: ShareRequestBody = {AccessMode: AccessMode.ReadOnly};
+  shares: ShareResponse[] = [];
+  maxDate = '9999-12-31T23:59:59.9999999'
 
   private subscriptions: Subscription[] = []
 
@@ -77,7 +82,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.subscriptions.push(this.fileExplorerService.searchedText.subscribe(response => {
         if (!this.authenticationService.currentUserValue) return;
         this.searchedPhrase = response;
-        if (reloadSearchWhenEmpty || (response && response !== '')) {
+        if(reloadSearchWhenEmpty || (response && response !== '')){
           this.reloadData();
           reloadSearchWhenEmpty = true;
         }
@@ -135,9 +140,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   openModal(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
-  }
+    this.getShares(this.fileExplorerService.filesToShare[0]?.id);
 
+    this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
+    // @ts-ignore //TODO resolve in another way
+    if (template._declarationTContainer.localNames[0] === 'shareTemplate'){
+      this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: AccessMode.ReadOnly});
+    }
+  }
   confirm(): void {
     this.modalRef?.hide();
 
@@ -186,6 +196,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.loadingData = false;
         console.log(error);
       })
+  }
+
+  getShares(fileId: number): void {
+    this.http.get<any>(`${environment.apiUrl}/Share/GetShares/${fileId}`).subscribe(response => {
+      this.shares = response;
+    }, error => {
+      console.log(error);
+    })
   }
 
   getNames(): void {
@@ -240,7 +258,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
   }
 
-
   SetFavourite(file: File) {
     if (file.fileStatus === FileStatus.Completed && !file.loading) {
       file.loading = true;
@@ -259,7 +276,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.reloadData();
   }
 
-
   isManyCheckboxesChecked(): boolean {
     return this.files.filter(x => x.checked).length > 1;
   }
@@ -271,7 +287,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        console.log(error)
+        this.toastr.error(error.error, "Directory delete error");
       })
     } else {
       this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
@@ -279,11 +295,10 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        console.log(error)
+        this.toastr.error(error.error, "Directory delete error");
       })
     }
   }
-
 
   moveCopyInit(file?: File) {
     var filesToMoveCopy: File[];
@@ -294,7 +309,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
     this.fileExplorerService.filesToMoveCopy = filesToMoveCopy;
   }
-
 
   moveCopyFiles(copy: boolean, filesToMoveCopy: File[] = this.fileExplorerService.filesToMoveCopy) {
     const parentId = this.parentId ?? -1;
@@ -320,7 +334,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     }
     this.openDropdownToBeHidden = dropdown;
   }
-
 
   initDirCreate(form: any) {
     if (!this.gRename) {
@@ -430,7 +443,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     return file.fileStatus === FileStatus.Completed;
   }
 
-
   shareConfirm() {
     const file = this.fileExplorerService.filesToShare[0];
     if (file.fileStatus === FileStatus.Completed && !file.loading) {
@@ -438,16 +450,16 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.modalRef?.hide();
       const fileId = this.fileExplorerService.filesToShare[0].id;
 
-      this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody ?? {}).subscribe(() => {
+      this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody).subscribe(() => {
         this.files.find(file => file.id === fileId)!.isShared = true;
+        this.toastr.success("Share added", "Share status")
         this.fileExplorerService.filesToShare = [];
-        this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+        this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
         file.loading = false;
-
       }, error => {
-        console.log(error);
+        this.toastr.error(error.error, "Share error")
         this.fileExplorerService.filesToShare = [];
-        this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+        this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
         file.loading = false;
       });
     }
@@ -456,19 +468,61 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   shareDecline() {
     this.modalRef?.hide();
     this.fileExplorerService.filesToShare = [];
-    this.shareRequestBody = {AccessMode: ShareAccessMode.ReadOnly};
+    //Tutaj
+    this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
   }
+
+  deleteShare(share: ShareResponse){
+    this.http.delete<any>(`${environment.apiUrl}/Share/Delete/${share.shareId}`).subscribe(() => {
+      this.shares = this.shares.filter(item => item !== share);
+      if(this.shares.length == 0){
+        this.modalRef?.hide();
+        this.reloadData();
+      }
+    }, error => {
+      this.toastr.error(error.error, "Share removal error");
+      this.modalRef?.hide();
+    });
+  }
+
+
 
   shareGetItemAccessMode(shareType: string) {
     switch (shareType) {
       case "read":
-        return ShareAccessMode.ReadOnly;
+        return AccessMode.ReadOnly;
       case "write":
-        return ShareAccessMode.ReadWrite;
+        return AccessMode.ReadWrite;
       case "full":
-        return ShareAccessMode.FullAccess;
+        return AccessMode.FullAccess;
       default:
-        return ShareAccessMode.ReadOnly;
+        return AccessMode.ReadOnly;
     }
+  }
+
+  getAccessModeNameFromNumber(shareType: number) {
+    switch (shareType) {
+      case 0:
+        return 'Read only';
+      case 1:
+        return 'Read write';
+      case 2:
+        return 'Full access';
+      default:
+        return 'Read only';
+    }
+  }
+
+  generateShareLink(file: File) {
+    const getDownloadLinkObservable = file.isDirectory
+      ? this.downloadService.getDownloadLink(null, [file.id])
+      : this.downloadService.getDownloadLink(file.id, null);
+
+    getDownloadLinkObservable.subscribe(response => {
+      navigator.clipboard.writeText(response.url).then().catch(e => this.toastr.error(e));
+      this.toastr.success("Download link has been successfully copied to your clipboard")
+    }, error => {
+      console.log(error);
+    });
   }
 }

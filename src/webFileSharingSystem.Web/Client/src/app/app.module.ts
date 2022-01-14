@@ -36,6 +36,7 @@ import {DndDirective} from './Components/file-upload/directive/dnd.directive';
 import {DurationPickerModule} from "ngx-duration-picker";
 import {ToastrModule} from "ngx-toastr";
 import {ButtonsModule} from "ngx-bootstrap/buttons";
+import { FilesSharedWithMeExplorerComponent } from './Components/files-shared-with-me-explorer/files-shared-with-me-explorer.component';
 
 @NgModule({
   declarations: [
@@ -58,7 +59,8 @@ import {ButtonsModule} from "ngx-bootstrap/buttons";
     SharedWithMeComponent,
     SharedByMeComponent,
     SizeConverterPipe,
-    DndDirective
+    DndDirective,
+    FilesSharedWithMeExplorerComponent
 
   ],
   imports: [
