@@ -4,7 +4,7 @@ using webFileSharingSystem.Core.Interfaces;
 
 namespace webFileSharingSystem.Core.Entities
 {
-    public class File : AuditableEntity, IEntityWithUserId
+    public class File : AuditableEntity, IFileBaseEntity
     {
         public int UserId { get; set; }
         public int? ParentId { get; set; }

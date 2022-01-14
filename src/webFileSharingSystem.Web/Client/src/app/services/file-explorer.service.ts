@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {File} from "../Components/common/file";
 import {BehaviorSubject} from "rxjs";
+import {SharedFile} from "../Components/common/sharedFile";
 
 
 @Injectable({
@@ -10,6 +11,7 @@ export class FileExplorerService {
   public filesToMoveCopy: File[] = [];
   public filesToDelete: File[] = [];
   public filesToShare: File[] = [];
+  public lastStoredSharedFile: SharedFile | null = null;
 
   private parentIdSource = new BehaviorSubject<number | null>(null);
   public parentId = this.parentIdSource.asObservable();

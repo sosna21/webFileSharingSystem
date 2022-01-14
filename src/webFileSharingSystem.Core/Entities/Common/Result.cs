@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace webFileSharingSystem.Core.Entities.Common
 {
-    
-    public class Result {
-        internal Result(bool succeeded, IEnumerable<string> errors)
+    public class Result
+    {
+        private Result(bool succeeded, IEnumerable<string> errors)
         {
             Succeeded = succeeded;
             Errors = errors.ToArray();
@@ -29,6 +29,26 @@ namespace webFileSharingSystem.Core.Entities.Common
         public static Result Failure(params string[] errors)
         {
             return new Result(false, errors);
+        }
+        
+        public static Result<T> Success<T>() where T : Enum
+        {
+            return Result<T>.Success();
+        }
+
+        public static Result<T> Success<T>(T status) where T : Enum
+        {
+            return Result<T>.Success(status);
+        }
+        
+        public static Result<T> Failure<T>(T status, IEnumerable<string> errors) where T : Enum
+        {
+            return Result<T>.Failure(status, errors);
+        }
+
+        public static Result<T> Failure<T>( T status, params string[] errors) where T : Enum
+        {
+            return Result<T>.Failure(status, errors);
         }
     }
 }

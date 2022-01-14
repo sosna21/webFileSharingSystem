@@ -1,14 +1,15 @@
-﻿using webFileSharingSystem.Core.Entities;
+﻿using webFileSharingSystem.Core.Entities.Common;
+using webFileSharingSystem.Core.Interfaces;
 
 namespace webFileSharingSystem.Core.Specifications
 {
-    public sealed class GetSharedFilesSpec<TEntity> : BaseSpecification<TEntity> where TEntity : File
+    public sealed class GetSharedFilesSpec<TEntity> : BaseSpecification<TEntity> where TEntity : BaseEntity, IFileBaseEntity
     {
-        public GetSharedFilesSpec(int? parentId, string? searchPhrase) : base(file =>
-            string.IsNullOrEmpty(searchPhrase) ? file.ParentId == parentId : true
-            && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
+        public GetSharedFilesSpec(int? parentId, string? searchPhrase) : base(share =>
+            string.IsNullOrEmpty(searchPhrase) ? share.ParentId == parentId : true
+            && (string.IsNullOrEmpty(searchPhrase) || share.FileName.Contains(searchPhrase)))
         {
-            ApplyOrderBy(file => file.Id);
+            ApplyOrderBy(share => share.Id);
         }
     }
 }

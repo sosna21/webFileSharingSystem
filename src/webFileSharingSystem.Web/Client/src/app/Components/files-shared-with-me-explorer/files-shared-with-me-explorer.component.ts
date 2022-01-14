@@ -1,5 +1,5 @@
-import {Component, ElementRef, OnInit, TemplateRef, ViewChild} from '@angular/core';
-import {File, FileStatus, ProgressStatus} from "../common/file";
+import {Component, ElementRef, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {File} from "../common/file";
 import {DownloadService} from "../../services/download.service";
 import {FileExplorerService} from "../../services/file-explorer.service";
 import {environment} from "../../../environments/environment";
@@ -19,37 +19,20 @@ interface BreadCrumb {
   fileName: string;
 }
 
-interface ShareRequestResponse {
-  sharedWithUserName: string,
-  accessMode: AccessMode,
-  validUntil: Date
-}
-
-interface ShareRequestBody {
-  UserNameToShareWith?: string,
-  AccessMode?: AccessMode,
-  AccessDuration?: any,
-  Update?: boolean
-}
-
 @Component({
   selector: 'app-files-shared-with-me-explorer',
   templateUrl: './files-shared-with-me-explorer.component.html',
   styleUrls: ['./files-shared-with-me-explorer.component.scss']
 })
 
-export class FilesSharedWithMeExplorerComponent implements OnInit {
-  files: SharedFile[] = [];
+export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
+  sharedFiles: SharedFile[] = [];
   private openDropdownToBeHidden: any;
-  shares: ShareRequestResponse[] = [];
   modalRef?: BsModalRef;
-  shareRequestBody: ShareRequestBody = {AccessMode: AccessMode.ReadOnly};
   parentId: number | null = null;
-  parentAccessMode: AccessMode  = AccessMode.ReadOnly;
   itemsPerPage = 15;
   currentPage = 1;
   totalItems!: number;
-  ProgressStatus = ProgressStatus;
   searchedPhrase: string | null = null;
   names: string[] = [];
   @ViewChild("fileUpload", {static: false}) fileUpload: ElementRef | undefined;
@@ -58,8 +41,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   breadCrumbs: BreadCrumb[] = [];
   loadingData: boolean = true;
   maxDate = '9999-12-31T23:59:59.9999999'
-  userSubscription!: Subscription;
-
+  private subscriptions: Subscription[] = []
 
   constructor(private http: HttpClient, private downloadService: DownloadService, public fileExplorerService: FileExplorerService, private modalService: BsModalService,
               private authenticationService: AuthenticationService, private toastr: ToastrService, private uploadService: FileUploaderService, private formBuilder: FormBuilder,
@@ -68,28 +50,37 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.userSubscription = this.route.params.subscribe(params => {
-
+    this.subscriptions.push(this.route.params.subscribe(params => {
       if (params['id']) {
-        this.parentId = +params['id'];
+        this.fileExplorerService.updateParentId(+params['id']);
+      } else {
+        this.fileExplorerService.updateParentId(null);
       }
+      this.parentId = this.fileExplorerService.currentParentIdValue;
+
       let reloadSearchWhenEmpty = false;
-      this.fileExplorerService.searchedText.subscribe(response => {
+      this.subscriptions.push(this.fileExplorerService.searchedText.subscribe(response => {
+        if (!this.authenticationService.currentUserValue) return;
         this.searchedPhrase = response;
-        if (reloadSearchWhenEmpty || (response && response !== '')) {
+        if(reloadSearchWhenEmpty || (response && response !== '')){
           this.reloadData();
           reloadSearchWhenEmpty = true;
         }
-      })
+      }))
 
       this.reloadData();
       this.getNames();
       if (this.parentId)
         this.getFilePath(this.parentId);
-    });
+    }));
+
 
     this.initializeForm();
     this.toastr.toastrConfig.preventDuplicates = true;
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
 
 
@@ -103,17 +94,17 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   isAllCheckBoxChecked() {
-    if (this.files.length > 0)
-      return this.files.every(file => file.checked)
+    if (this.sharedFiles.length > 0)
+      return this.sharedFiles.every(file => file.checked)
     return false
   }
 
   checkAllCheckBox(ev: any) {
-    this.files.forEach(x => x.checked = ev.target.checked)
+    this.sharedFiles.forEach(x => x.checked = ev.target.checked)
   }
 
   isManyCheckboxesChecked(): boolean {
-    return this.files.filter(x => x.checked).length > 1;
+    return this.sharedFiles.filter(x => x.checked).length > 1;
   }
 
   hideOnSecondOpen(dropdown: any) {
@@ -125,7 +116,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   downloadMultipleFiles() {
-    const fileIdsToDownload = this.files.filter(f => f.checked).map(f => f.id);
+    const fileIdsToDownload = this.sharedFiles.filter(f => f.checked).map(f => f.id);
     this.downloadService.getDownloadLink(null, fileIdsToDownload).subscribe(response => {
       window.location.href = response.url;
     }, error => {
@@ -134,7 +125,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   minAccessModeInCheckedFiles(){
-    return Math.min.apply(null, this.files.filter(x => x.checked).map(file => file.accessMode));
+    return Math.min.apply(null, this.sharedFiles.filter(x => x.checked).map(file => file.accessMode));
   }
 
   moveCopyInit(file?: File) {
@@ -142,7 +133,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     if (file) {
       filesToMoveCopy = [file];
     } else {
-      filesToMoveCopy = this.files.filter(x => x.checked);
+      filesToMoveCopy = this.sharedFiles.filter(x => x.checked);
     }
     this.fileExplorerService.filesToMoveCopy = filesToMoveCopy;
   }
@@ -152,7 +143,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   markCheckedFiles() {
-    this.fileExplorerService.filesToDelete = this.files.filter(x => x.checked);
+    this.fileExplorerService.filesToDelete = this.sharedFiles.filter(x => x.checked);
   }
 
   moveCopyFiles(copy: boolean, filesToMoveCopy: File[] = this.fileExplorerService.filesToMoveCopy) {
@@ -178,16 +169,12 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
   }
 
   getFiles(parentId: number | null, searchedPhrase: string | null, callBack?: () => void): void {
-    this.http.get<any>(`${environment.apiUrl}/File/GetSharedWithMe?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
+    this.http.get<any>(`${environment.apiUrl}/Share/GetSharedWithMe?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
       ${parentId ? '&ParentId=' + parentId : ''}${(searchedPhrase && searchedPhrase !== '') ? '&SearchedPhrase=' + searchedPhrase : ''}`)
       .subscribe(response => {
         this.loadingData = false;
         this.totalItems = response.totalCount;
-        const parentFile = this.files.find(file => file.id === parentId);
-        this.parentAccessMode = AccessMode.ReadOnly;
-        if(parentFile !== undefined) this.parentAccessMode = parentFile.accessMode
-        this.files = response.items;
-        this.files.forEach(x => x.progressStatus = ProgressStatus.Stopped);
+        this.sharedFiles = response.items;
         callBack?.();
       }, error => {
         this.loadingData = false;
@@ -195,45 +182,45 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
       })
   }
 
-  isCompleted(file: File): boolean {
-    return file.fileStatus === FileStatus.Completed;
-  }
+  removeShare(sharedFile?: SharedFile) {
+    if(sharedFile && !sharedFile.shareId){
+      return;
+    }
+    let files : SharedFile[];
+    if(sharedFile === undefined)
+      files = this.sharedFiles.filter(file => file.checked);
+    else
+      files = [sharedFile];
 
-
-  cancelUpload(file: File) {
-    this.uploadService.cancel(file.id);
-    this.deleteFile(file, false);
-    this.files = this.files.filter(x => x != file);
-  }
-
-
-  removeShare(files?: File[]) {
-
-    if(files === undefined) files = this.files.filter(file => file.checked);
     files.some((file, index, array) => {
-      this.http.delete(`${environment.apiUrl}/Share/RemoveShare/${file.id}`).subscribe(() => {
+      if(!file.shareId){
+        this.toastr.error("To delete some shares you must delete whole shared folder", "Share remove error")
+        return;
+      }
+      this.http.delete(`${environment.apiUrl}/Share/Delete/${file.shareId}`).subscribe(() => {
         if (index == array.length - 1) {
           this.reloadData();
         }
         delete this.names[this.names.findIndex(x => x === file.fileName)];
         this.toastr.success("Share removed successfully","Share remove status");
       }, error => {
-        //TODO break forEach
         this.toastr.error(error.error,"Share remove error");
       });
     })
   }
 
+
+
   deleteFile(file: File, reload: boolean = true) {
     if (file.isDirectory) {
-      this.http.delete(`${environment.apiUrl}/Share/DeleteDir/${file.id}`).subscribe(() => {
+      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
         reload ? this.reloadData() : null;
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
         this.toastr.error(error.error, "Directory delete error");
       })
     } else {
-      this.http.delete(`${environment.apiUrl}/Share/DeleteFile/${file.id}`).subscribe(() => {
+      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
         reload ? this.reloadData() : null;
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
@@ -242,48 +229,13 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     }
   }
 
-  continueUpload(file: File) {
-    if (file.progressStatus === ProgressStatus.Stopped) {
-      let fileInfo = this.uploadService.getCachedFileInfo(file.id);
-      if (!fileInfo) {
-        const fileUpload = this.fileUpload!.nativeElement;
-        fileUpload.onchange = () => {
-          if (fileUpload.files === null || fileUpload.files.length <= 0) return;
-          fileInfo = {
-            partialFileInfo: file.partialFileInfo!,
-            file: fileUpload.files[0]
-          }
-          if (file.fileName !== fileInfo.file.name
-            || file.size !== fileInfo.file.size
-            || file.mimeType !== fileInfo.file.type) return;
-          file.progressStatus = ProgressStatus.Started;
-          this.uploadService.resume(file.id, fileInfo, this.parentId);
-        };
-        fileUpload.click();
-      }
-      if (fileInfo) {
-        file.progressStatus = ProgressStatus.Started;
-        this.uploadService.resume(file.id, fileInfo, this.parentId);
-      }
-    }
-  }
-
-
-  stopUpload(file: File) {
-    if (file.progressStatus === ProgressStatus.Started) {
-      file.progressStatus = ProgressStatus.Stopping;
-      this.uploadService.pause(file.id);
-    }
-  }
-
-
   rename(file: File) {
     if (this.gRename) {
       this.gRename = false;
       if (!this.fileNameForm.get('fileName')?.invalid) {
         let filename = this.fileNameForm.get('fileName')?.value;
 
-        this.http.put(`${environment.apiUrl}/Share/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
+        this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
           file.fileName = filename;
           file.modificationDate = new Date();
           this.names.push(file.fileName);
@@ -346,7 +298,6 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     })
   }
 
-
   initDirCreate(form: any) {
     if (!this.gRename) {
       this.fileNameForm.reset();
@@ -360,8 +311,8 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
     if (!this.fileNameForm.get('dirName')?.invalid && this.parentId) {
 
       let name = this.fileNameForm.get('dirName')?.value;
-      let parentFile = this.files.find(file => file.id == this.parentId);
-      this.http.post<any>(`${environment.apiUrl}/Share/CreateDir/${name}?parentId=${this.parentId}`, {}).subscribe(() => {
+      let parentFile = this.sharedFiles.find(file => file.id == this.parentId);
+      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}?parentId=${this.parentId}`, {}).subscribe(() => {
         this.reloadData();
         this.gRename = false;
       }, error => {
@@ -400,5 +351,33 @@ export class FilesSharedWithMeExplorerComponent implements OnInit {
       default:
         return 'Read only';
     }
+  }
+
+  isMoveCopyAllowed() : boolean {
+    if( !this.parentId ){
+      return false;
+    }
+
+    if(this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
+      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly
+    }
+
+    return true;
+  }
+
+  canCreateDirectory() : boolean {
+    if( !this.parentId ){
+      return false;
+    }
+
+    if(this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
+      return this.fileExplorerService.lastStoredSharedFile.accessMode === AccessMode.FullAccess
+    }
+
+    return true;
+  }
+
+  storeLastFile(shareFile : SharedFile) {
+      this.fileExplorerService.lastStoredSharedFile = shareFile;
   }
 }

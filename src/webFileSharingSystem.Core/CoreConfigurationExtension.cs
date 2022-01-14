@@ -9,6 +9,8 @@ namespace webFileSharingSystem.Core
         public static IServiceCollection AddCore(this IServiceCollection services)
         {
             services.AddScoped<IUploadService, UploadService>();
+            services.AddScoped<IFileService, FileService>();
+            services.AddScoped<IGuardService, GuardService>();
             
             services.AddHostedService(sp => new RefreshUploadCacheService(sp));
             

@@ -3,7 +3,7 @@
     <h2>Shared with me</h2>
   </div>
   <div class="align-self-center mr-3">
-    <fa-icon *ngIf="parentAccessMode !== 0" size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
+    <fa-icon *ngIf="canCreateDirectory()" size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
              (click)="initDirCreate(form); createDirTextInput.setFocus();"></fa-icon>
   </div>
   <div class="align-self-end pt-3">
@@ -55,8 +55,10 @@
             </span>
           </span>
           <div *ngIf="fileExplorerService.filesToMoveCopy.length>0" class="custom-control-inline ml-3">
-            <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(false)">Move here</button>
-            <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(true)">Copy here</button>
+            <button popover="{{isMoveCopyAllowed() ? '' : 'Can`t move to this directory'}}" triggers="mouseenter:mouseleave"
+              class="btn btn-dark btn-sm mr-1" [disabled]="!isMoveCopyAllowed()" (click)="moveCopyFiles(false)">Move here</button>
+            <button popover="{{isMoveCopyAllowed() ? '' : 'Can`t copy to this directory'}}" triggers="mouseenter:mouseleave"
+                    class="btn btn-dark btn-sm mr-1" [disabled]="!isMoveCopyAllowed()" (click)="moveCopyFiles(true)">Copy here</button>
             <button class="btn btn-secondary btn-sm" (click)="this.fileExplorerService.filesToMoveCopy = []">Cancel
             </button>
           </div>
@@ -69,56 +71,39 @@
       </tr>
       </thead>
       <tbody>
-      <tr *ngFor="let file of files; let fileIndex=index">
+      <tr *ngFor="let shareFile of sharedFiles; let fileIndex=index">
 
         <!--Checkobox-->
         <td>
-          <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
-                 (change)="file.checked = !file.checked" [checked]="file.checked"/>
-          <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
-          <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
-                   [styles]="{'color': '#8c2e2e'}"></fa-icon>
+          <input *ngIf="!shareFile.loading" type="checkbox" value="{{shareFile.id}}"
+                 (change)="shareFile.checked = !shareFile.checked" [checked]="shareFile.checked"/>
+          <span *ngIf="shareFile.loading" class="spinner-border spinner-border-sm"></span>
         </td>
 
-        <!--FileName + upload progress-->
-        <td *ngIf="!file.rename" class="text-left">
-          <div [routerLink]="file.isDirectory ? ['/shared/with-me',file.id] : null"
+        <!--FileName-->
+        <td *ngIf="!shareFile.rename" class="text-left">
+          <div (click)="storeLastFile(shareFile)" [routerLink]="shareFile.isDirectory ? ['/shared/with-me',shareFile.id] : null"
                class="row col-12 align-items-center"
-               [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
-            <div [ngClass]="isCompleted(file) ? '' : 'col-lg-6 col-md-8 col-sm-10'" class="pl-0">
-              <fa-icon [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
-                       [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
-              {{ file.fileName }} | FileId: {{file.id}}
+               [style]="{'cursor': shareFile.isDirectory ? 'pointer' : 'default'}">
+            <div class="pl-0">
+              <fa-icon [style]="{'cursor': shareFile.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
+                       [icon]="[shareFile.isDirectory ? 'fas' : 'far', (shareFile | mimeFontawesome)]"></fa-icon>
+              {{ shareFile.fileName }} | FileId: {{shareFile.id}}
             </div>
-            <div *ngIf="!isCompleted(file)" class="row align-items-center col-lg-6 col-md-4 col-sm-2 ">
-              <div class="col p-0 d-none d-lg-block">
-                <div class="progress progress-sm bg-dark ">
-                  <div [class]="file.progressStatus === ProgressStatus.Stopped ? 'bg-danger' :
-                  file.progressStatus === ProgressStatus.Stopping ? 'bg-warning progress-bar-animated' : 'progress-bar-animated'"
-                       class="progress-bar progress-bar-striped bg-info" role="progressbar"
-                       [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
-                </div>
-              </div>
-              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped"
-                       class="mr-sm-1 ml-sm-1"
-                       [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
-              <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started"
-                       [icon]="['fas', 'stop-circle']"
-                       (click)="stopUpload(file)"></fa-icon>
-            </div>
+
           </div>
         </td>
 
 
         <!--FileName when rename mode is enabled-->
         <td #renameInput hidden class="text-left">
-          <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
+          <form [formGroup]="fileNameForm" (ngSubmit)="rename(shareFile); renameInput.hidden = true">
             <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
-                            (focusout)="rename(file); renameInput.hidden = true"
-                            (keydown.enter)="rename(file); renameInput.hidden = true"
+                            (focusout)="rename(shareFile); renameInput.hidden = true"
+                            (keydown.enter)="rename(shareFile); renameInput.hidden = true"
                             [formControl]="$any(fileNameForm).controls['fileName']"
-                            [label]="file.fileName"
-                            [value]="file.fileName"></app-text-input>
+                            [label]="shareFile.fileName"
+                            [value]="shareFile.fileName"></app-text-input>
           </form>
         </td>
 
@@ -126,45 +111,45 @@
         <!--Actions-->
         <td>
           <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
-               [isDisabled]="!isCompleted(file) || file.loading"
+               [isDisabled]="shareFile.loading"
                class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
-            <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file) || file.loading"
+            <fa-icon dropdownToggle [class.disabled]="shareFile.loading"
                      [icon]="['fas', 'ellipsis-h']"
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
-              <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
-              <li *ngIf="file.accessMode !== 0" role="menuitem"><a class="dropdown-item"
-                                                                   (click)="renameInit(file); renameInput.hidden = false;
+              <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(shareFile)">Download</a></li>
+              <li *ngIf="shareFile.accessMode !== 0" role="menuitem"><a class="dropdown-item"
+                                                                        (click)="renameInit(shareFile); renameInput.hidden = false;
                                                                     renameTextInput.setFocus();">Rename</a>
               </li>
-              <li *ngIf="file.accessMode !== 0" role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(file)">
+              <li *ngIf="shareFile.accessMode !== 0" role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(shareFile)">
                 Move / Copy</a></li>
-              <li role="menuitem"><a class="dropdown-item" (click)="removeShare([file])"> Remove from shares</a></li>
-              <li *ngIf="file.accessMode === 2" role="menuitem"><a class="dropdown-item"
-                                                                   (click)="openModal(deleteTemplate);
-                                                                   fileExplorerService.filesToDelete = [file]">Delete file</a>
+              <li [class.disabled]="!shareFile.shareId" role="menuitem" popover="{{shareFile.shareId ? '' : 'To delete this share you must delete whole shared folder'}}" triggers="mouseenter:mouseleave"><a class="dropdown-item" (click)="removeShare(shareFile)"> Remove from shares</a></li>
+              <li *ngIf="shareFile.accessMode === 2" role="menuitem"><a class="dropdown-item"
+                                                                        (click)="openModal(deleteTemplate);
+                                                                   fileExplorerService.filesToDelete = [shareFile]">Delete file</a>
               </li>
             </ul>
           </div>
         </td>
 
         <!--Access Mode-->
-        <td>{{getAccessModeNameFromNumber(file.accessMode)}}</td>
+        <td>{{getAccessModeNameFromNumber(shareFile.accessMode)}}</td>
 
         <!--Size-->
 
-        <td>{{file.size | convertSizeToReadable}}</td>
+        <td>{{shareFile.size | convertSizeToReadable}}</td>
 
         <!--Shared By-->
 
-        <td>{{file.sharedUserName}}</td>
+        <td>{{shareFile.sharedUserName}}</td>
 
         <!--Valid until-->
         <td>
           <div class="trim"
-               popover="{{file.validUntil.toString() === maxDate ? 'Unlimited' : file.validUntil | date :'medium'}}"
-               triggers="mouseenter:mouseleave">{{file.validUntil.toString() === maxDate ? 'Unlimited' : file.validUntil | timeago }}</div>
+               popover="{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | date :'medium'}}"
+               triggers="mouseenter:mouseleave">{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | timeago }}</div>
         </td>
 
       </tr>
@@ -178,10 +163,10 @@
     </div>
 
     <div *ngIf="!loadingData" class="d-flex justify-content-center">
-      <h2 *ngIf="files.length <= 0" class="text-center my-3">
+      <h2 *ngIf="sharedFiles.length <= 0" class="text-center my-3">
         {{searchedPhrase ? "We can't find any files that fit your criteria"
         : "You do not have any files in this category"}}</h2>
-      <pagination *ngIf="files.length > 0"
+      <pagination *ngIf="sharedFiles.length > 0"
                   [boundaryLinks]="true"
                   [totalItems]="totalItems"
                   [itemsPerPage]="itemsPerPage"

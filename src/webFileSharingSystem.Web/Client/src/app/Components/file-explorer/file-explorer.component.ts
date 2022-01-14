@@ -26,7 +26,8 @@ interface ShareRequestBody {
   Update?: boolean
 }
 
-interface ShareRequestResponse {
+interface ShareResponse {
+  shareId: number;
   sharedWithUserName: string,
   accessMode: AccessMode,
   validUntil: Date
@@ -55,7 +56,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   modalRef?: BsModalRef;
   ProgressStatus = ProgressStatus;
   shareRequestBody: ShareRequestBody = {AccessMode: AccessMode.ReadOnly};
-  shares: ShareRequestResponse[] = [];
+  shares: ShareResponse[] = [];
   maxDate = '9999-12-31T23:59:59.9999999'
 
   private subscriptions: Subscription[] = []
@@ -334,7 +335,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     this.openDropdownToBeHidden = dropdown;
   }
 
-
   initDirCreate(form: any) {
     if (!this.gRename) {
       this.fileNameForm.reset();
@@ -452,6 +452,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
       this.http.post<any>(`${environment.apiUrl}/Share/${fileId}/Add`, this.shareRequestBody).subscribe(() => {
         this.files.find(file => file.id === fileId)!.isShared = true;
+        this.toastr.success("Share added", "Share status")
         this.fileExplorerService.filesToShare = [];
         this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
         file.loading = false;
@@ -470,6 +471,21 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     //Tutaj
     this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
   }
+
+  deleteShare(share: ShareResponse){
+    this.http.delete<any>(`${environment.apiUrl}/Share/Delete/${share.shareId}`).subscribe(() => {
+      this.shares = this.shares.filter(item => item !== share);
+      if(this.shares.length == 0){
+        this.modalRef?.hide();
+        this.reloadData();
+      }
+    }, error => {
+      this.toastr.error(error.error, "Share removal error");
+      this.modalRef?.hide();
+    });
+  }
+
+
 
   shareGetItemAccessMode(shareType: string) {
     switch (shareType) {
@@ -495,5 +511,18 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       default:
         return 'Read only';
     }
+  }
+
+  generateShareLink(file: File) {
+    const getDownloadLinkObservable = file.isDirectory
+      ? this.downloadService.getDownloadLink(null, [file.id])
+      : this.downloadService.getDownloadLink(file.id, null);
+
+    getDownloadLinkObservable.subscribe(response => {
+      navigator.clipboard.writeText(response.url).then().catch(e => this.toastr.error(e));
+      this.toastr.success("Download link has been successfully copied to your clipboard")
+    }, error => {
+      console.log(error);
+    });
   }
 }

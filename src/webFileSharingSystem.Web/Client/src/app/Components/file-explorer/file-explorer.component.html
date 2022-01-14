@@ -51,7 +51,7 @@
               <a class="dropdown-item" (click)="openModal(deleteTemplate) ;markCheckedFiles()">Delete</a>
             </span>
           </span>
-          <div *ngIf="fileExplorerService.filesToMoveCopy.length>0" class="custom-control-inline ml-3">
+          <div *ngIf="fileExplorerService.filesToMoveCopy.length>0 && mode === 'GetAll'" class="custom-control-inline ml-3">
             <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(false)">Move here</button>
             <button class="btn btn-dark btn-sm mr-1" (click)="moveCopyFiles(true)">Copy here</button>
             <button class="btn btn-secondary btn-sm" (click)="this.fileExplorerService.filesToMoveCopy = []">Cancel
@@ -142,6 +142,7 @@
 
             <ul *dropdownMenu class="dropdown-menu" role="menu">
               <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
+              <li role="menuitem"><a class="dropdown-item" (click)="generateShareLink(file)">Generate share link</a></li>
               <li role="menuitem"><a class="dropdown-item"
                                      (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
               </li>
@@ -277,16 +278,22 @@
       <table class="table table-sm table-hover">
         <thead>
         <tr>
+          <th scope="col"></th>
           <th scope="col">Shared with:</th>
           <th scope="col">Access mode:</th>
           <th scope="col">Valid until:</th>
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let share of shares" (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
+        <tr *ngFor="let share of shares"  style="cursor: pointer">
+          <td>
+            <fa-icon [icon]="['far', 'trash-alt']" (click)="this.deleteShare(share)"
+                     [styles]="{'color': '#8c2e2e'}"></fa-icon>
+          </td>
+
+          <td (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
         shareRequestBody.Update = true; decline();
-        openModal(shareTemplate)" style="cursor: pointer">
-          <td>{{share.sharedWithUserName}}</td>
+        openModal(shareTemplate)">{{share.sharedWithUserName}}</td>
           <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
           <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : share.validUntil | timeago }}</td>
         </tr>

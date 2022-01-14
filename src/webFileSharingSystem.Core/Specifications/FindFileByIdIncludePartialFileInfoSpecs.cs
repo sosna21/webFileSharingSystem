@@ -2,9 +2,9 @@
 
 namespace webFileSharingSystem.Core.Specifications
 {
-    public sealed class FindFileByIdIncludePartialFileInfo : BaseSpecification<File>
+    public sealed class FindFileByIdIncludePartialFileInfoSpecs : BaseSpecification<File>
     {
-        public FindFileByIdIncludePartialFileInfo(int id) : base(
+        public FindFileByIdIncludePartialFileInfoSpecs(int id) : base(
             e => e.Id == id)
         {
             AddInclude(file => file.PartialFileInfo);

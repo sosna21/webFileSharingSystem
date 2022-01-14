@@ -9,7 +9,8 @@ namespace webFileSharingSystem.Infrastructure.Identity
         public CountDailyRefreshTokensPerUserSpec() : base(token =>
             token.Created > DateTime.UtcNow.Date)
         {
-            ApplyGroupBy( g => g.IdentityUserId, (userId , tokens) => new UserRefreshTokensCount{ IdentityUserId = (string)userId, Count = tokens.Count()}  );
+            ApplyGroupBy(g => g.IdentityUserId,
+                (userId, tokens) => new UserRefreshTokensCount {IdentityUserId = (string) userId, Count = tokens.Count()});
         }
     }
 }

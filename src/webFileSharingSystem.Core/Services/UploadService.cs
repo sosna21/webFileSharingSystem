@@ -122,7 +122,7 @@ namespace webFileSharingSystem.Core.Services
                     if (!UserFileCache.ContainsKey(key))
                     {
                         file = _unitOfWork.Repository<File>()
-                            .FindAsync(new FindFileByIdIncludePartialFileInfo(fileId), cancellationToken)
+                            .FindAsync(new FindFileByIdIncludePartialFileInfoSpecs(fileId), cancellationToken)
                             .ConfigureAwait(false).GetAwaiter().GetResult()
                             .SingleOrDefault();
 
@@ -180,7 +180,7 @@ namespace webFileSharingSystem.Core.Services
                     if (!UserFileCache.ContainsKey(key))
                     {
                         file = _unitOfWork.Repository<File>()
-                            .FindAsync(new FindFileByIdIncludePartialFileInfo(fileId), cancellationToken)
+                            .FindAsync(new FindFileByIdIncludePartialFileInfoSpecs(fileId), cancellationToken)
                             .ConfigureAwait(false).GetAwaiter().GetResult()
                             .SingleOrDefault();
 
@@ -238,7 +238,7 @@ namespace webFileSharingSystem.Core.Services
                     if (!UserFileCache.ContainsKey(key))
                     {
                         file = _unitOfWork.Repository<File>()
-                            .FindAsync(new FindFileByIdIncludePartialFileInfo(fileId), cancellationToken)
+                            .FindAsync(new FindFileByIdIncludePartialFileInfoSpecs(fileId), cancellationToken)
                             .ConfigureAwait(false).GetAwaiter().GetResult()
                             .SingleOrDefault();
 
