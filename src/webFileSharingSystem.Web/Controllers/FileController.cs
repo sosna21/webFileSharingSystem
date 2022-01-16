@@ -95,18 +95,7 @@ namespace webFileSharingSystem.Web.Controllers
                     file => ToFileResponse(file, userId!.Value),
                     new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
-
-        //TODO Get Deleted are not currently supported
-        [HttpGet]
-        [Route("GetDeleted")]
-        public async Task<PaginatedList<FileResponse>> GetDeletedFilesAsync([FromQuery] FileRequest request)
-        {
-            var userId = _currentUserService.UserId;
-            return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
-                    file => ToFileResponse(file, userId!.Value)
-                    ,  new GetDeletedFilesSpecs(userId!.Value, request.ParentId!.Value));
-        }
+        
         
         [HttpGet]
         [Route("GetRecent")]

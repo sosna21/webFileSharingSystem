@@ -6,7 +6,6 @@ namespace webFileSharingSystem.Core.Specifications
     {
         public GetFavouriteFilesSpecs(int userId, string? searchPhrase) : base(
             file => file.UserId == userId
-                    && file.IsDeleted == false
                     && file.IsFavourite == true
                     && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
         {

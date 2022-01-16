@@ -10,6 +10,6 @@ namespace webFileSharingSystem.Core.Interfaces
         public string? MimeType { get; set; }
         public ulong Size { get; set; }
         public bool IsDirectory { get; set; }
-        public Guid? FileId { get; set; }
+        public Guid? FileGuid { get; set; }
     }
 }

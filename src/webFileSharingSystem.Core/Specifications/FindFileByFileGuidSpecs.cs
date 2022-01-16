@@ -6,7 +6,7 @@ namespace webFileSharingSystem.Core.Specifications
     public sealed class FindFileByFileGuidSpecs : BaseSpecification<File>
     {
         public FindFileByFileGuidSpecs(Guid fileGuid) : base(
-            e => e.FileId.Value == fileGuid)
+            e => e.FileGuid.Value == fileGuid)
         {
         }
     }

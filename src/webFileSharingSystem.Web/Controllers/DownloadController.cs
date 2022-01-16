@@ -76,9 +76,9 @@ namespace webFileSharingSystem.Web.Controllers
 
             if (fileToDownload.IsDirectory) return BadRequest("Directory can't be downloaded");
 
-            var filePath = _filePersistenceService.GetFilePath(fileToDownload.UserId, fileToDownload.FileId!.Value);
+            var filePath = _filePersistenceService.GetFilePath(fileToDownload.UserId, fileToDownload.FileGuid!.Value);
 
-            return new FileStreamResult(_filePersistenceService.GetFileStream(filePath), fileToDownload.MimeType)
+            return new FileStreamResult(_filePersistenceService.GetFileStream(filePath), string.IsNullOrEmpty(fileToDownload.MimeType) ? "application/octet-stream" : fileToDownload.MimeType)
             {
                 FileDownloadName = fileToDownload.FileName,
                 EnableRangeProcessing = true
@@ -120,7 +120,7 @@ namespace webFileSharingSystem.Web.Controllers
                     var computedFilePath = string.Join("/",
                         _filePersistenceService.FindRelativeFilePath(file, filesToDownload).Reverse()
                             .Select(f => f.FileName));
-                    var storedFilePath = _filePersistenceService.GetFilePath(file.UserId, file.FileId!.Value);
+                    var storedFilePath = _filePersistenceService.GetFilePath(file.UserId, file.FileGuid!.Value);
                     var entry = archive.CreateEntry(computedFilePath);
                     await using (var entryStream = entry.Open())
                     {

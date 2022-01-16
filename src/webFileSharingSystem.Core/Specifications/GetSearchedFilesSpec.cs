@@ -6,8 +6,7 @@ namespace webFileSharingSystem.Core.Specifications
     {
         public GetSearchedFilesSpec(int userId, string searchedPhrase) : base(
             e => e.UserId == userId
-                && e.IsDeleted == false 
-                && e.FileName.Contains(searchedPhrase))
+                 && e.FileName.Contains(searchedPhrase))
         {
             AddInclude(file => file.PartialFileInfo);
             ApplyOrderBy(file => file.Id);

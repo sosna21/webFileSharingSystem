@@ -96,7 +96,7 @@ namespace webFileSharingSystem.Core.Services
             if (!fileOwnerUseSpaceUpdateResult.Succeeded)
                 return Result.Failure(OperationResult.BadRequest, fileOwnerUseSpaceUpdateResult.Errors);
 
-            var guidToRemove = fileToDelete.FileId!.Value;
+            var guidToRemove = fileToDelete.FileGuid!.Value;
 
             if (!await _unitOfWork.Repository<File>()
                 .ContainsAsync(new FindFileByFileGuidSpecs(guidToRemove), cancellationToken))
@@ -137,7 +137,7 @@ namespace webFileSharingSystem.Core.Services
             if (!directoryOwnerUseSpaceUpdateResult.Succeeded)
                 return Result.Failure(OperationResult.BadRequest, directoryOwnerUseSpaceUpdateResult.Errors);
 
-            var guidsToRemove = filesToRemove.Where(x => !x.IsDirectory).Select(x => x.FileId!.Value);
+            var guidsToRemove = filesToRemove.Where(x => !x.IsDirectory).Select(x => x.FileGuid!.Value);
 
             var fileGuidsToRemove = await _unitOfWork.Repository<File>()
                 .FindAsync(new CountFilesByFileGuidsSpecs(guidsToRemove), cancellationToken);
@@ -275,7 +275,7 @@ namespace webFileSharingSystem.Core.Services
                     MimeType = fileToCopy.MimeType,
                     Size = fileToCopy.Size,
                     IsDirectory = fileToCopy.IsDirectory,
-                    FileId = fileToCopy.FileId,
+                    FileGuid = fileToCopy.FileGuid,
                     FileStatus = FileStatus.Completed
                 };
 

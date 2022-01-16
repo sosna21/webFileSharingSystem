@@ -6,8 +6,7 @@ namespace webFileSharingSystem.Core.Specifications
     {
         public GetAllFilesSpecs(int userId, int? parentId) : base(
             e => e.UserId == userId
-                && e.IsDeleted == false &&
-                e.ParentId == parentId)
+               && e.ParentId == parentId)
         {
             AddInclude(file => file.PartialFileInfo);
             ApplyOrderBy(file => file.Id);

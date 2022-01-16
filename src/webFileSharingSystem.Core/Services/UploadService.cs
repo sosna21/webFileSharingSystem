@@ -66,7 +66,7 @@ namespace webFileSharingSystem.Core.Services
                 MimeType = mimeType,
                 Size = (ulong) size,
                 FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,
-                FileId = fileGuidId,
+                FileGuid = fileGuidId,
                 ParentId = parentId,
                 PartialFileInfo = partialFileInfo
             };
@@ -128,7 +128,7 @@ namespace webFileSharingSystem.Core.Services
 
                         if (file?.PartialFileInfo is not null)
                             UserFileCache[key] = new PartialFileInfoCache(
-                                _filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                                _filePersistenceService.GetFilePath(userId, file.FileGuid!.Value),
                                 file.PartialFileInfo);
                     }
                 }
@@ -139,8 +139,6 @@ namespace webFileSharingSystem.Core.Services
                 if (file.IsDirectory) return Result.Failure("Directory can't be uploaded");
 
                 if (file.FileStatus == FileStatus.Completed) return Result.Failure("File is already fully uploaded");
-
-                if (file.IsDeleted) return Result.Failure("Can't upload to deleted file");
 
                 if (file.PartialFileInfo is null) return Result.Failure("File does not contain 'PartialFileInfo'");
             }
@@ -186,7 +184,7 @@ namespace webFileSharingSystem.Core.Services
 
                         if (file?.PartialFileInfo is not null)
                             UserFileCache[key] = new PartialFileInfoCache(
-                                _filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                                _filePersistenceService.GetFilePath(userId, file.FileGuid!.Value),
                                 file.PartialFileInfo);
                     }
                 }
@@ -195,8 +193,6 @@ namespace webFileSharingSystem.Core.Services
                     return Result.Failure("File does not exist or you do not have access");
 
                 if (file.IsDirectory) return Result.Failure("Directory can't be completed");
-
-                if (file.IsDeleted) return Result.Failure("Deleted files can't be completed");
 
                 if (file.PartialFileInfo is null) return Result.Failure("File does not contain 'PartialFileInfo'");
             }
@@ -244,7 +240,7 @@ namespace webFileSharingSystem.Core.Services
 
                         if (file?.PartialFileInfo is not null)
                             UserFileCache[key] = new PartialFileInfoCache(
-                                _filePersistenceService.GetFilePath(userId, file.FileId!.Value),
+                                _filePersistenceService.GetFilePath(userId, file.FileGuid!.Value),
                                 file.PartialFileInfo);
                     }
                 }
@@ -254,9 +250,6 @@ namespace webFileSharingSystem.Core.Services
 
                 if (file.IsDirectory)
                     return (Result.Failure("Directory can't have missing chunks"), Array.Empty<int>());
-
-                if (file.IsDeleted)
-                    return (Result.Failure("Deleted files can't have missing chunks"), Array.Empty<int>());
 
                 if (file.FileStatus == FileStatus.Completed)
                     return (Result.Failure("Completed file can't have missing chunks"), Array.Empty<int>());

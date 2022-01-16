@@ -12,7 +12,7 @@ namespace webFileSharingSystem.Core.Entities
         public string? MimeType { get; set; }
         public ulong Size { get; set; }
         public bool IsDirectory { get; set; }
-        public Guid? FileId { get; set; }
+        public Guid? FileGuid { get; set; }
         
         public int? ShareId { get; set; }
         public ShareAccessMode AccessMode { get; set; }

@@ -68,8 +68,8 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             //Todo most likely some of the ef migration files are slightly broken that's wy the 'FilePathPart' entity don't need the view
             builder.Entity<FilePathPart>().HasNoKey();//.ToView(null);
-            builder.Entity<FileAccessMode>().HasNoKey().ToView(null);
-            builder.Entity<SharedFile>().HasNoKey().ToView(null);
+            builder.Entity<FileAccessMode>().HasNoKey();//.ToView(null);
+            builder.Entity<SharedFile>().HasNoKey();//.ToView(null);
 
             builder.Entity<RefreshToken>()
                 .HasOne<IdentityUser>()

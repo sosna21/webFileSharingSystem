@@ -104,15 +104,14 @@ namespace webFileSharingSystem.Infrastructure.Data
                     IsDirectory = isDirectory,
                     IsShared = false,
                     IsFavourite = GenerateRandomBoolean(25),
-                    IsDeleted = false,
                     UserId = userId,
-                    FileId = Guid.NewGuid()
+                    FileGuid = Guid.NewGuid()
                 };
                 _fileRepository.Add(file);
                 totalSize += file.Size;
 
                 await _applicationDbContext.SaveChangesAsync();
-                await _filePersistenceService.GenerateNewFile(userId, file.FileId!.Value);
+                await _filePersistenceService.GenerateNewFile(userId, file.FileGuid!.Value);
             }
 
             return totalSize;
