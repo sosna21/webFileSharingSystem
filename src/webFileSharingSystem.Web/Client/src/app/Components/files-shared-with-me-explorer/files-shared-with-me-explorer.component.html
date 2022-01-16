@@ -31,10 +31,8 @@
   </nav>
 </div>
 
-<div id="table" class="row">
-  <div class="table-responsive" style="overflow: visible">
-    <table class="table table-sm table-hover">
-      <thead>
+<table class="table table-sm table-hover">
+  <thead>
       <tr>
         <th scope="col" style="width: 2%">
           <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
@@ -66,12 +64,12 @@
         <th scope="col" style="width: 4%">Actions</th>
         <th scope="col" style="width: 10%">Access mode</th>
         <th scope="col" style="width: 8%">Size</th>
-        <th scope="col" style="width: 12%">Shared By</th>
+        <th class="d-none d-md-table-cell" scope="col" style="width: 12%" >Shared By</th>
         <th scope="col" style="width: 14%">Valid Until</th>
       </tr>
       </thead>
       <tbody>
-      <tr *ngFor="let shareFile of sharedFiles; let fileIndex=index">
+      <tr [ngClass]="shareFile.loading? 'table-inactive' : ''" *ngFor="let shareFile of sharedFiles; let fileIndex=index">
 
         <!--Checkobox-->
         <td>
@@ -81,21 +79,20 @@
         </td>
 
         <!--FileName-->
-        <td *ngIf="!shareFile.rename" class="text-left">
+        <td *ngIf="!shareFile.rename" class="position-relative text-left">
           <div (click)="storeLastFile(shareFile)" [routerLink]="shareFile.isDirectory ? ['/shared/with-me',shareFile.id] : null"
-               class="row col-12 align-items-center"
+               class="row absolutePositioning col-12 align-items-center pr-0"
                [style]="{'cursor': shareFile.isDirectory ? 'pointer' : 'default'}">
-            <div class="pl-0">
-              <fa-icon [style]="{'cursor': shareFile.isDirectory ? 'pointer' : 'default'}" class="mr-sm-1" size="2x"
+            <div #fileName class="px-0 col fileNameCell" popover="{{isEllipsisActive(fileName) ? shareFile.fileName : ''}}" triggers="mouseenter:mouseleave">
+              <fa-icon class="mr-sm-1" [style]="{'cursor': shareFile.isDirectory ? 'pointer' : 'default'}" size="2x"
                        [icon]="[shareFile.isDirectory ? 'fas' : 'far', (shareFile | mimeFontawesome)]"></fa-icon>
-              {{ shareFile.fileName }} | FileId: {{shareFile.id}}
+              {{ shareFile.fileName }}
             </div>
-
           </div>
         </td>
 
 
-        <!--FileName when rename mode is enabled-->
+        <!--Rename-->
         <td #renameInput hidden class="text-left">
           <form [formGroup]="fileNameForm" (ngSubmit)="rename(shareFile); renameInput.hidden = true">
             <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
@@ -117,7 +114,7 @@
                      [icon]="['fas', 'ellipsis-h']"
                      [styles]="{'color': '#60646b'}"></fa-icon>
 
-            <ul *dropdownMenu class="dropdown-menu" role="menu">
+            <ul *dropdownMenu class="dropdown-menu smallScreenText" role="menu">
               <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(shareFile)">Download</a></li>
               <li *ngIf="shareFile.accessMode !== 0" role="menuitem"><a class="dropdown-item"
                                                                         (click)="renameInit(shareFile); renameInput.hidden = false;
@@ -125,7 +122,9 @@
               </li>
               <li *ngIf="shareFile.accessMode !== 0" role="menuitem"><a class="dropdown-item" (click)="moveCopyInit(shareFile)">
                 Move / Copy</a></li>
-              <li [class.disabled]="!shareFile.shareId" role="menuitem" popover="{{shareFile.shareId ? '' : 'To delete this share you must delete whole shared folder'}}" triggers="mouseenter:mouseleave"><a class="dropdown-item" (click)="removeShare(shareFile)"> Remove from shares</a></li>
+              <li [class.disabled]="!shareFile.shareId" role="menuitem"
+                  popover="{{shareFile.shareId ? '' : 'To delete this share you must delete whole shared folder'}}"
+                  triggers="mouseenter:mouseleave"><a class="dropdown-item" (click)="removeShare(shareFile)"> Remove from shares</a></li>
               <li *ngIf="shareFile.accessMode === 2" role="menuitem"><a class="dropdown-item"
                                                                         (click)="openModal(deleteTemplate);
                                                                    fileExplorerService.filesToDelete = [shareFile]">Delete file</a>
@@ -143,12 +142,11 @@
 
         <!--Shared By-->
 
-        <td>{{shareFile.sharedUserName}}</td>
+        <td class="d-none d-md-table-cell">{{shareFile.sharedUserName}}</td>
 
         <!--Valid until-->
         <td>
-          <div class="trim"
-               popover="{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | date :'medium'}}"
+          <div popover="{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | date :'medium'}}"
                triggers="mouseenter:mouseleave">{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | timeago }}</div>
         </td>
 
@@ -162,6 +160,7 @@
       </div>
     </div>
 
+<div id="table">
     <div *ngIf="!loadingData" class="d-flex justify-content-center">
       <h2 *ngIf="sharedFiles.length <= 0" class="text-center my-3">
         {{searchedPhrase ? "We can't find any files that fit your criteria"
@@ -178,7 +177,6 @@
                   lastText="&raquo;">
       </pagination>
     </div>
-  </div>
 </div>
 
 <ng-template #deleteTemplate>

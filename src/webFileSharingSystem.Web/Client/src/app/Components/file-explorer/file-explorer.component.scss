@@ -4,13 +4,30 @@ th {
   font-family: "Segoe UI", serif;
 }
 
+.breadcrumb li {
+  display: inline;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 tr {
+  @media (max-width: 992px) {
+    font-size: 0.85rem;
+  }
   cursor: default;
   text-align: center;
 }
 
 .header {
   font-family: "fantasy", serif;
+}
+
+.smallScreenText{
+  @media (max-width: 992px) {
+    font-size: 0.9rem;
+  }
 }
 
 #faCircle:hover {
@@ -23,7 +40,22 @@ input[type=checkbox], fa-icon, #actionBtn:hover {
   cursor: pointer;
 }
 
+.absolutePositioning{
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.fileNameCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #table {
+  @media (max-width: 518px) {
+    margin-bottom: 60px;
+  }
   margin-bottom: 38px;
 }
 
@@ -34,6 +66,12 @@ input[type=checkbox], fa-icon, #actionBtn:hover {
 .disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.disableShare {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
 }
 
 td {
