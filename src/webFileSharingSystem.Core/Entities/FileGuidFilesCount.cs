@@ -1,9 +1,10 @@
 ﻿using System;
 
-namespace webFileSharingSystem.Core.Entities;
-
-public class FileGuidFilesCount
+namespace webFileSharingSystem.Core.Entities
 {
-    public Guid FileGuid { get; set; }
-    public int Count { get; set; }
+    public class FileGuidFilesCount
+    {
+        public Guid FileGuid { get; set; }
+        public int Count { get; set; }
+    }
 }
