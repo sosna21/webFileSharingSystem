@@ -4,25 +4,28 @@ using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 
-namespace webFileSharingSystem.Core.Services;
-
-public class GuardService : IGuardService
+namespace webFileSharingSystem.Core.Services
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public GuardService(IUnitOfWork unitOfWork)
+    public class GuardService : IGuardService
     {
-        _unitOfWork = unitOfWork;
-    }
+        private readonly IUnitOfWork _unitOfWork;
 
-    public async Task<bool> UserCanPerform<T>(int userId, T entity, ShareAccessMode minimumAccessMode, CancellationToken cancellationToken = default)
-        where T : BaseEntity, IEntityWithUserId 
-    {
-        if (entity.UserId == userId) return true;
-        
-        var accessMode = await _unitOfWork.CustomQueriesRepository().GetSharedFileAccessMode(entity.Id, userId, cancellationToken);
-        if (accessMode is null) return false;
+        public GuardService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
 
-        return accessMode.AccessMode >= minimumAccessMode;
+        public async Task<bool> UserCanPerform<T>(int userId, T entity, ShareAccessMode minimumAccessMode,
+            CancellationToken cancellationToken = default)
+            where T : BaseEntity, IEntityWithUserId
+        {
+            if (entity.UserId == userId) return true;
+
+            var accessMode = await _unitOfWork.CustomQueriesRepository()
+                .GetSharedFileAccessMode(entity.Id, userId, cancellationToken);
+            if (accessMode is null) return false;
+
+            return accessMode.AccessMode >= minimumAccessMode;
+        }
     }
 }

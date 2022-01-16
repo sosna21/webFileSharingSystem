@@ -1,9 +1,10 @@
-﻿namespace webFileSharingSystem.Core.Entities.Common;
-
-public enum OperationResult
+﻿namespace webFileSharingSystem.Core.Entities.Common
 {
-    Ok = 0,
-    BadRequest,
-    Unauthorized,
-    Exception
+    public enum OperationResult
+    {
+        Ok = 0,
+        BadRequest,
+        Unauthorized,
+        Exception
+    }
 }
