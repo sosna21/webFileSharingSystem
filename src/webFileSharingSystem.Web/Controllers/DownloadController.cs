@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
+using webFileSharingSystem.Infrastructure.Storage;
 using File = webFileSharingSystem.Core.Entities.File;
 using SystemIOFile = System.IO.File;
 
@@ -123,13 +124,13 @@ namespace webFileSharingSystem.Web.Controllers
                     var entry = archive.CreateEntry(computedFilePath);
                     await using (var entryStream = entry.Open())
                     {
-                        var fileStream = await _filePersistenceService.GetFileStream(userId, file.FileId!.Value, cancellationToken);
+                        var fileStream = await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value, cancellationToken);
                         await fileStream.CopyToAsync(entryStream, cancellationToken);
                     }
                 }
             }
 
-            return Ok();
+            return new EmptyResult();
         }
 
         private string GetDownloadUrl(string oldAction, string newAction)

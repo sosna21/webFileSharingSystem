@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
 using Microsoft.AspNetCore.Identity;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
+using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.Infrastructure.Data
 {
