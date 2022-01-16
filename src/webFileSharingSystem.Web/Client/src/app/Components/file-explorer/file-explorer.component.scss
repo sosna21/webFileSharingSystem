@@ -5,11 +5,11 @@ th {
 }
 
 .breadcrumb li {
-  display: inline;         // force the inlining
-  max-width: 100%;        // the actual width, you can make this bit responsive, increasing the width as your viewport increases. I suggest to utilize the native Bootstrap media-breakpoints (i.e. media-breakpoint-up(md)).
-  white-space: nowrap;     // remove the wrapping and breaking of text in the breadcrumbs
-  overflow: hidden;        // hide our overflow
-  text-overflow: ellipsis; // return ellipsis for the overflow.
+  display: inline;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 tr {
@@ -22,6 +22,12 @@ tr {
 
 .header {
   font-family: "fantasy", serif;
+}
+
+.smallScreenText{
+  @media (max-width: 992px) {
+    font-size: 0.9rem;
+  }
 }
 
 #faCircle:hover {
@@ -60,6 +66,12 @@ input[type=checkbox], fa-icon, #actionBtn:hover {
 .disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.disableShare {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
 }
 
 td {

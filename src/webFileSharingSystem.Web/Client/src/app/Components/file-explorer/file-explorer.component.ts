@@ -485,8 +485,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     });
   }
 
-
-
   shareGetItemAccessMode(shareType: string) {
     switch (shareType) {
       case "read":
@@ -520,9 +518,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
     getDownloadLinkObservable.subscribe(response => {
       navigator.clipboard.writeText(response.url).then().catch(e => this.toastr.error(e));
-      this.toastr.success("Download link has been successfully copied to your clipboard")
+      this.toastr.success("Share link has been successfully copied to your clipboard")
     }, error => {
       console.log(error);
     });
+  }
+
+  isEllipsisActive(e: any) {
+    return (e.offsetWidth < e.scrollWidth);
   }
 }

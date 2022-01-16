@@ -380,4 +380,8 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
   storeLastFile(shareFile : SharedFile) {
       this.fileExplorerService.lastStoredSharedFile = shareFile;
   }
+
+  isEllipsisActive(e: any) {
+    return (e.offsetWidth < e.scrollWidth);
+  }
 }

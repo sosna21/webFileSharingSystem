@@ -4,9 +4,26 @@ th {
   font-family: "Segoe UI", serif;
 }
 
+.smallScreenText{
+  @media (max-width: 992px) {
+    font-size: 0.9rem;
+  }
+}
+
 tr {
+  @media (max-width: 992px) {
+    font-size: 0.85rem;
+  }
   cursor: default;
   text-align: center;
+}
+
+.breadcrumb li {
+  display: inline;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .trim {
@@ -25,6 +42,18 @@ tr {
 
 input[type=checkbox], fa-icon, #actionBtn:hover {
   cursor: pointer;
+}
+
+.absolutePositioning{
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.fileNameCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #table {

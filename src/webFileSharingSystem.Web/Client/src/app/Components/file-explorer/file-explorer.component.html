@@ -79,7 +79,7 @@
     <td *ngIf="!file.rename" class="position-relative text-left">
       <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row absolutePositioning col-12 align-items-center pr-0"
            [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
-        <div #test class="px-0 col fileNameCell" popover="{{isEllipsisActive(test) ? file.fileName : ''}}"
+        <div #fileName class="px-0 col fileNameCell" popover="{{isEllipsisActive(fileName) ? file.fileName : ''}}"
              triggers="mouseenter:mouseleave">
           <fa-icon class="mr-sm-1" [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}"  size="2x"
                    [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
@@ -94,17 +94,17 @@
                    [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
               </div>
           </div>
-          <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Stopped"
+          <fa-icon size="lg" [class.disabled]="file.progressStatus !== ProgressStatus.Stopped"
                    class="mr-sm-1 ml-sm-1"
                    [icon]="['fas', 'play-circle']" (click)="continueUpload(file)"></fa-icon>
-          <fa-icon size="lg" [class.fa-disabled]="file.progressStatus !== ProgressStatus.Started"
+          <fa-icon size="lg" [class.disabled]="file.progressStatus !== ProgressStatus.Started"
                    [icon]="['fas', 'stop-circle']"
                    (click)="stopUpload(file)"></fa-icon>
         </div>
       </div>
     </td>
 
-    <!--FileName when rename mode is enabled-->
+    <!--Rename-->
     <td #renameInput hidden class="text-left">
       <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
         <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
@@ -118,15 +118,15 @@
 
     <!--Favorites -->
     <td class="d-none d-md-table-cell">
-      <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
+      <fa-icon [class.disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'star']"
                (click)="SetFavourite(file)"
                [styles]="{'stroke-width': '40','stroke': 'gray', 'color': file.isFavourite ? 'yellow' : 'white'}"></fa-icon>
     </td>
 
     <!--Share-->
     <td class="d-none d-md-table-cell">
-      <fa-icon [class.fa-disabled]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
-               (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
+      <fa-icon [class.disableShare]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
+               (click)="file.loading ? null : fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
                [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
     </td>
 
@@ -135,14 +135,13 @@
       <div #dropdown="bs-dropdown" [dropup]="fileIndex >= (itemsPerPage-2)"
            [isDisabled]="!isCompleted(file) || file.loading"
            class="btn-group" dropdown (onShown)="hideOnSecondOpen(dropdown)">
-        <fa-icon dropdownToggle [class.fa-disabled]="!isCompleted(file) || file.loading"
+        <fa-icon dropdownToggle [class.disabled]="!isCompleted(file) || file.loading"
                  [icon]="['fas', 'ellipsis-h']"
                  [styles]="{'color': '#60646b'}"></fa-icon>
 
-        <ul *dropdownMenu class="dropdown-menu dropdown-menu-right" role="menu">
+        <ul *dropdownMenu class="dropdown-menu dropdown-menu-right smallScreenText" role="menu">
           <li role="menuitem"><a class="dropdown-item" (click)="downloadFile(file)">Download</a></li>
           <li role="menuitem"><a class="dropdown-item" (click)="generateShareLink(file)">Generate share link</a></li>
-          <li role="menuitem"><a class="dropdown-item" (click)="generateDownloadLink(file)">Generate share link</a></li>
           <li role="menuitem"><a class="dropdown-item d-md-none" (click)="SetFavourite(file)">
             {{file.isFavourite ? "Remove favourite" : "Add favourite"}}</a></li>
           <li role="menuitem"><a class="dropdown-item d-md-none" (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]">
@@ -266,7 +265,6 @@
 
 
 <ng-template #customizeSharesTemplate>
-
   <div class="d-flex flex-row justify-content-center pt-3 pb-2">
     <div class="align-self-center mr-3">
       Select existing share to update or click to create a new one
