@@ -99,6 +99,8 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .WithMany()
                 .HasForeignKey(e => e.ParentId);
 
+            builder.Entity<File>().HasIndex(t => t.FileGuid);
+
             builder.Entity<PartialFileInfo>()
                 .HasOne<File>()
                 .WithOne(e => e.PartialFileInfo)

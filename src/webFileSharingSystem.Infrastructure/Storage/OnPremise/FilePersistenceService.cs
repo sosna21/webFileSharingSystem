@@ -73,7 +73,7 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
 
         public async Task<string> GenerateNewFile(int userId, Guid persistedFileId)
         {
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString());
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation);
             Directory.CreateDirectory(filePath);
 
             filePath = Path.Combine(filePath, persistedFileId.ToString());
@@ -85,12 +85,12 @@ namespace webFileSharingSystem.Infrastructure.Storage.OnPremise
 
         public string GetFilePath(int userId, Guid fileGuid)
         {
-            return Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString(), fileGuid.ToString());
+            return Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
         }
 
         public void DeleteExistingFile(int userId, Guid persistedFileId)
         {
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString());
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation);
             if (!Directory.Exists(filePath)) return;
             filePath = Path.Combine(filePath, persistedFileId.ToString());
             Delete(filePath);
