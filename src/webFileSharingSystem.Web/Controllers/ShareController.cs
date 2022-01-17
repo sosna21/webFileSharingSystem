@@ -57,7 +57,7 @@ namespace webFileSharingSystem.Web.Controllers
                         SharedWithUserId = applicationUser.Id,
                         FileId = fileId,
                         AccessMode = request.AccessMode,
-                        ValidUntil = request.AccessDuration is null ? DateTime.MaxValue : DateTime.Now + XmlConvert.ToTimeSpan(request.AccessDuration)
+                        ValidUntil = request.AccessDuration is null ? DateTime.MaxValue : DateTime.UtcNow + XmlConvert.ToTimeSpan(request.AccessDuration)
                     });
 
                 fileToShare.IsShared = true;
@@ -68,7 +68,7 @@ namespace webFileSharingSystem.Web.Controllers
                 if (existingShare is null) return BadRequest("This share does not exist, so can not be updated");
 
                 existingShare.AccessMode = request.AccessMode;
-                existingShare.ValidUntil = request.AccessDuration is null ? DateTime.MaxValue : DateTime.Now + XmlConvert.ToTimeSpan(request.AccessDuration);
+                existingShare.ValidUntil = request.AccessDuration is null ? DateTime.MaxValue : DateTime.UtcNow + XmlConvert.ToTimeSpan(request.AccessDuration);
 
                 _unitOfWork.Repository<Share>().Update(existingShare);
             }

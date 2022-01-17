@@ -527,4 +527,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   isEllipsisActive(e: any) {
     return (e.offsetWidth < e.scrollWidth);
   }
+
+  convertToAngularUTC(date: Date){
+    return new Date(date + 'Z');
+  }
 }
