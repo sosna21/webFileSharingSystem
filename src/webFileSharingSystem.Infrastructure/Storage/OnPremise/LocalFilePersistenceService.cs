@@ -17,20 +17,21 @@ namespace webFileSharingSystem.Infrastructure.Storage
         public LocalFilePersistenceService(IOptions<StorageSettings> settings)
         {
             _settings = settings;
+            Directory.CreateDirectory(_settings.Value.OnPremiseFileLocation);
         }
 
-        public async Task<Stream> GetFileStream(int userId, Guid fileGuid, CancellationToken cancellationToken = default)
+        public async Task<Stream> GetFileStream(int userId, Guid fileGuid,
+            CancellationToken cancellationToken = default)
         {
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString(), fileGuid.ToString());
-            return await new ValueTask<Stream>( new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
+            return await new ValueTask<Stream>(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
                 4096, FileOptions.Asynchronous));
         }
 
         public async Task SaveChunk(int userId, Guid fileGuid, int chunkIndex, int chunkSize, Stream data,
             CancellationToken cancellationToken = default)
         {
-            
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString(), fileGuid.ToString());
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
 
             await using var stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write,
                 FileShare.Write,
@@ -41,7 +42,8 @@ namespace webFileSharingSystem.Infrastructure.Storage
             await data.CopyToAsync(stream, cancellationToken);
         }
 
-        public Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType, CancellationToken cancellationToken = default)
+        public Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType,
+            CancellationToken cancellationToken = default)
         {
             //Locally saved files doesn't require any additional operation to persist the data
 
@@ -52,9 +54,9 @@ namespace webFileSharingSystem.Infrastructure.Storage
             CancellationToken cancellationToken = default)
         {
             var bufferSize = 4096;
-            
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString(), fileGuid.ToString());
-            
+
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
+
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
                 bufferSize, FileOptions.Asynchronous);
 
@@ -64,7 +66,7 @@ namespace webFileSharingSystem.Infrastructure.Storage
             {
                 chunkSize = (int) (stream.Length - stream.Position);
             }
-            
+
             while (chunkSize > 0)
             {
                 var buffer = new byte[bufferSize];
@@ -77,21 +79,16 @@ namespace webFileSharingSystem.Infrastructure.Storage
 
         public async Task GenerateNewFile(int userId, Guid fileGuid)
         {
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString());
-            Directory.CreateDirectory(filePath);
-
-            filePath = Path.Combine(filePath, fileGuid.ToString());
-
+            Directory.CreateDirectory(_settings.Value.OnPremiseFileLocation);
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
             await Create(filePath).DisposeAsync();
         }
 
         public Task DeleteExistingFile(int userId, Guid fileGuid)
         {
-            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, userId.ToString());
-            if (!Directory.Exists(filePath)) return Task.CompletedTask;
-            filePath = Path.Combine(filePath, fileGuid.ToString());
+            if(!Directory.Exists(_settings.Value.OnPremiseFileLocation)) return Task.CompletedTask;
+            var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
             Delete(filePath);
-            
             return Task.CompletedTask;
         }
     }
