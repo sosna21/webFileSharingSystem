@@ -41,12 +41,12 @@ namespace webFileSharingSystem.Infrastructure.Data
                 {
                     case EntityState.Added:
                         entry.Entity.CreatedBy = _currentUserService.UserId ?? -1;
-                        entry.Entity.Created = DateTime.Now;
+                        entry.Entity.Created = DateTime.UtcNow;
                         break;
 
                     case EntityState.Modified:
                         entry.Entity.LastModifiedBy = _currentUserService.UserId ?? -1;
-                        entry.Entity.LastModified = DateTime.Now;
+                        entry.Entity.LastModified = DateTime.UtcNow;
                         break;
                 }
             }
@@ -198,7 +198,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                     SELECT TOP(1) [S].[Id], [S].[AccessMode] FROM recursive_cte AS [cte]
 					INNER JOIN [Share] AS [S]
 					ON [S].[FileId] = [cte].[Id]
-					WHERE [S].[ValidUntil] > CURRENT_TIMESTAMP AND [S].[SharedWithUserId] = {userId}
+					WHERE [S].[ValidUntil] > SYSUTCDATETIME() AND [S].[SharedWithUserId] = {userId}
 					ORDER BY [cte].[level]
                 ");
 

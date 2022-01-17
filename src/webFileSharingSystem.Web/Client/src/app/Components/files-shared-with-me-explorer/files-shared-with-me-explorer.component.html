@@ -146,8 +146,8 @@
 
         <!--Valid until-->
         <td>
-          <div popover="{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | date :'medium'}}"
-               triggers="mouseenter:mouseleave">{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : shareFile.validUntil | timeago }}</div>
+          <div popover="{{shareFile.validUntil.toString() === maxDate ? '' : convertToAngularUTC(shareFile.validUntil) | date :'medium'}}"
+               triggers="mouseenter:mouseleave">{{shareFile.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(shareFile.validUntil) | timeago }}</div>
         </td>
 
       </tr>

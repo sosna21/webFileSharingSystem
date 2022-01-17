@@ -52,7 +52,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                 INNER JOIN [ApplicationUsers] AS [U]
                 ON [cte].[ShareCreatedBy] = [U].[Id]
                 WHERE [cte].[RN] = 1 AND [cte].[FileStatus] = 0
-                AND [cte].[ValidUntil] > SYSDATETIME()"
+                AND [cte].[ValidUntil] > SYSUTCDATETIME()"
             );
              
             migrationBuilder.Sql(@"
@@ -66,7 +66,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     FROM [Share] AS [S]
                     INNER JOIN [File] AS [F] 
                     ON [F].[Id] = [S].[FileId]
-                    WHERE [S].[SharedByUserId] = @userId AND [S].[ValidUntil] > SYSDATETIME() 
+                    WHERE [S].[SharedByUserId] = @userId AND [S].[ValidUntil] > SYSUTCDATETIME()
                     UNION All
                     SELECT [f].*
                         FROM [File] AS [f]

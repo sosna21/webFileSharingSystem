@@ -126,7 +126,7 @@
     <!--Share-->
     <td class="d-none d-md-table-cell">
       <fa-icon [class.disableShare]="!isCompleted(file) || file.loading" [icon]="['fas', 'share-alt']"
-               (click)="file.loading ? null : fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
+               (click)="fileExplorerService.filesToShare = [file]; file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)"
                [styles]=" {'color': file.isShared ? 'black' : '#bfbbbb'}"></fa-icon>
     </td>
 
@@ -162,8 +162,8 @@
 
     <!--Last modification date-->
     <td class="d-none d-sm-table-cell">
-      <div class="trim" popover="{{file.modificationDate | date :'medium'}}"
-           triggers="mouseenter:mouseleave">{{file.modificationDate | timeago}}</div>
+      <div class="trim" popover="{{convertToAngularUTC(file.modificationDate) | date :'medium'}}"
+           triggers="mouseenter:mouseleave">{{convertToAngularUTC(file.modificationDate) | timeago}}</div>
     </td>
   </tr>
   </tbody>
@@ -295,7 +295,7 @@
         shareRequestBody.Update = true; decline();
         openModal(shareTemplate)">{{share.sharedWithUserName}}</td>
           <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
-          <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : share.validUntil | timeago }}</td>
+          <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
         </tr>
         </tbody>
       </table>
