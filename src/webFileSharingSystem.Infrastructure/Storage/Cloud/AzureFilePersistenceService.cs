@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -16,7 +17,7 @@ namespace webFileSharingSystem.Infrastructure.Storage
     
     public class AzureFilePersistenceService : IFilePersistenceService
     {
-        private const string ContainerName = "mainConteiner";
+        private const string ContainerName = "main-container";
         private readonly BlobServiceClient _blobServiceClient;
 
         public AzureFilePersistenceService(BlobServiceClient blobServiceClient)
@@ -30,7 +31,7 @@ namespace webFileSharingSystem.Infrastructure.Storage
             var blobContainer = _blobServiceClient.GetBlobContainerClient(ContainerName);
             var blockBlobClient = blobContainer.GetBlockBlobClient(fileGuid.ToString());
             
-            var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes(chunkIndex.ToString("d6")));
+            var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes(chunkIndex.ToString("d6", CultureInfo.InvariantCulture)));
             await blockBlobClient.StageBlockAsync(blockId, data, cancellationToken: cancellationToken);
         }
 
@@ -40,7 +41,7 @@ namespace webFileSharingSystem.Infrastructure.Storage
             var blockBlobClient = blobContainer.GetBlockBlobClient(fileGuid.ToString());
 
             var savedBlockIds = chunkIndexes.Select(chunkIndex =>
-                Convert.ToBase64String(Encoding.UTF8.GetBytes(chunkIndex.ToString("d6"))));
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(chunkIndex.ToString("d6", CultureInfo.InvariantCulture))));
             
             var headers = new BlobHttpHeaders
             {
