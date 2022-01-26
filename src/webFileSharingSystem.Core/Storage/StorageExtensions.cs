@@ -36,15 +36,7 @@ namespace webFileSharingSystem.Core.Storage
         
         public static bool CheckIfAllBitsAreZeros(this byte[] bytes)
         {
-            for (var i = 0; i < bytes.Length ; i ++)
-            {
-                if (bytes[i] != 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return bytes.All(t => t == 0);
         }
 
         public static int[] GetAllIndexesWithValue(this byte[] bytes, bool value, 
@@ -151,20 +143,14 @@ namespace webFileSharingSystem.Core.Storage
             // Persistence map initialization
             partialFileInfo.PersistenceMap = new byte[numberOfBytes];
 
-            for (var i = 0 ; i < numberOfBytes; i++)
+            for (var i = 0 ; i < numberOfBytes - 1; i++)
             {
                 partialFileInfo.PersistenceMap[i] = byte.MaxValue;
             }
 
-            var lastByteLeftOverBits = 8 - numberOfChunks % 8;
-            
-            var leftoverMask = (byte)0;
-            for (var i = 0; i < lastByteLeftOverBits; i++)
-            {
-                leftoverMask |= (byte)(1 << i);
-            }
-            
-            partialFileInfo.PersistenceMap[numberOfBytes - 1] &= (byte)~leftoverMask;
+            var leftoverMask = unchecked((byte) (byte.MaxValue << (8 - numberOfChunks % 8) % 8));
+
+            partialFileInfo.PersistenceMap[numberOfBytes - 1] = leftoverMask;
 
             return partialFileInfo;
         }

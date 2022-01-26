@@ -213,7 +213,12 @@ namespace webFileSharingSystem.Core.Services
 
             _unitOfWork.Repository<File>().Update(file);
 
-            _unitOfWork.Repository<PartialFileInfo>().Remove(UserFileCache[key].PartialFileInfo);
+            lock (UserFileCache[key].PartialFileInfo)
+            {
+                UserFileCache[key].IsJunk = true;
+                UserFileCache[key].IsDirty = false;
+                _unitOfWork.Repository<PartialFileInfo>().Remove(UserFileCache[key].PartialFileInfo);
+            }
 
             await _unitOfWork.Complete(cancellationToken);
 
@@ -265,26 +270,41 @@ namespace webFileSharingSystem.Core.Services
 
             var partialFileInfo = UserFileCache[key].PartialFileInfo;
 
-            var uploadedChunks =
+            var missingChunks =
                 partialFileInfo.PersistenceMap.GetAllIndexesWithValue(true,
                     maxIndex: partialFileInfo.NumberOfChunks - 1);
 
-            return (Result.Success(), uploadedChunks);
+            return (Result.Success(), missingChunks);
         }
-
+        
         public async Task<Result> UpdatePartialFileInfoAsync(int userId, int fileId)
         {
             var key = (userId, fileId);
 
-            if (!UserFileCache.ContainsKey(key)) return Result.Failure("'PartialFileInfo' can not be found");
-
-            var partialFileInfo = UserFileCache[key].PartialFileInfo;
-
-            _unitOfWork.Repository<PartialFileInfo>().Update(partialFileInfo);
+            if (!UserFileCache.TryGetValue(key, out var cache)) return Result.Failure("'PartialFileInfo' can not be found");
+            
+            lock (cache.PartialFileInfo)
+            {
+                if(cache.IsJunk) 
+                    return Result.Failure("'PartialFileInfo' can't be persisted file upload is complete");
+                    
+                _unitOfWork.Repository<PartialFileInfo>().Update(cache.PartialFileInfo);
+                cache.IsDirty = false;
+            }
 
             await _unitOfWork.Complete();
 
             return Result.Success();
+        }
+
+        public void CancelFileUpload(int userId, int fileId)
+        {
+            var key = (userId, fileId);
+
+            if (UserFileCache.TryGetValue(key, out var userFileCacheValue))
+            {
+                userFileCacheValue.IsJunk = true;
+            }
         }
 
         public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
@@ -354,15 +374,31 @@ namespace webFileSharingSystem.Core.Services
             return (int) calculatedChunkSize;
         }
 
-        internal static async Task SaveCacheData(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        internal static async Task SaveCacheData(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService, CancellationToken cancellationToken)
         {
             foreach (var cache in UserFileCache.Values.Where(t => t.IsDirty))
             {
+                int[] uploadChunks;
                 lock (cache.PartialFileInfo)
                 {
+                    if(cache.IsJunk) 
+                        continue;
+                    
                     unitOfWork.Repository<PartialFileInfo>().Update(cache.PartialFileInfo);
                     cache.IsDirty = false;
+                    
+                    uploadChunks =
+                        cache.PartialFileInfo.PersistenceMap.GetAllIndexesWithValue(false,
+                            maxIndex: cache.PartialFileInfo.NumberOfChunks - 1);
                 }
+
+                await filePersistenceService.CommitSavedChunks(cache.UserId, cache.FileGuid, uploadChunks, null, cancellationToken);
+                
+            }
+
+            foreach (var toRemove in UserFileCache.Where(c => c.Value.IsJunk).ToList())
+            {
+                UserFileCache.TryRemove(toRemove);
             }
 
             await unitOfWork.Complete(cancellationToken);
@@ -378,6 +414,7 @@ namespace webFileSharingSystem.Core.Services
             }
 
             public bool IsDirty { get; set; }
+            public bool IsJunk { get; set; }
             public int UserId { get; set; }
             public Guid FileGuid { get; set; }
             public PartialFileInfo PartialFileInfo { get; set; }
