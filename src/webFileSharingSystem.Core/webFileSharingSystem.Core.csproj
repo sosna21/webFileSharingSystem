@@ -11,12 +11,5 @@
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="5.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
     </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="ClassDiagram3.cd" />
-      <None Remove="ClassDiagram2.cd" />
-      <None Remove="ClassDiagram2 - kopiować.cd" />
-      <None Remove="ClassDiagram1.cd" />
-    </ItemGroup>
-
+    
 </Project>
