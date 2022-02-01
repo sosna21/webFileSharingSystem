@@ -28,19 +28,15 @@ namespace webFileSharingSystem.IntegrationTests
 
         public UploadDownloadTests()
         {
-            var directoryPath = Path.Combine(OnPremiseFileLocation, UserId.ToString());
-
-            Directory.CreateDirectory(directoryPath);
+            Directory.CreateDirectory(OnPremiseFileLocation);
             
-            var testFilePath = Path.Combine(directoryPath, _testFileGuid.ToString());
+            var testFilePath = Path.Combine(OnPremiseFileLocation, _testFileGuid.ToString());
             File.Copy(TestFilePath, testFilePath);
         }
 
         ~UploadDownloadTests()
         {
-            var directoryPath = Path.Combine(OnPremiseFileLocation, UserId.ToString());
-            
-            Directory.Delete(directoryPath, true);
+            Directory.Delete(OnPremiseFileLocation, true);
         }
         
         [Fact]
@@ -77,7 +73,7 @@ namespace webFileSharingSystem.IntegrationTests
         {
             var newFileGuid = Guid.NewGuid();
 
-            var savedFilePath = Path.Combine(OnPremiseFileLocation, UserId.ToString(), newFileGuid.ToString());
+            var savedFilePath = Path.Combine(OnPremiseFileLocation, newFileGuid.ToString());
 
             var fileInfo = new FileInfo(TestFilePath);
             var fileSizeInBytes = fileInfo.Length;
