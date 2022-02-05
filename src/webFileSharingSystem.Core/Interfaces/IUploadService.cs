@@ -26,10 +26,11 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<Result> UpdatePartialFileInfoAsync(int userId, int fileId);
         
+        void CancelFileUpload(int userId, int fileId);
+        
         PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId);
 
         Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders,
             CancellationToken cancellationToken = default);
-
     }
 }

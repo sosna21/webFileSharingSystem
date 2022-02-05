@@ -14,12 +14,14 @@ namespace webFileSharingSystem.Core.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGuardService _guard;
         private readonly IFilePersistenceService _filePersistenceService;
+        private readonly IUploadService _uploadService;
 
-        public FileService(IUnitOfWork unitOfWork, IGuardService guard, IFilePersistenceService filePersistenceService)
+        public FileService(IUnitOfWork unitOfWork, IGuardService guard, IFilePersistenceService filePersistenceService, IUploadService uploadService)
         {
             _unitOfWork = unitOfWork;
             _guard = guard;
             _filePersistenceService = filePersistenceService;
+            _uploadService = uploadService;
         }
 
         public async Task<(Result<OperationResult>, IEnumerable<FilePathPart>?)> GetPathToFileAsync(int fileId,
@@ -82,6 +84,8 @@ namespace webFileSharingSystem.Core.Services
             if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
             if (!await _guard.UserCanPerform(userId, fileToDelete, ShareAccessMode.FullAccess, cancellationToken))
                 return Result.Failure(OperationResult.Unauthorized, "You are not authorized to remove that file");
+            
+            _uploadService.CancelFileUpload(userId, fileId);
 
             _unitOfWork.Repository<File>().Remove(fileToDelete);
 
@@ -100,7 +104,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (await _unitOfWork.Repository<File>().CountAsync(new FindFileByFileGuidSpecs(guidToRemove), cancellationToken) <= 1)
             {
-                _filePersistenceService.DeleteExistingFile(userId, guidToRemove);
+               await _filePersistenceService.DeleteExistingFile(userId, guidToRemove);
             }
 
             return await _unitOfWork.Complete(cancellationToken) > 0
@@ -143,7 +147,7 @@ namespace webFileSharingSystem.Core.Services
 
             foreach (var guidFilesCount in fileGuidsToRemove.Where(g => g.Count <= 1))
             {
-                _filePersistenceService.DeleteExistingFile(userId, guidFilesCount.FileGuid);
+                await _filePersistenceService.DeleteExistingFile(userId, guidFilesCount.FileGuid);
             }
 
             return await _unitOfWork.Complete(cancellationToken) > 0

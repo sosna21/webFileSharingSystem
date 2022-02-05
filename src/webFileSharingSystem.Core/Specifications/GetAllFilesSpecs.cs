@@ -8,7 +8,7 @@ namespace webFileSharingSystem.Core.Specifications
             e => e.UserId == userId
                && e.ParentId == parentId)
         {
-            AddInclude(file => file.PartialFileInfo);
+            AddInclude(file => file.PartialFileInfo!);
             ApplyOrderBy(file => file.Id);
         }
     }

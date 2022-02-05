@@ -7,7 +7,7 @@ namespace webFileSharingSystem.Core.Specifications
         public FindFileByIdIncludePartialFileInfoSpecs(int id) : base(
             e => e.Id == id)
         {
-            AddInclude(file => file.PartialFileInfo);
+            AddInclude(file => file.PartialFileInfo!);
         }
     }
 }

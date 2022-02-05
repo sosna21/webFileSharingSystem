@@ -23,18 +23,21 @@ namespace webFileSharingSystem.Core.Services
             while (!cancellationToken.IsCancellationRequested)
             {
                 await DoWorkAsync(cancellationToken);
-                await Task.Delay(30_000, cancellationToken); // Delay 30 seconds
+                await Task.Delay(30_0000, cancellationToken); // Delay 5 minutes seconds
             }
         }
 
         private async Task DoWorkAsync(CancellationToken cancellationToken = default)
         {
-            using (IServiceScope scope = _serviceProvider.CreateScope())
+            using (var scope = _serviceProvider.CreateScope())
             {
                 var unitOfWork =
                     scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                 
-                await UploadService.SaveCacheData( unitOfWork, cancellationToken);
+                var filePersistenceService =
+                    scope.ServiceProvider.GetRequiredService<IFilePersistenceService>();
+                
+                await UploadService.SaveCacheData( unitOfWork, filePersistenceService, cancellationToken);
             }
         }
     }

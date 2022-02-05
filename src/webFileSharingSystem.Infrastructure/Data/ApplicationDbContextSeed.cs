@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
 using Microsoft.AspNetCore.Identity;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
+using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.Infrastructure.Data
 {
@@ -63,23 +65,22 @@ namespace webFileSharingSystem.Infrastructure.Data
             if (_userManager.Users.All(u => u.UserName != userName))
             {
                 var user = new IdentityUser {UserName = userName, Email = email};
-                ApplicationUser applicationUser;
                 using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
                 {
                     await _userManager.CreateAsync(user, password);
                     await _userManager.AddToRolesAsync(user, new[] {roleName});
-                    applicationUser = new ApplicationUser(user.UserName, user.Email, user.Id);
+                    ApplicationUser applicationUser = new ApplicationUser(user.UserName, user.Email, user.Id);
                     _applicationUserRepository.Add(applicationUser);
+                    await _applicationDbContext.SaveChangesAsync();
+                    
+                    var userId = applicationUser.Id;
+                    var totalSize = await GenerateUserRandomFiles(userId, numberOfFiles);
+                    applicationUser.UsedSpace = totalSize;
+                    applicationUser.Quota = Math.Max(53687091200, (ulong) (totalSize * 1.5));
+                    _applicationUserRepository.Update(applicationUser);
                     await _applicationDbContext.SaveChangesAsync();
                     scope.Complete();
                 }
-
-                var userId = applicationUser.Id;
-                var totalSize = await GenerateUserRandomFiles(userId, numberOfFiles);
-                applicationUser.UsedSpace = totalSize;
-                applicationUser.Quota = Math.Max(5368709120, (ulong) (totalSize * 1.5));
-                _applicationUserRepository.Update(applicationUser);
-                await _applicationDbContext.SaveChangesAsync();
             }
         }
 
@@ -109,9 +110,16 @@ namespace webFileSharingSystem.Infrastructure.Data
                 };
                 _fileRepository.Add(file);
                 totalSize += file.Size;
-
-                await _applicationDbContext.SaveChangesAsync();
+                
                 await _filePersistenceService.GenerateNewFile(userId, file.FileGuid!.Value);
+                var fileLength = 1024^2;
+                await using (var data = new MemoryStream())
+                {
+                    data.SetLength(fileLength);
+                    await _filePersistenceService.SaveChunk(userId, file.FileGuid!.Value, 0, fileLength, data);
+                }
+                
+                await _filePersistenceService.CommitSavedChunks(userId, file.FileGuid!.Value, new[] {0}, null);
             }
 
             return totalSize;

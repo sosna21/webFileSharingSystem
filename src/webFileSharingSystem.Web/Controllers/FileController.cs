@@ -31,7 +31,6 @@ namespace webFileSharingSystem.Web.Controllers
             _fileService = fileService;
         }
 
-        //candidate
         [HttpGet]
         [Route("GetFilePath/{fileId:int}")]
         public async Task<ActionResult<IEnumerable<FilePathPartResponse>>> GetFilePath(int fileId)

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
+using webFileSharingSystem.Infrastructure.Storage;
 using File = webFileSharingSystem.Core.Entities.File;
 using SystemIOFile = System.IO.File;
 
@@ -76,9 +77,9 @@ namespace webFileSharingSystem.Web.Controllers
 
             if (fileToDownload.IsDirectory) return BadRequest("Directory can't be downloaded");
 
-            var filePath = _filePersistenceService.GetFilePath(fileToDownload.UserId, fileToDownload.FileGuid!.Value);
+            var fileStream = await _filePersistenceService.GetFileStream(userId, fileToDownload.FileGuid!.Value, cancellationToken);
 
-            return new FileStreamResult(_filePersistenceService.GetFileStream(filePath), string.IsNullOrEmpty(fileToDownload.MimeType) ? "application/octet-stream" : fileToDownload.MimeType)
+            return new FileStreamResult(fileStream, string.IsNullOrEmpty(fileToDownload.MimeType) ? "application/octet-stream" : fileToDownload.MimeType)
             {
                 FileDownloadName = fileToDownload.FileName,
                 EnableRangeProcessing = true
@@ -118,21 +119,18 @@ namespace webFileSharingSystem.Web.Controllers
                 foreach (var file in filesToDownload.Values.Where(f => !f.IsDirectory))
                 {
                     var computedFilePath = string.Join("/",
-                        _filePersistenceService.FindRelativeFilePath(file, filesToDownload).Reverse()
+                        file.FindRelativeFilePath(filesToDownload).Reverse()
                             .Select(f => f.FileName));
-                    var storedFilePath = _filePersistenceService.GetFilePath(file.UserId, file.FileGuid!.Value);
                     var entry = archive.CreateEntry(computedFilePath);
                     await using (var entryStream = entry.Open())
                     {
-                        await using (var fileStream = SystemIOFile.OpenRead(storedFilePath))
-                        {
-                            await fileStream.CopyToAsync(entryStream, cancellationToken);
-                        }
+                        var fileStream = await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value, cancellationToken);
+                        await fileStream.CopyToAsync(entryStream, cancellationToken);
                     }
                 }
             }
 
-            return Ok();
+            return new EmptyResult();
         }
 
         private string GetDownloadUrl(string oldAction, string newAction)
