@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -20,12 +21,9 @@ namespace webFileSharingSystem.Core.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFilePersistenceService _filePersistenceService;
-
         private readonly IOptions<StorageSettings> _storageSettings;
 
-        private static readonly
-            ConcurrentDictionary<(int userId, int fileId), PartialFileInfoCache> UserFileCache = new();
-
+        private static readonly PartialFileInfoCacheDictionary UserFileCache = new();
 
         public UploadService(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService,
             IOptions<StorageSettings> storageSettings)
@@ -106,33 +104,13 @@ namespace webFileSharingSystem.Core.Services
             }
         }
 
-        public Result UploadFileChunk(int userId, int fileId, int chunkIndex, Stream chunkStream,
+        public async Task<Result> UploadFileChunk(int userId, int fileId, int chunkIndex, Stream chunkStream,
             CancellationToken cancellationToken = default)
         {
-            var key = (userId, fileId);
-
-            if (!UserFileCache.ContainsKey(key))
+            if (!UserFileCache.TryGetValue((userId, fileId), out var partialFileInfoCache))
             {
-                var lockObject = new object();
-
-                File? file = null;
-
-                lock (lockObject)
-                {
-                    if (!UserFileCache.ContainsKey(key))
-                    {
-                        file = _unitOfWork.Repository<File>()
-                            .FindAsync(new FindFileByIdIncludePartialFileInfoSpecs(fileId), cancellationToken)
-                            .ConfigureAwait(false).GetAwaiter().GetResult()
-                            .SingleOrDefault();
-
-                        if (file?.PartialFileInfo is not null)
-                            UserFileCache[key] = new PartialFileInfoCache(
-                                userId,
-                                file.FileGuid!.Value,
-                                file.PartialFileInfo);
-                    }
-                }
+                File? file;
+                (partialFileInfoCache, file) = await GetFileAndPartialFileInfoCacheThreadSafeAsync(userId, fileId, cancellationToken);
 
                 if (file is null || file.UserId != userId)
                     return Result.Failure("File does not exist or you do not have access");
@@ -144,52 +122,30 @@ namespace webFileSharingSystem.Core.Services
                 if (file.PartialFileInfo is null) return Result.Failure("File does not contain 'PartialFileInfo'");
             }
 
-
-            var partialFileInfoCache = UserFileCache[key];
+            await _filePersistenceService.SaveChunk(
+                partialFileInfoCache!.UserId,
+                partialFileInfoCache.FileGuid,
+                chunkIndex,
+                partialFileInfoCache.PartialFileInfo.ChunkSize,
+                chunkStream,
+                cancellationToken);
 
             lock (partialFileInfoCache.PartialFileInfo)
             {
                 partialFileInfoCache.PartialFileInfo.PersistenceMap.SetBit(chunkIndex, false);
-
-                _filePersistenceService.SaveChunk(partialFileInfoCache.UserId, partialFileInfoCache.FileGuid, chunkIndex,
-                        partialFileInfoCache.PartialFileInfo.ChunkSize, chunkStream,
-                        cancellationToken)
-                    .ConfigureAwait(false).GetAwaiter().GetResult();
-
                 partialFileInfoCache.IsDirty = true;
             }
 
             return Result.Success();
         }
 
-
         public async Task<Result> CompleteFileAsync(int userId, int fileId,
             CancellationToken cancellationToken = default)
         {
             File? file = null;
-
-            var key = (userId, fileId);
-
-            if (!UserFileCache.ContainsKey(key))
+            if (!UserFileCache.TryGetValue((userId, fileId), out var partialFileInfoCache))
             {
-                var lockObject = new object();
-
-                lock (lockObject)
-                {
-                    if (!UserFileCache.ContainsKey(key))
-                    {
-                        file = _unitOfWork.Repository<File>()
-                            .FindAsync(new FindFileByIdIncludePartialFileInfoSpecs(fileId), cancellationToken)
-                            .ConfigureAwait(false).GetAwaiter().GetResult()
-                            .SingleOrDefault();
-
-                        if (file?.PartialFileInfo is not null)
-                            UserFileCache[key] = new PartialFileInfoCache(
-                                userId,
-                                file.FileGuid!.Value,
-                                file.PartialFileInfo);
-                    }
-                }
+                (partialFileInfoCache, file) = await GetFileAndPartialFileInfoCacheThreadSafeAsync(userId, fileId, cancellationToken);
 
                 if (file is null || file.UserId != userId)
                     return Result.Failure("File does not exist or you do not have access");
@@ -199,61 +155,40 @@ namespace webFileSharingSystem.Core.Services
                 if (file.PartialFileInfo is null) return Result.Failure("File does not contain 'PartialFileInfo'");
             }
 
-            if (!UserFileCache[key].PartialFileInfo.PersistenceMap.CheckIfAllBitsAreZeros())
+            if (!partialFileInfoCache!.PartialFileInfo.PersistenceMap.CheckIfAllBitsAreZeros())
                 return Result.Failure("Not all chunks were uploaded correctly to the server");
 
             file ??= await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
 
             if (file is null) return Result.Failure("File does not exist");
             
-            var allChunks = Enumerable.Range(0, UserFileCache[key].PartialFileInfo.NumberOfChunks);
-            await _filePersistenceService.CommitSavedChunks(userId, UserFileCache[key].FileGuid, allChunks, file.MimeType, cancellationToken);
+            var allChunks = Enumerable.Range(0, partialFileInfoCache.PartialFileInfo.NumberOfChunks);
+            await _filePersistenceService.CommitSavedChunks(userId, partialFileInfoCache.FileGuid, allChunks, file.MimeType, true, cancellationToken);
 
             file.FileStatus = FileStatus.Completed;
 
             _unitOfWork.Repository<File>().Update(file);
 
-            lock (UserFileCache[key].PartialFileInfo)
+            lock (partialFileInfoCache.PartialFileInfo)
             {
-                UserFileCache[key].IsJunk = true;
-                UserFileCache[key].IsDirty = false;
-                _unitOfWork.Repository<PartialFileInfo>().Remove(UserFileCache[key].PartialFileInfo);
+                partialFileInfoCache.IsJunk = true;
+                partialFileInfoCache.IsDirty = false;
+                _unitOfWork.Repository<PartialFileInfo>().Remove(partialFileInfoCache.PartialFileInfo);
             }
 
             await _unitOfWork.Complete(cancellationToken);
 
             return Result.Success();
         }
-
-
+        
         public async Task<(Result result, IEnumerable<int> missingChunkIndexes)> GetMissingFileChunks(int userId,
             int fileId,
             CancellationToken cancellationToken = default)
         {
-            File? file = null;
-
-            var key = (userId, fileId);
-
-            if (!UserFileCache.ContainsKey(key))
+            if (!UserFileCache.TryGetValue((userId, fileId), out var partialFileInfoCache))
             {
-                var lockObject = new object();
-
-                lock (lockObject)
-                {
-                    if (!UserFileCache.ContainsKey(key))
-                    {
-                        file = _unitOfWork.Repository<File>()
-                            .FindAsync(new FindFileByIdIncludePartialFileInfoSpecs(fileId), cancellationToken)
-                            .ConfigureAwait(false).GetAwaiter().GetResult()
-                            .SingleOrDefault();
-
-                        if (file?.PartialFileInfo is not null)
-                            UserFileCache[key] = new PartialFileInfoCache(
-                                userId,
-                                file.FileGuid!.Value,
-                                file.PartialFileInfo);
-                    }
-                }
+                File? file;
+                (partialFileInfoCache, file) = await GetFileAndPartialFileInfoCacheThreadSafeAsync(userId, fileId, cancellationToken);
 
                 if (file is null || file.UserId != userId)
                     return (Result.Failure("File does not exist or you do not have access"), Array.Empty<int>());
@@ -268,11 +203,9 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure("File does not contain 'PartialFileInfo'"), Array.Empty<int>());
             }
 
-            var partialFileInfo = UserFileCache[key].PartialFileInfo;
-
             var missingChunks =
-                partialFileInfo.PersistenceMap.GetAllIndexesWithValue(true,
-                    maxIndex: partialFileInfo.NumberOfChunks - 1);
+                partialFileInfoCache!.PartialFileInfo.PersistenceMap.GetAllIndexesWithValue(true,
+                    maxIndex: partialFileInfoCache.PartialFileInfo.NumberOfChunks - 1);
 
             return (Result.Success(), missingChunks);
         }
@@ -355,6 +288,34 @@ namespace webFileSharingSystem.Core.Services
 
             return (Result.Success(), directoryFile);
         }
+        
+        private async Task<(PartialFileInfoCache? PartialFileInfoCache, File? File)> GetFileAndPartialFileInfoCacheThreadSafeAsync(
+            int userId,
+            int fileId,
+            CancellationToken cancellationToken)
+        {
+            (PartialFileInfoCache? PartialFileInfoCache, File? File) fileAndPartialFileInfoCache = (null, null);
+            var key = (userId, fileId);
+
+            fileAndPartialFileInfoCache.PartialFileInfoCache =  await UserFileCache.GetOrAddAsync(
+                key,
+                async () =>
+                    {
+                        //TODO there is an error during initialization
+                        fileAndPartialFileInfoCache.File = (await _unitOfWork.Repository<File>().FindAsync(
+                            new FindFileByIdIncludePartialFileInfoSpecs(fileId),
+                            cancellationToken)).SingleOrDefault();
+
+                        if (fileAndPartialFileInfoCache.File?.PartialFileInfo is not null)
+                            return new PartialFileInfoCache(
+                                userId,
+                                fileAndPartialFileInfoCache.File.FileGuid!.Value,
+                                fileAndPartialFileInfoCache.File.PartialFileInfo);
+                        return null;
+                    });
+
+            return fileAndPartialFileInfoCache;
+        }
 
         private int? CalculatePreferredChunkSize(long fileSize)
         {
@@ -376,7 +337,7 @@ namespace webFileSharingSystem.Core.Services
 
         internal static async Task SaveCacheData(IUnitOfWork unitOfWork, IFilePersistenceService filePersistenceService, CancellationToken cancellationToken)
         {
-            foreach (var cache in UserFileCache.Values.Where(t => t.IsDirty))
+            foreach (var cache in UserFileCache.Where(t => t.Value.IsDirty).Select(kvp => kvp.Value))
             {
                 int[] uploadChunks;
                 lock (cache.PartialFileInfo)
@@ -392,11 +353,11 @@ namespace webFileSharingSystem.Core.Services
                             maxIndex: cache.PartialFileInfo.NumberOfChunks - 1);
                 }
 
-                await filePersistenceService.CommitSavedChunks(cache.UserId, cache.FileGuid, uploadChunks, null, cancellationToken);
+                await filePersistenceService.CommitSavedChunks(cache.UserId, cache.FileGuid, uploadChunks, null, false, cancellationToken);
                 
             }
 
-            foreach (var toRemove in UserFileCache.Where(c => c.Value.IsJunk).ToList())
+            foreach (var toRemove in UserFileCache.Where(c => c.Value.IsJunk).Select(e => e.Key))
             {
                 UserFileCache.TryRemove(toRemove);
             }
@@ -404,8 +365,8 @@ namespace webFileSharingSystem.Core.Services
             await unitOfWork.Complete(cancellationToken);
         }
 
-        private class PartialFileInfoCache
-        {
+        private class PartialFileInfoCache {
+            
             public PartialFileInfoCache(int userId, Guid fileGuid, PartialFileInfo partialFileInfo)
             {
                 UserId = userId;
@@ -419,5 +380,63 @@ namespace webFileSharingSystem.Core.Services
             public Guid FileGuid { get; set; }
             public PartialFileInfo PartialFileInfo { get; set; }
         }
+
+        private class PartialFileInfoCacheDictionary : IEnumerable<KeyValuePair<(int userId, int fileId), PartialFileInfoCache>>
+         {
+             private readonly ConcurrentDictionary<(int userId, int fileId), Lazy<Task<PartialFileInfoCache?>>> _cacheDictionary = new();
+
+
+             public PartialFileInfoCache? GetValueOrDefault((int userId, int fileId) key)
+             {
+                 var cacheValue = _cacheDictionary.GetValueOrDefault(key);
+                 return cacheValue?.IsValueCreated ?? false ? cacheValue.Value.Result : null;
+             }
+
+             public bool TryRemove((int userId, int fileId) key)
+             {
+                 return _cacheDictionary.TryRemove(key, out _);
+             }
+             
+             
+            public IEnumerator<KeyValuePair<(int userId, int fileId), PartialFileInfoCache>> GetEnumerator()
+            {
+                return _cacheDictionary
+                    .Where(e => e.Value.IsValueCreated && e.Value.Value.Result is not null)
+                    .Select( e => new KeyValuePair<(int userId, int fileId), PartialFileInfoCache>( e.Key, e.Value.Value.Result! ) )
+                    .GetEnumerator();
+            }
+            
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+            
+            public bool TryGetValue((int userId, int fileId) key, out PartialFileInfoCache value)
+            {
+                _cacheDictionary.TryGetValue(key, out var cacheValueLazy);
+                var cacheValue = cacheValueLazy?.IsValueCreated ?? false ? cacheValueLazy.Value.Result : null;
+
+                if (cacheValue is not null)
+                {
+                    value = cacheValue;
+                    return true;
+                }
+
+                value = default!;
+                return false;
+            }
+            
+            public PartialFileInfoCache this[(int userId, int fileId) key]
+            {
+                set => _cacheDictionary[key] = new Lazy<Task<PartialFileInfoCache?>>(() => Task.FromResult(value)!);
+            }
+
+            public async Task<PartialFileInfoCache?> GetOrAddAsync(
+                (int userId, int fileId) key,
+                Func<Task<PartialFileInfoCache?>> valueFactory)
+            {
+                return await _cacheDictionary.GetOrAdd(key, new Lazy<Task<PartialFileInfoCache?>>(valueFactory)).Value;
+            }
+         }
     }
 }

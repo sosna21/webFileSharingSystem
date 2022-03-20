@@ -35,7 +35,7 @@ namespace webFileSharingSystem.Infrastructure.Storage
             await blockBlobClient.StageBlockAsync(blockId, data, cancellationToken: cancellationToken);
         }
 
-        public async Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType, CancellationToken cancellationToken = default)
+        public async Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType, bool isFileCompleted, CancellationToken cancellationToken = default)
         {
             var blobContainer = _blobServiceClient.GetBlobContainerClient(ContainerName);
             var blockBlobClient = blobContainer.GetBlockBlobClient(fileGuid.ToString());

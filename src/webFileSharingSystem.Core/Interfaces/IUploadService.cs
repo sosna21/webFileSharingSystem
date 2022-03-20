@@ -15,7 +15,7 @@ namespace webFileSharingSystem.Core.Interfaces
             string fileName,
             string? mimeType, long size);
 
-        Result UploadFileChunk(int userId, int fileId, int chunkIndex, Stream chunkStream,
+        Task<Result> UploadFileChunk(int userId, int fileId, int chunkIndex, Stream chunkStream,
             CancellationToken cancellationToken = default);
 
         Task<(Result result, IEnumerable<int> missingChunkIndexes)> GetMissingFileChunks(int userId, int fileId,

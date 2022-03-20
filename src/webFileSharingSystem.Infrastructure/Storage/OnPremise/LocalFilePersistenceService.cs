@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -13,6 +14,8 @@ namespace webFileSharingSystem.Infrastructure.Storage
     public class LocalFilePersistenceService : IFilePersistenceService
     {
         private readonly IOptions<StorageSettings> _settings;
+
+        private static readonly ConcurrentDictionary<Guid, Lazy<SemaphoreSlim>> LockSemaphores = new();
 
         public LocalFilePersistenceService(IOptions<StorageSettings> settings)
         {
@@ -33,20 +36,34 @@ namespace webFileSharingSystem.Infrastructure.Storage
         {
             var filePath = Path.Combine(_settings.Value.OnPremiseFileLocation, fileGuid.ToString());
 
-            await using var stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write,
-                FileShare.Write,
-                4096, FileOptions.Asynchronous);
+            var semaphore = LockSemaphores.GetOrAdd(fileGuid, _ => new Lazy<SemaphoreSlim>(() => new SemaphoreSlim(1, 1))).Value;
+            await semaphore.WaitAsync(cancellationToken);
+            try
+            {
+                await using var stream = new FileStream(
+                    filePath,
+                    FileMode.OpenOrCreate,
+                    FileAccess.Write,
+                    FileShare.Write,
+                    4096,
+                    FileOptions.Asynchronous);
 
-            stream.Position = (long) chunkIndex * chunkSize;
+                stream.Position = (long)chunkIndex * chunkSize;
 
-            await data.CopyToAsync(stream, cancellationToken);
+                await data.CopyToAsync(stream, cancellationToken);
+            } finally
+            {
+                semaphore.Release();
+            }
         }
 
-        public Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType,
+        public Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType, bool isFileCompleted,
             CancellationToken cancellationToken = default)
         {
-            //Locally saved files doesn't require any additional operation to persist the data
+            if (isFileCompleted) LockSemaphores.TryRemove(fileGuid, out _);
 
+            //Locally saved files doesn't require any additional operation to persist the data
+            
             return Task.CompletedTask;
         }
 
