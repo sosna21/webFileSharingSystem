@@ -428,7 +428,7 @@ namespace webFileSharingSystem.Core.Services
             
             public PartialFileInfoCache this[(int userId, int fileId) key]
             {
-                set => _cacheDictionary[key] = new Lazy<Task<PartialFileInfoCache?>>(() => Task.FromResult(value)!);
+                set => _cacheDictionary[key] = new Lazy<Task<PartialFileInfoCache?>>( Task.FromResult(value)!);
             }
 
             public async Task<PartialFileInfoCache?> GetOrAddAsync(
