@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
@@ -87,7 +88,7 @@ namespace webFileSharingSystem.Web.Controllers
             //TODO temporary solution - resolve in another way
             var sharedFiles = _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, dbParentId, 
                 new GetSharedFilesSpec<SharedFile>(dbParentId, ""));
-            return sharedFiles.Select(e => e.FileName);
+            return await sharedFiles.Select(e => e.FileName).ToListAsync();
         }
         
         

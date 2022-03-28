@@ -12,7 +12,7 @@ namespace webFileSharingSystem.Core.Interfaces
         Task SaveChunk(int userId, Guid fileGuid, int chunkIndex, int chunkSize, Stream data,
             CancellationToken cancellationToken = default);
 
-        public Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType,
+        public Task CommitSavedChunks(int userId, Guid fileGuid, IEnumerable<int> chunkIndexes, string? fileContentType, bool isFileCompleted,
             CancellationToken cancellationToken = default);
 
         Task GetChunk(int userId, Guid fileGuid, int chunkSize, int chunkIndex, Stream outputStream,

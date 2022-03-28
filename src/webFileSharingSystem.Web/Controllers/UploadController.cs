@@ -42,7 +42,7 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
 
-            var result = _uploadService.UploadFileChunk(userId!.Value, fileId, chunkIndex, chunk.OpenReadStream(),
+            var result = await _uploadService.UploadFileChunk(userId!.Value, fileId, chunkIndex, chunk.OpenReadStream(),
                 cancellationToken);
 
             if (!result.Succeeded) return BadRequest(result.Errors);

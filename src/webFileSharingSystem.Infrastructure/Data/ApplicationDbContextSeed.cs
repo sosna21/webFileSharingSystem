@@ -119,7 +119,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                     await _filePersistenceService.SaveChunk(userId, file.FileGuid!.Value, 0, fileLength, data);
                 }
                 
-                await _filePersistenceService.CommitSavedChunks(userId, file.FileGuid!.Value, new[] {0}, null);
+                await _filePersistenceService.CommitSavedChunks(userId, file.FileGuid!.Value, new[] {0}, null, true);
             }
 
             return totalSize;
