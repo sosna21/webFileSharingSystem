@@ -66,7 +66,7 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             base.OnModelCreating(builder);
 
-            //Todo most likely some of the ef migration files are slightly broken that's wy the 'FilePathPart' entity don't need the view
+            //Todo most likely some of the ef migration files are slightly broken that's why the 'FilePathPart' entity don't need the view
             builder.Entity<FilePathPart>().HasNoKey();//.ToView(null);
             builder.Entity<FileAccessMode>().HasNoKey();//.ToView(null);
             builder.Entity<SharedFile>().HasNoKey();//.ToView(null);
