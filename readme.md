@@ -2,6 +2,11 @@
 
 This readme file provides information about the application, including default user credentials and instructions for building and running the application.
 
+## Live demo
+
+To access the live application demo use the following link
+<https://filesharingsystemdemo.azurewebsites.net/>
+
 ## Default User Credentials
 
 To access the application, you can use the following default user credentials:
@@ -16,16 +21,16 @@ Please note that it is highly recommended to change the default credentials afte
 
 Before building and running the application, ensure that you have the following prerequisites installed:
 
-- **.NET SDK:** Install the .NET SDK version 5.
+- **.NET SDK:** Install the .NET SDK version 6.
 - **SQL Server:** You will need a SQL Server instance to store and retrieve data for the application. Ensure that you have SQL Server installed and configured properly.
-- **Node.js:** The application have frontend dependencies managed with Node.js and npm. Install the latest stable version of Node.js from the official website.
+- **Node.js:** The application have frontend dependencies managed with Node.js version 16 and npm.
 
 
 ## Building the Application
 
 To build the application, follow these steps:
 
-1. Ensure that you have the necessary prerequisites installed on your system, including the .NET 5 SDK and any other dependencies mentioned in the project documentation.
+1. Ensure that you have the necessary prerequisites installed on your system, including the .NET 6 SDK and any other dependencies mentioned in the project documentation.
 2. Clone the repository to your local machine using the following command:
 
 ```shell

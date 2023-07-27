@@ -45,7 +45,7 @@ namespace webFileSharingSystem.Infrastructure.Data
 
         public async Task SetTestUserDataAsync()
         {
-            await CreateUser("Administrator", "administrator@localhost", "Administrator1!", "administrator@localhost");
+            await CreateUser("Administrator", "Administrator", "Administrator1!", "administrator@localhost");
             await CreateUser("Administrator", "maciej@localhost", "Administrator1!", "maciej@localhost", 10);
             await CreateUser("Administrator", "stefan_stefan", "Administrator1!", numberOfFiles: 33);
         }
