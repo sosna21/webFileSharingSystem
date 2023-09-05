@@ -1,13 +1,11 @@
 <label #uploadLabel class="col-10 offset-1 btn custom-input-btn bg-primary">
-  <input *ngIf="radioModel === 'files'" (change)="fileSelected($event.target)" type="file" style="display:none" multiple/>
-  <input *ngIf="radioModel === 'folder'" (change)="fileSelected($event.target)" type="file" style="display:none" multiple webkitdirectory/>
-  <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
+<!--  <input *ngIf="radioModel === 'files'" (change)="fileSelected($event.target)" type="file" style="display:none" multiple/>-->
+<!--  <input *ngIf="radioModel === 'folder'" (change)="fileSelected($event.target)" type="file" style="display:none" multiple webkitdirectory/>-->
+  <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon>-->
   Select {{radioModel}}
 </label>
 
-<div class="dropzone col-11" appDnd>
-  <input  *ngIf="radioModel === 'files'" type="file"  (change)="fileSelected($event.target)" multiple/>
-  <input  *ngIf="radioModel === 'folder'" type="file" (change)="fileSelected($event.target)" multiple webkitdirectory/>
+<div class="dropzone col-11" dropzone (hovered)="toggleHover($event)" (dropped)="onDrop($event)">
   <fa-icon size="3x" [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
   <h3>Drag and drop {{radioModel}} here</h3>
 </div>
