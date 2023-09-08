@@ -1,9 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {FileUploaderService} from "../../services/file-uploader.service";
-import {from} from "rxjs";
-import {concatMap, last, map, tap} from "rxjs/operators";
+import {map, tap} from "rxjs/operators";
 import {FileExplorerService} from "../../services/file-explorer.service";
-import {stringify} from "@angular/compiler/src/util";
 
 @Component({
   selector: 'app-file-upload',
@@ -11,11 +9,6 @@ import {stringify} from "@angular/compiler/src/util";
   styleUrls: ['./file-upload.component.scss']
 })
 export class FileUploadComponent implements OnInit {
-  radioModel = 'files';
-  isHovering: boolean;
-
-
-  folderPath: string;
 
   constructor(private fileUploader: FileUploaderService, private fileExplorerService: FileExplorerService) {
   }
@@ -23,21 +16,7 @@ export class FileUploadComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  toggleHover(event: boolean) {
-    this.isHovering = event;
-  }
-
-  convertToFileList(event): File[] {
-    let files = event.target.files;
-    let fileObjs = [];
-    for (let index = 0; index < files.length; index++) {
-      const file = files[index];
-      fileObjs.push(file);
-    }
-    return fileObjs;
-  }
-
-  async onDrop(files: File[]) {
+  async fileUpload(files: File[]) {
     console.log(
       'Files are:',
       files.map((file) => file.name)
@@ -51,8 +30,6 @@ export class FileUploadComponent implements OnInit {
       if (path === '') {
         this.fileUploader.upload(file, relativeDirId).subscribe();
       } else {
-        // @ts-ignore
-        let path = file.webkitRelativePath;
         this.fileUploader.ensureDirectoryExists(path, relativeDirId)
           .pipe(tap(() => this.fileUploader.newDirectoryCreatedForUpload(relativeDirId)))
           .pipe(map(leafFileId => this.fileUploader.upload(file, leafFileId).subscribe())).subscribe();
@@ -60,38 +37,15 @@ export class FileUploadComponent implements OnInit {
     });
   }
 
-  // public fileSelected(target: EventTarget | null) {
-  //   const parentId = this.fileExplorerService.currentParentIdValue;
-  //
-  //   const fileElement = target as HTMLInputElement;
-  //   if (fileElement == null ||
-  //     fileElement.files == null ||
-  //     fileElement.files.length <= 0) {
-  //     return;
-  //   }
-  //
-  //   if (this.radioModel === 'files') {
-  //     for (let i = 0; i < fileElement.files.length; i++) {
-  //       this.fileUploader.upload(fileElement.files[i], parentId).subscribe();
-  //     }
-  //   } else {
-  //     //version1 Upload files at the same time
-  //     from(fileElement.files).pipe(concatMap((element) => {
-  //       // @ts-ignore
-  //       let path = element.webkitRelativePath;
-  //       return this.fileUploader.ensureDirectoryExists(path, parentId)
-  //         .pipe(tap(() => this.fileUploader.newDirectoryCreatedForUpload(parentId)))
-  //         .pipe(map(leafFileId => this.fileUploader.upload(element, leafFileId).subscribe()))
-  //     })).pipe(last()).subscribe();
-  //
-  //     // //version2 Upload files one by one
-  //     // from(fileElement.files).pipe(concatMap((element) => {
-  //     //   // @ts-ignore
-  //     //   let path = element.webkitRelativePath;
-  //     //   return this.fileUploader.ensureDirectoryExists(path, parentId)
-  //     //     .pipe(tap(() => this.fileUploader.newDirectoryCreatedForUpload(parentId)))
-  //     //     .pipe(concatMap(leafFileId => this.fileUploader.upload(element, leafFileId)))
-  //     // })).pipe(last()).subscribe();
-  //   }
-  // }
+  convertToFileList(target: EventTarget | null): File[] {
+    const fileElement = target as HTMLInputElement;
+    let files = fileElement.files;
+    if (files === null) return [];
+    let fileObjs: File[] = [];
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      fileObjs.push(file);
+    }
+    return fileObjs;
+  }
 }

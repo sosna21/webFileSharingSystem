@@ -37,7 +37,6 @@ import {DurationPickerModule} from "ngx-duration-picker";
 import {ToastrModule} from "ngx-toastr";
 import {ButtonsModule} from "ngx-bootstrap/buttons";
 import { FilesSharedWithMeExplorerComponent } from './Components/files-shared-with-me-explorer/files-shared-with-me-explorer.component';
-import { DropzoneDirective } from './Components/file-upload/dropzoneDirective/dropzone.directive';
 
 @NgModule({
   declarations: [
@@ -62,7 +61,6 @@ import { DropzoneDirective } from './Components/file-upload/dropzoneDirective/dr
     SizeConverterPipe,
     DndDirective,
     FilesSharedWithMeExplorerComponent,
-    DropzoneDirective
 
   ],
   imports: [
