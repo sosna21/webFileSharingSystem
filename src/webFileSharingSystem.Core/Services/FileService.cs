@@ -56,7 +56,7 @@ namespace webFileSharingSystem.Core.Services
                 : Result.Failure(OperationResult.Exception, "Problem with renaming the file");
         }
 
-        public async Task<Result<OperationResult>> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+        public async Task<(Result<OperationResult>, File?)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
             CancellationToken cancellationToken = default)
         {
             var file = new File
@@ -68,13 +68,13 @@ namespace webFileSharingSystem.Core.Services
             };
 
             if (!await _guard.UserCanPerform(userId, file, ShareAccessMode.ReadWrite, cancellationToken))
-                return Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory");
+                return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
 
             _unitOfWork.Repository<File>().Add(file);
 
             return await _unitOfWork.Complete(cancellationToken) > 0
-                ? Result.Success<OperationResult>()
-                : Result.Failure(OperationResult.Exception, "Problem with creating directory");
+                ? (Result.Success<OperationResult>(), file)
+                : (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
         }
 
         public async Task<Result<OperationResult>> DeleteFileAsync(int fileId, int userId,

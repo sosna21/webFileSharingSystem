@@ -35,17 +35,17 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("GetFilePath/{fileId:int}")]
         public async Task<ActionResult<IEnumerable<FilePathPartResponse>>> GetFilePath(int fileId)
         {
-            
-           var (operationResult, pathParts) = await _fileService.GetPathToFileAsync(fileId, _currentUserService.UserId!.Value);
+            var (operationResult, pathParts) =
+                await _fileService.GetPathToFileAsync(fileId, _currentUserService.UserId!.Value);
 
-           if (operationResult.Succeeded)
-               return Ok(pathParts.Select(part => new FilePathPartResponse
-               {
-                   Id = part.Id,
-                   FileName = part.FileName
-               }));
-           
-           return operationResult.ToActionResult(ErrorMessage);
+            if (operationResult.Succeeded)
+                return Ok(pathParts.Select(part => new FilePathPartResponse
+                {
+                    Id = part.Id,
+                    FileName = part.FileName
+                }));
+
+            return operationResult.ToActionResult(ErrorMessage);
         }
 
         [HttpGet]
@@ -71,8 +71,7 @@ namespace webFileSharingSystem.Web.Controllers
                     _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
                         request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
         }
-        
-        
+
         [HttpGet]
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
@@ -83,30 +82,30 @@ namespace webFileSharingSystem.Web.Controllers
                 .FindAsync(new GeFilesNamesSpecs(userId!.Value, dbParentId));
             return files.Select(e => e.FileName);
         }
-        
+
         [HttpGet]
         [Route("GetFavourites")]
         public async Task<PaginatedList<FileResponse>> GetFavouritesFilesAsync([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value),
                     new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
-        
-        
+
+
         [HttpGet]
         [Route("GetRecent")]
         public async Task<PaginatedList<FileResponse>> GetRecentFilesAsync([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize, 
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value)
-                    , new GetRecentFilesSpecs(userId!.Value,request.SearchedPhrase));
+                    , new GetRecentFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
-        
+
         [HttpGet]
         [Route("GetSharedByMe")]
         public async Task<PaginatedList<FileResponse>> GetFilesSharedByMe([FromQuery] FileRequest request)
@@ -115,10 +114,10 @@ namespace webFileSharingSystem.Web.Controllers
             return await _unitOfWork.Repository<File>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId),
-                    _unitOfWork.CustomQueriesRepository().
-                        GetListOfFilesSharedByUserIdQuery(userId, new GetSharedFilesSpec<File>(request.ParentId,request.SearchedPhrase)));
+                    _unitOfWork.CustomQueriesRepository().GetListOfFilesSharedByUserIdQuery(userId,
+                        new GetSharedFilesSpec<File>(request.ParentId, request.SearchedPhrase)));
         }
-        
+
         [HttpPut]
         [Route("SetFavourite/{id:int}")]
         public async Task<ActionResult> SetFavourite(int id, [FromQuery] bool value)
@@ -132,7 +131,7 @@ namespace webFileSharingSystem.Web.Controllers
             if (await _unitOfWork.Complete() > 0) return Ok();
             return BadRequest("Problem deleting the file");
         }
-        
+
         [HttpPut]
         [Route("Rename/{id:int}")]
         public async Task<ActionResult> Rename(int id, [FromQuery] string name)
@@ -140,15 +139,19 @@ namespace webFileSharingSystem.Web.Controllers
             return (await _fileService.RenameFileAsync(id, _currentUserService.UserId!.Value, name))
                 .ToActionResult("Problem with renaming the file");
         }
-        
+
         [HttpPost]
         [Route("CreateDir/{name}")]
         public async Task<ActionResult<FileResponse>> CreateDir(string name, [FromQuery] int? parentId = null)
         {
-            return (await _fileService.CreateDirectoryAsync(parentId, _currentUserService.UserId!.Value, name))
-                .ToActionResult("Problem with creating a directory");
+            var userId = _currentUserService.UserId;
+            var (actionResult, file) =
+                await _fileService.CreateDirectoryAsync(parentId, _currentUserService.UserId!.Value, name);
+
+            if (!actionResult.Succeeded) return actionResult.ToActionResult("Problem with creating a directory");
+            return Ok(ToFileResponse(file!, userId!.Value));
         }
-        
+
         [HttpDelete]
         [Route("Delete/{id:int}")]
         public async Task<ActionResult> DeleteFileAsync(int id)
@@ -156,7 +159,7 @@ namespace webFileSharingSystem.Web.Controllers
             return (await _fileService.DeleteFileAsync(id, _currentUserService.UserId!.Value))
                 .ToActionResult("Problem with deleting the file");
         }
-        
+
         [HttpDelete]
         [Route("DeleteDir/{parentId:int}")]
         public async Task<ActionResult> DeleteFolderWithInsideFiles(int parentId)
@@ -164,7 +167,7 @@ namespace webFileSharingSystem.Web.Controllers
             return (await _fileService.DeleteDirectoryAsync(parentId, _currentUserService.UserId!.Value))
                 .ToActionResult("Problem with deleting the directory");
         }
-        
+
         [HttpPut]
         [Route("Move/{parentId:int}")]
         public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
@@ -173,7 +176,7 @@ namespace webFileSharingSystem.Web.Controllers
             return (await _fileService.MoveFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value))
                 .ToActionResult("Problem with moving files");
         }
-        
+
         [HttpPost]
         [Route("Copy/{parentId:int}")]
         public async Task<ActionResult> CopyFiles(int parentId, [FromBody] int[] ids)
@@ -183,7 +186,7 @@ namespace webFileSharingSystem.Web.Controllers
             return (await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value))
                 .ToActionResult("Problem with coping files");
         }
-        
+
         private FileResponse ToFileResponse(File file, int userId)
         {
             return new FileResponse

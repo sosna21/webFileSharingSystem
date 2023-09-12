@@ -11,7 +11,7 @@ export class TextInputComponent implements ControlValueAccessor {
   @Input() type = 'text';
   @Input() value = '';
   @Input() errors = true;
-  @ViewChild('inputElement') private input : any;
+  @ViewChild('inputElement') private input: any;
 
   constructor(@Self() public ngControl: NgControl) {
     this.ngControl.valueAccessor = this;
@@ -26,8 +26,11 @@ export class TextInputComponent implements ControlValueAccessor {
   writeValue(obj: any): void {
   }
 
-   setFocus(){
+  setFocus() {
     this.input.nativeElement.focus();
   }
 
+  textSelect() {
+    this.input.nativeElement.select();
+  }
 }
