@@ -12,7 +12,7 @@ import {FileUploaderService} from "../../services/file-uploader.service";
 import {UploadStatus} from "../common/fileUploadProgress";
 import {AuthenticationService} from "../../services/authentication.service";
 import {ToastrService} from "ngx-toastr";
-import { AccessMode } from '../common/sharedFile';
+import {AccessMode} from '../common/sharedFile';
 
 interface BreadCrumb {
   id: number;
@@ -82,7 +82,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       this.subscriptions.push(this.fileExplorerService.searchedText.subscribe(response => {
         if (!this.authenticationService.currentUserValue) return;
         this.searchedPhrase = response;
-        if(reloadSearchWhenEmpty || (response && response !== '')){
+        if (reloadSearchWhenEmpty || (response && response !== '')) {
           this.reloadData();
           reloadSearchWhenEmpty = true;
         }
@@ -144,10 +144,11 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
     // @ts-ignore //TODO resolve in another way
-    if (template._declarationTContainer.localNames[0] === 'shareTemplate'){
+    if (template._declarationTContainer.localNames[0] === 'shareTemplate') {
       this.modalRef?.onHidden?.subscribe(() => this.shareRequestBody = {AccessMode: AccessMode.ReadOnly});
     }
   }
+
   confirm(): void {
     this.modalRef?.hide();
 
@@ -337,31 +338,32 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   initDirCreate(form: any) {
     if (!this.gRename) {
-      this.fileNameForm.reset();
-      this.fileNameForm.markAsUntouched();
+      this.fileNameForm.get('dirName')?.setValue(this.findUniqueDirName());
       this.gRename = true;
       form.hidden = false;
     }
   }
 
+  findUniqueDirName(): string {
+    let dirName = "New folder";
+    let counter = 0;
+    while (this.names.includes(dirName)) {
+      dirName = `New folder (${++counter})`
+    }
+    return dirName;
+  }
+
   createDirectory() {
     if (!this.fileNameForm.get('dirName')?.invalid) {
-
       let name = this.fileNameForm.get('dirName')?.value;
       this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}${this.parentId ? '?parentId=' + this.parentId : ''}`, {}).subscribe(response => {
+        // this.fileNameForm.reset();
         let file: File = response;
-
         this.files.length >= this.itemsPerPage ? this.files.pop() : null;
-        file.checked = false;
-        file.rename = false;
-        file.fileStatus = FileStatus.Completed;
         file.progressStatus = ProgressStatus.Stopped;
-
         this.files.unshift(file)
         this.names.push(file.fileName);
         this.totalItems++;
-
-        this.gRename = false;
       }, error => {
         console.log(error);
       });
@@ -372,8 +374,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     if (!this.gRename) {
       delete this.names[this.names.findIndex(x => x === file.fileName)];
       this.fileNameForm.get('fileName')?.patchValue(file.fileName);
-      this.fileNameForm.markAsTouched();
-      file.rename = this.gRename = true;
+      file.rename = true;
+      this.gRename = true;
     }
   }
 
@@ -383,18 +385,15 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       if (!this.fileNameForm.get('fileName')?.invalid) {
         file.loading = true;
         let filename = this.fileNameForm.get('fileName')?.value;
-
         this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
           file.fileName = filename;
           file.modificationDate = new Date();
           this.names.push(file.fileName);
-          this.gRename = false;
           file.loading = false;
         }, error => {
           file.loading = false;
           console.log(error)
         })
-        this.fileNameForm.reset();
       }
       file.rename = false;
     }
@@ -468,14 +467,13 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   shareDecline() {
     this.modalRef?.hide();
     this.fileExplorerService.filesToShare = [];
-    //Tutaj
     this.shareRequestBody = {AccessMode: AccessMode.ReadOnly};
   }
 
-  deleteShare(share: ShareResponse){
+  deleteShare(share: ShareResponse) {
     this.http.delete<any>(`${environment.apiUrl}/Share/Delete/${share.shareId}`).subscribe(() => {
       this.shares = this.shares.filter(item => item !== share);
-      if(this.shares.length == 0){
+      if (this.shares.length == 0) {
         this.modalRef?.hide();
         this.reloadData();
       }
@@ -528,7 +526,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     return (e.offsetWidth < e.scrollWidth);
   }
 
-  convertToAngularUTC(date: Date){
-    return new Date(date + 'Z');
+  convertToAngularUTC(date: Date) {
+    return date.toLocaleString();
   }
 }
