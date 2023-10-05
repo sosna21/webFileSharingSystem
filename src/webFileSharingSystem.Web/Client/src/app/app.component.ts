@@ -1,9 +1,8 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
 import {NavigationEnd, Router, RouterEvent} from "@angular/router";
 import {filter} from "rxjs/operators";
 import {AuthenticationService} from "./services/authentication.service";
 import {FileExplorerService} from "./services/file-explorer.service";
-
 
 @Component({
   selector: 'app-root',
@@ -12,21 +11,33 @@ import {FileExplorerService} from "./services/file-explorer.service";
 })
 export class AppComponent {
   title = 'webFileSharingSystem';
-
   currentRoute: string = "";
 
+  ngOnInit(): void {
+    window.addEventListener("dragover", e => {
+      e && e.preventDefault();
+      e.dataTransfer!.effectAllowed = "none";
+      e.dataTransfer!.dropEffect = "none";
+    }, false);
+    window.addEventListener("drop", e => {
+      e && e.preventDefault();
+      e.dataTransfer!.effectAllowed = "none";
+      e.dataTransfer!.dropEffect = "none";
+    }, false);
+  }
+
   constructor(public router: Router,
-              private authenticationService: AuthenticationService, private fileExplorerService: FileExplorerService){
+              private authenticationService: AuthenticationService, private fileExplorerService: FileExplorerService) {
     router.events.pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe(event =>
-      {
+      .subscribe(event => {
         fileExplorerService.updateSearchText('');
         if (event instanceof RouterEvent) {
           this.currentRoute = event.url;
-        }});
+        }
+      });
   }
 
-  public get authenticated() : boolean {
+  public get authenticated(): boolean {
     return !!this.authenticationService.currentUserValue
   }
 }

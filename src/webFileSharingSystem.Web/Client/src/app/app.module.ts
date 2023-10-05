@@ -60,7 +60,7 @@ import { FilesSharedWithMeExplorerComponent } from './Components/files-shared-wi
     SharedByMeComponent,
     SizeConverterPipe,
     DndDirective,
-    FilesSharedWithMeExplorerComponent
+    FilesSharedWithMeExplorerComponent,
 
   ],
   imports: [

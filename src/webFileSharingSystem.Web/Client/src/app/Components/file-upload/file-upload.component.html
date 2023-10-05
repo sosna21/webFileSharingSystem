@@ -1,21 +1,18 @@
-<label #uploadLabel class="col-10 offset-1 btn custom-input-btn bg-primary">
-  <input *ngIf="radioModel === 'files'" (change)="fileSelected($event.target)" type="file" style="display:none" multiple/>
-  <input *ngIf="radioModel === 'folder'" (change)="fileSelected($event.target)" type="file" style="display:none" multiple webkitdirectory/>
-  <fa-icon [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
-  Select {{radioModel}}
-</label>
-
-<div class="dropzone col-11" appDnd>
-  <input  *ngIf="radioModel === 'files'" type="file"  (change)="fileSelected($event.target)" multiple/>
-  <input  *ngIf="radioModel === 'folder'" type="file" (change)="fileSelected($event.target)" multiple webkitdirectory/>
+<div appDnd class="dropzone col-11" (dropped)="fileUpload($event)">
+  <input (change)="fileUpload(convertToFileList($event.target))" type="file" multiple/>
   <fa-icon size="3x" [icon]="['fas', 'cloud-upload-alt']"></fa-icon>
-  <h3>Drag and drop {{radioModel}} here</h3>
+  <h3>Drag and drop files here</h3>
 </div>
-<div class="d-flex justify-content-center mt-2">
-<div class="col-12 col-xl-10 btn-group">
-  <label class="btn btn-info" [(ngModel)]="radioModel"
-         btnRadio="files" tabindex="0" role="button">Upload files</label>
-  <label class="btn btn-info" [(ngModel)]="radioModel"
-         btnRadio="folder" tabindex="0" role="button">Upload folder</label>
-</div>
+
+<div class="d-flex justify-content-center mt-3 mb-2">
+  <div class="col-12 col-xl-11 btn-group">
+    <label id="upload-btn" class="upload-btn btn btn-info" tabindex="0" role="button">
+      <input type="file" (change)="fileUpload(convertToFileList($event.target))" multiple/>
+      Upload files
+    </label>
+    <label class="upload-btn btn btn-info" tabindex="0" role="button">
+      <input type="file" (change)="fileUpload(convertToFileList($event.target))" webkitdirectory/>
+      Upload folder
+    </label>
+  </div>
 </div>
