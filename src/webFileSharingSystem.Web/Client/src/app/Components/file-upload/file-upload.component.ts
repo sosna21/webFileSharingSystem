@@ -1,7 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {FileUploaderService} from "../../services/file-uploader.service";
-import {map, tap} from "rxjs/operators";
+import {concatMap, last, map, tap} from "rxjs/operators";
 import {FileExplorerService} from "../../services/file-explorer.service";
+import {from} from "rxjs";
 
 @Component({
   selector: 'app-file-upload',
@@ -17,24 +18,21 @@ export class FileUploadComponent implements OnInit {
   }
 
   async fileUpload(files: File[]) {
-    console.log(
-      'Files are:',
-      files.map((file) => file.name)
-    );
-    console.log(files);
+    const parentId = this.fileExplorerService.currentParentIdValue;
 
-    const relativeDirId = this.fileExplorerService.currentParentIdValue;
-    files.forEach(file => {
+    //version1 Upload files at the same time
+    from(files).pipe(concatMap((element) => {
       // @ts-ignore
-      let path = file.webkitRelativePath;
+      let path = element.webkitRelativePath;
       if (path === '') {
-        this.fileUploader.upload(file, relativeDirId).subscribe();
+         return this.fileUploader.upload(element, parentId);
       } else {
-        this.fileUploader.ensureDirectoryExists(path, relativeDirId)
-          .pipe(tap(() => this.fileUploader.newDirectoryCreatedForUpload(relativeDirId)))
-          .pipe(map(leafFileId => this.fileUploader.upload(file, leafFileId).subscribe())).subscribe();
+        return this.fileUploader.ensureDirectoryExists(path, parentId)
+          .pipe(tap(() => this.fileUploader.newDirectoryCreatedForUpload(parentId)))
+          .pipe(map(leafFileId => this.fileUploader.upload(element, leafFileId).subscribe()))
       }
-    });
+    })).pipe(last()).subscribe();
+
   }
 
   convertToFileList(target: EventTarget | null): File[] {
