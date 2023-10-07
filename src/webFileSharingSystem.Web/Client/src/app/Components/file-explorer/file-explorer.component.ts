@@ -354,6 +354,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       let name = this.fileNameForm.get('dirName')?.value;
       this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}${this.parentId ? '?parentId=' + this.parentId : ''}`, {}).subscribe(response => {
         let file: File = response;
+        file.modificationDate = (new Date().toISOString().slice(0, -1)) as unknown as Date;
         this.files.length >= this.itemsPerPage ? this.files.pop() : null;
         file.progressStatus = ProgressStatus.Stopped;
         this.files.unshift(file)
@@ -379,7 +380,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
       let filename = this.fileNameForm.get('fileName')?.value;
       this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
         file.fileName = filename;
-        file.modificationDate = new Date();
+        file.modificationDate = (new Date().toISOString().slice(0, -1)) as unknown as Date;
         this.names.push(filename);
         file.loading = false;
       }, error => {
@@ -519,6 +520,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   convertToAngularUTC(date: Date) {
-    return date.toLocaleString();
+    return new Date(date + 'Z');
   }
 }
