@@ -11,9 +11,9 @@
       <app-text-input #createDirTextInput
                       [formControl]="$any(fileNameForm).controls['dirName']"
                       (focusin)="fileNameForm.markAllAsTouched()"
-                      (focusout)="form.hidden = true; gRename = false; fileNameForm.reset();"
+                      (focusout)="form.hidden = true; fileNameForm.reset();"
                       [label]="'Folder name'"
-                      ></app-text-input>
+      ></app-text-input>
     </form>
   </div>
 </div>
@@ -110,11 +110,11 @@
 
     <!--Rename-->
     <td #renameInput hidden class="text-left">
-      <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
+      <form [formGroup]="fileNameForm" (ngSubmit)="rename(file, renameInput)">
         <app-text-input #renameTextInput
                         [formControl]="$any(fileNameForm).controls['fileName']"
                         (focusin)="fileNameForm.markAllAsTouched()"
-                        (focusout)="rename(file); renameInput.hidden = true; fileNameForm.reset();"
+                        (focusout)="rename(file, renameInput); fileNameForm.reset()"
                         [label]="file.fileName"
                         [value]="file.fileName">
         </app-text-input>

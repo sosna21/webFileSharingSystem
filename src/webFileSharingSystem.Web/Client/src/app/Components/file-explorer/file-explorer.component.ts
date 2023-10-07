@@ -49,7 +49,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   itemsPerPage = 15;
   currentPage = 1;
   totalItems!: number;
-  gRename: boolean = false;
   names: string[] = [];
   searchedPhrase: string | null = null;
   breadCrumbs: BreadCrumb[] = [];
@@ -337,11 +336,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   initDirCreate(form: any) {
-    if (!this.gRename) {
-      this.fileNameForm.get('dirName')?.setValue(this.findUniqueDirName());
-      this.gRename = true;
-      form.hidden = false;
-    }
+    this.fileNameForm.get('dirName')?.setValue(this.findUniqueDirName());
+    form.hidden = false;
   }
 
   findUniqueDirName(): string {
@@ -357,7 +353,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
     if (!this.fileNameForm.get('dirName')?.invalid) {
       let name = this.fileNameForm.get('dirName')?.value;
       this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}${this.parentId ? '?parentId=' + this.parentId : ''}`, {}).subscribe(response => {
-        // this.fileNameForm.reset();
         let file: File = response;
         this.files.length >= this.itemsPerPage ? this.files.pop() : null;
         file.progressStatus = ProgressStatus.Stopped;
@@ -365,38 +360,35 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.names.push(file.fileName);
         this.totalItems++;
       }, error => {
-        console.log(error);
+        this.toastr.error(error.error, "Directory creation error");
       });
     }
   }
 
   renameInit(file: File) {
-    if (!this.gRename) {
-      delete this.names[this.names.findIndex(x => x === file.fileName)];
-      this.fileNameForm.get('fileName')?.patchValue(file.fileName);
-      file.rename = true;
-      this.gRename = true;
-    }
+    this.names = this.names.filter(x => x !== file.fileName);
+    this.fileNameForm.get('fileName')?.patchValue(file.fileName);
+    file.rename = true;
   }
 
-  rename(file: File) {
-    if (this.gRename) {
-      this.gRename = false;
-      if (!this.fileNameForm.get('fileName')?.invalid) {
-        file.loading = true;
-        let filename = this.fileNameForm.get('fileName')?.value;
-        this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
-          file.fileName = filename;
-          file.modificationDate = new Date();
-          this.names.push(file.fileName);
-          file.loading = false;
-        }, error => {
-          file.loading = false;
-          console.log(error)
-        })
-      }
-      file.rename = false;
-    }
+  rename(file: File, renameInput: HTMLTableDataCellElement) {
+    if (file.loading) return;
+
+    if (!this.fileNameForm.get('fileName')?.invalid) {
+      file.loading = true;
+      let filename = this.fileNameForm.get('fileName')?.value;
+      this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
+        file.fileName = filename;
+        file.modificationDate = new Date();
+        this.names.push(filename);
+        file.loading = false;
+      }, error => {
+        file.loading = false;
+        this.toastr.error(error.error, "Rename error");
+      })
+    } else if (!this.names.includes(file.fileName)) this.names.push(file.fileName);
+    file.rename = false;
+    renameInput.hidden = true;
   }
 
   stopUpload(file: File) {
