@@ -77,8 +77,10 @@ export class DndDirective {
   }
 
   private async getFile(fileEntry: any): Promise<File> {
-    return await new Promise((resolve, reject) =>
-      fileEntry.file(resolve, reject)
-    );
+    const file: File = await new Promise((resolve, reject) =>
+      fileEntry.file(resolve, reject));
+    Object.defineProperty(file, 'webkitRelativePath', {
+      value: fileEntry.fullPath})
+    return file;
   }
 }
