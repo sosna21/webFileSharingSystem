@@ -14,7 +14,7 @@ namespace webFileSharingSystem.Core.Interfaces
         Task<Result<OperationResult>> RenameFileAsync(int fileId, int userId, string newName,
             CancellationToken cancellationToken = default);
 
-        Task<Result<OperationResult>> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+        Task<(Result<OperationResult>, File?)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
             CancellationToken cancellationToken = default);
 
         Task<Result<OperationResult>> DeleteFileAsync(int fileId, int userId,

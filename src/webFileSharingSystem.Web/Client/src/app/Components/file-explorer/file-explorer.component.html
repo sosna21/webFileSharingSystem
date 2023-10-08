@@ -4,13 +4,16 @@
   </div>
   <div *ngIf="mode === 'GetAll'" class="align-self-center mr-3">
     <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
-             (click)="initDirCreate(form); createDirTextInput.setFocus();"></fa-icon>
+             (click)="initDirCreate(form); createDirTextInput.setFocus(); createDirTextInput.textSelect();"></fa-icon>
   </div>
   <div class="align-self-end pt-3">
     <form hidden #form [formGroup]="fileNameForm" (ngSubmit)="createDirectory(); form.hidden = true">
-      <app-text-input #createDirTextInput [formControl]="$any(fileNameForm).controls['dirName']"
-                      [label]="'Folder name'" [errors]="false" (focusin)="fileNameForm.markAllAsTouched()"
-                      (focusout)="form.hidden = true; gRename = false;"></app-text-input>
+      <app-text-input #createDirTextInput
+                      [formControl]="$any(fileNameForm).controls['dirName']"
+                      (focusin)="fileNameForm.markAllAsTouched()"
+                      (focusout)="form.hidden = true; fileNameForm.reset();"
+                      [label]="'Folder name'"
+      ></app-text-input>
     </form>
   </div>
 </div>
@@ -77,22 +80,23 @@
 
     <!--FileName + upload progress-->
     <td *ngIf="!file.rename" class="position-relative text-left">
-      <div [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="row absolutePositioning col-12 align-items-center pr-0"
+      <div [routerLink]="file.isDirectory ? ['/files',file.id] : null"
+           class="row absolutePositioning col-12 align-items-center pr-0"
            [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
         <div #fileName class="px-0 col fileNameCell" popover="{{isEllipsisActive(fileName) ? file.fileName : ''}}"
              triggers="mouseenter:mouseleave">
-          <fa-icon class="mr-sm-1" [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}"  size="2x"
+          <fa-icon class="mr-sm-1" [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" size="2x"
                    [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
           {{ file.fileName }}
         </div>
         <div *ngIf="!isCompleted(file)" class="row align-items-center col col-xl-5">
           <div class="col p-0">
-          <div class="progress progress-sm bg-dark ">
+            <div class="progress progress-sm bg-dark ">
               <div [class]="file.progressStatus === ProgressStatus.Stopped ? 'bg-danger' :
                     file.progressStatus === ProgressStatus.Stopping ? 'bg-warning progress-bar-animated' : 'progress-bar-animated'"
                    class="progress-bar progress-bar-striped bg-info" role="progressbar"
                    [ngStyle]="{ 'width': file.uploadProgress * 100 + '%'}"></div>
-              </div>
+            </div>
           </div>
           <fa-icon size="lg" [class.disabled]="file.progressStatus !== ProgressStatus.Stopped"
                    class="mr-sm-1 ml-sm-1"
@@ -106,13 +110,14 @@
 
     <!--Rename-->
     <td #renameInput hidden class="text-left">
-      <form [formGroup]="fileNameForm" (ngSubmit)="rename(file); renameInput.hidden = true">
-        <app-text-input #renameTextInput (focusin)="fileNameForm.markAllAsTouched()"
-                        (focusout)="rename(file); renameInput.hidden = true"
-                        (keydown.enter)="rename(file); renameInput.hidden = true"
+      <form [formGroup]="fileNameForm" (ngSubmit)="rename(file, renameInput)">
+        <app-text-input #renameTextInput
                         [formControl]="$any(fileNameForm).controls['fileName']"
+                        (focusin)="fileNameForm.markAllAsTouched()"
+                        (focusout)="rename(file, renameInput); fileNameForm.reset()"
                         [label]="file.fileName"
-                        [value]="file.fileName"></app-text-input>
+                        [value]="file.fileName">
+        </app-text-input>
       </form>
     </td>
 
@@ -144,7 +149,8 @@
           <li role="menuitem"><a class="dropdown-item" (click)="generateShareLink(file)">Generate share link</a></li>
           <li role="menuitem"><a class="dropdown-item d-md-none" (click)="SetFavourite(file)">
             {{file.isFavourite ? "Remove favourite" : "Add favourite"}}</a></li>
-          <li role="menuitem"><a class="dropdown-item d-md-none" (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]">
+          <li role="menuitem"><a class="dropdown-item d-md-none"
+                                 (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]">
             Add share</a></li>
           <li role="menuitem"><a class="dropdown-item"
                                  (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
@@ -177,10 +183,10 @@
 
 <div id="table">
   <div *ngIf="!loadingData" class="d-flex justify-content-center">
-    <h2 *ngIf="files.length <= 0" class="text-center my-3" >
+    <h2 *ngIf="files.length <= 0" class="text-center my-3">
       {{searchedPhrase ? "We can't find any files that fit your criteria"
       : "You do not have any files in this category"}}</h2>
-    <pagination  *ngIf="files.length > 0"
+    <pagination *ngIf="files.length > 0"
                 [boundaryLinks]="true"
                 [totalItems]="totalItems"
                 [itemsPerPage]="itemsPerPage"
@@ -285,7 +291,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let share of shares"  style="cursor: pointer">
+        <tr *ngFor="let share of shares" style="cursor: pointer">
           <td>
             <fa-icon [icon]="['far', 'trash-alt']" (click)="this.deleteShare(share)"
                      [styles]="{'color': '#8c2e2e'}"></fa-icon>
