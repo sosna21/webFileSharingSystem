@@ -230,6 +230,7 @@ export class FileUploaderService {
   }
 
   ensureDirectoryExists(path: string, parentId: number | null) {
+    if(path.charAt(0) == '/') path = path.slice(1);
     let folders = path.split("/").slice(0, -1);
     if (folders.length <= 0) return of(null);
     return this.http.post<number | null>(`${environment.apiUrl}/Upload/EnsureDirectory`, {parentId, folders});
