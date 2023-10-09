@@ -37,7 +37,9 @@
   <thead>
   <tr>
     <th scope="col" style="width: 2%">
-      <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
+      <label class="lbl-checkbox">
+        <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
+      </label>
     </th>
     <th scope="col" class="text-left">File Name
 
@@ -71,19 +73,24 @@
 
     <!--Checkobox-->
     <td>
-      <input *ngIf="!file.loading" type="checkbox" [hidden]="!isCompleted(file)" value="{{file.id}}"
-             (change)="file.checked = !file.checked" [checked]="file.checked"/>
+      <label *ngIf="!file.loading" [hidden]="!isCompleted(file)" class="lbl-checkbox">
+        <input type="checkbox" value="{{file.id}}" (change)="file.checked = !file.checked"
+               [checked]="file.checked"/>
+      </label>
       <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
-      <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
-               [styles]="{'color': '#8c2e2e'}"></fa-icon>
+      <label [hidden]="isCompleted(file)"  (click)="cancelUpload(file)" class="lbl-checkbox">
+        <fa-icon [icon]="['far', 'trash-alt']" [styles]="{'color': '#8c2e2e'}"></fa-icon>
+      </label>
     </td>
 
     <!--FileName + upload progress-->
-    <td *ngIf="!file.rename" class="position-relative text-left">
-      <div [routerLink]="file.isDirectory ? ['/files',file.id] : null"
-           class="row absolutePositioning col-12 align-items-center pr-0"
-           [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
-        <div #fileName class="px-0 col fileNameCell" popover="{{isEllipsisActive(fileName) ? file.fileName : ''}}"
+    <td *ngIf="!file.rename" class="text-left pt-0 pb-0">
+      <div class="row col-12 align-items-center p-0 m-0">
+        <div #fileName
+             [routerLink]="file.isDirectory ? ['/files',file.id] : null"
+             [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}"
+             class="px-0 col fileNameCell"
+             popover="{{isEllipsisActive(fileName) ? file.fileName : ''}}"
              triggers="mouseenter:mouseleave">
           <fa-icon class="mr-sm-1" [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" size="2x"
                    [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>

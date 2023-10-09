@@ -36,14 +36,14 @@ tr {
   color: #989898;
 }
 
-input[type=checkbox], fa-icon, #actionBtn:hover {
+input[type=checkbox], fa-icon, .lbl-checkbox, #actionBtn:hover {
   cursor: pointer;
 }
 
-.absolutePositioning{
-  position: absolute;
-  top: 0;
-  bottom: 0;
+.lbl-checkbox {
+  display: inline;
+  padding: 0.3em 0.3em 0.3em 0.6em;
+  margin-left: -0.3em;
 }
 
 .fileNameCell {
