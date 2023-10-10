@@ -139,7 +139,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   openModal(template: TemplateRef<any>) {
-    this.getShares(this.fileExplorerService.filesToShare[0]?.id);
+    if(this.fileExplorerService.filesToShare[0]?.isShared)
+    this.getShares(this.fileExplorerService.filesToShare[0].id);
 
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
     // @ts-ignore //TODO resolve in another way
@@ -295,7 +296,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
         this.authenticationService.updateCurrentUserUsedSpace(-file.size);
         delete this.names[this.names.findIndex(x => x === file.fileName)];
       }, error => {
-        this.toastr.error(error.error, "Directory delete error");
+        this.toastr.error(error.error, "File delete error");
       })
     }
   }
