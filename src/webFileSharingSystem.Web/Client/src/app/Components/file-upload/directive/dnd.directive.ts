@@ -79,8 +79,17 @@ export class DndDirective {
   private async getFile(fileEntry: any): Promise<File> {
     const file: File = await new Promise((resolve, reject) =>
       fileEntry.file(resolve, reject));
-    Object.defineProperty(file, 'webkitRelativePath', {
-      value: fileEntry.fullPath})
+
+    function isInSubfolder(fileEntry: any) {
+      let path = fileEntry.fullPath;
+      const re = new RegExp('/', 'g');
+      return path.match(re).length > 1;
+    }
+
+    if(isInSubfolder(fileEntry))
+      Object.defineProperty(file, 'webkitRelativePath', {
+        value: fileEntry.fullPath
+      })
     return file;
   }
 }
