@@ -153,8 +153,9 @@
           <li role="menuitem"><a class="dropdown-item d-md-none" (click)="SetFavourite(file)">
             {{file.isFavourite ? "Remove favourite" : "Add favourite"}}</a></li>
           <li role="menuitem"><a class="dropdown-item d-md-none"
-                                 (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]">
-            Add share</a></li>
+                                 (click)="fileExplorerService.filesToShare = [file];
+                                  file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)">
+            {{file.isShared ? "Manage shares" : "Add share"}}</a></li>
           <li role="menuitem"><a class="dropdown-item"
                                  (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
           </li>
@@ -275,7 +276,7 @@
 
 <ng-template #customizeSharesTemplate>
   <div class="d-flex flex-row justify-content-center pt-3 pb-2">
-    <div class="align-self-center mr-3">
+    <div class="align-self-center mx-3">
       Select existing share to update or click to create a new one
     </div>
     <div class="align-self-center mr-3">
@@ -299,12 +300,9 @@
             <fa-icon [icon]="['far', 'trash-alt']" (click)="this.deleteShare(share)"
                      [styles]="{'color': '#8c2e2e'}"></fa-icon>
           </td>
-
-          <td (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
-        shareRequestBody.Update = true; decline();
-        openModal(shareTemplate)">{{share.sharedWithUserName}}</td>
-          <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
-          <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
+          <td (click)="openShareModal(share)">{{share.sharedWithUserName}}</td>
+          <td (click)="openShareModal(share)">{{getAccessModeNameFromNumber(share.accessMode)}}</td>
+          <td (click)="openShareModal(share)">{{share.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
         </tr>
         </tbody>
       </table>

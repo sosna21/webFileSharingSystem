@@ -1,4 +1,4 @@
-import {Component, ElementRef, Input, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {Component, ContentChild, ElementRef, Input, OnDestroy, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {environment} from "../../../environments/environment";
 import {AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators} from "@angular/forms";
@@ -42,6 +42,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   @Input() mode: string = 'GetAll';
   @Input() title: string = 'All Files';
   @ViewChild("fileUpload", {static: false}) fileUpload: ElementRef | undefined;
+  @ViewChild('shareTemplate') shareTemplate: ElementRef | undefined;
   loadingData: boolean = true;
   parentId: number | null = null;
   fileNameForm!: FormGroup;
@@ -139,8 +140,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   }
 
   openModal(template: TemplateRef<any>) {
-    if(this.fileExplorerService.filesToShare[0]?.isShared)
-    this.getShares(this.fileExplorerService.filesToShare[0].id);
+    if (this.fileExplorerService.filesToShare[0]?.isShared)
+      this.getShares(this.fileExplorerService.filesToShare[0].id);
 
     this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
     // @ts-ignore //TODO resolve in another way
@@ -522,5 +523,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
 
   convertToAngularUTC(date: Date) {
     return new Date(date + 'Z');
+  }
+
+  openShareModal(share: ShareResponse) {
+    if (!this.shareTemplate) return;
+
+    this.shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
+    this.shareRequestBody.Update = true;
+    this.decline();
+    this.openModal(this.shareTemplate as unknown as TemplateRef<any>);
   }
 }
