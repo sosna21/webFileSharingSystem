@@ -45,7 +45,7 @@ namespace webFileSharingSystem.Infrastructure.Common
 
         public IQueryable<File> GetFilteredListOfAllChildrenAsFilesQuery(int parentId, ISpecification<File> spec)
         {
-            return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfAllChildrenTvfAsFiles(parentId), spec);
+            return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfAllChildrenByParentTvfAsFiles(parentId), spec);
         }
         
         public IQueryable<File> GetListOfFilesSharedByUserIdQuery(int userId, ISpecification<File> spec)
