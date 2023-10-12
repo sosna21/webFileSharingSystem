@@ -218,10 +218,10 @@ namespace webFileSharingSystem.Infrastructure.Data
                     SELECT * FROM recursive_cte
                 ");
 
-        public IQueryable<File> GetListOfAllChildrenTvfAsFiles(int parentId) =>
+        public IQueryable<File> GetListOfAllChildrenByParentTvfAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
                 $@"
-                    SELECT * FROM GetListOfAllChildrenTVF({parentId})
+                    SELECT * FROM GetListOfAllChildrenByParentTVF({parentId})
                 ");
         
         public IQueryable<SharedFile> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
