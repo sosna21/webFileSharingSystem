@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
@@ -25,7 +26,7 @@ namespace webFileSharingSystem.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCore();
-            
+
             services.AddInfrastructure(_config);
 
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
@@ -35,7 +36,7 @@ namespace webFileSharingSystem.Web
             services.AddSwaggerGen(
                 option =>
                 {
-                    option.SwaggerDoc("v1", new OpenApiInfo {Title = "webFileSharingSystem.Api", Version = "v1"});
+                    option.SwaggerDoc("v1", new OpenApiInfo { Title = "webFileSharingSystem.Api", Version = "v1" });
                     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
                     {
                         Name = "Authorization",
@@ -43,7 +44,8 @@ namespace webFileSharingSystem.Web
                         Scheme = "Bearer",
                         BearerFormat = "JWT",
                         In = ParameterLocation.Header,
-                        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.",
+                        Description =
+                            "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.",
                     });
                     option.AddSecurityRequirement(new OpenApiSecurityRequirement
                     {
@@ -86,14 +88,14 @@ namespace webFileSharingSystem.Web
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-            
+
             app.UseStaticFiles();
-            
+
             if (!env.IsDevelopment())
             {
                 app.UseSpaStaticFiles();
             }
-            
+
             app.UseSpa(spa =>
             {
                 // To learn more about options for serving an Angular SPA from ASP.NET Core,
@@ -103,8 +105,11 @@ namespace webFileSharingSystem.Web
 
                 if (env.IsDevelopment())
                 {
-                    spa.UseAngularCliServer(npmScript: "start");
-                    // spa.UseProxyToSpaDevelopmentServer("http://localhost:4200");
+                    bool.TryParse(Environment.GetEnvironmentVariable("LOCAL_ANGULAR"), out var localAngular);
+                    if (localAngular)
+                        spa.UseProxyToSpaDevelopmentServer("http://localhost:4200");
+                    else
+                        spa.UseAngularCliServer(npmScript: "start");
                 }
             });
         }
