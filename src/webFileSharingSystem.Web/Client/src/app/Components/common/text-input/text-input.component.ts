@@ -11,6 +11,7 @@ export class TextInputComponent implements ControlValueAccessor {
   @Input() type = 'text';
   @Input() value = '';
   @Input() errors = true;
+  @Input() marginBtm = '1em';
   @ViewChild('inputElement') private input: any;
 
   constructor(@Self() public ngControl: NgControl) {

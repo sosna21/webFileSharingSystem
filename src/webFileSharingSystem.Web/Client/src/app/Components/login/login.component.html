@@ -1,35 +1,36 @@
- <div class="d-flex justify-content-center align-items-center" >
-      <div class="col-12 col-sm-11 col-md-8 col-lg-7 col-xl-4 card">
-        <h2 class="text-center text-dark m-3">Log in</h2>
+<div class="d-flex justify-content-center align-items-center background">
+  <div id="login-card" class="text-center col-12 col-sm-11 col-md-8 col-lg-7 col-xl-3 size card">
+    <h1 class="font-weight-bold mt-4 mt-md-5 mb-2">Welcome</h1>
 
-        <div class="card">
-          <div class="card-body">
+    <h5 class="mb-3">Please fill in the form to continue</h5>
+    <hr class="m-2 p-0">
+    <!--        <font-awesome-icon :icon="['fas', 'cloud']" size="xl" style="color: #80ffff;" />-->
+    <img src="../../../assets/mascote.png" width="120em" class="mb-4 align-self-center">
+    <div class="col-md-11 col-sm-12 align-self-center">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <app-text-input [formControl]="$any(loginForm).controls['username']"
+                        [label]="'Username/Email'" [marginBtm]="'2em'"></app-text-input>
+        <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'"
+                        [marginBtm]="'2em'" type="password"></app-text-input>
 
-            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-              <app-text-input [formControl]="$any(loginForm).controls['username']" [label]="'Username/Email'"></app-text-input>
-              <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'" type="password"></app-text-input>
-
-              <div class="col-6 offset-3 ">
-                <button [disabled]="loading" class="btn btn-dark btn-block">
-                  <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
-                  Login
-                </button>
-              </div>
-
-              <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
-            </form>
-
-          </div>
+        <div class="col-8 offset-2 px-3">
+          <button [disabled]="loading" class="btn btn-dark btn-block">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+            Login
+          </button>
         </div>
 
-        <div class="row align-items-center m-2">
-          <div class="col-7 offset-md-1">
-            <p>You don't have an account?
-              <br/> Click Register to create a new account! </p>
-          </div>
-          <div class="col-5 col-md-4">
-            <button class="btn btn-secondary btn-block" [disabled]="loading" routerLink="/register">Register</button>
-          </div>
-        </div>
+        <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
+      </form>
+    </div>
+    <div class="row align-items-center m-2 mt-5">
+      <div class="col-7 offset-md-1">
+        <p>You don't have an account?
+          <br/> Click Register to create a new account! </p>
+      </div>
+      <div class="col-5 col-md-4">
+        <button class="btn btn-secondary btn-block" [disabled]="loading" routerLink="/register">Register</button>
       </div>
     </div>
+  </div>
+</div>
