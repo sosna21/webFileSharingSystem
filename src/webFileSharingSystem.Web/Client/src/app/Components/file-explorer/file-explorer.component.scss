@@ -42,8 +42,14 @@ input[type=checkbox], fa-icon, .lbl-checkbox, #actionBtn:hover {
 
 .lbl-checkbox {
   display: inline;
-  padding: 0.3em 0.3em 0.3em 0.6em;
-  margin-left: -0.3em;
+  margin: 0 0 0 -0.1em;
+  padding: 0.3em;
+}
+
+.absolutePositioning{
+  position: absolute;
+  top: 0;
+  bottom: 0;
 }
 
 .fileNameCell {

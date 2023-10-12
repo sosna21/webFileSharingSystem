@@ -36,7 +36,7 @@
 <table class="table table-sm table-hover">
   <thead>
   <tr>
-    <th scope="col" style="width: 2%">
+    <th scope="col" style="width: 3%">
       <label class="lbl-checkbox">
         <input type="checkbox" [checked]="isAllCheckBoxChecked()" (change)="checkAllCheckBox($event)">
       </label>
@@ -78,25 +78,21 @@
                [checked]="file.checked"/>
       </label>
       <span *ngIf="file.loading" class="spinner-border spinner-border-sm"></span>
-      <label [hidden]="isCompleted(file)"  (click)="cancelUpload(file)" class="lbl-checkbox">
-        <fa-icon [icon]="['far', 'trash-alt']" [styles]="{'color': '#8c2e2e'}"></fa-icon>
-      </label>
+      <fa-icon [hidden]="isCompleted(file)" [icon]="['far', 'trash-alt']" (click)="cancelUpload(file)"
+               [styles]="{'color': '#8c2e2e'}"></fa-icon>
     </td>
 
     <!--FileName + upload progress-->
-    <td *ngIf="!file.rename" class="text-left pt-0 pb-0">
-      <div class="row col-12 align-items-center p-0 m-0">
-        <div #fileName
-             [routerLink]="file.isDirectory ? ['/files',file.id] : null"
-             [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}"
-             class="px-0 col fileNameCell"
-             popover="{{isEllipsisActive(fileName) ? file.fileName : ''}}"
-             triggers="mouseenter:mouseleave">
+    <td *ngIf="!file.rename" class="position-relative text-left">
+      <div class="row absolutePositioning col-12 align-items-center p-0 m-0"
+           [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}">
+        <div #fileName [routerLink]="file.isDirectory ? ['/files',file.id] : null" class="px-0 col fileNameCell"
+             popover="{{isEllipsisActive(fileName) ? file.fileName : ''}}" triggers="mouseenter:mouseleave">
           <fa-icon class="mr-sm-1" [style]="{'cursor': file.isDirectory ? 'pointer' : 'default'}" size="2x"
                    [icon]="[file.isDirectory ? 'fas' : 'far', (file | mimeFontawesome)]"></fa-icon>
           {{ file.fileName }}
         </div>
-        <div *ngIf="!isCompleted(file)" class="row align-items-center col col-xl-5">
+        <div *ngIf="!isCompleted(file)" class="row align-items-center col col-xl-5 ml-1">
           <div class="col p-0">
             <div class="progress progress-sm bg-dark ">
               <div [class]="file.progressStatus === ProgressStatus.Stopped ? 'bg-danger' :
@@ -157,8 +153,9 @@
           <li role="menuitem"><a class="dropdown-item d-md-none" (click)="SetFavourite(file)">
             {{file.isFavourite ? "Remove favourite" : "Add favourite"}}</a></li>
           <li role="menuitem"><a class="dropdown-item d-md-none"
-                                 (click)="file.loading ? null : openModal(shareTemplate); fileExplorerService.filesToShare = [file]">
-            Add share</a></li>
+                                 (click)="fileExplorerService.filesToShare = [file];
+                                  file.isShared ? openModal(customizeSharesTemplate) : openModal(shareTemplate)">
+            {{file.isShared ? "Manage shares" : "Add share"}}</a></li>
           <li role="menuitem"><a class="dropdown-item"
                                  (click)="renameInit(file); renameInput.hidden = false; renameTextInput.setFocus();">Rename</a>
           </li>
@@ -279,7 +276,7 @@
 
 <ng-template #customizeSharesTemplate>
   <div class="d-flex flex-row justify-content-center pt-3 pb-2">
-    <div class="align-self-center mr-3">
+    <div class="align-self-center mx-3">
       Select existing share to update or click to create a new one
     </div>
     <div class="align-self-center mr-3">
@@ -303,12 +300,9 @@
             <fa-icon [icon]="['far', 'trash-alt']" (click)="this.deleteShare(share)"
                      [styles]="{'color': '#8c2e2e'}"></fa-icon>
           </td>
-
-          <td (click)="shareRequestBody.UserNameToShareWith = share.sharedWithUserName;
-        shareRequestBody.Update = true; decline();
-        openModal(shareTemplate)">{{share.sharedWithUserName}}</td>
-          <td>{{getAccessModeNameFromNumber(share.accessMode)}}</td>
-          <td>{{share.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
+          <td (click)="openShareModal(share)">{{share.sharedWithUserName}}</td>
+          <td (click)="openShareModal(share)">{{getAccessModeNameFromNumber(share.accessMode)}}</td>
+          <td (click)="openShareModal(share)">{{share.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
         </tr>
         </tbody>
       </table>

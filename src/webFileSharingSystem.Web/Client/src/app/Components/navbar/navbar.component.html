@@ -6,7 +6,7 @@
     <input #filter [hidden]="!authenticated" class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">
     <ul *ngIf="authenticated" class="navbar-nav px-3">
       <li class="nav-item text-nowrap">
-        <a class="nav-link" (click)="logout()">Sign out</a>
+        <a class="nav-link" (click)="logout()" style="cursor: pointer">Sign out</a>
       </li>
     </ul>
    <button *ngIf="authenticated" (click)="toggleSidebarCollapse()" class="navbar-toggler d-md-none collapsed ml-2 mr-0" type="button" data-toggle="collapse" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
