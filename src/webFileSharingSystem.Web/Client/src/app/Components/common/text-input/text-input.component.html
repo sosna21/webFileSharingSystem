@@ -1,4 +1,4 @@
-<div class="form-group" [style]="{'margin-bottom': marginBtm}" >
+<div class="form-group" [ngClass]="class" [style]="{'margin-bottom': (ngControl.touched && ngControl.invalid) ? '0' : marginBtm}" >
   <input #inputElement
     [class.is-invalid]="ngControl.touched && ngControl.invalid"
     type={{type}}

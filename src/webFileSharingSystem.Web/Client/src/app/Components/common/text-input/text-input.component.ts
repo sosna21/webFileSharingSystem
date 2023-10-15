@@ -1,4 +1,4 @@
-import {Component, Input, Output, Self, ViewChild} from '@angular/core';
+import {Component, Input, Self, ViewChild} from '@angular/core';
 import {ControlValueAccessor, NgControl} from "@angular/forms";
 
 @Component({
@@ -11,6 +11,7 @@ export class TextInputComponent implements ControlValueAccessor {
   @Input() type = 'text';
   @Input() value = '';
   @Input() errors = true;
+  @Input() class = '';
   @Input() marginBtm = '1em';
   @ViewChild('inputElement') private input: any;
 

@@ -23,9 +23,12 @@
 }
 
 #login-card {
-  background: azure;
+  @media only screen and (min-width: 30em) {
+    min-width: 30em;
+  }
+
+  background: rgba(240, 255, 255, .87);
   min-height: 70vh;
   justify-content: center;
   box-shadow: 0 1em 1em 0 rgba(0, 0, 0, 0.5);
-  min-width: 30em;
 }

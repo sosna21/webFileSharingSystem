@@ -71,5 +71,9 @@ export class LoginComponent implements OnInit {
       }
     });
   }
+
+  resetError(){
+    this.error = '';
+  }
 }
 
