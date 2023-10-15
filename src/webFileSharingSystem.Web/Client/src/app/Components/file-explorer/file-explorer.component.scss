@@ -30,13 +30,13 @@ tr {
   }
 }
 
-#faCircle:hover {
+.fa-hover:hover {
   stroke: lemonchiffon;
   stroke-width: 20;
-  color: #989898;
+  color: #7a7878;
 }
 
-input[type=checkbox], fa-icon, .lbl-checkbox, #actionBtn:hover {
+input[type=checkbox], fa-icon, .lbl-checkbox, #action-btn:hover {
   cursor: pointer;
 }
 
@@ -56,13 +56,6 @@ input[type=checkbox], fa-icon, .lbl-checkbox, #actionBtn:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-#table {
-  @media (max-width: 518px) {
-    margin-bottom: 60px;
-  }
-  margin-bottom: 38px;
 }
 
 .progress-sm {

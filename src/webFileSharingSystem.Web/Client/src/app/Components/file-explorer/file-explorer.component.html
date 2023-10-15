@@ -1,18 +1,18 @@
-<div class="d-flex flex-row pt-3 pb-2">
-  <div class="align-self-center mr-3">
+<div class="d-flex flex-row">
+  <div class="align-self-center mr-3 my-3 my-sm-4">
     <h2>{{title}}</h2>
   </div>
   <div *ngIf="mode === 'GetAll'" class="align-self-center mr-3">
-    <fa-icon size="2x" id="faCircle" [icon]="['fas', 'folder-plus']"
+    <fa-icon size="2x" class="fa-hover" [icon]="['fas', 'folder-plus']"
              (click)="initDirCreate(form); createDirTextInput.setFocus(); createDirTextInput.textSelect();"></fa-icon>
   </div>
-  <div class="align-self-end pt-3">
+  <div class="align-self-center">
     <form hidden #form [formGroup]="fileNameForm" (ngSubmit)="createDirectory(); form.hidden = true">
       <app-text-input #createDirTextInput
                       [formControl]="$any(fileNameForm).controls['dirName']"
                       (focusin)="fileNameForm.markAllAsTouched()"
                       (focusout)="form.hidden = true; fileNameForm.reset();"
-                      [label]="'Folder name'"
+                      [label]="'Folder name'" [class]="'mt-4'" [marginBtm]="'1.5rem'"
       ></app-text-input>
     </form>
   </div>
@@ -45,7 +45,7 @@
 
       <span *ngIf="isManyCheckboxesChecked()" class="dropdown ml-3" dropdown #dropdown="bs-dropdown"
             (onShown)="hideOnSecondOpen(dropdown)">
-            <span id="actionBtn" dropdownToggle>
+            <span id="action-btn" dropdownToggle>
             <fa-icon [icon]="['fas', 'ellipsis-h']" [styles]="{'color': 'black'}"></fa-icon>
             Actions  </span>
             <span class="dropdown-menu mt-3" *dropdownMenu>
@@ -119,7 +119,8 @@
                         (focusin)="fileNameForm.markAllAsTouched()"
                         (focusout)="rename(file, renameInput); fileNameForm.reset()"
                         [label]="file.fileName"
-                        [value]="file.fileName">
+                        [value]="file.fileName"
+                        [class]="'mb-0'">
         </app-text-input>
       </form>
     </td>
@@ -185,7 +186,7 @@
   </div>
 </div>
 
-<div id="table">
+<div>
   <div *ngIf="!loadingData" class="d-flex justify-content-center">
     <h2 *ngIf="files.length <= 0" class="text-center my-3">
       {{searchedPhrase ? "We can't find any files that fit your criteria"
@@ -280,7 +281,8 @@
       Select existing share to update or click to create a new one
     </div>
     <div class="align-self-center mr-3">
-      <fa-icon size="2x" [icon]="['fas', 'plus-circle']" (click)="decline(); openModal(shareTemplate);"></fa-icon>
+      <fa-icon size="2x" class="fa-hover" [icon]="['fas', 'plus-circle']"
+               (click)="decline(); openModal(shareTemplate);"></fa-icon>
     </div>
   </div>
   <div class="modal-body pb-0">
@@ -302,7 +304,8 @@
           </td>
           <td (click)="openShareModal(share)">{{share.sharedWithUserName}}</td>
           <td (click)="openShareModal(share)">{{getAccessModeNameFromNumber(share.accessMode)}}</td>
-          <td (click)="openShareModal(share)">{{share.validUntil.toString() === maxDate ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
+          <td (click)="openShareModal(share)">{{share.validUntil.toString() === maxDate
+            ? 'Unlimited' : convertToAngularUTC(share.validUntil) | timeago }}</td>
         </tr>
         </tbody>
       </table>
