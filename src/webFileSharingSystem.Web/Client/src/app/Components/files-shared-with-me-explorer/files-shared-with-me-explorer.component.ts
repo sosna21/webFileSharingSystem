@@ -13,7 +13,6 @@ import {AccessMode, SharedFile} from '../common/sharedFile';
 import {Subscription} from "rxjs";
 import {ActivatedRoute} from "@angular/router";
 
-
 interface BreadCrumb {
   id: number;
   fileName: string;
@@ -26,22 +25,22 @@ interface BreadCrumb {
 })
 
 export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
-  sharedFiles: SharedFile[] = [];
-  private openDropdownToBeHidden: any;
-  modalRef?: BsModalRef;
+  @ViewChild("fileUpload", {static: false}) fileUpload: ElementRef | undefined;
+  loadingData: boolean = true;
   parentId: number | null = null;
+  fileNameForm!: FormGroup;
+  sharedFiles: SharedFile[] = [];
   itemsPerPage = 15;
   currentPage = 1;
   totalItems!: number;
-  searchedPhrase: string | null = null;
   names: string[] = [];
-  @ViewChild("fileUpload", {static: false}) fileUpload: ElementRef | undefined;
-  gRename: boolean = false;
-  fileNameForm!: FormGroup;
+  searchedPhrase: string | null = null;
   breadCrumbs: BreadCrumb[] = [];
-  loadingData: boolean = true;
+  modalRef?: BsModalRef;
   maxDate = '9999-12-31T23:59:59.9999999'
+
   private subscriptions: Subscription[] = []
+  private openDropdownToBeHidden: any;
 
   constructor(private http: HttpClient, private downloadService: DownloadService, public fileExplorerService: FileExplorerService, private modalService: BsModalService,
               private authenticationService: AuthenticationService, private toastr: ToastrService, private uploadService: FileUploaderService, private formBuilder: FormBuilder,
@@ -62,7 +61,7 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
       this.subscriptions.push(this.fileExplorerService.searchedText.subscribe(response => {
         if (!this.authenticationService.currentUserValue) return;
         this.searchedPhrase = response;
-        if(reloadSearchWhenEmpty || (response && response !== '')){
+        if (reloadSearchWhenEmpty || (response && response !== '')) {
           this.reloadData();
           reloadSearchWhenEmpty = true;
         }
@@ -74,23 +73,106 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
         this.getFilePath(this.parentId);
     }));
 
-
     this.initializeForm();
-    this.toastr.toastrConfig.preventDuplicates = true;
+    // this.toastr.toastrConfig.preventDuplicates = true;
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
 
+  openModal(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
+  }
+
+  confirm(): void {
+    this.modalRef?.hide();
+
+    for (let i = 0; i < this.fileExplorerService.filesToDelete.length - 1; i++) {
+      this.deleteFile(this.fileExplorerService.filesToDelete[i], false)
+    }
+    this.deleteFile(this.fileExplorerService.filesToDelete[this.fileExplorerService.filesToDelete.length - 1], true);
+  }
+
+  decline(): void {
+    this.modalRef?.hide();
+  }
+
+  private reloadData(): void {
+    this.getFiles(this.parentId, this.searchedPhrase);
+  }
+
+  initializeForm() {
+    this.fileNameForm = this.formBuilder.group({
+      dirName: ['folderName', [Validators.required, this.checkNameUnique()]],
+      fileName: ['', [Validators.required, this.checkNameUnique()]]
+    });
+  }
+
+  checkNameUnique(): ValidatorFn {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      const forbidden = control?.parent?.controls as any;
+
+      return (forbidden)
+        ? !this.names.includes(control?.value) ? null : {isUnique: true}
+        : null;
+    }
+  }
+
+  getFiles(parentId: number | null, searchedPhrase: string | null, callBack?: () => void): void {
+    this.http.get<any>(`${environment.apiUrl}/Share/GetSharedWithMe?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
+      ${parentId ? '&ParentId=' + parentId : ''}${(searchedPhrase && searchedPhrase !== '') ? '&SearchedPhrase=' + searchedPhrase : ''}`)
+      .subscribe(response => {
+        this.loadingData = false;
+        this.totalItems = response.totalCount;
+        this.sharedFiles = response.items;
+        callBack?.();
+      }, error => {
+        this.loadingData = false;
+        this.toastr.error(error.error, "File load error");
+      })
+  }
+
+  getNames(): void {
+    let parentId = this.parentId ?? -1;
+    this.http.get<any>(`${environment.apiUrl}/Share/GetNames/${parentId}`).subscribe(response => {
+      this.names = response;
+    }, error => {
+      this.toastr.error(error.error, "File load error");
+    })
+  }
 
   getFilePath(fileId: number) {
     this.http.get<any>(`${environment.apiUrl}/File/GetFilePath/${fileId}`).subscribe(response => {
       this.breadCrumbs = response;
-      console.log(this.breadCrumbs);
     }, error => {
-      console.log(error);
+      this.toastr.error(error.error, "File load error");
     })
+  }
+
+  downloadFile(file: File) {
+    const getDownloadLinkObservable = file.isDirectory
+      ? this.downloadService.getDownloadLink(null, [file.id])
+      : this.downloadService.getDownloadLink(file.id, null);
+
+    getDownloadLinkObservable.subscribe(response => {
+      window.location.href = response.url;
+    }, error => {
+      this.toastr.error(error.error, "File download error");
+    });
+  }
+
+  downloadMultipleFiles() {
+    const fileIdsToDownload = this.sharedFiles.filter(f => f.checked).map(f => f.id);
+    this.downloadService.getDownloadLink(null, fileIdsToDownload).subscribe(response => {
+      window.location.href = response.url;
+    }, error => {
+      this.toastr.error(error.error, "Files download error");
+    });
+  }
+
+  checkAllCheckBox(ev: any) {
+    this.sharedFiles.forEach(x => x.checked = ev.target.checked)
   }
 
   isAllCheckBoxChecked() {
@@ -99,33 +181,74 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
     return false
   }
 
-  checkAllCheckBox(ev: any) {
-    this.sharedFiles.forEach(x => x.checked = ev.target.checked)
-  }
-
   isManyCheckboxesChecked(): boolean {
     return this.sharedFiles.filter(x => x.checked).length > 1;
   }
 
-  hideOnSecondOpen(dropdown: any) {
-    if (this.openDropdownToBeHidden && dropdown !== this.openDropdownToBeHidden) {
-      this.openDropdownToBeHidden.hide();
+  markCheckedFiles() {
+    this.fileExplorerService.filesToDelete = this.sharedFiles.filter(x => x.checked);
+  }
+
+  pageChanged(event: any) {
+    this.currentPage = event.page;
+    this.reloadData();
+  }
+
+  deleteFile(file: File, reload: boolean = true) {
+    if (file.isDirectory) {
+      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
+        reload ? this.reloadData() : null;
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+      }, error => {
+        this.toastr.error(error.error, "Directory delete error");
+      })
+    } else {
+      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
+        reload ? this.reloadData() : null;
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+      }, error => {
+        this.toastr.error(error.error, "File delete error");
+      })
     }
-    this.openDropdownToBeHidden = dropdown;
-    console.log(dropdown);
   }
 
-  downloadMultipleFiles() {
-    const fileIdsToDownload = this.sharedFiles.filter(f => f.checked).map(f => f.id);
-    this.downloadService.getDownloadLink(null, fileIdsToDownload).subscribe(response => {
-      window.location.href = response.url;
-    }, error => {
-      console.log(error);
-    });
+  removeShare(sharedFile?: SharedFile) {
+    if (sharedFile && !sharedFile.shareId) {
+      return;
+    }
+    let files: SharedFile[];
+    if (sharedFile === undefined)
+      files = this.sharedFiles.filter(file => file.checked);
+    else
+      files = [sharedFile];
+
+    files.some((file, index, array) => {
+      if (!file.shareId) {
+        this.toastr.error("To delete some shares you must delete whole shared folder", "Share remove error")
+        return;
+      }
+      this.http.delete(`${environment.apiUrl}/Share/Delete/${file.shareId}`).subscribe(() => {
+        if (index == array.length - 1) {
+          this.reloadData();
+        }
+        delete this.names[this.names.findIndex(x => x === file.fileName)];
+        this.toastr.success("Share removed successfully", "Share remove status");
+      }, error => {
+        this.toastr.error(error.error, "Share remove error");
+      });
+    })
   }
 
-  minAccessModeInCheckedFiles(){
-    return Math.min.apply(null, this.sharedFiles.filter(x => x.checked).map(file => file.accessMode));
+  isMoveCopyAllowed(): boolean {
+    if (!this.parentId) {
+      return false;
+    }
+
+    if (this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
+      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly;
+    }
+
+    return true;
   }
 
   moveCopyInit(file?: File) {
@@ -136,14 +259,6 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
       filesToMoveCopy = this.sharedFiles.filter(x => x.checked);
     }
     this.fileExplorerService.filesToMoveCopy = filesToMoveCopy;
-  }
-
-  openModal(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, {class: 'modal-dialog-centered modal-md'});
-  }
-
-  markCheckedFiles() {
-    this.fileExplorerService.filesToDelete = this.sharedFiles.filter(x => x.checked);
   }
 
   moveCopyFiles(copy: boolean, filesToMoveCopy: File[] = this.fileExplorerService.filesToMoveCopy) {
@@ -164,180 +279,82 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
       })
   }
 
-  private reloadData(): void {
-    this.getFiles(this.parentId, this.searchedPhrase);
-  }
 
-  getFiles(parentId: number | null, searchedPhrase: string | null, callBack?: () => void): void {
-    this.http.get<any>(`${environment.apiUrl}/Share/GetSharedWithMe?PageNumber=${this.currentPage}&PageSize=${this.itemsPerPage}
-      ${parentId ? '&ParentId=' + parentId : ''}${(searchedPhrase && searchedPhrase !== '') ? '&SearchedPhrase=' + searchedPhrase : ''}`)
-      .subscribe(response => {
-        this.loadingData = false;
-        this.totalItems = response.totalCount;
-        this.sharedFiles = response.items;
-        callBack?.();
-      }, error => {
-        this.loadingData = false;
-        console.log(error);
-      })
-  }
-
-  removeShare(sharedFile?: SharedFile) {
-    if(sharedFile && !sharedFile.shareId){
-      return;
+  hideOnSecondOpen(dropdown: any) {
+    if (this.openDropdownToBeHidden && dropdown !== this.openDropdownToBeHidden) {
+      this.openDropdownToBeHidden.hide();
     }
-    let files : SharedFile[];
-    if(sharedFile === undefined)
-      files = this.sharedFiles.filter(file => file.checked);
-    else
-      files = [sharedFile];
-
-    files.some((file, index, array) => {
-      if(!file.shareId){
-        this.toastr.error("To delete some shares you must delete whole shared folder", "Share remove error")
-        return;
-      }
-      this.http.delete(`${environment.apiUrl}/Share/Delete/${file.shareId}`).subscribe(() => {
-        if (index == array.length - 1) {
-          this.reloadData();
-        }
-        delete this.names[this.names.findIndex(x => x === file.fileName)];
-        this.toastr.success("Share removed successfully","Share remove status");
-      }, error => {
-        this.toastr.error(error.error,"Share remove error");
-      });
-    })
+    this.openDropdownToBeHidden = dropdown;
   }
 
-
-
-  deleteFile(file: File, reload: boolean = true) {
-    if (file.isDirectory) {
-      this.http.delete(`${environment.apiUrl}/File/DeleteDir/${file.id}`).subscribe(() => {
-        reload ? this.reloadData() : null;
-        delete this.names[this.names.findIndex(x => x === file.fileName)];
-      }, error => {
-        this.toastr.error(error.error, "Directory delete error");
-      })
-    } else {
-      this.http.delete(`${environment.apiUrl}/File/Delete/${file.id}`).subscribe(() => {
-        reload ? this.reloadData() : null;
-        delete this.names[this.names.findIndex(x => x === file.fileName)];
-      }, error => {
-        this.toastr.error(error.error, "File delete error");
-      })
+  canCreateDirectory(): boolean {
+    if (!this.parentId) {
+      return false;
     }
-  }
 
-  rename(file: File) {
-    if (this.gRename) {
-      this.gRename = false;
-      if (!this.fileNameForm.get('fileName')?.invalid) {
-        let filename = this.fileNameForm.get('fileName')?.value;
-
-        this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
-          file.fileName = filename;
-          file.modificationDate = new Date();
-          this.names.push(file.fileName);
-          this.gRename = false;
-        }, error => {
-          console.log(error)
-        })
-        this.fileNameForm.reset();
-      }
-      file.rename = false;
+    if (this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
+      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly;
     }
-  }
 
-  downloadFile(file: File) {
-
-    const getDownloadLinkObservable = file.isDirectory
-      ? this.downloadService.getDownloadLink(null, [file.id])
-      : this.downloadService.getDownloadLink(file.id, null);
-
-    getDownloadLinkObservable.subscribe(response => {
-      window.location.href = response.url;
-    }, error => {
-      console.log(error);
-    });
-  }
-
-  renameInit(file: File) {
-    if (!this.gRename) {
-      delete this.names[this.names.findIndex(x => x === file.fileName)];
-      this.fileNameForm.get('fileName')?.patchValue(file.fileName);
-      this.fileNameForm.markAsTouched();
-      file.rename = this.gRename = true;
-    }
-  }
-
-  pageChanged(event: any) {
-    this.currentPage = event.page;
-    this.reloadData();
-  }
-
-  confirm(): void {
-    this.modalRef?.hide();
-
-    for (let i = 0; i < this.fileExplorerService.filesToDelete.length - 1; i++) {
-      this.deleteFile(this.fileExplorerService.filesToDelete[i], false)
-    }
-    this.deleteFile(this.fileExplorerService.filesToDelete[this.fileExplorerService.filesToDelete.length - 1], true);
-  }
-
-  decline(): void {
-    this.modalRef?.hide();
-  }
-
-  getNames(): void {
-    let parentId = this.parentId ?? -1;
-    this.http.get<any>(`${environment.apiUrl}/Share/GetNames/${parentId}`).subscribe(response => {
-      this.names = response;
-    }, error => {
-      console.log(error);
-    })
+    return true;
   }
 
   initDirCreate(form: any) {
-    if (!this.gRename) {
-      this.fileNameForm.reset();
-      this.fileNameForm.markAsUntouched();
-      this.gRename = true;
-      form.hidden = false;
+    this.fileNameForm.get('dirName')?.setValue(this.findUniqueDirName());
+    form.hidden = false;
+  }
+
+  findUniqueDirName(): string {
+    let dirName = "New folder";
+    let counter = 0;
+    while (this.names.includes(dirName)) {
+      dirName = `New folder (${++counter})`
     }
+    return dirName;
   }
 
   createDirectory() {
     if (!this.fileNameForm.get('dirName')?.invalid && this.parentId) {
-
       let name = this.fileNameForm.get('dirName')?.value;
-      let parentFile = this.sharedFiles.find(file => file.id == this.parentId);
-      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}?parentId=${this.parentId}`, {}).subscribe(() => {
+      this.http.post<any>(`${environment.apiUrl}/File/CreateDir/${name}?parentId=${this.parentId}`, {}).subscribe((response: File) => {
+        //TODO resolve locally
+        this.names.push(name);
         this.reloadData();
-        this.gRename = false;
       }, error => {
-        console.log(error)
         this.toastr.error(error.error ? error.error
-          :'Something went wrong while creating directory','Directory creation error')
+          : 'Something went wrong while creating directory', 'Directory creation error')
       });
     }
   }
 
-  initializeForm() {
-    this.fileNameForm = this.formBuilder.group({
-      dirName: ['folderName', [Validators.required, this.checkNameUnique()]],
-      fileName: ['', [Validators.required, this.checkNameUnique()]]
-    });
+  renameInit(file: File) {
+    this.names = this.names.filter(x => x !== file.fileName);
+    this.fileNameForm.get('fileName')?.patchValue(file.fileName);
+    file.rename = true;
   }
 
-  checkNameUnique(): ValidatorFn {
-    return (control: AbstractControl): { [key: string]: any } | null => {
-      const forbidden = control?.parent?.controls as any;
+  rename(file: File, renameInput: HTMLTableDataCellElement) {
+    if (file.loading) return;
 
-      return (forbidden)
-        ? !this.names.includes(control?.value) ? null : {isUnique: true}
-        : null;
-    }
+    if (!this.fileNameForm.get('fileName')?.invalid) {
+      file.loading = true;
+      let filename = this.fileNameForm.get('fileName')?.value;
+      this.http.put(`${environment.apiUrl}/File/Rename/${file.id}?name=${filename}`, {}).subscribe(() => {
+        file.fileName = filename;
+        file.modificationDate = (new Date().toISOString().slice(0, -1)) as unknown as Date;
+        this.names.push(filename);
+        file.loading = false;
+      }, error => {
+        file.loading = false;
+        this.toastr.error(error.error, "Rename error");
+      })
+    } else if (!this.names.includes(file.fileName)) this.names.push(file.fileName);
+    file.rename = false;
+    renameInput.hidden = true;
+  }
+
+  minAccessModeInCheckedFiles() {
+    return Math.min.apply(null, this.sharedFiles.filter(x => x.checked).map(file => file.accessMode));
   }
 
   getAccessModeNameFromNumber(shareType: number) {
@@ -353,39 +370,15 @@ export class FilesSharedWithMeExplorerComponent implements OnInit, OnDestroy {
     }
   }
 
-  isMoveCopyAllowed() : boolean {
-    if( !this.parentId ){
-      return false;
-    }
-
-    if(this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
-      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly;
-    }
-
-    return true;
-  }
-
-  canCreateDirectory() : boolean {
-    if( !this.parentId ){
-      return false;
-    }
-
-    if(this.fileExplorerService.lastStoredSharedFile?.id === this.parentId) {
-      return this.fileExplorerService.lastStoredSharedFile.accessMode > AccessMode.ReadOnly;
-    }
-
-    return true;
-  }
-
-  storeLastFile(shareFile : SharedFile) {
-      this.fileExplorerService.lastStoredSharedFile = shareFile;
-  }
-
   isEllipsisActive(e: any) {
     return (e.offsetWidth < e.scrollWidth);
   }
 
-  convertToAngularUTC(date: Date){
+  convertToAngularUTC(date: Date) {
     return new Date(date + 'Z');
+  }
+
+  storeLastFile(shareFile: SharedFile) {
+    this.fileExplorerService.lastStoredSharedFile = shareFile;
   }
 }

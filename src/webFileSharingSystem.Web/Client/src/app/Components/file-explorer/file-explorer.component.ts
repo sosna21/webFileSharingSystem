@@ -60,13 +60,12 @@ export class FileExplorerComponent implements OnInit, OnDestroy {
   maxDate = '9999-12-31T23:59:59.9999999'
 
   private subscriptions: Subscription[] = []
+  private openDropdownToBeHidden: any;
 
   constructor(private http: HttpClient, private formBuilder: FormBuilder, private route: ActivatedRoute, public fileExplorerService: FileExplorerService
     , private modalService: BsModalService, private downloadService: DownloadService, private uploadService: FileUploaderService, private authenticationService: AuthenticationService
     , private toastr: ToastrService) {
   }
-
-  private openDropdownToBeHidden: any;
 
   ngOnInit(): void {
 

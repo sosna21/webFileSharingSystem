@@ -173,7 +173,7 @@
 
     <!--Last modification date-->
     <td class="d-none d-sm-table-cell">
-      <div class="trim" popover="{{convertToAngularUTC(file.modificationDate) | date :'medium'}}"
+      <div popover="{{convertToAngularUTC(file.modificationDate) | date :'medium'}}"
            triggers="mouseenter:mouseleave">{{convertToAngularUTC(file.modificationDate) | timeago}}</div>
     </td>
   </tr>
