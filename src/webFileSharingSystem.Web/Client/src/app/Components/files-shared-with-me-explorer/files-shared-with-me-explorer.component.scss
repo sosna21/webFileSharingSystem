@@ -4,10 +4,12 @@ th {
   font-family: "Segoe UI", serif;
 }
 
-.smallScreenText{
-  @media (max-width: 992px) {
-    font-size: 0.9rem;
-  }
+.breadcrumb li {
+  display: inline;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 tr {
@@ -18,30 +20,30 @@ tr {
   text-align: center;
 }
 
-.breadcrumb li {
-  display: inline;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trim {
-  display: inline-block;
-}
-
 .header {
   font-family: "fantasy", serif;
 }
 
-#faCircle:hover {
+.smallScreenText{
+  @media (max-width: 992px) {
+    font-size: 0.9rem;
+  }
+}
+
+#fa-hover:hover {
   stroke: lemonchiffon;
   stroke-width: 20;
   color: #989898;
 }
 
-input[type=checkbox], fa-icon, #actionBtn:hover {
+input[type=checkbox], fa-icon, .lbl-checkbox, #action-btn:hover {
   cursor: pointer;
+}
+
+.lbl-checkbox {
+  display: inline;
+  margin: 0 0 0 -0.1em;
+  padding: 0.3em;
 }
 
 .absolutePositioning{
@@ -54,10 +56,6 @@ input[type=checkbox], fa-icon, #actionBtn:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-#table {
-  margin-bottom: 38px;
 }
 
 .progress-sm {
@@ -73,3 +71,9 @@ td {
   text-align: center;
   vertical-align: middle;
 }
+
+
+//
+//#table {
+//  margin-bottom: 38px;
+//}

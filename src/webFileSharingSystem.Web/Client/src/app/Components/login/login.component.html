@@ -1,19 +1,18 @@
 <div class="d-flex justify-content-center align-items-center background">
-  <div id="login-card" class="text-center col-12 col-sm-11 col-md-8 col-lg-7 col-xl-3 size card">
-    <h1 class="font-weight-bold mt-4 mt-md-5 mb-2">Welcome</h1>
+  <div id="login-card" class="text-center col-12 col-sm-10 col-md-8 col-lg-7 col-xl-3 card">
+    <h1 class="font-weight-bold mt-1 mt-md-5 mb-2">Welcome</h1>
 
     <h5 class="mb-3">Please fill in the form to continue</h5>
     <hr class="m-2 p-0">
-    <!--        <font-awesome-icon :icon="['fas', 'cloud']" size="xl" style="color: #80ffff;" />-->
-    <img src="../../../assets/mascote.png" width="120em" class="mb-4 align-self-center">
+    <img src="../../../assets/mascote.png" alt="application mascot img"  width="120em" class="mb-4 align-self-center" >
     <div class="col-md-11 col-sm-12 align-self-center">
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-        <app-text-input [formControl]="$any(loginForm).controls['username']"
-                        [label]="'Username/Email'" [marginBtm]="'2em'"></app-text-input>
+        <app-text-input [formControl]="$any(loginForm).controls['username']" [label]="'Username/Email'"
+                        [class]="'pb-3'" (focusin)="resetError()"></app-text-input>
         <app-text-input [formControl]="$any(loginForm).controls['password']" [label]="'Password'"
-                        [marginBtm]="'2em'" type="password"></app-text-input>
+                        [class]="'pb-3'" (focusin)="resetError()" type="password"></app-text-input>
 
-        <div class="col-8 offset-2 px-3">
+        <div class="col-8 mx-auto">
           <button [disabled]="loading" class="btn btn-dark btn-block">
             <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
             Login
@@ -23,12 +22,12 @@
         <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
       </form>
     </div>
-    <div class="row align-items-center m-2 mt-5">
-      <div class="col-7 offset-md-1">
+    <div class="row align-items-center m-2 mt-3 mt-md-4">
+      <div class="col-7">
         <p>You don't have an account?
           <br/> Click Register to create a new account! </p>
       </div>
-      <div class="col-5 col-md-4">
+      <div class="col-5 col-sm-4">
         <button class="btn btn-secondary btn-block" [disabled]="loading" routerLink="/register">Register</button>
       </div>
     </div>
