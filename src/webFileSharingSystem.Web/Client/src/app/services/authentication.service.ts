@@ -1,5 +1,5 @@
 ﻿import {Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {BehaviorSubject, Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {User} from '../models/user';
@@ -29,18 +29,38 @@ export class AuthenticationService {
     this.currentUserSubject.next(user);
   }
 
+  private handleLogInResponse(response: any) {
+    let user = <User>response.user;
+    user.token = response.tokens.token;
+
+    this.jwtService.setTokenAndUpdateUserInfo(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    this.currentUserSubject.next(user);
+    return user;
+  }
   login(username: string, password: string) {
     return this.http.post<any>(`${environment.apiUrl}/Auth/Login`, {username, password})
       .pipe(map(response => {
         // store user details and basic auth credentials in local storage to keep user logged in between page refreshes
-        let user = <User>response.user;
-        user.token = response.tokens.token;
-
-        this.jwtService.setTokenAndUpdateUserInfo(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        this.currentUserSubject.next(user);
-        return user;
+        return this.handleLogInResponse(response);
       }));
+  }
+
+  loginWithGoogle(credentials: string) {
+    // let body = JSON.stringify(credentials)
+    // return this.http.post<any>(environment.apiUrl + "/Auth/" + "LoginWithGoogle" , JSON.stringify(credentials))
+    //   .pipe(map(response => {
+    //     // store user details and basic auth credentials in local storage to keep user logged in between page refreshes
+    //     return this.handleLogInResponse(response);
+    //   }));
+
+    const header = new HttpHeaders().set('Content-type', 'application/json');
+    return this.http.post<any>(environment.apiUrl + "/Auth/" + "LoginWithGoogle" , JSON.stringify(credentials), {
+      headers: header,
+      withCredentials: true
+    }).pipe(map(response => {
+      return this.handleLogInResponse(response);
+    }));
   }
 
   register(registerRequest: { username: string, password: string, email: string | null }) {

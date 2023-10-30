@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -149,6 +150,42 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             return (AuthenticationResult.Success, appUser, token, refreshToken.Token);
         }
+        
+        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)> 
+            AuthenticateWithGoogleAsync(string providerKey, string email, string ipAddress, CancellationToken cancellationToken)
+        {
+            var identityUser = await _userManager.Users
+                .SingleOrDefaultAsync(x => x.Email == email, cancellationToken);
+            
+            if (identityUser is null)
+            {
+                return (AuthenticationResult.NotFound, null, null, null);
+            }
+            
+            var userByIdentityIdSpecs =
+                new Specification<ApplicationUser>(appUser => appUser.IdentityUserId == identityUser!.Id);
+            
+            var appUserByIdentityId = await _unitOfWork.Repository<ApplicationUser>().FindAsync(userByIdentityIdSpecs, cancellationToken);
+
+            var appUser = appUserByIdentityId.SingleOrDefault();
+        
+            if(appUser is null)
+            {
+                throw new Exception($"User not found, identityUserId: {identityUser!.Id}");
+                //throw new UserNotFoundException( userId );
+            }
+            
+            (var token, RefreshToken? refreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
+
+            if (refreshToken is null) return (AuthenticationResult.IsBlocked, null, null, null);
+            
+            _unitOfWork.Repository<RefreshToken>().Add(refreshToken);
+
+            if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing refresh token");
+
+            return (AuthenticationResult.Success, appUser, token, refreshToken.Token);
+        }
+        
 
         public async Task<(Result Result, string? Token, string? RefreshToken)> RefreshTokenAsync(string token, string refreshToken, string ipAddress, CancellationToken cancellationToken = default)
         {
@@ -278,7 +315,42 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             return ToApplicationResult(result);
         }
-        
+
+        public async Task<(Result Result, int UserId)> CreateGoogleUserAsync(string email, string userName, string providerKey)
+        {
+            var identityRole = new IdentityRole("Member");
+
+            if (_roleManager.Roles.All(r => r.Name != identityRole.Name))
+            {
+                await _roleManager.CreateAsync(identityRole);
+            }
+
+            var user = new IdentityUser
+            {
+                UserName = userName,
+                Email = email,
+            };
+
+            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            {
+                var identityResult = await _userManager.CreateAsync(user);
+                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+
+                identityResult = await _userManager.AddToRolesAsync(user, new[] {identityRole.Name});
+                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+                
+                var provider = GoogleDefaults.AuthenticationScheme;
+                await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, provider)).ConfigureAwait(false);
+
+                var applicationUser =
+                    new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
+                _unitOfWork.Repository<ApplicationUser>().Add(applicationUser);
+                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"), 0);
+                scope.Complete();
+                return (Result.Success(), applicationUser.Id);
+            }
+        }
+
         public async Task<bool> RevokeRefreshTokenAsync(string token, string identityUserId, string ipAddress)
         {
             var refreshToken = (await _unitOfWork.Repository<RefreshToken>()

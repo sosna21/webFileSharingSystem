@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -59,6 +60,46 @@ namespace webFileSharingSystem.Web.Controllers
                     throw new ArgumentOutOfRangeException();
             }
         }
+        
+        [AllowAnonymous]
+        [HttpPost]
+        [Route("LoginWithGoogle")]
+        public async Task<IActionResult> LoginWithGoogle([FromBody] string credential, CancellationToken cancellationToken = default)
+        {
+            GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(credential);
+            
+            var (authenticationResult, applicationUser, token, refreshToken) = 
+                await _userService.AuthenticateWithGoogleAsync(payload.Subject, payload.Email, GetIpAddress(), cancellationToken);
+
+            if (authenticationResult == AuthenticationResult.NotFound)
+            {
+                await _userService.CreateGoogleUserAsync(payload.Email, payload.GivenName, payload.Subject);
+                (authenticationResult, applicationUser, token, refreshToken) = 
+                    await _userService.AuthenticateWithGoogleAsync(payload.Subject, payload.Email, GetIpAddress(), cancellationToken);
+            }
+
+            switch (authenticationResult)
+            {
+                case AuthenticationResult.Success:
+                    var userResponse = new AppUserResponse
+                    {
+                        Id = applicationUser!.Id,
+                        UserName = applicationUser.UserName,
+                        EmailAddress = applicationUser.EmailAddress,
+                        UsedSpace = applicationUser.UsedSpace,
+                        Quota = applicationUser.Quota,
+                    };
+                    SetRefreshTokenCookie(refreshToken!);
+                    return Ok(new {User = userResponse, Tokens = new TokenResponse{Token = token!, RefreshToken = refreshToken!}});
+                case AuthenticationResult.NotFound:
+                    return BadRequest(new {Message = "Cannot log in with this Google account"});
+                case AuthenticationResult.LockedOut:
+                    return BadRequest(new {Message = "To many failed login attempts"});
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        
         
         [AllowAnonymous]
         [HttpPost]
