@@ -66,12 +66,23 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             return appUser;
         }
-
-
-
+        
         public async Task<(Result Result, int UserId)> CreateUserAsync(string userName, string? emailAddress,
             string password)
         {
+            return await CreateUserInternal(emailAddress, userName, password);
+        }
+        
+        public async Task<(Result Result, int UserId)> CreateGoogleUserAsync(string email, string userName, string providerKey)
+        {
+            return await CreateUserInternal(email, userName, providerKey: providerKey);
+        }
+
+        private async Task<(Result Result, int UserId)> CreateUserInternal(string? email, string userName, string? password = null, string? providerKey = null)
+        {
+            if ((password is null && providerKey is null) || (password is not null && providerKey is not null))
+                throw new ArgumentException($"Malformed parameters {nameof(password)} or {nameof(providerKey)}");
+            
             var identityRole = new IdentityRole("Member");
 
             if (_roleManager.Roles.All(r => r.Name != identityRole.Name))
@@ -82,26 +93,37 @@ namespace webFileSharingSystem.Infrastructure.Identity
             var user = new IdentityUser
             {
                 UserName = userName,
-                Email = emailAddress,
+                Email = email,
             };
-            
+
             using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                var identityResult = await _userManager.CreateAsync(user, password);
-                if(!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
                 
+                var identityResult = password is not null ? await _userManager.CreateAsync(user, password) 
+                    : await _userManager.CreateAsync(user);
+                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+
                 identityResult = await _userManager.AddToRolesAsync(user, new[] {identityRole.Name});
-                if(!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
                 
-                var applicationUser = new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
+                if(providerKey is not null)
+                    await _userManager.AddLoginAsync(user, new UserLoginInfo(
+                        GoogleDefaults.AuthenticationScheme, 
+                            providerKey, 
+                            GoogleDefaults.AuthenticationScheme));
+
+                var applicationUser =
+                    new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
                 _unitOfWork.Repository<ApplicationUser>().Add(applicationUser);
-                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"),0);
+                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"), 0);
                 scope.Complete();
                 return (Result.Success(), applicationUser.Id);
-            } 
+            }
         }
+        
 
-        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)> AuthenticateAsync(string userName, string password, string ipAddress, CancellationToken cancellationToken)
+        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)>
+            AuthenticateAsync(string userName, string? password, string ipAddress, CancellationToken cancellationToken)
         {
             var identityUser = await _userManager.Users
                 .SingleOrDefaultAsync(x => x.UserName == userName || x.Email == userName, cancellationToken);
@@ -111,61 +133,29 @@ namespace webFileSharingSystem.Infrastructure.Identity
                 return (AuthenticationResult.NotFound, null, null, null);
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, true);
-
-            if (result.IsLockedOut)
+            if (password is not null)
             {
-                return (AuthenticationResult.LockedOut, null, null, null);
-            }
+                var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, true);
+
+                if (result.IsLockedOut)
+                {
+                    return (AuthenticationResult.LockedOut, null, null, null);
+                }
             
-            if (result.IsNotAllowed)
-            {
-                return (AuthenticationResult.IsBlocked, null, null, null);
-            }
+                if (result.IsNotAllowed)
+                {
+                    return (AuthenticationResult.IsBlocked, null, null, null);
+                }
 
-            if (!result.Succeeded)
-            {
-                return (AuthenticationResult.Failed, null, null, null);
+                if (!result.Succeeded)
+                {
+                    return (AuthenticationResult.Failed, null, null, null);
+                }
             }
             
             var userByIdentityIdSpecs =
                 new Specification<ApplicationUser>(appUser => appUser.IdentityUserId == identityUser!.Id);
             var appUserByIdentityId = await _unitOfWork.Repository<ApplicationUser>().FindAsync( userByIdentityIdSpecs, cancellationToken);
-
-            var appUser = appUserByIdentityId.SingleOrDefault();
-        
-            if(appUser is null)
-            {
-                throw new Exception($"User not found, identityUserId: {identityUser!.Id}");
-                //throw new UserNotFoundException( userId );
-            }
-            
-            (var token, RefreshToken? refreshToken) = await _tokenService.GenerateTokens(appUser, ipAddress);
-
-            if (refreshToken is null) return (AuthenticationResult.IsBlocked, null, null, null);
-            
-            _unitOfWork.Repository<RefreshToken>().Add(refreshToken);
-
-            if ( await _unitOfWork.Complete() <= 0) throw new Exception("Problem with refreshing refresh token");
-
-            return (AuthenticationResult.Success, appUser, token, refreshToken.Token);
-        }
-        
-        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)> 
-            AuthenticateWithGoogleAsync(string providerKey, string email, string ipAddress, CancellationToken cancellationToken)
-        {
-            var identityUser = await _userManager.Users
-                .SingleOrDefaultAsync(x => x.Email == email, cancellationToken);
-            
-            if (identityUser is null)
-            {
-                return (AuthenticationResult.NotFound, null, null, null);
-            }
-            
-            var userByIdentityIdSpecs =
-                new Specification<ApplicationUser>(appUser => appUser.IdentityUserId == identityUser!.Id);
-            
-            var appUserByIdentityId = await _unitOfWork.Repository<ApplicationUser>().FindAsync(userByIdentityIdSpecs, cancellationToken);
 
             var appUser = appUserByIdentityId.SingleOrDefault();
         
@@ -315,41 +305,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             return ToApplicationResult(result);
         }
-
-        public async Task<(Result Result, int UserId)> CreateGoogleUserAsync(string email, string userName, string providerKey)
-        {
-            var identityRole = new IdentityRole("Member");
-
-            if (_roleManager.Roles.All(r => r.Name != identityRole.Name))
-            {
-                await _roleManager.CreateAsync(identityRole);
-            }
-
-            var user = new IdentityUser
-            {
-                UserName = userName,
-                Email = email,
-            };
-
-            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
-            {
-                var identityResult = await _userManager.CreateAsync(user);
-                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
-
-                identityResult = await _userManager.AddToRolesAsync(user, new[] {identityRole.Name});
-                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
-                
-                var provider = GoogleDefaults.AuthenticationScheme;
-                await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, provider)).ConfigureAwait(false);
-
-                var applicationUser =
-                    new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
-                _unitOfWork.Repository<ApplicationUser>().Add(applicationUser);
-                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"), 0);
-                scope.Complete();
-                return (Result.Success(), applicationUser.Id);
-            }
-        }
+        
 
         public async Task<bool> RevokeRefreshTokenAsync(string token, string identityUserId, string ipAddress)
         {

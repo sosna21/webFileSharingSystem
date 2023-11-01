@@ -32,3 +32,26 @@
   justify-content: center;
   box-shadow: 0 1em 1em 0 rgba(0, 0, 0, 0.5);
 }
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: grey;
+  font-size: smaller;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #bebdbd;
+}
+
+.separator:not(:empty)::before {
+  margin-right: .7em;
+}
+
+.separator:not(:empty)::after {
+  margin-left: .7em;
+}

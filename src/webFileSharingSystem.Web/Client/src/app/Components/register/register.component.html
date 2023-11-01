@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-center align-items-center background">
   <div id="register-card" class="text-center col-12 col-sm-10 col-md-8 col-lg-7 col-xl-3 card">
-    <h1 class="font-weight-bold mt-1 mt-md-5 mb-2">Welcome</h1>
+    <h1 class="font-weight-bold mt-1 mt-md-4 mb-2">Welcome</h1>
 
     <h5 class="mb-3">Please fill in the form to continue</h5>
     <hr class="m-2 p-0">
@@ -33,5 +33,7 @@
         <button class="btn btn-secondary btn-block" [disabled]="loading" routerLink="/login">Login</button>
       </div>
     </div>
+    <div class="separator">OR</div>
+    <app-google-auth class="my-1 mt-md-3 mb-md-4" (isLoadingEmitter)="changeLoading($event)"></app-google-auth>
   </div>
 </div>

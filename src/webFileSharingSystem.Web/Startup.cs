@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using webFileSharingSystem.Core;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure;
 using webFileSharingSystem.Web.Services;
 
@@ -28,6 +29,8 @@ namespace webFileSharingSystem.Web
             services.AddCore();
 
             services.AddInfrastructure(_config);
+
+            services.Configure<GoogleAuthSetting>(_config.GetSection(nameof(GoogleAuthSetting)));
 
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 

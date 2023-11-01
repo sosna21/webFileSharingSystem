@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth;
@@ -20,12 +21,14 @@ namespace webFileSharingSystem.Web.Controllers
         private readonly IUserService _userService;
         private readonly ICurrentUserService _currentUserService;
         private readonly JwtSettings _jwtSettings;
+        private readonly GoogleAuthSetting _googleAuthSettings;
 
-        public AuthController(IUserService userService, IOptions<JwtSettings> jwtSettings, ICurrentUserService currentUserService)
+        public AuthController(IUserService userService, IOptions<JwtSettings> jwtSettings, IOptions<GoogleAuthSetting> googleAuthSettings, ICurrentUserService currentUserService)
         {
             _userService = userService;
             _currentUserService = currentUserService;
             _jwtSettings = jwtSettings.Value;
+            _googleAuthSettings = googleAuthSettings.Value;
         }
 
         [AllowAnonymous]
@@ -66,16 +69,21 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("LoginWithGoogle")]
         public async Task<IActionResult> LoginWithGoogle([FromBody] string credential, CancellationToken cancellationToken = default)
         {
-            GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(credential);
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new List<string> {_googleAuthSettings.ClientId}
+            };
+            
+            GoogleJsonWebSignature.Payload payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
             
             var (authenticationResult, applicationUser, token, refreshToken) = 
-                await _userService.AuthenticateWithGoogleAsync(payload.Subject, payload.Email, GetIpAddress(), cancellationToken);
+                await _userService.AuthenticateAsync(payload.Email, null, GetIpAddress(), cancellationToken);
 
             if (authenticationResult == AuthenticationResult.NotFound)
             {
                 await _userService.CreateGoogleUserAsync(payload.Email, payload.GivenName, payload.Subject);
                 (authenticationResult, applicationUser, token, refreshToken) = 
-                    await _userService.AuthenticateWithGoogleAsync(payload.Subject, payload.Email, GetIpAddress(), cancellationToken);
+                    await _userService.AuthenticateAsync(payload.Email, null, GetIpAddress(), cancellationToken);
             }
 
             switch (authenticationResult)

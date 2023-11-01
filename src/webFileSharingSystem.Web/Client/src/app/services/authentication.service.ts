@@ -47,15 +47,8 @@ export class AuthenticationService {
   }
 
   loginWithGoogle(credentials: string) {
-    // let body = JSON.stringify(credentials)
-    // return this.http.post<any>(environment.apiUrl + "/Auth/" + "LoginWithGoogle" , JSON.stringify(credentials))
-    //   .pipe(map(response => {
-    //     // store user details and basic auth credentials in local storage to keep user logged in between page refreshes
-    //     return this.handleLogInResponse(response);
-    //   }));
-
     const header = new HttpHeaders().set('Content-type', 'application/json');
-    return this.http.post<any>(environment.apiUrl + "/Auth/" + "LoginWithGoogle" , JSON.stringify(credentials), {
+    return this.http.post<any>(`${environment.apiUrl}/Auth/LoginWithGoogle` , JSON.stringify(credentials), {
       headers: header,
       withCredentials: true
     }).pipe(map(response => {
