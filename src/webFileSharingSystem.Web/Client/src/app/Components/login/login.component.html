@@ -1,10 +1,10 @@
 <div class="d-flex justify-content-center align-items-center background">
   <div id="login-card" class="text-center col-12 col-sm-10 col-md-8 col-lg-7 col-xl-3 card">
-    <h1 class="font-weight-bold mt-1 mt-md-5 mb-2">Welcome</h1>
+    <h1 class="font-weight-bold mt-1 mt-md-4 mb-2">Welcome</h1>
 
     <h5 class="mb-3">Please fill in the form to continue</h5>
     <hr class="m-2 p-0">
-    <img src="../../../assets/mascote.png" alt="application mascot img"  width="120em" class="mb-4 align-self-center" >
+    <img src="../../../assets/mascote.png" alt="application mascot img" width="120em" class="mb-4 align-self-center">
     <div class="col-md-11 col-sm-12 align-self-center">
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <app-text-input [formControl]="$any(loginForm).controls['username']" [label]="'Username/Email'"
@@ -22,7 +22,7 @@
         <div *ngIf="error" class="alert alert-danger mt-3 mb-0">{{error}}</div>
       </form>
     </div>
-    <div class="row align-items-center m-2 mt-3 mt-md-4">
+    <div class="row align-items-center mx-2 mt-3 mt-md-4">
       <div class="col-7">
         <p>You don't have an account?
           <br/> Click Register to create a new account! </p>
@@ -31,5 +31,7 @@
         <button class="btn btn-secondary btn-block" [disabled]="loading" routerLink="/register">Register</button>
       </div>
     </div>
+    <div class="separator">OR</div>
+    <app-google-auth class="my-1 mt-md-3 mb-md-4" (isLoadingEmitter)="changeLoading($event)"></app-google-auth>
   </div>
 </div>

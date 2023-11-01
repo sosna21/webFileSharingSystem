@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -65,12 +66,23 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             return appUser;
         }
-
-
-
+        
         public async Task<(Result Result, int UserId)> CreateUserAsync(string userName, string? emailAddress,
             string password)
         {
+            return await CreateUserInternal(emailAddress, userName, password);
+        }
+        
+        public async Task<(Result Result, int UserId)> CreateGoogleUserAsync(string email, string userName, string providerKey)
+        {
+            return await CreateUserInternal(email, userName, providerKey: providerKey);
+        }
+
+        private async Task<(Result Result, int UserId)> CreateUserInternal(string? email, string userName, string? password = null, string? providerKey = null)
+        {
+            if ((password is null && providerKey is null) || (password is not null && providerKey is not null))
+                throw new ArgumentException($"Malformed parameters {nameof(password)} or {nameof(providerKey)}");
+            
             var identityRole = new IdentityRole("Member");
 
             if (_roleManager.Roles.All(r => r.Name != identityRole.Name))
@@ -81,26 +93,37 @@ namespace webFileSharingSystem.Infrastructure.Identity
             var user = new IdentityUser
             {
                 UserName = userName,
-                Email = emailAddress,
+                Email = email,
             };
-            
+
             using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
             {
-                var identityResult = await _userManager.CreateAsync(user, password);
-                if(!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
                 
+                var identityResult = password is not null ? await _userManager.CreateAsync(user, password) 
+                    : await _userManager.CreateAsync(user);
+                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+
                 identityResult = await _userManager.AddToRolesAsync(user, new[] {identityRole.Name});
-                if(!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
+                if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
                 
-                var applicationUser = new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
+                if(providerKey is not null)
+                    await _userManager.AddLoginAsync(user, new UserLoginInfo(
+                        GoogleDefaults.AuthenticationScheme, 
+                            providerKey, 
+                            GoogleDefaults.AuthenticationScheme));
+
+                var applicationUser =
+                    new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
                 _unitOfWork.Repository<ApplicationUser>().Add(applicationUser);
-                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"),0);
+                if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"), 0);
                 scope.Complete();
                 return (Result.Success(), applicationUser.Id);
-            } 
+            }
         }
+        
 
-        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)> AuthenticateAsync(string userName, string password, string ipAddress, CancellationToken cancellationToken)
+        public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)>
+            AuthenticateAsync(string userName, string? password, string ipAddress, CancellationToken cancellationToken)
         {
             var identityUser = await _userManager.Users
                 .SingleOrDefaultAsync(x => x.UserName == userName || x.Email == userName, cancellationToken);
@@ -110,21 +133,24 @@ namespace webFileSharingSystem.Infrastructure.Identity
                 return (AuthenticationResult.NotFound, null, null, null);
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, true);
-
-            if (result.IsLockedOut)
+            if (password is not null)
             {
-                return (AuthenticationResult.LockedOut, null, null, null);
-            }
+                var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, true);
+
+                if (result.IsLockedOut)
+                {
+                    return (AuthenticationResult.LockedOut, null, null, null);
+                }
             
-            if (result.IsNotAllowed)
-            {
-                return (AuthenticationResult.IsBlocked, null, null, null);
-            }
+                if (result.IsNotAllowed)
+                {
+                    return (AuthenticationResult.IsBlocked, null, null, null);
+                }
 
-            if (!result.Succeeded)
-            {
-                return (AuthenticationResult.Failed, null, null, null);
+                if (!result.Succeeded)
+                {
+                    return (AuthenticationResult.Failed, null, null, null);
+                }
             }
             
             var userByIdentityIdSpecs =
@@ -149,6 +175,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
             return (AuthenticationResult.Success, appUser, token, refreshToken.Token);
         }
+        
 
         public async Task<(Result Result, string? Token, string? RefreshToken)> RefreshTokenAsync(string token, string refreshToken, string ipAddress, CancellationToken cancellationToken = default)
         {
@@ -279,6 +306,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
             return ToApplicationResult(result);
         }
         
+
         public async Task<bool> RevokeRefreshTokenAsync(string token, string identityUserId, string ipAddress)
         {
             var refreshToken = (await _unitOfWork.Repository<RefreshToken>()

@@ -37,6 +37,7 @@ import {DurationPickerModule} from "ngx-duration-picker";
 import {ToastrModule} from "ngx-toastr";
 import {ButtonsModule} from "ngx-bootstrap/buttons";
 import { FilesSharedWithMeExplorerComponent } from './Components/files-shared-with-me-explorer/files-shared-with-me-explorer.component';
+import { GoogleAuthComponent } from './Components/common/google-auth/google-auth.component';
 
 @NgModule({
   declarations: [
@@ -61,6 +62,7 @@ import { FilesSharedWithMeExplorerComponent } from './Components/files-shared-wi
     SizeConverterPipe,
     DndDirective,
     FilesSharedWithMeExplorerComponent,
+    GoogleAuthComponent,
 
   ],
   imports: [

@@ -94,4 +94,9 @@ export class RegisterComponent implements OnInit {
       }
     });
   }
+
+  changeLoading($event: boolean) {
+    console.log("register loading")
+    this.loading = $event
+  }
 }
