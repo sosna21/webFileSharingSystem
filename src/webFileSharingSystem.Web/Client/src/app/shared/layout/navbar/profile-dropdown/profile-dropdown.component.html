@@ -1,0 +1,36 @@
+<div ngbDropdown class="dropdown text-end me-4">
+  <a
+    ngbDropdownToggle
+    class="d-block link-body-emphasis text-decoration-none dropdown-toggle text-white"
+  >
+    <img
+      src="https://github.com/mdo.png"
+      alt="user proffile pic"
+      width="32"
+      height="32"
+      class="rounded-circle"
+    />
+    {{ userName }}
+  </a>
+  <ul ngbDropdownMenu class="dropdown-menu text-small">
+    <li ngbDropdownItem>
+      <a class="dropdown-item" routerLink="/settings">
+        <i class="bi bi-gear"></i>
+        Settings
+      </a>
+    </li>
+    <li ngbDropdownItem>
+      <a class="dropdown-item" routerLink="/profile">
+        <i class="bi bi-person-lines-fill"></i>
+        Profile
+      </a>
+    </li>
+    <li><hr class="dropdown-divider" /></li>
+    <li ngbDropdownItem>
+      <a class="dropdown-item" (click)="logout()">
+        <i class="bi bi-power"></i>
+        Sign out
+      </a>
+    </li>
+  </ul>
+</div>

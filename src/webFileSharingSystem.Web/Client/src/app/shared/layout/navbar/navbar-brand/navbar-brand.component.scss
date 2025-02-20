@@ -1,0 +1,8 @@
+.navbar-brand i {
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.navbar-brand:hover i {
+  transform: scale(1.1);
+  opacity: 0.9;
+}

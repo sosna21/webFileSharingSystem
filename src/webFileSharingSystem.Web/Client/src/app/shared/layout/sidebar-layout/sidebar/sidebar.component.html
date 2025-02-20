@@ -1,0 +1,24 @@
+<nav class="d-flex flex-column px-3 py-4 bg-body-tertiary">
+  <ul class="nav nav-pills flex-column" (click)="isCollapsed.set(true)">
+    <li app-nav-link link="home" >
+      <i class="bi bi-house"></i>
+      My files
+    </li>
+    <li app-nav-link link="shared-with-me">
+      <i class="bi bi-people"></i>
+      Shared with me
+    </li>
+    <li app-nav-link link="shared-by-me">
+      <i class="bi bi-share"></i>
+      Shared by me
+    </li>
+    <li app-nav-link link="favourite">
+      <i class="bi bi-heart"></i>
+      Favourite
+    </li>
+    <li app-nav-link link="recent">
+      <i class="bi bi-hourglass"></i>
+      Recent
+    </li>
+  </ul>
+</nav>

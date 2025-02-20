@@ -1,0 +1,29 @@
+<div ngbDropdown class="nav-item dropdown text-white">
+  <a role="button" class="dropdown-toggle nav-link" ngbDropdownToggle>
+    <span class="bi" [ngClass]="themeIcon()"></span>
+  </a>
+  <div ngbDropdownMenu class="dropdown-menu-end">
+    <button
+      ngbdropdownitem
+      class="dropdown-item"
+      [class.active]="theme() === 'auto'"
+      (click)="changeTheme('auto')"
+    >
+      <span class="bi bi-circle-half me-2"></span>Auto</button
+    ><button
+      ngbdropdownitem
+      class="dropdown-item"
+      [class.active]="theme() === 'light'"
+      (click)="changeTheme('light')"
+    >
+      <span class="bi bi-sun-fill me-2"></span>Light</button
+    ><button
+      ngbdropdownitem
+      class="dropdown-item"
+      [class.active]="theme() === 'dark'"
+      (click)="changeTheme('dark')"
+    >
+      <span class="bi bi-moon-stars-fill me-2"></span>Dark
+    </button>
+  </div>
+</div>
