@@ -1,7 +1,5 @@
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,7 +33,18 @@ namespace webFileSharingSystem.Web
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 
             services.AddControllers();
-            services.AddCors();
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend",
+                    builder => builder
+                        .WithOrigins("https://localhost:4200")
+                        .AllowCredentials() // Required when using cookies
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                );
+            });
+            
+            
             services.AddSwaggerGen(
                 option =>
                 {
@@ -65,9 +74,6 @@ namespace webFileSharingSystem.Web
                         }
                     });
                 });
-
-            // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration => configuration.RootPath = "Client/dist");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -84,7 +90,7 @@ namespace webFileSharingSystem.Web
 
             app.UseRouting();
 
-            app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200"));
+            app.UseCors("AllowFrontend");
 
             app.UseAuthentication();
 
@@ -93,28 +99,6 @@ namespace webFileSharingSystem.Web
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
             app.UseStaticFiles();
-
-            if (!env.IsDevelopment())
-            {
-                app.UseSpaStaticFiles();
-            }
-
-            app.UseSpa(spa =>
-            {
-                // To learn more about options for serving an Angular SPA from ASP.NET Core,
-                // see https://go.microsoft.com/fwlink/?linkid=864501
-
-                spa.Options.SourcePath = "Client";
-
-                if (env.IsDevelopment())
-                {
-                    bool.TryParse(Environment.GetEnvironmentVariable("LOCAL_ANGULAR"), out var localAngular);
-                    if (localAngular)
-                        spa.UseProxyToSpaDevelopmentServer("http://localhost:4200");
-                    else
-                        spa.UseAngularCliServer(npmScript: "start");
-                }
-            });
         }
     }
 }

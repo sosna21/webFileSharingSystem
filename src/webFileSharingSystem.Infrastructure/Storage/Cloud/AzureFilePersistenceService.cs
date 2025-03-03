@@ -58,8 +58,12 @@ namespace webFileSharingSystem.Infrastructure.Storage
             var blobClient = blobContainer.GetBlobClient(fileGuid.ToString());
 
             var range = new HttpRange(chunkIndex * chunkSize, chunkSize);
+            var blobOptions = new BlobDownloadOptions
+            {
+                Range = range
+            };
 
-            var blobStreamingResult =  await blobClient.DownloadStreamingAsync(range, cancellationToken: cancellationToken);
+            var blobStreamingResult =  await blobClient.DownloadStreamingAsync(blobOptions, cancellationToken: cancellationToken);
             
             await blobStreamingResult.Value.Content.CopyToAsync(outputStream, cancellationToken);
         }

@@ -114,7 +114,6 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("Refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken = default)
         {
-
             var currentRefreshToken = request.RefreshToken ?? Request.Cookies["refreshToken"];
 
             if (currentRefreshToken is null) return BadRequest(new {Message = "Invalid token"});
@@ -173,7 +172,6 @@ namespace webFileSharingSystem.Web.Controllers
                 Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryTimeInDays),
                 SameSite = SameSiteMode.Strict,
                 Secure = true
-
             };
             Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
         }
