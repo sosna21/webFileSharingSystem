@@ -1,0 +1,18 @@
+<div class="col-9 col-sm-6 col-md-12 mt-2">
+  <ngb-progressbar
+    [showValue]="progress() > 7"
+    [type]="progressStyle()"
+    [value]="progress()"
+  />
+  <span class="small">
+    <i class="bi bi-device-hdd" class="text-{{ progressStyle() }}"></i>
+    Used space: {{ usedSpace() | fileSize }} \ {{ totalSpace() | fileSize }}
+  </span>
+</div>
+@if (progress() > 90) {
+<div class="alert alert-danger mt-2 p-1">
+  {{ progress() >= 100 ? "No free space left." : "Available space is low." }}
+  <br />
+  Consider deleting some files.
+</div>
+}
