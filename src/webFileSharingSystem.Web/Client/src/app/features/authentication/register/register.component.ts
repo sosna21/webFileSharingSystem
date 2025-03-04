@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { TextInputComponent } from "../../../shared/text-input/text-input.component";
 import { FormGroup, FormBuilder, Validators, ValidatorFn, AbstractControl, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -7,6 +7,8 @@ import { BaseAuthPageComponent } from "../base-auth-page/base-auth-page.componen
 import { CardMainContentComponent } from "../auth-card/card-main-content/card-main-content.component";
 import { MainActionBtnComponent } from "../auth-card/card-main-content/main-action-btn/main-action-btn.component";
 import { CardSecondaryContentComponent } from "../auth-card/card-secondary-content/card-secondary-content.component";
+import { ToastService } from '../../../core/services/toast.service';
+import { MessageSeverity } from '../../../core/models/toast-info.model';
 
 @Component({
   selector: 'app-register',
@@ -16,18 +18,13 @@ import { CardSecondaryContentComponent } from "../auth-card/card-secondary-conte
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RegisterComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private authenticationService = inject(AuthenticationService);
+  private toast = inject(ToastService);
   registerForm!: FormGroup;
   loading = signal(false);
   error = signal<string | null>(null);
-
-  constructor(private fb: FormBuilder,
-    private router: Router,
-    private authenticationService: AuthenticationService) {
-    // redirect to home if already logged in
-    if (this.authenticationService.isAuthenticated()) {
-      this.router.navigate(['/']);
-    }
-  }
 
   ngOnInit(): void {
     this.initializeForm();
@@ -80,13 +77,16 @@ export class RegisterComponent implements OnInit {
 
     this.loading.set(true);
 
-    this.authenticationService.register(this.registerForm.value).subscribe(() => {
-      //this.toastr.success("Account created successfully", "Account creation result");
-      this.router.navigate(['/login']);
-    }, error => {
-      this.error.set(error.error);
-      this.loading.set(false);
-    })
+    this.authenticationService.register(this.registerForm.value).subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+        this.toast.show("Account created", "You can now log in and start using the app.", MessageSeverity.success);
+      },
+      error: error => {
+        this.error.set(error.error);
+        this.loading.set(false);
+      }
+    });
   }
 
   private validateAllFormFields(formGroup: FormGroup) {
