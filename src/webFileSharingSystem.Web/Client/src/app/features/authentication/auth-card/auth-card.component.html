@@ -1,0 +1,16 @@
+<div
+  id="login-card"
+  class="text-center p-2 p-md-0 card bg-dark"
+>
+  <h1 class="font-weight-bold mt-1 mt-md-4 mb-2">{{ headerText() }}</h1>
+  <h5 class="mb-3">{{ subHeaderText() }}</h5>
+  <hr class="m-2 p-0" />
+  <ng-content></ng-content>
+  @if (includeExternalLogins()) {
+  <div class="separator">OR</div>
+  <app-google-account-auth
+    class="my-1 mt-md-3 mb-md-4"
+    (isLoadingEmitter)="changeLoading($event)"
+  ></app-google-account-auth>
+  }
+</div>

@@ -1,0 +1,36 @@
+@let controls = $any(registerForm.controls!);
+<app-base-auth-page [(loading)]="loading">
+  <app-card-main-content [errorMsg]="error()">
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <app-text-input
+        [formControl]="controls['username']"
+        label="Username"
+      ></app-text-input>
+      <app-text-input
+        [formControl]="controls['email']"
+        label="Email (optional)"
+      ></app-text-input>
+      <app-text-input
+        [formControl]="controls['password']"
+        label="Password"
+        [type]="'password'"
+      ></app-text-input>
+      <app-text-input
+        [formControl]="controls['confirmPassword']"
+        label="Confirm Password"
+        [type]="'password'"
+      ></app-text-input>
+      <app-main-action-btn [loading]="loading()">Register</app-main-action-btn>
+    </form>
+  </app-card-main-content>
+  <app-card-secondary-content>
+    You already have an account?<br />Click Back to go to a Login page!
+    <button
+      class="btn btn-secondary btn-block"
+      [disabled]="loading()"
+      routerLink="/login"
+    >
+      Login
+    </button>
+  </app-card-secondary-content>
+</app-base-auth-page>

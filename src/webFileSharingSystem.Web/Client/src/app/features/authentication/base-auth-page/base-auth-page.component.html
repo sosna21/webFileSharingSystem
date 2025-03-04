@@ -1,0 +1,11 @@
+<div
+  id="page-container"
+  class="d-flex justify-content-center align-items-center background"
+>
+  <app-auth-card
+    [(loading)]="loading"
+    [includeExternalLogins]="includeExternalLogins()"
+  >
+    <ng-content></ng-content>
+  </app-auth-card>
+</div>

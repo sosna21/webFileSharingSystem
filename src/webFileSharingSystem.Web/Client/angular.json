@@ -63,7 +63,13 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
             },
             "pl": {
               "optimization": false,
@@ -71,6 +77,12 @@
               "sourceMap": true,
               "localize": [
                 "pl"
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
               ]
             }
           },
@@ -78,6 +90,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "ssl": true
+          },
           "configurations": {
             "production": {
               "buildTarget": "Client:build:production"

@@ -1,0 +1,41 @@
+@import "bootstrap/scss/bootstrap";
+:host {
+  @include media-breakpoint-up(xl) {
+    min-width: max(35em, 20%);
+  }
+}
+
+#login-card {
+    --bs-bg-opacity: 0.95;
+    min-height: 60vh;
+    justify-content: center;
+    box-shadow: 0 1em 1em 0 rgba(0, 0, 0, 0.5);
+  
+    :host-context([data-bs-theme="light"]) & {
+      background: rgba(240, 255, 255, 0.87) !important;
+    }
+  }
+  
+  .separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: grey;
+    font-size: smaller;
+  }
+  
+  .separator::before,
+  .separator::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #bebdbd;
+  }
+  
+  .separator:not(:empty)::before {
+    margin-right: 0.7em;
+  }
+  
+  .separator:not(:empty)::after {
+    margin-left: 0.7em;
+  }
+  

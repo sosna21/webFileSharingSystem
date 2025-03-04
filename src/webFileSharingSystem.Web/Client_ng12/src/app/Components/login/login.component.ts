@@ -56,6 +56,8 @@ export class LoginComponent implements OnInit {
         () => {
           this.router.navigate([this.returnUrl]);
         }, error => {
+          console.log('Log in error accured');
+          console.log(error);
           this.error = error.error.message;
           this.loading = false;
         });

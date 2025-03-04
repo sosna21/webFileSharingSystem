@@ -1,19 +1,89 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { User } from '../models/user.model';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { catchError, finalize, map, throwError } from 'rxjs';
+import { JwtTokenService } from './jwt-token.service';
+import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
+import { LocalStorageManagementService } from './local-storage-management.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthenticationService {
+  private http = inject(HttpClient);
+  private jwtService = inject(JwtTokenService);
+  private localStorageManager = inject(LocalStorageManagementService);
   private router = inject(Router);
   private _currentUser = signal<User | null>(null);
   currentUser = this._currentUser.asReadonly();
-  isAuthenticated = signal(true);// computed(() => !!this.currentUser()); //TODO uncomment
+  isAuthenticated = computed(() => !!this._currentUser());
+
+
+  constructor() {
+    this.initializeCurrentUser();
+  }
+
+  private initializeCurrentUser() {
+    const user = this.localStorageManager.getUser();
+    if (!user) return;
+    this._currentUser.set(user);
+    this.jwtService.setToken(this.currentUser()!.token);
+  }
+
+  register(registerRequest: { username: string, password: string, email: string | null }) {
+    if (registerRequest.email === '') registerRequest.email = null;
+    return this.http.post<any>(`${environment.apiUrl}/Auth/Register`, registerRequest);
+  }
+
+  login(username: string, password: string) {
+    return this.http.post<any>(`${environment.apiUrl}/Auth/Login`, { username, password }, { withCredentials: true })
+      .pipe(map(response => this.handleLogInResponse(response)));
+  }
+
+  loginWithGoogle(credentials: string) {
+    const header = new HttpHeaders().set('Content-type', 'application/json');
+    return this.http.post<any>(`${environment.apiUrl}/Auth/LoginWithGoogle`, JSON.stringify(credentials), {
+      headers: header,
+      withCredentials: true
+    }).pipe(map(response => this.handleLogInResponse(response)));
+  }
+
+  private handleLogInResponse(response: any) {
+    let user = <User>response.user;
+    user.token = response.tokens.token;
+
+    this.jwtService.setTokenAndUpdateUserInfo(user);
+    this.localStorageManager.saveUser(user);
+    this._currentUser.set(user);
+    return user;
+  }
+
+  refreshToken() {
+    let user = this.currentUser()!;
+
+    return this.http.post<any>(`${environment.apiUrl}/Auth/Refresh`, { token: user.token }, { withCredentials: true })
+      .pipe(map(tokens => {
+        this.jwtService.setToken(tokens.token);
+        this.jwtService.updateUserInfo(user);
+        this.localStorageManager.saveUser(user);
+        this._currentUser.set(user);
+        return user.token;
+      }), catchError(error => {
+        this.removeUser();
+        this.router.navigate(['/login']);
+        return error(error);
+      }));
+  }
 
   logout() {
+    return this.http.put<any>(`${environment.apiUrl}/Auth/Revoke`, {}, { withCredentials: true }).pipe(
+      finalize(() => this.removeUser())
+    );
+  }
+
+  private removeUser() {
+    this.localStorageManager.removeUser();
     this._currentUser.set(null);
-    this.isAuthenticated.set(false); //TODO remove, will be calc form currentUser
-    this.router.navigate(['/login']);
   }
 }
