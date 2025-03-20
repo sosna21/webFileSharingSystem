@@ -1,4 +1,4 @@
-import { Component, inject, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, model } from '@angular/core';
 import { AuthenticationService } from '../../../core/services/authentication.service';
 import { ThemeSwitchComponent } from "../../theme-switch/theme-switch.component";
 import { ProfileDropdownComponent } from "./profile-dropdown/profile-dropdown.component";
@@ -9,7 +9,8 @@ import { NavbarBrandComponent } from "./navbar-brand/navbar-brand.component";
   selector: 'app-navbar',
   imports: [ThemeSwitchComponent, ProfileDropdownComponent, FileSearchComponent, NavbarBrandComponent],
   templateUrl: './navbar.component.html',
-  styleUrl: './navbar.component.scss'
+  styleUrl: './navbar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NavbarComponent {
   private authenticationService = inject(AuthenticationService);

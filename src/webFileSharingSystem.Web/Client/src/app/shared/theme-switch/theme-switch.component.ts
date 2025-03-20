@@ -1,11 +1,12 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, inject, OnInit, Renderer2, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, Renderer2, signal } from '@angular/core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 @Component({
   selector: 'app-theme-switch',
   imports: [NgbDropdownModule, NgClass],
   templateUrl: './theme-switch.component.html',
-  styleUrl: './theme-switch.component.scss'
+  styleUrl: './theme-switch.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ThemeSwitchComponent implements OnInit {
   renderer2 = inject(Renderer2);
