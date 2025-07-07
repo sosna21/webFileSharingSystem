@@ -5,7 +5,7 @@ import { ReactiveFormsModule, ControlValueAccessor, NgControl } from '@angular/f
   selector: 'app-text-input',
   imports: [ReactiveFormsModule],
   templateUrl: './text-input.component.html',
-  styleUrl: './text-input.component.css',
+  styleUrl: './text-input.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TextInputComponent implements ControlValueAccessor {

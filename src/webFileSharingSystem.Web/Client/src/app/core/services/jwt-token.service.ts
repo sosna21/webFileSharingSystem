@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { User } from '../models/user.model';
-import { Buffer } from 'buffer';
 
 @Injectable({
   providedIn: 'root'
@@ -59,8 +58,12 @@ export class JwtTokenService {
   private decodeToken() {
     if (this.token) {
       const base64Url = this.token.split('.')[1];
-      this.decodedToken = JSON.parse(Buffer.from(base64Url, 'base64').toString());
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join(''));
+
+      this.decodedToken = JSON.parse(jsonPayload);
     }
-    return;
   }
 }
