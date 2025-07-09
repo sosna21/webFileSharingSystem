@@ -27,6 +27,14 @@ export class LocalStorageManagementService {
     this.removeFromStorage(DBkeys.CURRENT_USER);
   }
 
+  public getTheme(): string | null {
+    return this.getItem(DBkeys.THEME);
+  }
+  
+  public saveTheme(theme: string) {
+    this.setItem(DBkeys.THEME, theme);
+  }
+
   private setItem(key: string, data: unknown) {
     localStorage.setItem(key, JSON.stringify(data));
   }
