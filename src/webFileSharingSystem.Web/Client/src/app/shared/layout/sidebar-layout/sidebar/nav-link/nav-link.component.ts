@@ -7,7 +7,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './nav-link.component.html',
   styleUrl: './nav-link.component.scss',
   host: {
-    class: 'nav-item border-bottom border-1 rounded mb-1'
+    class: 'nav-item border-bottom border-2 border-secondary-subtle rounded mb-1'
   }
 })
 export class NavLinkComponent {

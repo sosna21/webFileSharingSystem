@@ -1,3 +1,11 @@
+a {
+    transition: transform 0.3s ease-in-out;
+}
+
 a:hover:not(.active) {
   background: rgba(139, 143, 143, 0.2) !important;
+}
+
+a:hover {
+  transform: translateX(5px);
 }
