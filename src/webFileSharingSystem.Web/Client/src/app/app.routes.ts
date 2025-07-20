@@ -21,11 +21,17 @@ export const routes: Routes = [
         component: SidebarLayoutComponent,
         children: [
             { path: '', redirectTo: 'home', pathMatch: 'full' },
-            { path: 'home', component: HomeComponent, title: 'My files' },
-            { path: 'shared-with-me', component: SharedWithMeComponent, title: 'Shared with me' },
+            { path: 'home', component: HomeComponent, title: 'My files', children: [
+                    { path: 'folder/:dirId', component: HomeComponent, title: 'My files' }
+                ]
+            },
             { path: 'shared-by-me', component: SharedByMeComponent, title: 'Shared by me' },
             { path: 'favourite', component: FavouriteComponent, title: 'Favourite' },
             { path: 'recent', component: RecentComponent, title: 'Recent' },
+            { path: 'shared-with-me', component: SharedWithMeComponent, title: 'Shared with me', children: [
+                    { path: 'folder/:dirId', component: SharedWithMeComponent, title: 'Shared with me' }
+                ]
+            },
         ],
         canActivate: [authGuard],
     },

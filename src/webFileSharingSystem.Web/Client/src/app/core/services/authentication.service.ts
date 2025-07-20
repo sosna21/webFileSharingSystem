@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { User } from '../models/user.model';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, finalize, map, throwError } from 'rxjs';
+import { catchError, finalize, map } from 'rxjs';
 import { JwtTokenService } from './jwt-token.service';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
@@ -11,6 +11,7 @@ import { LocalStorageManagementService } from './local-storage-management.servic
   providedIn: 'root'
 })
 export class AuthenticationService {
+  private readonly authUrl = `${environment.apiUrl}/Auth`;
   private http = inject(HttpClient);
   private jwtService = inject(JwtTokenService);
   private localStorageManager = inject(LocalStorageManagementService);
@@ -33,17 +34,17 @@ export class AuthenticationService {
 
   register(registerRequest: { username: string, password: string, email: string | null }) {
     if (registerRequest.email === '') registerRequest.email = null;
-    return this.http.post<any>(`${environment.apiUrl}/Auth/Register`, registerRequest);
+    return this.http.post<any>(`${this.authUrl}/Register`, registerRequest);
   }
 
   login(username: string, password: string) {
-    return this.http.post<any>(`${environment.apiUrl}/Auth/Login`, { username, password }, { withCredentials: true })
+    return this.http.post<any>(`${this.authUrl}/Login`, { username, password }, { withCredentials: true })
       .pipe(map(response => this.handleLogInResponse(response)));
   }
 
   loginWithGoogle(credentials: string) {
     const header = new HttpHeaders().set('Content-type', 'application/json');
-    return this.http.post<any>(`${environment.apiUrl}/Auth/LoginWithGoogle`, JSON.stringify(credentials), {
+    return this.http.post<any>(`${this.authUrl}/LoginWithGoogle`, JSON.stringify(credentials), {
       headers: header,
       withCredentials: true
     }).pipe(map(response => this.handleLogInResponse(response)));
@@ -62,7 +63,7 @@ export class AuthenticationService {
   refreshToken() {
     let user = this.currentUser()!;
 
-    return this.http.post<any>(`${environment.apiUrl}/Auth/Refresh`, { token: user.token }, { withCredentials: true })
+    return this.http.post<any>(`${this.authUrl}/Refresh`, { token: user.token }, { withCredentials: true })
       .pipe(map(tokens => {
         this.jwtService.setToken(tokens.token);
         this.jwtService.updateUserInfo(user);
