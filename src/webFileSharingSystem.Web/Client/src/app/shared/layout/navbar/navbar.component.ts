@@ -13,9 +13,10 @@ import { NavbarBrandComponent } from "./navbar-brand/navbar-brand.component";
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NavbarComponent {
-  private authenticationService = inject(AuthenticationService);
+  private readonly authenticationService = inject(AuthenticationService);
   authenticated = this.authenticationService.isAuthenticated;
   isSidebarCollapsed = model(true);
+  
 
   toogleCollapse() {
     this.isSidebarCollapsed.update(value => !value);

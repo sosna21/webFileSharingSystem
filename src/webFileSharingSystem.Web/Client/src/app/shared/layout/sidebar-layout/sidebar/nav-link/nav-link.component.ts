@@ -1,5 +1,6 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { FileService } from '../../../../../core/services/file.service';
 
 @Component({
   selector: 'li[app-nav-link]',
@@ -11,5 +12,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   }
 })
 export class NavLinkComponent {
+  private readonly fileService = inject(FileService);
   link = input.required<string>();
+
+  resetFileService() {
+    this.fileService.parentId.set(null);
+  }
 }

@@ -1,19 +1,20 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { ToastService } from '../../../core/services/toast.service';
-import { MessageSeverity } from '../../../core/models/toast-info.model';
+import { BaseDiscPageComponent } from "../base-disc-page/base-disc-page.component";
+import { BaseDiscPageHeaderComponent } from "../base-disc-page/base-disc-page-header/base-disc-page-header.component";
+import { FileService } from '../../../core/services/file.service';
 
 @Component({
   selector: 'app-shared-with-me',
-  imports: [],
+  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent],
   templateUrl: './shared-with-me.component.html',
   styleUrl: './shared-with-me.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SharedWithMeComponent implements OnInit {
-  toastsService = inject(ToastService);
+  private readonly fileService = inject(FileService);
 
   ngOnInit(): void {
-    this.toastsService.show('Shared with me', 'This is a toast message');
+    this.fileService.mode.set('GetSharedWithMe');
   }
 
 }

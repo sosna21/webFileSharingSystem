@@ -1,19 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { ToastService } from '../../../core/services/toast.service';
-import { MessageSeverity } from '../../../core/models/toast-info.model';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { FileService } from '../../../core/services/file.service';
+import {BaseDiscPageComponent} from '../base-disc-page/base-disc-page.component';
+import {BaseDiscPageHeaderComponent} from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 
 @Component({
   selector: 'app-recent',
-  imports: [],
+  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent],
   templateUrl: './recent.component.html',
   styleUrl: './recent.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RecentComponent implements OnInit {
-  private toastsService = inject(ToastService);
+  private readonly fileService = inject(FileService);
 
   ngOnInit(): void {
-    this.toastsService.show('Recent', 'This is a toast message', MessageSeverity.info);
+    this.fileService.mode.set('GetRecent');
   }
-
 }

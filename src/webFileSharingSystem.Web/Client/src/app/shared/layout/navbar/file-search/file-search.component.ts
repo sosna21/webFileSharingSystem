@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { FileService } from '../../../../core/services/file.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-file-search',
-  imports: [],
+  imports: [FormsModule],
   templateUrl: './file-search.component.html',
   styleUrl: './file-search.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -11,5 +13,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   }
 })
 export class FileSearchComponent {
+  private readonly fileService = inject(FileService);
+  searchedPhrase = this.fileService.searchedPhrase;
 
 }
