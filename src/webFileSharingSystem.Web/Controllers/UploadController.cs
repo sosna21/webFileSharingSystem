@@ -34,7 +34,8 @@ namespace webFileSharingSystem.Web.Controllers
 
             return Ok(partialFileInfo);
         }
-
+        
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPut]
         [Route("{fileId:int}/Chunk/{chunkIndex:int}")]
         public async Task<ActionResult<PartialFileInfo>> UploadFileChunkAsync(int fileId, int chunkIndex,
