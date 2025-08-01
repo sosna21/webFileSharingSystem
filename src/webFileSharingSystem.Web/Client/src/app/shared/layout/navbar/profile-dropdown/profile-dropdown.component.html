@@ -1,17 +1,22 @@
-<div ngbDropdown class="dropdown text-end me-4">
-  <a
+<div
+  ngbDropdown
+  appHoverClass="bg-secondary"
+  class="dropdown text-end p-1 me-4 rounded-pill"
+>
+  <span
     ngbDropdownToggle
-    class="d-block link-body-emphasis text-decoration-none dropdown-toggle text-white"
+    class="d-block dropdown-toggle text-white"
+    style="cursor: pointer"
   >
     <img
       [src]="userPhotoUrl || 'user.png'"
       alt="user proffile pic"
       width="32"
       height="32"
-      class="rounded-circle "
+      class="rounded-circle"
     />
     {{ userName }}
-  </a>
+  </span>
   <ul ngbDropdownMenu class="dropdown-menu text-small">
     <li ngbDropdownItem>
       <a class="dropdown-item" routerLink="/settings">

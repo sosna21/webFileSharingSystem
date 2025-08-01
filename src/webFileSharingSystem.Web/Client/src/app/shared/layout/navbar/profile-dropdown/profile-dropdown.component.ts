@@ -3,10 +3,12 @@ import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthenticationService } from '../../../../core/services/authentication.service';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
+import { HoverClassDirective } from '../../../../core/directives/hover-class.directive';
+
 
 @Component({
   selector: 'app-profile-dropdown',
-  imports: [NgbDropdownModule, RouterLink],
+  imports: [NgbDropdownModule, RouterLink, HoverClassDirective],
   templateUrl: './profile-dropdown.component.html',
   styleUrl: './profile-dropdown.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -19,7 +21,7 @@ export class ProfileDropdownComponent {
 
   logout() {
     this.authService.logout().pipe(
-    finalize(() => {
+      finalize(() => {
         this.router.navigate(['/login']);
       })
     ).subscribe();

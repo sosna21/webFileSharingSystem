@@ -1,16 +1,16 @@
-import { computed, inject, Injectable, linkedSignal, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, linkedSignal, signal } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
-import { httpResource } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
 import { Router } from '@angular/router';
+import { Breadcrumb } from '../models/breadcrumb.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FileService {
-
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly sharesUrl = `${environment.apiUrl}/Share`;
   private readonly router = inject(Router);

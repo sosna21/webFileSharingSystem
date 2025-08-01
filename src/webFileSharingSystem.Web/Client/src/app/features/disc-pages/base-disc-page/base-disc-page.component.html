@@ -4,58 +4,23 @@
   style="max-height: 100%"
 >
   <ng-content select="app-base-disc-page-header"></ng-content>
+  <ng-content></ng-content>
 
   <div>
-    <span>Files per page: </span>
+    <!-- <span>Files per page: </span>
     <input
       class="me-2"
       type="number"
       [(ngModel)]="itemsPerPage"
       placeholder="Items per page"
-    />
+    /> -->
     @if (loadingData()) { @defer(on timer(100ms)) {
     <span>Loading...</span>
     } }
   </div>
-
   <div class="overflow-scroll m" style="max-height: 100%; min-height: 400px">
-    <ng-content></ng-content>
     <ng-content select="table">
-      <table class="table table-striped table-sm">
-        <thead class="table-primary sticky-top">
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">File name</th>
-            <th scope="col">Size</th>
-            <th scope="col">Modification Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="4" class="text-center fs-5">
-              @if (files().length === 0) {
-              <span>No files found.</span>
-              }
-            </td>
-          </tr>
-          @for (file of files(); track file.id; let i = $index) { @let
-          isSelectable = file.isDirectory;
-          <tr
-            [class.table-warning]="isSelectable"
-            (click)="isSelectable ? selectFolder(file.id) : null"
-            [class.selectable]="isSelectable"
-          >
-            <th scope="row">{{ file.id }}</th>
-            <td class="">
-              <i class="bi bi-file-earmark fs-4 me-1"></i>
-              {{ file.fileName }}
-            </td>
-            <td>{{ file.size }}</td>
-            <td>{{ file.modificationDate }}</td>
-          </tr>
-          }
-        </tbody>
-      </table>
+      <app-base-table />
     </ng-content>
   </div>
 

@@ -2,9 +2,10 @@ import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, Renderer2, signal } from '@angular/core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { LocalStorageManagementService } from '../../core/services/local-storage-management.service';
+import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
 @Component({
   selector: 'app-theme-switch',
-  imports: [NgbDropdownModule, NgClass],
+  imports: [NgbDropdownModule, NgClass, ClicableIconDirective],
   templateUrl: './theme-switch.component.html',
   styleUrl: './theme-switch.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

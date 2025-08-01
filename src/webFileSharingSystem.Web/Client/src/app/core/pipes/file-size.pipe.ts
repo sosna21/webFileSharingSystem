@@ -11,7 +11,7 @@ export class FileSizePipe implements PipeTransform {
     }
     const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
     const unitIndex = Math.floor(Math.log(size) / Math.log(1024));
-    return unitIndex === 0
+    return unitIndex <= 2
       ? (size / Math.pow(1024, unitIndex)).toFixed(0) + ' ' + units[unitIndex]
       : (size / Math.pow(1024, unitIndex)).toFixed(2) + ' ' + units[unitIndex];
   };

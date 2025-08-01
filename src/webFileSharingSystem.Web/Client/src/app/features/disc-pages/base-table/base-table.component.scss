@@ -1,0 +1,28 @@
+tr {
+  cursor: default;
+}
+
+tr + .selectable {
+  cursor: pointer;
+}
+
+table {
+  @media (max-width: 992px) {
+    font-size: 0.85rem;
+  }
+}
+
+.dropdown-toggle::after {
+  display: none;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+}
+
+tr {
+  border-left: 4px solid transparent;
+}

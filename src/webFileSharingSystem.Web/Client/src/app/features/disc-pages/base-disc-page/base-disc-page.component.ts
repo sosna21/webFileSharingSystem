@@ -1,19 +1,20 @@
-import { Component, computed, inject, input, OnInit } from '@angular/core';
-import { NgbPaginationModule } from "@ng-bootstrap/ng-bootstrap";
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgbDropdownModule, NgbPaginationModule, NgbTooltipModule } from "@ng-bootstrap/ng-bootstrap";
 import { FileService } from '../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { BaseTableComponent } from "../base-table/base-table.component";
 
 @Component({
   selector: 'app-base-disc-page',
-  imports: [NgbPaginationModule, FormsModule],
+  imports: [NgbPaginationModule, FormsModule, CommonModule, NgbTooltipModule, NgbDropdownModule, BaseTableComponent],
   templateUrl: './base-disc-page.component.html',
-  styleUrl: './base-disc-page.component.scss'
+  styleUrl: './base-disc-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BaseDiscPageComponent {
   private readonly fileService = inject(FileService);
   readonly showPagination = computed(() => this.totalItems() > this.itemsPerPage());
-  readonly router = inject(Router);
 
   itemsPerPage = this.fileService.itemsPerPage;
   currentPage = this.fileService.currentPage;
@@ -21,11 +22,6 @@ export class BaseDiscPageComponent {
 
   fileResource = this.fileService.fileResource;
   fileResponseResponse = this.fileService.fileResponseResource;
-
-  files = computed(() => this.fileResponseResponse()?.items || []);
+  
   loadingData = computed(() => this.fileResource.isLoading());
-
-  selectFolder(folderId: number) {
-    this.fileService.goToFolder(folderId);
-  }
 }
