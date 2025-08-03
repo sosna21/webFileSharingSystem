@@ -14,6 +14,7 @@ export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly sharesUrl = `${environment.apiUrl}/Share`;
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   public readonly mode = signal<'GetAll' | 'GetSharedWithMe' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent'>('GetAll');
   public readonly searchedPhrase = signal<string>('');
@@ -42,6 +43,11 @@ export class FileService {
   });
   public readonly fileResource = this._fileResource.asReadonly();
   public readonly fileResponseResource = this._linkedFilesResponse.asReadonly();
+
+  //breadcumbs
+  private readonly _breadcrumbsQuery = computed(() => this.parentId() !== null ? `${this.fileUrl}/GetFilePath/${this.parentId()}` : undefined);
+  private readonly _breadCrumbsResource = httpResource<Breadcrumb[]>(() => this._breadcrumbsQuery());
+  public readonly breadCrumbsResource = this._breadCrumbsResource.asReadonly();
 
   goToFolder(folderId: number | null) {
     this.parentId.set(folderId);

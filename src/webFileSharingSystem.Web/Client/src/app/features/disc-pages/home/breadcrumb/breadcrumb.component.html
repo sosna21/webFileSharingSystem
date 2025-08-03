@@ -1,0 +1,23 @@
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb m-0">
+      <li class="breadcrumb-item my-1">
+        <a routerLink="/disc/home" (click)="selectFolder(null)">
+          <i class="bi bi-house-door"></i>
+          Home
+        </a>
+      </li>
+      @for (breadcrumb of breadCrumbs(); track breadcrumb.id; let last = $last)
+      {
+      <li class="breadcrumb-item my-1">
+        @if (!last) {
+        <a
+          [routerLink]="['/disc/home/folder', breadcrumb.id]"
+          (click)="selectFolder(breadcrumb.id)"
+          >{{ breadcrumb.fileName }}</a
+        >} @else {
+        <span>{{ breadcrumb.fileName }}</span>
+        }
+      </li>
+      }
+    </ol>
+  </nav>
