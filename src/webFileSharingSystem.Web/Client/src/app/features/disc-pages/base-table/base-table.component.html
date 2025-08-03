@@ -40,7 +40,7 @@
       (dblclick)="isSelectable ? selectFolder(file.id) : null"
       [class.selectable]="isSelectable"
     >
-      <!--File loading indicator-->
+      <!--Checkobox-->
       <td class="d-table-cell align-middle">
         <span
           class="spinner-border spinner-border-sm"
@@ -63,7 +63,19 @@
 
       <td class="d-table-cell align-middle">
         <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
+        @if (file.rename) {
+        <input
+          appSelectFilename
+          type="text"
+          style="min-width: 85%"
+          [(ngModel)]="renameInput"
+          [placeholder]="file.fileName"
+          (focusout)="rename(file)"
+          (keydown)="fileRenameKeyDown($event, file)"
+        />
+        } @else {
         {{ file.fileName }}
+        }
       </td>
 
       <!--Favorites -->
@@ -99,7 +111,7 @@
             <button ngbDropdownItem>
               <i class="bi bi-download me-1"></i> Download
             </button>
-            <button ngbDropdownItem>
+            <button ngbDropdownItem (click)="initRename(file)">
               <i class="bi bi-pencil me-1"></i> Rename
             </button>
             <button ngbDropdownItem>

@@ -59,4 +59,9 @@ export class FileService {
         ['/disc', 'home', 'folder', folderId]
       );
   }
+
+  renameFile(id: number, newFileName: string) {
+    const api = `${this.currentBaseUrl()}/Rename/${id}?name=${newFileName}`;
+    return this.http.put(api, null);
+  }
 }

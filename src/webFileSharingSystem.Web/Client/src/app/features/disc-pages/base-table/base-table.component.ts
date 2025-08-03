@@ -8,6 +8,8 @@ import { TimeagoModule } from 'ngx-timeago';
 import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { FormsModule } from '@angular/forms';
+import { ToastService } from '../../../core/services/toast.service';
+import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 
 @Component({
@@ -19,12 +21,14 @@ import { SelectFilenameDirective } from '../../../core/directives/select-filenam
 export class BaseTableComponent {
 
   private readonly fileService = inject(FileService);
+  private readonly toast = inject(ToastService);
   fileResource = this.fileService.fileResource;
   fileResponseResponse = this.fileService.fileResponseResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
   files = linkedSignal(() => this.fileResponseResponse()?.items || []);
 
   lastSelectedFileId = signal<number | null>(null);
+  renameInput = signal('');
 
   ngOnInit() {
     window.addEventListener('keydown', this.onKeydown);
@@ -65,6 +69,62 @@ export class BaseTableComponent {
 
   selectFolder(folderId: number) {
     this.fileService.goToFolder(folderId);
+  }
+
+  // Rename file
+  initRename(file: AppFile) {
+    this.renameInput.set(file.fileName);
+    this.files.update(files => files.map(f => f === file ? { ...f, rename: true } : f));
+  }
+
+  rename(file: AppFile) {
+    const newFileName = this.renameInput().trim();
+    this.renameInput.set('');
+
+    if (newFileName === '') {
+      this.toast.show('File rename', 'File name cannot be empty', MessageSeverity.error);
+      this.cancelRename(file);
+      return;
+    }
+    if (newFileName === file.fileName) {
+      this.cancelRename(file);
+      return;
+    }
+    if (this.files().some(f => f.fileName === newFileName)) {
+      this.toast.show('File rename', 'File with this name already exists', MessageSeverity.error);
+      this.cancelRename(file);
+      return;
+    }
+
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, loading: true, rename: false } : f));
+
+    this.fileService.renameFile(file.id, newFileName).subscribe({
+      next: () => {
+        this.toast.show('File rename', 'File renamed successfully', MessageSeverity.success);
+        this.updateFileName(file, newFileName);
+      },
+      error: (err: any) => {
+        this.toast.show('File rename', err.error, MessageSeverity.error);
+        this.cancelRename(file);
+      }
+    });
+  }
+
+  private cancelRename(file: AppFile) {
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, rename: false } : f));
+  }
+
+  fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
+    if ($event.key === 'Enter') {
+      this.rename(file);
+    } else if ($event.key === 'Escape') {
+      this.cancelRename(file);
+    }
+    $event.stopPropagation();
+  }
+
+  private updateFileName(file: AppFile, newFileName: string) {
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, fileName: newFileName, loading: false } : f));
   }
 
   selectFile(file: AppFile, event: MouseEvent) {
