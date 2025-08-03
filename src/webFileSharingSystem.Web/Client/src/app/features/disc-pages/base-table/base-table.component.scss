@@ -26,3 +26,13 @@ table {
 tr {
   border-left: 4px solid transparent;
 }
+
+.selected-row {
+  border-left: 4px solid #007acc;
+  // --bs-table-hover-bg: none;
+  --bs-table-bg: #c2e7ff96;
+  :host-context([data-bs-theme="dark"]) & {
+    --bs-table-bg: #053b5f96;
+  }
+}
+
