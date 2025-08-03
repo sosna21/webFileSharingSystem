@@ -4,3 +4,7 @@
 $enable-negative-margins: true;
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-icons/font/bootstrap-icons.css";
+
+.dropdown-menu {
+    z-index: 1054;
+}
