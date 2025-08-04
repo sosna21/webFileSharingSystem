@@ -7,7 +7,7 @@ import { MessageSeverity, ToastInfo } from '../models/toast-info.model';
 export class ToastService {
   private toasts = signal<ToastInfo[]>([]);
   private idGenerator = 0;
-  private maxToasts = 6;
+  private maxToasts = 2;
   toasts$ = this.toasts.asReadonly();
 
 
