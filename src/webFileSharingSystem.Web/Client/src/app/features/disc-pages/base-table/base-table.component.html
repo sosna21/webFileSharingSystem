@@ -82,9 +82,15 @@
       <td class="d-none d-md-table-cell align-middle">
         <i
           appClicableIcon
-          class="bi bi-star-fill"
-          [class.text-warning]="file.isFavourite"
-          [class.text-secondary]="!file.isFavourite"
+          class="bi fs-5"
+          [class]="
+            file.isFavourite
+              ? 'bi-star-fill text-warning'
+              : 'bi-star text-secondary'
+          "
+          (click)="toggleFavourite(file)"
+          [ngbTooltip]="file.isFavourite ? 'Remove from favourites' : 'Add to favourites'"
+          [openDelay]="300"
         ></i>
       </td>
 
@@ -92,7 +98,7 @@
       <td class="d-none d-md-table-cell align-middle">
         <i
           appClicableIcon
-          class="bi bi-share-fill"
+          class="bi bi-share-fill fs-5"
           [class.text-primary]="file.isShared"
           [class.text-secondary]="!file.isShared"
         ></i>
@@ -103,7 +109,7 @@
         <div ngbDropdown container="body">
           <i
             appClicableIcon
-            class="bi bi-three-dots"
+            class="bi bi-three-dots fs-5"
             [class.disabled]="!isFileUploadCompleted(file) || file.loading"
             ngbDropdownToggle
           ></i>
@@ -120,8 +126,8 @@
             <button ngbDropdownItem>
               <i class="bi bi-folder-symlink me-1"></i> Move
             </button>
-            <button ngbDropdownItem>
-              <i class="bi bi-star me-1"></i> Add to favorites
+            <button ngbDropdownItem (click)="toggleFavourite(file)">
+              <i class="bi bi-star me-1"></i> {{ file.isFavourite ? 'Remove from favourites' : 'Add to favourites' }}
             </button>
             <div class="dropdown-divider"></div>
             <button ngbDropdownItem>

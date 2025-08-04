@@ -1,9 +1,9 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal, viewChildren } from '@angular/core';
 import { AppFile, FileStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
 import { CommonModule } from '@angular/common';
-import { NgbDropdownModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbTooltip, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
@@ -19,13 +19,13 @@ import { SelectFilenameDirective } from '../../../core/directives/select-filenam
   styleUrl: './base-table.component.scss',
 })
 export class BaseTableComponent {
-
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
   fileResource = this.fileService.fileResource;
   fileResponseResponse = this.fileService.fileResponseResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
   files = linkedSignal(() => this.fileResponseResponse()?.items || []);
+  tooltips = viewChildren(NgbTooltip);
 
   lastSelectedFileId = signal<number | null>(null);
   renameInput = signal('');
@@ -107,7 +107,11 @@ export class BaseTableComponent {
         this.toast.show('File rename', err.error, MessageSeverity.error);
         this.cancelRename(file);
       }
-    });
+    }).add(() => this.turnOffFileLoading(file));
+  }
+
+  private turnOffFileLoading(file: AppFile) {
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, loading: false } : f));
   }
 
   private cancelRename(file: AppFile) {
@@ -162,5 +166,23 @@ export class BaseTableComponent {
 
     // If no modifiers, select only this file
     this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+  }
+
+  toggleFavourite(file: AppFile) {
+    this.tooltips().forEach(tooltip => tooltip.close());
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, loading: true } : f));
+    this.fileService.setFavourite(file).subscribe({
+      next: () => {
+        this.toast.show('File update', file.isFavourite ? `Removed '${file.fileName}' from favourites` : `Added '${file.fileName}' to favourites`, MessageSeverity.success);
+        this.updateFavouriteStatus(file);
+      },
+      error: (err: any) => {
+        this.toast.show('File update', err.error, MessageSeverity.error);
+      }
+    }).add(() => this.turnOffFileLoading(file));
+  }
+
+  private updateFavouriteStatus(file: AppFile) {
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, isFavourite: !f.isFavourite } : f));
   }
 }

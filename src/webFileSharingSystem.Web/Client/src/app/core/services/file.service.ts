@@ -64,4 +64,9 @@ export class FileService {
     const api = `${this.currentBaseUrl()}/Rename/${id}?name=${newFileName}`;
     return this.http.put(api, null);
   }
+
+  setFavourite(file: AppFile) {
+    const api = `${this.fileUrl}/SetFavourite/${file.id}?value=${!file.isFavourite}`;
+    return this.http.put(api, null);
+  }
 }
