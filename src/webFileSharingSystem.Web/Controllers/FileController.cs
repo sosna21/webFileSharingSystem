@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -198,7 +199,7 @@ namespace webFileSharingSystem.Web.Controllers
                 IsShared = file.IsShared,
                 IsFavourite = file.IsFavourite,
                 IsDirectory = file.IsDirectory,
-                ModificationDate = file.LastModified ?? file.Created,
+                ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
