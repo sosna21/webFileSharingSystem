@@ -1,0 +1,47 @@
+<div ngbDropdown container="body">
+  <div
+    class="position-fixed"
+    ngbDropdownToggle
+    [ngStyle]="{ left: `${position().x}px`, top: `${position().y}px` }"
+  ></div>
+  <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
+    @let selectedFile = selectedFiles()[0]; @let selectedFilesCount =
+    selectedFiles().length;
+    <button ngbDropdownItem>
+      <i class="bi bi-download me-1"></i> Download
+    </button>
+    <button
+      ngbDropdownItem
+      [disabled]="selectedFiles().length !== 1"
+      (click)="rename.emit(selectedFile)"
+    >
+      <i class="bi bi-pencil me-1"></i> Rename
+    </button>
+    <button ngbDropdownItem><i class="bi bi-files me-1"></i> Copy</button>
+    <button ngbDropdownItem>
+      <i class="bi bi-folder-symlink me-1"></i> Move
+    </button>
+    <button
+      ngbDropdownItem
+      (click)="toggleFavourite.emit(anySelectedFileIsUnFavourite())"
+    >
+      <i class="bi bi-star me-1"></i>
+      {{
+        anySelectedFileIsUnFavourite()
+          ? selectedFilesCount > 1
+            ? "Favourite all"
+            : "Add to favourites"
+          : selectedFilesCount > 1
+          ? "Unfavourite all"
+          : "Remove from favourites"
+      }}
+    </button>
+    <div class="dropdown-divider"></div>
+    <button ngbDropdownItem><i class="bi bi-share me-1"></i> Share</button>
+    <button ngbDropdownItem>
+      <i class="bi bi-link me-1"></i> Generate share link
+    </button>
+    <div class="dropdown-divider"></div>
+    <button ngbDropdownItem><i class="bi bi-trash me-1"></i> Delete</button>
+  </div>
+</div>

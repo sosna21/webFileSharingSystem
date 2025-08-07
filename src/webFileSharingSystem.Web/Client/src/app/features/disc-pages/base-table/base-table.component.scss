@@ -16,10 +16,6 @@ table {
   }
 }
 
-.dropdown-toggle::after {
-  display: none;
-}
-
 .no-select {
   user-select: none;
   -webkit-user-select: none; /* Safari */
@@ -39,4 +35,3 @@ tr {
     --bs-table-bg: #053b5f96;
   }
 }
-

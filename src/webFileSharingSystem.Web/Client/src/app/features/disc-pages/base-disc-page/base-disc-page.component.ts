@@ -21,7 +21,6 @@ export class BaseDiscPageComponent {
   totalItems = computed(() => this.fileService.fileResponseResource()?.totalCount || 0);
 
   fileResource = this.fileService.fileResource;
-  fileResponseResponse = this.fileService.fileResponseResource;
-  
+
   loadingData = computed(() => this.fileResource.isLoading());
 }

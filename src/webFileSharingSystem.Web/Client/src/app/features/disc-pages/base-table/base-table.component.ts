@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, signal, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal, viewChild, viewChildren } from '@angular/core';
 import { AppFile, FileStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
@@ -11,12 +11,17 @@ import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
+import { BaseTableContextMenuComponent } from "./base-table-context-menu/base-table-context-menu.component";
 
 @Component({
   selector: 'app-base-table',
-  imports: [CommonModule, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective],
+  imports: [CommonModule, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(window:keydown)': 'onKeydown($event)',
+  }
 })
 export class BaseTableComponent {
   private readonly fileService = inject(FileService);
@@ -25,20 +30,16 @@ export class BaseTableComponent {
   fileResponseResponse = this.fileService.fileResponseResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
   files = linkedSignal(() => this.fileResponseResponse()?.items || []);
+  selectedFiles = computed(() => this.files().filter(file => file.checked));
+
   tooltips = viewChildren(NgbTooltip);
+  contextMenu = viewChild(BaseTableContextMenuComponent);
+  position = signal<{ x: number, y: number }>({ x: 0, y: 0 });
 
   lastSelectedFileId = signal<number | null>(null);
   renameInput = signal('');
 
-  ngOnInit() {
-    window.addEventListener('keydown', this.onKeydown);
-  }
-
-  ngOnDestroy() {
-    window.removeEventListener('keydown', this.onKeydown);
-  }
-
-  onKeydown = (event: KeyboardEvent) => {
+  onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
 
     // Allow Ctrl+A if the target is an input or textarea (for text selection)
@@ -55,12 +56,9 @@ export class BaseTableComponent {
     }
   };
 
-  convertToAngularUTC(date: Date): any {
-    return new Date(date + 'Z');
-  }
-
-  checkAllCheckBox(ev: any) {
-    this.files.update(files => files.map(file => ({ ...file, checked: ev.target.checked })));
+  checkAllCheckBox(ev: Event) {
+    const target = ev.target as HTMLInputElement;
+    this.files.update(files => files.map(file => ({ ...file, checked: target.checked })));
   }
 
   isFileUploadCompleted(file: AppFile) {
@@ -96,26 +94,26 @@ export class BaseTableComponent {
       return;
     }
 
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, loading: true, rename: false } : f));
+    this.updateFile(file, { loading: true, rename: false });
 
     this.fileService.renameFile(file.id, newFileName).subscribe({
       next: () => {
         this.toast.show('File rename', 'File renamed successfully', MessageSeverity.success);
-        this.updateFileName(file, newFileName);
+        this.updateFileWithNewData(file, { fileName: newFileName });
       },
-      error: (err: any) => {
-        this.toast.show('File rename', err.error, MessageSeverity.error);
+      error: (err: unknown) => {
+        this.toast.show('File rename', err instanceof Error ? err.message : String(err), MessageSeverity.error);
         this.cancelRename(file);
       }
     }).add(() => this.turnOffFileLoading(file));
   }
 
   private turnOffFileLoading(file: AppFile) {
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, loading: false } : f));
+    this.updateFile(file, { loading: false });
   }
 
   private cancelRename(file: AppFile) {
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, rename: false } : f));
+    this.updateFile(file, { rename: false });
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
@@ -125,10 +123,6 @@ export class BaseTableComponent {
       this.cancelRename(file);
     }
     $event.stopPropagation();
-  }
-
-  private updateFileName(file: AppFile, newFileName: string) {
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, fileName: newFileName, loading: false } : f));
   }
 
   selectFile(file: AppFile, event: MouseEvent) {
@@ -168,21 +162,78 @@ export class BaseTableComponent {
     this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
   }
 
-  toggleFavourite(file: AppFile) {
+  changeFavourite(files: AppFile[], changeTo: boolean) {
     this.tooltips().forEach(tooltip => tooltip.close());
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, loading: true } : f));
-    this.fileService.setFavourite(file).subscribe({
-      next: () => {
-        this.toast.show('File update', file.isFavourite ? `Removed '${file.fileName}' from favourites` : `Added '${file.fileName}' to favourites`, MessageSeverity.success);
-        this.updateFavouriteStatus(file);
-      },
-      error: (err: any) => {
-        this.toast.show('File update', err.error, MessageSeverity.error);
-      }
-    }).add(() => this.turnOffFileLoading(file));
+    const filesToUpdate = files.filter(file => file.isFavourite !== changeTo);
+    let successCounter = 0;
+
+    filesToUpdate.forEach(file => {
+      this.updateFile(file, { loading: true });
+
+      this.fileService.setFavourite(file).subscribe({
+        next: () => {
+          this.updateFileWithNewData(file, { isFavourite: !file.isFavourite });
+          successCounter++;
+        },
+        error: (err: unknown) => {
+          this.toast.show(
+            'File update',
+            err instanceof Error ? err.message : String(err),
+            MessageSeverity.error
+          );
+        }
+      }).add(() => this.turnOffFileLoading(file));
+    });
+
+    if (successCounter === 1 && filesToUpdate.length === 1) {
+      const file = filesToUpdate[0];
+      this.toast.show(
+        'File update',
+        changeTo ? `Removed '${file.fileName}' from favourites` : `Added '${file.fileName}' to favourites`,
+        MessageSeverity.success
+      );
+    } else if (successCounter > 0) {
+      this.toast.show(
+        'Files update',
+        changeTo ? `Removed ${successCounter} files from favourites` : `Added ${successCounter} files to favourites`,
+        MessageSeverity.success
+      );
+    }
   }
 
-  private updateFavouriteStatus(file: AppFile) {
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, isFavourite: !f.isFavourite } : f));
+  contextMenuClick(event: MouseEvent, file: AppFile) {
+    event.preventDefault();
+    event.stopPropagation();
+    const position = { x: event.clientX, y: event.clientY };
+    if (!this.selectedFiles().includes(file)) {
+      this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+    }
+
+    this.openContextMenu(position);
+  }
+
+  actionIconClick(event: MouseEvent, icon: HTMLElement, file: AppFile) {
+    event.stopPropagation();
+
+    const rect = icon.getBoundingClientRect();
+    const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
+    this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+
+    this.openContextMenu(position);
+  }
+
+  private openContextMenu(position: { x: number; y: number }) {
+    this.contextMenu()?.close();
+    this.position.set(position);
+    this.contextMenu()?.open();
+  }
+
+  private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
+  }
+
+  private updateFileWithNewData(file: AppFile, partialUpdate?: Partial<AppFile>) {
+    const updateTime = new Date();
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate, modificationDate: updateTime } : f));
   }
 }

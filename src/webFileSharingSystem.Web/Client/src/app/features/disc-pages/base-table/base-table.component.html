@@ -1,53 +1,63 @@
-<table class="table table-hover table-sm no-select">
-  <thead class="table-primary sticky-top">
-    <tr>
-      <th scope="col" style="width: 3%">
-        <label class="lbl-checkbox">
-          <input
-            type="checkbox"
-            [checked]="areAllCheckboxesChecked()"
-            (change)="checkAllCheckBox($event)"
-          />
-        </label>
-      </th>
-      <th scope="col" class="text-left">File Name</th>
-      <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
-        Favourite
-      </th>
-      <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
-        Share
-      </th>
-      <th scope="col" style="width: 5%">Actions</th>
-      <th scope="col" style="width: 6%">Size</th>
-      <th scope="col" class="d-none d-sm-table-cell" style="width: 12%">
-        Last Modification
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td colspan="100%" class="text-center fs-5">
-        @if (files().length === 0 && !fileResource.isLoading()) {
-        <span>No files found.</span>
-        }
-      </td>
-    </tr>
-    @for (file of files(); track file.id; let i = $index) { @let isSelectable =
-    file.isDirectory;
-    <tr
-      [class.selected-row]="file.checked"
-      (click)="selectFile(file, $event)"
-      (dblclick)="isSelectable ? selectFolder(file.id) : null"
-      [class.selectable]="isSelectable"
-    >
-      <!--Checkobox-->
-      <td class="d-table-cell align-middle">
-        <span
-          class="spinner-border spinner-border-sm"
-          [hidden]="!file.loading"
-        ></span>
-      </td>
-      <!-- <td class="d-table-cell align-middle">
+<app-base-table-context-menu
+  [position]="position()"
+  [selectedFiles]="selectedFiles()"
+  (rename)="initRename($event)"
+  (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
+  (selectFolder)="selectFolder($event)"
+/>
+
+<div>
+  <table class="table table-hover table-sm no-select">
+    <thead class="table-primary sticky-top">
+      <tr>
+        <th scope="col" style="width: 3%">
+          <label class="lbl-checkbox">
+            <input
+              type="checkbox"
+              [checked]="areAllCheckboxesChecked()"
+              (change)="checkAllCheckBox($event)"
+            />
+          </label>
+        </th>
+        <th scope="col" class="text-left">File Name</th>
+        <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
+          Favourite
+        </th>
+        <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
+          Share
+        </th>
+        <th scope="col" style="width: 5%">Actions</th>
+        <th scope="col" style="width: 6%">Size</th>
+        <th scope="col" class="d-none d-sm-table-cell" style="width: 12%">
+          Last Modification
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td colspan="100%" class="text-center fs-5">
+          @if (files().length === 0 && !fileResource.isLoading()) {
+          <span>No files found.</span>
+          }
+        </td>
+      </tr>
+      @for (file of files(); track file.id; let i = $index) { @let isSelectable
+      = file.isDirectory;
+      <tr
+        (contextmenu)="contextMenuClick($event, file)"
+        [class.selected-row]="file.checked"
+        (click)="selectFile(file, $event)"
+        (dblclick)="isSelectable ? selectFolder(file.id) : null"
+        [class.selectable]="isSelectable"
+      >
+        <!--Checkobox-->
+        <td class="d-table-cell align-middle">
+          <span
+            class="spinner-border spinner-border-sm"
+            [hidden]="!file.loading"
+          ></span>
+        </td>
+        <!-- <td class="d-table-cell align-middle">
         @if (!file.loading) {
         <label [hidden]="!isFileUploadCompleted(file)" class="lbl-checkbox">
           <input
@@ -61,102 +71,80 @@
         }
       </td> -->
 
-      <td class="d-table-cell align-middle">
-        <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-        @if (file.rename) {
-        <input
-          appSelectFilename
-          type="text"
-          style="min-width: 85%"
-          [(ngModel)]="renameInput"
-          [placeholder]="file.fileName"
-          (focusout)="rename(file)"
-          (keydown)="fileRenameKeyDown($event, file)"
-        />
-        } @else {
-        {{ file.fileName }}
-        }
-      </td>
+        <td class="d-table-cell align-middle">
+          <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
+          @if (file.rename) {
+          <input
+            appSelectFilename
+            type="text"
+            style="min-width: 85%"
+            [(ngModel)]="renameInput"
+            [placeholder]="file.fileName"
+            (focusout)="rename(file)"
+            (keydown)="fileRenameKeyDown($event, file)"
+          />
+          } @else {
+          {{ file.fileName }}
+          }
+        </td>
 
-      <!--Favorites -->
-      <td class="d-none d-md-table-cell align-middle">
-        <i
-          appClicableIcon
-          class="bi fs-5"
-          [class]="
-            file.isFavourite
-              ? 'bi-star-fill text-warning'
-              : 'bi-star text-secondary'
-          "
-          (click)="toggleFavourite(file)"
-          [ngbTooltip]="file.isFavourite ? 'Remove from favourites' : 'Add to favourites'"
-          [openDelay]="300"
-        ></i>
-      </td>
-
-      <!--Share-->
-      <td class="d-none d-md-table-cell align-middle">
-        <i
-          appClicableIcon
-          class="bi bi-share-fill fs-5"
-          [class.text-primary]="file.isShared"
-          [class.text-secondary]="!file.isShared"
-        ></i>
-      </td>
-
-      <!--Actions-->
-      <td class="d-table-cell align-middle">
-        <div ngbDropdown container="body">
+        <!--Favorites -->
+        <td class="d-none d-md-table-cell align-middle">
           <i
             appClicableIcon
-            class="bi bi-three-dots fs-5"
-            [class.disabled]="!isFileUploadCompleted(file) || file.loading"
-            ngbDropdownToggle
+            class="bi fs-5"
+            [class]="
+              file.isFavourite
+                ? 'bi-star-fill text-warning'
+                : 'bi-star text-secondary'
+            "
+            (click)="changeFavourite([file], !file.isFavourite)"
+            [ngbTooltip]="
+              file.isFavourite ? 'Remove from favourites' : 'Add to favourites'
+            "
+            [openDelay]="300"
           ></i>
-          <div ngbDropdownMenu>
-            <button ngbDropdownItem>
-              <i class="bi bi-download me-1"></i> Download
-            </button>
-            <button ngbDropdownItem (click)="initRename(file)">
-              <i class="bi bi-pencil me-1"></i> Rename
-            </button>
-            <button ngbDropdownItem>
-              <i class="bi bi-files me-1"></i> Copy
-            </button>
-            <button ngbDropdownItem>
-              <i class="bi bi-folder-symlink me-1"></i> Move
-            </button>
-            <button ngbDropdownItem (click)="toggleFavourite(file)">
-              <i class="bi bi-star me-1"></i> {{ file.isFavourite ? 'Remove from favourites' : 'Add to favourites' }}
-            </button>
-            <div class="dropdown-divider"></div>
-            <button ngbDropdownItem>
-              <i class="bi bi-share me-1"></i> Share
-            </button>
-            <button ngbDropdownItem>
-              <i class="bi bi-link me-1"></i> Generate share link
-            </button>
-            <div class="dropdown-divider"></div>
-            <button ngbDropdownItem>
-              <i class="bi bi-trash me-1"></i> Delete
-            </button>
+        </td>
+
+        <!--Share-->
+        <td class="d-none d-md-table-cell align-middle">
+          <i
+            appClicableIcon
+            class="bi bi-share-fill fs-5"
+            [class.text-primary]="file.isShared"
+            [class.text-secondary]="!file.isShared"
+            [ngbTooltip]="
+              file.isShared ? 'Manage shares' : 'Share file'
+            "
+            [openDelay]="300"
+          ></i>
+        </td>
+
+        <!--Actions-->
+        <td class="d-table-cell align-middle">
+          <i
+            #icon
+            appClicableIcon
+            class="bi bi-three-dots fs-5"
+            (click)="actionIconClick($event, icon, file)"
+            ngbTooltip="Show more actions"
+            [openDelay]="300"
+          ></i>
+        </td>
+
+        <!--File size-->
+        <td class="d-table-cell align-middle">{{ file.size | fileSize }}</td>
+
+        <!--Last modification date-->
+        <td class="d-none d-sm-table-cell align-middle">
+          <div>
+            <span [ngbTooltip]="file.modificationDate | date : 'medium'">{{
+              file.modificationDate | timeago
+            }}</span>
           </div>
-        </div>
-      </td>
-
-      <!--File size-->
-      <td class="d-table-cell align-middle">{{ file.size | fileSize }}</td>
-
-      <!--Last modification date-->
-      <td class="d-none d-sm-table-cell align-middle">
-        <div>
-          @let modificationDate = convertToAngularUTC(file.modificationDate);
-          <span [ngbTooltip]="modificationDate | date : 'medium'">{{
-            modificationDate | timeago
-          }}</span>
-        </div>
-      </td>
-    </tr>
-    }
-  </tbody>
-</table>
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
