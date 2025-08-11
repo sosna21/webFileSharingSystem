@@ -29,7 +29,7 @@ export class BaseTableComponent {
   fileResource = this.fileService.fileResource;
   fileResponseResponse = this.fileService.fileResponseResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
-  files = linkedSignal(() => this.fileResponseResponse()?.items || []);
+  files = this.fileService.files;
   selectedFiles = computed(() => this.files().filter(file => file.checked));
 
   tooltips = viewChildren(NgbTooltip);

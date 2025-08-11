@@ -2,6 +2,28 @@
   <app-base-disc-page-header>
     <i class="bi bi-house-door-fill"></i>
     My files
+    <div class="d-flex align-items-center gap-3  mt-2" directoryCreation>
+      <i
+        class="bi bi-folder-plus"
+        style="cursor: pointer"
+        (click)="initDirCreation()"
+        appHoverClass="text-warning"
+        ngbTooltip="Create new folder"
+        [openDelay]="300"
+      ></i>
+      @if (showDirCreate()) {
+      <input
+        appSelectFilename
+        type="text"
+        class="form-control"
+        placeholder="New folder"
+        [(ngModel)]="newFolderName"
+        (keyup.enter)="createDirectory()"
+        (blur)="cancelRename()"
+        (keyup.escape)="cancelRename()"
+      />
+      }
+    </div>
   </app-base-disc-page-header>
   <app-breadcrumb class="mt-n2" />
 </app-base-disc-page>

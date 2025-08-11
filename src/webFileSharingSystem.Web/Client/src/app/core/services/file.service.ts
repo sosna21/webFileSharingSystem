@@ -21,7 +21,7 @@ export class FileService {
   public readonly parentId = signal<number | null>(null);
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-  public readonly files = signal<AppFile[]>([]);
+  public readonly files = linkedSignal<AppFile[]>(() => this.fileResponseResource()?.items.sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
   public readonly loadingData = signal<boolean>(true);
 
   private readonly currentBaseUrl = computed(() => {
@@ -68,5 +68,10 @@ export class FileService {
   setFavourite(file: AppFile) {
     const api = `${this.fileUrl}/SetFavourite/${file.id}?value=${!file.isFavourite}`;
     return this.http.put(api, null);
+  }
+
+  createDirectory(name: string) {
+    const api = `${this.fileUrl}/CreateDir/${name}${this.parentId() ? '?parentId=' + this.parentId() : ''}`;
+    return this.http.post<AppFile>(api, null);
   }
 }

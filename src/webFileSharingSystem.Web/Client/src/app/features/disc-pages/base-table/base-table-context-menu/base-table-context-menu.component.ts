@@ -26,6 +26,8 @@ export class BaseTableContextMenuComponent {
   }
 
   close() {
-    this.dropdown()?.close();
+    if (this.dropdown()?.isOpen()) {
+      this.dropdown()?.close();
+    }
   }
 }
