@@ -69,6 +69,10 @@ namespace webFileSharingSystem.Core.Services
 
             if (!await _guard.UserCanPerform(userId, file, ShareAccessMode.ReadWrite, cancellationToken))
                 return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
+            
+            var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(userId, parentId, directoryName), cancellationToken);
+            if (!isNameAvailable)
+                return (Result.Failure(OperationResult.BadRequest, "Directory with that name already exists"), null);
 
             _unitOfWork.Repository<File>().Add(file);
 

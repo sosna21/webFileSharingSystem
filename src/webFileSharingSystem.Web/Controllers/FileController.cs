@@ -149,7 +149,10 @@ namespace webFileSharingSystem.Web.Controllers
             var (actionResult, file) =
                 await _fileService.CreateDirectoryAsync(parentId, _currentUserService.UserId!.Value, name);
 
-            if (!actionResult.Succeeded) return actionResult.ToActionResult("Problem with creating a directory");
+            if (!actionResult.Succeeded) 
+                return actionResult.ToActionResult(actionResult.Errors.Length > 0
+                ? actionResult.Errors[0]
+                : "Unknown problem with creating a directory");
             return Ok(ToFileResponse(file!, userId!.Value));
         }
 
