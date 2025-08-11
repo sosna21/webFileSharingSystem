@@ -45,6 +45,7 @@ export class HomeComponent implements OnInit {
   }
   
   createDirectory() {
+    // this.fileService.files.update(files => [...files, newDir]);
     this.fileService.createDirectory(this.newFolderName()).subscribe({
       next: (response) => {
         this.fileService.files.update(files => [response, ...files]);
