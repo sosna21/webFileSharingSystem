@@ -30,8 +30,6 @@ export class HomeComponent implements OnInit {
   }
 
   findUniqueDirName(): string {
-    console.log("Finding unique directory name");
-    console.log(this.names());
     let dirName = "New folder";
     let counter = 0;
     while (this.names().includes(dirName)) {
@@ -45,7 +43,6 @@ export class HomeComponent implements OnInit {
   }
   
   createDirectory() {
-    // this.fileService.files.update(files => [...files, newDir]);
     this.fileService.createDirectory(this.newFolderName()).subscribe({
       next: (response) => {
         this.fileService.files.update(files => [response, ...files]);

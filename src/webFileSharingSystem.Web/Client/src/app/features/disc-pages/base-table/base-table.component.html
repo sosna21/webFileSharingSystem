@@ -3,6 +3,7 @@
   [selectedFiles]="selectedFiles()"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
+  (delete)="deleteFiles()"
   (selectFolder)="selectFolder($event)"
 />
 

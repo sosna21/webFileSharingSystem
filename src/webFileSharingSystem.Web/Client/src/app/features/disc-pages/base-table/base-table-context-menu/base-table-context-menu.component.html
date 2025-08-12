@@ -42,6 +42,6 @@
       <i class="bi bi-link me-1"></i> Generate share link
     </button>
     <div class="dropdown-divider"></div>
-    <button ngbDropdownItem><i class="bi bi-trash me-1"></i> Delete</button>
+    <button ngbDropdownItem (click)="delete.emit()"><i class="bi bi-trash me-1"></i> Delete</button>
   </div>
 </div>

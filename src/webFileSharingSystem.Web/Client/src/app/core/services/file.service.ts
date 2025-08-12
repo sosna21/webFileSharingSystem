@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, linkedSignal, signal } from '@angular/core';
+import { computed, inject, Injectable, linkedSignal, signal } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
 import { HttpClient, httpResource } from '@angular/common/http';
@@ -22,7 +22,6 @@ export class FileService {
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
   public readonly files = linkedSignal<AppFile[]>(() => this.fileResponseResource()?.items.sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
-  public readonly loadingData = signal<boolean>(true);
 
   private readonly currentBaseUrl = computed(() => {
     return this.mode() === 'GetSharedWithMe' ? this.sharesUrl : this.fileUrl;
@@ -73,5 +72,10 @@ export class FileService {
   createDirectory(name: string) {
     const api = `${this.fileUrl}/CreateDir/${name}${this.parentId() ? '?parentId=' + this.parentId() : ''}`;
     return this.http.post<AppFile>(api, null);
+  }
+
+  deleteFile(fileId: number) {
+    const api = `${this.currentBaseUrl()}/Delete/${fileId}`;
+    return this.http.delete(api);
   }
 }

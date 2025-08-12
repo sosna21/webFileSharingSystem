@@ -158,18 +158,10 @@ namespace webFileSharingSystem.Web.Controllers
 
         [HttpDelete]
         [Route("Delete/{id:int}")]
-        public async Task<ActionResult> DeleteFileAsync(int id)
+        public async Task<ActionResult> DeleteAsync(int id)
         {
-            return (await _fileService.DeleteFileAsync(id, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with deleting the file");
-        }
-
-        [HttpDelete]
-        [Route("DeleteDir/{parentId:int}")]
-        public async Task<ActionResult> DeleteFolderWithInsideFiles(int parentId)
-        {
-            return (await _fileService.DeleteDirectoryAsync(parentId, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with deleting the directory");
+            var result = await _fileService.DeleteAsync(id, _currentUserService.UserId!.Value);
+            return result.ToActionResult("Problem with deleting the item");
         }
 
         [HttpPut]

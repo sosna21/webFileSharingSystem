@@ -80,7 +80,18 @@ namespace webFileSharingSystem.Core.Services
                 ? (Result.Success<OperationResult>(), file)
                 : (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
         }
-
+        
+        public async Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default)
+        {
+            var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
+            if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
+            if (!await _guard.UserCanPerform(userId, fileToDelete, ShareAccessMode.FullAccess, cancellationToken))
+                return Result.Failure(OperationResult.Unauthorized, "You are not authorized to remove that file");
+            if (fileToDelete.IsDirectory)
+                return await DeleteDirectoryAsync(fileId, userId, cancellationToken);
+            return await DeleteFileAsync(fileId, userId, cancellationToken);
+        }
+        
         public async Task<Result<OperationResult>> DeleteFileAsync(int fileId, int userId,
             CancellationToken cancellationToken = default)
         {

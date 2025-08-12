@@ -28,5 +28,7 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<Result<OperationResult>> CopyFilesAsync(int? newParentId, IEnumerable<int> fileIds, int userId,
             CancellationToken cancellationToken = default);
+        
+        Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default);
     }
 }

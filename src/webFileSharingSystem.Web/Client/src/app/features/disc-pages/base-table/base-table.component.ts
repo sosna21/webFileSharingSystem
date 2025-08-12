@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { AppFile, FileStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
 import { CommonModule } from '@angular/common';
-import { NgbDropdownModule, NgbTooltip, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbModal, NgbTooltip, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
@@ -12,6 +12,8 @@ import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { BaseTableContextMenuComponent } from "./base-table-context-menu/base-table-context-menu.component";
+import { bulkAction } from '../../../core/utils/bulk-action-util';
+import { ConfirmationModalComponent } from '../../../core/components/confirmation-modal/confirmation-modal.component';
 
 @Component({
   selector: 'app-base-table',
@@ -26,6 +28,7 @@ import { BaseTableContextMenuComponent } from "./base-table-context-menu/base-ta
 export class BaseTableComponent {
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
+  private readonly modalService = inject(NgbModal);
   fileResource = this.fileService.fileResource;
   fileResponseResponse = this.fileService.fileResponseResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
@@ -163,42 +166,35 @@ export class BaseTableComponent {
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
-    this.tooltips().forEach(tooltip => tooltip.close());
     const filesToUpdate = files.filter(file => file.isFavourite !== changeTo);
-    let successCounter = 0;
+    if (filesToUpdate.length === 0) return;
 
-    filesToUpdate.forEach(file => {
-      this.updateFile(file, { loading: true });
+    this.tooltips().forEach(t => t.close());
 
-      this.fileService.setFavourite(file).subscribe({
-        next: () => {
-          this.updateFileWithNewData(file, { isFavourite: !file.isFavourite });
-          successCounter++;
-        },
-        error: (err: unknown) => {
-          this.toast.show(
-            'File update',
-            err instanceof Error ? err.message : String(err),
-            MessageSeverity.error
-          );
+    bulkAction<AppFile>({
+      items: filesToUpdate,
+      action: file => this.fileService.setFavourite(file),
+      beforeStart: file => this.updateFile(file, { loading: true }),
+      onSuccess: file => this.updateFileWithNewData(file, { isFavourite: changeTo, loading: false }),
+      onError: (_, err) => {
+        this.toast.show(
+          'Favourite update failed',
+          err instanceof Error ? err.message : String(err),
+          MessageSeverity.error
+        );
+      },
+      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
+      successMessage: (count, updated) => {
+        if (count === 1) {
+          return changeTo
+            ? `Added '${updated[0].fileName}' to favourites`
+            : `Removed '${updated[0].fileName}' from favourites`;
         }
-      }).add(() => this.turnOffFileLoading(file));
+        return changeTo
+          ? `Added ${count} files to favourites`
+          : `Removed ${count} files from favourites`;
+      }
     });
-
-    if (successCounter === 1 && filesToUpdate.length === 1) {
-      const file = filesToUpdate[0];
-      this.toast.show(
-        'File update',
-        changeTo ? `Removed '${file.fileName}' from favourites` : `Added '${file.fileName}' to favourites`,
-        MessageSeverity.success
-      );
-    } else if (successCounter > 0) {
-      this.toast.show(
-        'Files update',
-        changeTo ? `Removed ${successCounter} files from favourites` : `Added ${successCounter} files to favourites`,
-        MessageSeverity.success
-      );
-    }
   }
 
   contextMenuClick(event: MouseEvent, file: AppFile) {
@@ -236,4 +232,79 @@ export class BaseTableComponent {
     const updateTime = new Date();
     this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate, modificationDate: updateTime } : f));
   }
+
+  private async openConfirmationModal(title: string, message: string, confirmText: string, cancelText: string, showPermanentDeleteWarning: boolean) {
+    const modalRef = this.modalService.open(ConfirmationModalComponent, { centered: true });
+    const component = modalRef.componentInstance as ConfirmationModalComponent;
+    component.title.set(title);
+    component.message.set(message);
+    component.confirmText.set(confirmText);
+    component.cancelText.set(cancelText);
+    component.showPermanentDeleteWarning.set(showPermanentDeleteWarning);
+
+    try {
+      return await modalRef.result; // resolves with "true" if confirmed
+    } catch {
+      return false;
+    }
+  }
+
+
+async deleteFiles() {
+  const filesToDelete = this.selectedFiles();
+  if (filesToDelete.length === 0) {
+    this.toast.show('No files selected', 'Please select files to delete', MessageSeverity.info);
+    return;
+  }
+
+  const maxLines = 5;
+  const totalFiles = filesToDelete.length;
+  const fileNamesList = filesToDelete.map(f => f.fileName);
+
+  let confirmText = '';
+
+  if (totalFiles === 1) {
+    confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
+  }
+  else if (totalFiles > maxLines) {
+    const shownCount = Math.max(1, maxLines - 1);
+    const shown = fileNamesList.slice(0, shownCount);
+    const remainingCount = totalFiles - shownCount;
+    const displayNames = [
+      ...shown.map(name => `• ${name}`),
+      `...and ${remainingCount} more`
+    ];
+    confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+  }
+  else {
+    const displayNames = fileNamesList.map(name => `• ${name}`);
+    confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+  }
+
+  const confirmationResult = await this.openConfirmationModal(
+    'Confirm File Deletion',
+    confirmText,
+    'Delete',
+    'Cancel',
+    true
+  );
+  if (!confirmationResult) return;
+
+  bulkAction<AppFile>({
+    items: filesToDelete,
+    action: file => this.fileService.deleteFile(file.id),
+    beforeStart: file => this.updateFile(file, { loading: true }),
+    onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
+    onError: (file, err) => {
+      this.toast.show(
+        'File deletion',
+        err instanceof Error ? err.message : String(err),
+        MessageSeverity.error
+      );
+      this.turnOffFileLoading(file);
+    },
+    toast: (title, msg, severity) => this.toast.show(title, msg, severity),
+    successMessage: count => `Deleted ${count} file(s) successfully`
+  });
+}
 }
