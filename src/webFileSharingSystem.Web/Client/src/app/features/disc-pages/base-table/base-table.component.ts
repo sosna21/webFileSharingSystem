@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { AppFile, FileStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
@@ -14,18 +14,24 @@ import { SelectFilenameDirective } from '../../../core/directives/select-filenam
 import { BaseTableContextMenuComponent } from "./base-table-context-menu/base-table-context-menu.component";
 import { bulkAction } from '../../../core/utils/bulk-action-util';
 import { ConfirmationModalComponent } from '../../../core/components/confirmation-modal/confirmation-modal.component';
+import { DragPreviewComponent } from "./drag-preview/drag-preview.component";
+import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
+
 
 @Component({
   selector: 'app-base-table',
-  imports: [CommonModule, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent],
+  imports: [CommonModule, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent, DragPreviewComponent],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
+    style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
   }
 })
 export class BaseTableComponent {
+  // overlay = inject(DragOverlayService);c
+
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(NgbModal);
@@ -250,61 +256,114 @@ export class BaseTableComponent {
   }
 
 
-async deleteFiles() {
-  const filesToDelete = this.selectedFiles();
-  if (filesToDelete.length === 0) {
-    this.toast.show('No files selected', 'Please select files to delete', MessageSeverity.info);
-    return;
+  async deleteFiles() {
+    const filesToDelete = this.selectedFiles();
+    if (filesToDelete.length === 0) {
+      this.toast.show('No files selected', 'Please select files to delete', MessageSeverity.info);
+      return;
+    }
+
+    const maxLines = 5;
+    const totalFiles = filesToDelete.length;
+    const fileNamesList = filesToDelete.map(f => f.fileName);
+
+    let confirmText = '';
+
+    if (totalFiles === 1) {
+      confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
+    }
+    else if (totalFiles > maxLines) {
+      const shownCount = Math.max(1, maxLines - 1);
+      const shown = fileNamesList.slice(0, shownCount);
+      const remainingCount = totalFiles - shownCount;
+      const displayNames = [
+        ...shown.map(name => `• ${name}`),
+        `...and ${remainingCount} more`
+      ];
+      confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+    }
+    else {
+      const displayNames = fileNamesList.map(name => `• ${name}`);
+      confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+    }
+
+    const confirmationResult = await this.openConfirmationModal(
+      'Confirm File Deletion',
+      confirmText,
+      'Delete',
+      'Cancel',
+      true
+    );
+    if (!confirmationResult) return;
+
+    bulkAction<AppFile>({
+      items: filesToDelete,
+      action: file => this.fileService.deleteFile(file.id),
+      beforeStart: file => this.updateFile(file, { loading: true }),
+      onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
+      onError: (file, err) => {
+        this.toast.show(
+          'File deletion',
+          err instanceof Error ? err.message : String(err),
+          MessageSeverity.error
+        );
+        this.turnOffFileLoading(file);
+      },
+      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
+      successMessage: count => `Deleted ${count} file(s) successfully`
+    });
   }
 
-  const maxLines = 5;
-  const totalFiles = filesToDelete.length;
-  const fileNamesList = filesToDelete.map(f => f.fileName);
+  private readonly dragPreview = viewChild(DragPreviewComponent, { read: ElementRef });
+  private readonly dragDrop = inject(FileDragDropService);
+  readonly dragOverFileId = computed(() => this.dragDrop.dragOverTarget()?.type === 'file' ? this.dragDrop.dragOverTarget()?.id : null);
 
-  let confirmText = '';
-
-  if (totalFiles === 1) {
-    confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
-  }
-  else if (totalFiles > maxLines) {
-    const shownCount = Math.max(1, maxLines - 1);
-    const shown = fileNamesList.slice(0, shownCount);
-    const remainingCount = totalFiles - shownCount;
-    const displayNames = [
-      ...shown.map(name => `• ${name}`),
-      `...and ${remainingCount} more`
-    ];
-    confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
-  }
-  else {
-    const displayNames = fileNamesList.map(name => `• ${name}`);
-    confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+  canBeTargetDirectory(file: AppFile) {
+    return file.isDirectory && !file.checked;
   }
 
-  const confirmationResult = await this.openConfirmationModal(
-    'Confirm File Deletion',
-    confirmText,
-    'Delete',
-    'Cancel',
-    true
-  );
-  if (!confirmationResult) return;
 
-  bulkAction<AppFile>({
-    items: filesToDelete,
-    action: file => this.fileService.deleteFile(file.id),
-    beforeStart: file => this.updateFile(file, { loading: true }),
-    onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
-    onError: (file, err) => {
-      this.toast.show(
-        'File deletion',
-        err instanceof Error ? err.message : String(err),
-        MessageSeverity.error
-      );
-      this.turnOffFileLoading(file);
-    },
-    toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-    successMessage: count => `Deleted ${count} file(s) successfully`
-  });
-}
+  onDragStart(event: DragEvent, file: AppFile) {
+    if (!file.checked) {
+      event.preventDefault();
+      return;
+    }
+    const draggedFiles = this.selectedFiles();
+    this.dragDrop.startDrag(draggedFiles);
+
+    event.dataTransfer?.setData('application/json', JSON.stringify(draggedFiles));
+    event.dataTransfer!.effectAllowed = 'move';
+
+    const previewEl = this.dragPreview()?.nativeElement.firstElementChild as HTMLElement;
+    if (previewEl) {
+      event.dataTransfer!.setDragImage(previewEl, 0, 0);
+    }
+  }
+
+  onDrop(event: DragEvent, targetFile: AppFile) {
+    this.dragDrop.clearDragOverTarget();
+    if (!(targetFile.isDirectory && !targetFile.checked)) return;
+    const allowed = this.dragDrop.allowAppFiles(event);
+    if (!allowed) return;
+
+    this.dragDrop.moveFiles(targetFile.id, targetFile.fileName);
+  }
+
+
+  onDragOver(event: DragEvent, row: AppFile) {
+    event.preventDefault();
+
+    const allowed = this.dragDrop.allowAppFiles(event);
+    this.dragDrop.setDropEffect(event, allowed);
+    if (!allowed) return;
+
+    this.dragDrop.setDragOverTarget('file', row.id);
+  }
+
+  onDragLeave(event: DragEvent, file: AppFile) {
+    event.preventDefault();
+    if (this.dragOverFileId() === file.id) {
+      this.dragDrop.clearDragOverTarget();
+    }
+  }
 }

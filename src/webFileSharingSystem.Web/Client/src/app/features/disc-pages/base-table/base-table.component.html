@@ -7,145 +7,165 @@
   (selectFolder)="selectFolder($event)"
 />
 
-<div>
-  <table class="table table-hover table-sm no-select">
-    <thead class="table-primary sticky-top">
-      <tr>
-        <th scope="col" style="width: 3%">
-          <label class="lbl-checkbox">
+<div class="table-wrapper position-relative h-100" appDropContainer>
+  <div
+    class="table-wrapper overflow-scroll"
+    style="max-height: 100%; min-height: 400px"
+  >
+    <table class="table table-hover table-sm no-select">
+      <thead class="table-primary sticky-top">
+        <tr>
+          <th scope="col" style="width: 3%">
+            <label class="lbl-checkbox">
+              <input
+                type="checkbox"
+                [checked]="areAllCheckboxesChecked()"
+                (change)="checkAllCheckBox($event)"
+              />
+            </label>
+          </th>
+          <th scope="col" class="text-left">File Name</th>
+          <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
+            Favourite
+          </th>
+          <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
+            Share
+          </th>
+          <th scope="col" style="width: 5%">Actions</th>
+          <th scope="col" style="width: 6%">Size</th>
+          <th scope="col" class="d-none d-sm-table-cell" style="width: 12%">
+            Last Modification
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="100%" class="text-center fs-5">
+            @if (files().length === 0 && !fileResource.isLoading()) {
+            <span>No files found.</span>
+            }
+          </td>
+        </tr>
+        @for (file of files(); track file.id; let i = $index) { @let
+        isSelectable = file.isDirectory;
+        <tr
+          (contextmenu)="contextMenuClick($event, file)"
+          [class.selected-row]="file.checked"
+          (click)="selectFile(file, $event)"
+          (dblclick)="isSelectable ? selectFolder(file.id) : null"
+          [class.selectable]="isSelectable"
+          draggable="true"
+          (dragstart)="onDragStart($event, file)"
+          (dragleave)="onDragLeave($event, file)"
+          (dragover)="onDragOver($event, file)"
+          (drop)="isSelectable ? onDrop($event, file) : null"
+          [class.drop-folder-hover]="
+            dragOverFileId()=== file.id && canBeTargetDirectory(file)
+          "
+        >
+          <!-- appDropRow
+        [isDirectory]="file.isDirectory"
+        [folderName]="file.fileName"
+      > -->
+          <!--Checkobox-->
+          <td class="d-table-cell align-middle">
+            <span
+              class="spinner-border spinner-border-sm"
+              [hidden]="!file.loading"
+            ></span>
+          </td>
+
+          <td class="d-table-cell">
+            <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
+            @if (file.rename) {
             <input
-              type="checkbox"
-              [checked]="areAllCheckboxesChecked()"
-              (change)="checkAllCheckBox($event)"
+              appSelectFilename
+              type="text"
+              style="min-width: 85%"
+              [(ngModel)]="renameInput"
+              [placeholder]="file.fileName"
+              (focusout)="rename(file)"
+              (keydown)="fileRenameKeyDown($event, file)"
             />
-          </label>
-        </th>
-        <th scope="col" class="text-left">File Name</th>
-        <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
-          Favourite
-        </th>
-        <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
-          Share
-        </th>
-        <th scope="col" style="width: 5%">Actions</th>
-        <th scope="col" style="width: 6%">Size</th>
-        <th scope="col" class="d-none d-sm-table-cell" style="width: 12%">
-          Last Modification
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td colspan="100%" class="text-center fs-5">
-          @if (files().length === 0 && !fileResource.isLoading()) {
-          <span>No files found.</span>
-          }
-        </td>
-      </tr>
-      @for (file of files(); track file.id; let i = $index) { @let isSelectable
-      = file.isDirectory;
-      <tr
-        (contextmenu)="contextMenuClick($event, file)"
-        [class.selected-row]="file.checked"
-        (click)="selectFile(file, $event)"
-        (dblclick)="isSelectable ? selectFolder(file.id) : null"
-        [class.selectable]="isSelectable"
-      >
-        <!--Checkobox-->
-        <td class="d-table-cell align-middle">
-          <span
-            class="spinner-border spinner-border-sm"
-            [hidden]="!file.loading"
-          ></span>
-        </td>
-        <!-- <td class="d-table-cell align-middle">
-        @if (!file.loading) {
-        <label [hidden]="!isFileUploadCompleted(file)" class="lbl-checkbox">
-          <input
-            type="checkbox"
-            [name]="file.fileName"
-            [checked]="file.checked"
-          />
-        </label>
-        } @if (file.loading) {
-        <span class="spinner-border spinner-border-sm" [hidden]="!file.loading"></span>
+            } @else {
+            {{ file.fileName }}
+            }
+          </td>
+
+          <!--Favorites -->
+          <td class="d-none d-md-table-cell align-middle">
+            <i
+              appClicableIcon
+              class="bi fs-5"
+              [class]="
+                file.isFavourite
+                  ? 'bi-star-fill text-warning'
+                  : 'bi-star text-secondary'
+              "
+              (click)="changeFavourite([file], !file.isFavourite)"
+              [ngbTooltip]="
+                file.isFavourite
+                  ? 'Remove from favourites'
+                  : 'Add to favourites'
+              "
+              [openDelay]="300"
+            ></i>
+          </td>
+
+          <!--Share-->
+          <td class="d-none d-md-table-cell align-middle">
+            <i
+              appClicableIcon
+              class="bi bi-share-fill fs-5"
+              [class.text-primary]="file.isShared"
+              [class.text-secondary]="!file.isShared"
+              [ngbTooltip]="file.isShared ? 'Manage shares' : 'Share file'"
+              [openDelay]="300"
+            ></i>
+          </td>
+
+          <!--Actions-->
+          <td class="d-table-cell align-middle">
+            <i
+              #icon
+              appClicableIcon
+              class="bi bi-three-dots fs-5"
+              (click)="actionIconClick($event, icon, file)"
+              ngbTooltip="Show more actions"
+              [openDelay]="300"
+            ></i>
+          </td>
+
+          <!--File size-->
+          <td class="d-table-cell align-middle">{{ file.size | fileSize }}</td>
+
+          <!--Last modification date-->
+          <td class="d-none d-sm-table-cell align-middle">
+            <div>
+              <span [ngbTooltip]="file.modificationDate | date : 'medium'">{{
+                file.modificationDate | timeago
+              }}</span>
+            </div>
+          </td>
+        </tr>
         }
-      </td> -->
-
-        <td class="d-table-cell align-middle">
-          <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-          @if (file.rename) {
-          <input
-            appSelectFilename
-            type="text"
-            style="min-width: 85%"
-            [(ngModel)]="renameInput"
-            [placeholder]="file.fileName"
-            (focusout)="rename(file)"
-            (keydown)="fileRenameKeyDown($event, file)"
-          />
-          } @else {
-          {{ file.fileName }}
-          }
-        </td>
-
-        <!--Favorites -->
-        <td class="d-none d-md-table-cell align-middle">
-          <i
-            appClicableIcon
-            class="bi fs-5"
-            [class]="
-              file.isFavourite
-                ? 'bi-star-fill text-warning'
-                : 'bi-star text-secondary'
-            "
-            (click)="changeFavourite([file], !file.isFavourite)"
-            [ngbTooltip]="
-              file.isFavourite ? 'Remove from favourites' : 'Add to favourites'
-            "
-            [openDelay]="300"
-          ></i>
-        </td>
-
-        <!--Share-->
-        <td class="d-none d-md-table-cell align-middle">
-          <i
-            appClicableIcon
-            class="bi bi-share-fill fs-5"
-            [class.text-primary]="file.isShared"
-            [class.text-secondary]="!file.isShared"
-            [ngbTooltip]="
-              file.isShared ? 'Manage shares' : 'Share file'
-            "
-            [openDelay]="300"
-          ></i>
-        </td>
-
-        <!--Actions-->
-        <td class="d-table-cell align-middle">
-          <i
-            #icon
-            appClicableIcon
-            class="bi bi-three-dots fs-5"
-            (click)="actionIconClick($event, icon, file)"
-            ngbTooltip="Show more actions"
-            [openDelay]="300"
-          ></i>
-        </td>
-
-        <!--File size-->
-        <td class="d-table-cell align-middle">{{ file.size | fileSize }}</td>
-
-        <!--Last modification date-->
-        <td class="d-none d-sm-table-cell align-middle">
-          <div>
-            <span [ngbTooltip]="file.modificationDate | date : 'medium'">{{
-              file.modificationDate | timeago
-            }}</span>
-          </div>
-        </td>
-      </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- overlay lives OUTSIDE the scrollable container -->
+  <!-- @if (overlay.state().active) {
+   <div class="drop-overlay">
+    <div class="drop-overlay-text">
+      @if (overlay.state().kind === 'folder') {
+        Upload {{ overlay.state().fileCount }} file(s) to “{{ overlay.state().folderName }}”
+      } @else {
+        Upload {{ overlay.state().fileCount }} file(s) here
       }
-    </tbody>
-  </table>
+    </div>
+  </div>
+  } -->
+</div>
+
+<div style="position: absolute; top: -9999px; left: -9999px">
+  <app-drag-preview [files]="selectedFiles()" />
 </div>

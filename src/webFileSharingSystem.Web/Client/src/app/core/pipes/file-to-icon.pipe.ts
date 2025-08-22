@@ -5,29 +5,31 @@ import { AppFile } from '../models/app-file.model';
   name: 'fileToIcon'
 })
 export class FileToIconPipe implements PipeTransform {
-  transform(file: AppFile): string {
-    if (!file) return 'bi-file-earmark text-secondary';
+  transform(file: AppFile, withColor: boolean = true): string {
+    if (!file) {
+      return withColor ? 'bi-file-earmark text-secondary' : 'bi-file-earmark';
+    }
 
     // Folders
     if (file.isDirectory) {
-      return 'bi-folder-fill text-warning';
+      return withColor ? 'bi-folder-fill text-warning' : 'bi-folder-fill';
     }
 
     const mime = file.mimeType ?? '';
     const match = mimeToBootstrapIcon[mime];
     if (match) {
-      return `bi-${match.icon} ${match.color}`;
+      return withColor ? `bi-${match.icon} ${match.color}` : `bi-${match.icon}`;
     }
 
     // Fallbacks for major MIME types
-    if (mime.startsWith('image/')) return 'bi-file-earmark-image text-warning-emphasis';
-    if (mime.startsWith('video/')) return 'bi-file-earmark-play text-dark-emphasis';
-    if (mime.startsWith('audio/')) return 'bi-file-earmark-music text-info-emphasis';
-    if (mime.startsWith('text/')) return 'bi-file-earmark-text text-body-emphasis';
-    if (mime.startsWith('application/')) return 'bi-file-earmark-code text-body-emphasis';
+    if (mime.startsWith('image/')) return withColor ? 'bi-file-earmark-image text-warning-emphasis' : 'bi-file-earmark-image';
+    if (mime.startsWith('video/')) return withColor ? 'bi-file-earmark-play text-dark-emphasis' : 'bi-file-earmark-play';
+    if (mime.startsWith('audio/')) return withColor ? 'bi-file-earmark-music text-info-emphasis' : 'bi-file-earmark-music';
+    if (mime.startsWith('text/')) return withColor ? 'bi-file-earmark-text text-body-emphasis' : 'bi-file-earmark-text';
+    if (mime.startsWith('application/')) return withColor ? 'bi-file-earmark-code text-body-emphasis' : 'bi-file-earmark-code';
 
     // Final fallback
-    return 'bi-file-earmark text-secondary';
+    return withColor ? 'bi-file-earmark text-secondary' : 'bi-file-earmark';
   }
 }
 

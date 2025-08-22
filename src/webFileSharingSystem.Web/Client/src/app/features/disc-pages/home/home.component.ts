@@ -26,7 +26,6 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.fileService.mode.set('GetAll');
-    this.fileService.parentId.set(null);
   }
 
   findUniqueDirName(): string {

@@ -1,0 +1,34 @@
+<div class="drag-preview bg-warning text-dark">
+  <!-- @if (targetDirectory()) {
+  <div class="text-center fs-6">Move to {{ targetDirectory()!.fileName }}</div>
+  } -->
+  <div class="d-flex">
+    <div
+      class="icons d-grid me-2"
+      style="place-content: center; place-items: center"
+    >
+      @if (areSameMimeType()) {
+      <i
+        class="bi"
+        [class]="
+          files().length > 2
+            ? 'fs-1 '
+            : 'fs-2 ' + (files()[0] | fileToIcon : false)
+        "
+      ></i>
+      } @else {
+      <i
+        class="bi bi-file-earmark-arrow-up-fill"
+        [class]="files().length > 2 ? 'fs-1' : 'fs-2'"
+      ></i>
+      }
+    </div>
+    <div class="d-flex flex-column justify-content-center file-names">
+      @for (name of displayNames; track $index) {
+      <div class="file-name">{{ name }}</div>
+      } @if (remainingCount > 0) {
+      <div class="more">+{{ remainingCount }} more...</div>
+      }
+    </div>
+  </div>
+</div>

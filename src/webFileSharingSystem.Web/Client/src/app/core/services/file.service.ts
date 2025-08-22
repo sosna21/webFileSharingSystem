@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, linkedSignal, signal } from '@angular/core';
+import { computed, inject, Injectable, linkedSignal, OnInit, signal } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
 import { HttpClient, httpResource } from '@angular/common/http';
@@ -74,8 +74,35 @@ export class FileService {
     return this.http.post<AppFile>(api, null);
   }
 
+  moveFiles(filesToMove: AppFile[], targetDirectoryId: number) {
+    const api = `${this.currentBaseUrl()}/Move/${targetDirectoryId}`;
+    const filesToMoveIds = filesToMove.map(file => file.id);
+    return this.http.put(api, filesToMoveIds);
+  }
+
   deleteFile(fileId: number) {
     const api = `${this.currentBaseUrl()}/Delete/${fileId}`;
     return this.http.delete(api);
+  }
+
+   constructor() {
+    const currentUrl = this.router.url; // e.g. "/disc/home/folder/123"
+
+    if (currentUrl.startsWith('/disc/home')) {
+      // home context
+      this.mode.set('GetAll');
+      const dirId = this.extractFolderId(currentUrl);
+      this.goToFolder(dirId);
+    } else if (currentUrl.startsWith('/disc/shared-with-me')) {
+      // shared-with-me context
+      this.mode.set('GetSharedWithMe');
+      const dirId = this.extractFolderId(currentUrl);
+      this.goToFolder(dirId);
+    }
+  }
+
+  private extractFolderId(url: string): number | null {
+    const match = url.match(/folder\/(\d+)/);
+    return match ? +match[1] : null;
   }
 }
