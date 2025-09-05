@@ -1,6 +1,6 @@
 <div
   class="container-fluid px-4 pt-2 pb-1 d-flex flex-column h-100"
-  [class.pb-4]="!showPagination()"
+  [class.pb-3]="!showPagination()"
 >
   <ng-content select="app-base-disc-page-header"></ng-content>
   <ng-content></ng-content>
@@ -11,10 +11,9 @@
     } }
   </div>
 
-    <ng-content select="table">
-      <app-base-table  />
-    </ng-content>
-
+  <ng-content select="table">
+    <app-base-table />
+  </ng-content>
 
   @if (showPagination()) {
   <ngb-pagination

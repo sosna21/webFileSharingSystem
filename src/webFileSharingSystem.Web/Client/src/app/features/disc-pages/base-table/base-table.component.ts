@@ -16,6 +16,7 @@ import { bulkAction } from '../../../core/utils/bulk-action-util';
 import { ConfirmationModalComponent } from '../../../core/components/confirmation-modal/confirmation-modal.component';
 import { DragPreviewComponent } from "./drag-preview/drag-preview.component";
 import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
+import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
 
 
 @Component({
@@ -25,12 +26,14 @@ import { FileDragDropService } from '../../../core/services/file-drag-drop.servi
   styleUrl: './base-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
+    class: 'h-100',
     style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
   }
 })
 export class BaseTableComponent {
-  // overlay = inject(DragOverlayService);c
+
+  // overlay = inject(DragOverlayService);
 
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
@@ -47,6 +50,7 @@ export class BaseTableComponent {
 
   lastSelectedFileId = signal<number | null>(null);
   renameInput = signal('');
+  currentDirectoryId = this.fileService.parentId;
 
   onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
@@ -314,16 +318,24 @@ export class BaseTableComponent {
     });
   }
 
-  private readonly dragPreview = viewChild(DragPreviewComponent, { read: ElementRef });
+  // Drag and drop logic for moving and uploading files
+  private readonly fileMoveDragPreview = viewChild(DragPreviewComponent, { read: ElementRef });
   private readonly dragDrop = inject(FileDragDropService);
+  readonly uploadDragDrop = inject(FileUploadDragDropService);
   readonly dragOverFileId = computed(() => this.dragDrop.dragOverTarget()?.type === 'file' ? this.dragDrop.dragOverTarget()?.id : null);
+  readonly fileUploadDragOverFileId = computed(() => this.uploadDragDrop.hoveredTarget()?.target?.id);
+  readonly fileUploadUploadTarget = this.uploadDragDrop.uploadTarget;
+  readonly fileUploadHoverTargetCorrect = computed(() => this.uploadDragDrop.hoveredTarget() && this.uploadDragDrop.hoveredTarget()?.target?.id === this.uploadDragDrop.uploadTarget()?.id);
+  readonly fileUpladFileNb = this.uploadDragDrop.filesNb;
+  readonly fileUploadTableTarget = computed(() => this.uploadDragDrop.hoveredTarget()?.type === 'table');
+  counter = 1;
 
   canBeTargetDirectory(file: AppFile) {
     return file.isDirectory && !file.checked;
   }
 
 
-  onDragStart(event: DragEvent, file: AppFile) {
+  onRowDragStart(event: DragEvent, file: AppFile) {
     if (!file.checked) {
       event.preventDefault();
       return;
@@ -334,36 +346,79 @@ export class BaseTableComponent {
     event.dataTransfer?.setData('application/json', JSON.stringify(draggedFiles));
     event.dataTransfer!.effectAllowed = 'move';
 
-    const previewEl = this.dragPreview()?.nativeElement.firstElementChild as HTMLElement;
+    const previewEl = this.fileMoveDragPreview()?.nativeElement.firstElementChild as HTMLElement;
     if (previewEl) {
       event.dataTransfer!.setDragImage(previewEl, 0, 0);
     }
   }
 
-  onDrop(event: DragEvent, targetFile: AppFile) {
-    this.dragDrop.clearDragOverTarget();
-    if (!(targetFile.isDirectory && !targetFile.checked)) return;
-    const allowed = this.dragDrop.allowAppFiles(event);
-    if (!allowed) return;
-
-    this.dragDrop.moveFiles(targetFile.id, targetFile.fileName);
-  }
-
-
-  onDragOver(event: DragEvent, row: AppFile) {
+  onRowDragOver(event: DragEvent, row: AppFile) {
     event.preventDefault();
 
-    const allowed = this.dragDrop.allowAppFiles(event);
-    this.dragDrop.setDropEffect(event, allowed);
-    if (!allowed) return;
-
-    this.dragDrop.setDragOverTarget('file', row.id);
+    if (this.uploadDragDrop.allowExternalFiles(event)) {
+      if (row.isDirectory) {
+        event.stopPropagation();
+        this.uploadDragDrop.setHoverTarget({ type: 'directory', target: row }, event);
+      }
+    } else if (this.dragDrop.allowAppFiles(event)) {
+      this.dragDrop.setDragOverTarget('file', row.id);
+      this.dragDrop.setDropEffect(event, true);
+    }
   }
 
-  onDragLeave(event: DragEvent, file: AppFile) {
+  onRowDragLeave(event: DragEvent, file: AppFile) {
     event.preventDefault();
-    if (this.dragOverFileId() === file.id) {
+
+    if (this.uploadDragDrop.hoveredTarget()?.type === 'directory' && this.uploadDragDrop.hoveredTarget()?.target?.id === file.id) {
+      this.uploadDragDrop.clearHover();
+    }
+
+    if (this.dragDrop.dragOverTarget()?.id === file.id) {
       this.dragDrop.clearDragOverTarget();
+    }
+  }
+
+  onRowDrop(event: DragEvent, targetFile: AppFile) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // External files
+    if (this.uploadDragDrop.allowExternalFiles(event)) {
+      //const files = this.uploadDragDrop.getDroppedFiles(event);
+      const destinationId = this.uploadDragDrop.getDestinationFolder(targetFile, this.currentDirectoryId() ?? -1);
+      this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
+      return;
+    }
+
+    // Internal files
+    if (this.dragDrop.allowAppFiles(event)) {
+      if (!targetFile.isDirectory || targetFile.checked)
+        return;
+      this.dragDrop.moveFiles(targetFile.id, targetFile.fileName);
+    }
+  }
+
+  onTableDragOver(event: DragEvent) {
+    event.preventDefault();
+
+    if (this.uploadDragDrop.allowExternalFiles(event)) {
+      this.uploadDragDrop.setHoverTarget({ type: 'table', target: null }, event);
+    }
+  }
+
+  onTableDrop(event: DragEvent) {
+    event.preventDefault();
+    if (this.uploadDragDrop.allowExternalFiles(event)) {
+      const destinationId = this.currentDirectoryId() ?? -1;
+      this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
+      return;
+    }
+  }
+
+  onTableDragLeave(event: DragEvent) {
+    event.preventDefault();
+    if (this.uploadDragDrop.hoveredTarget()?.type === 'table') {
+      this.uploadDragDrop.clearHover();
     }
   }
 }

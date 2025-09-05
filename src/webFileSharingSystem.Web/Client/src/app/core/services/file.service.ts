@@ -19,6 +19,8 @@ export class FileService {
   public readonly mode = signal<'GetAll' | 'GetSharedWithMe' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent'>('GetAll');
   public readonly searchedPhrase = signal<string>('');
   public readonly parentId = signal<number | null>(null);
+  public readonly parentName = computed(() => this.breadCrumbsResource.hasValue() ? this.breadCrumbsResource.value().find(b => b.id === this.parentId())?.fileName : '');
+
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
   public readonly files = linkedSignal<AppFile[]>(() => this.fileResponseResource()?.items.sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
@@ -47,6 +49,8 @@ export class FileService {
   private readonly _breadcrumbsQuery = computed(() => this.parentId() !== null ? `${this.fileUrl}/GetFilePath/${this.parentId()}` : undefined);
   private readonly _breadCrumbsResource = httpResource<Breadcrumb[]>(() => this._breadcrumbsQuery());
   public readonly breadCrumbsResource = this._breadCrumbsResource.asReadonly();
+
+
 
   goToFolder(folderId: number | null) {
     this.parentId.set(folderId);
@@ -85,7 +89,7 @@ export class FileService {
     return this.http.delete(api);
   }
 
-   constructor() {
+  constructor() {
     const currentUrl = this.router.url; // e.g. "/disc/home/folder/123"
 
     if (currentUrl.startsWith('/disc/home')) {

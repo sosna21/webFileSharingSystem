@@ -26,6 +26,7 @@ export class FileDragDropService {
 
   moveFiles(targetDirId: number, targetDirName: string) {
     const filesToMove = this.draggedFiles();
+    this.clearDrag();
     if (filesToMove.length === 0) return;
 
     filesToMove.forEach(file => this.updateFile(file, { loading: true }));
@@ -63,9 +64,9 @@ export class FileDragDropService {
     this.baseFiles.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
   }
 
-    /**
-   * Check if DataTransfer contains app files
-   */
+  /**
+ * Check if DataTransfer contains app files
+ */
   allowAppFiles(event: DragEvent): boolean {
     return event.dataTransfer?.types.includes('application/json') ?? false;
   }
