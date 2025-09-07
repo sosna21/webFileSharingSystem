@@ -31,13 +31,14 @@ namespace webFileSharingSystem.Infrastructure
             }
             else
             {
+                var useDockerDb = configuration.GetValue<bool>("UseDockerDatabase");
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(
-                        configuration.GetConnectionString("DbConnection"),
+                        configuration.GetConnectionString(useDockerDb ? "DbConnection" : "LocalDbConnection"),
                         b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
             }
 
-            if (configuration.GetValue<bool>("UzeAzureBlobStorage"))
+            if (configuration.GetValue<bool>("UseAzureBlobStorage"))
             {
                 services.AddSingleton(x => new BlobServiceClient(configuration.GetConnectionString("AzureBlobStorageConnection")));
                 services.AddScoped<IFilePersistenceService, AzureFilePersistenceService>();
