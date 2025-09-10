@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Breadcrumb } from '../../../../core/models/breadcrumb.model';
 import { FileDragDropService } from '../../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../../core/services/file-upload-drag-drop.service';
+import { DragDropUtils } from '../../../../core/utils/dom-drag-utils';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -36,7 +37,11 @@ export class BreadcrumbComponent {
     this.fileService.goToFolder(folderId);
   }
 
-  onDragLeave($event: DragEvent, breadcrumb: Breadcrumb) {
+  onDragLeave(event: DragEvent, breadcrumb: Breadcrumb) {
+    event.preventDefault();
+    if (!DragDropUtils.isTrueDragLeave(event))
+      return;
+
     if (this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb' && this.uploadDragDrop.hoveredTarget()?.target?.id === breadcrumb.id) {
       this.uploadDragDrop.clearHover();
     }
@@ -46,11 +51,11 @@ export class BreadcrumbComponent {
     }
   }
 
-  onDragEnd($event: DragEvent, breadcrumb: Breadcrumb) {
+  onDragEnd(event: DragEvent, breadcrumb: Breadcrumb) {
     this.dragDrop.clearDragOverTarget();
   }
 
-  onDragOver(event: DragEvent, breadcrumb: Breadcrumb) {
+  onDragEnter(event: DragEvent, breadcrumb: Breadcrumb) {
     event.preventDefault();
 
     if (this.uploadDragDrop.allowExternalFiles(event)) {

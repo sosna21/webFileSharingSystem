@@ -13,9 +13,9 @@
 >
   <div
     (dragleave)="onTableDragLeave($event)"
-    (dragover)="onTableDragOver($event)"
+    (dragenter)="onTableDragEnter($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper overflow-scroll h-100"
+    class="table-scroll-wrapper overflow-auto h-100 px-1"
   >
     <table class="table table-hover table-sm no-select my-0">
       <thead class="table-primary sticky-top">
@@ -63,7 +63,7 @@
           draggable="true"
           (dragstart)="onRowDragStart($event, file)"
           (dragleave)="onRowDragLeave($event, file)"
-          (dragover)="onRowDragOver($event, file)"
+          (dragenter)="onRowDragEnter($event, file)"
           (drop)="onRowDrop($event, file)"
           [class.drop-folder-hover]="
             (dragOverFileId() === file.id ||
@@ -166,12 +166,12 @@
     }
   </div>
   <!-- overlay lives OUTSIDE the scrollable container -->
-  @if (fileUploadUploadTarget()) {
+  @if (fileUploadTarget()) {
   <div class="drop-overlay">
     <div class="drop-overlay-text">
       @if (fileUploadHoverTargetCorrect()) { Upload
-      {{ fileUpladFileNb() }} file(s) to “{{ fileUploadUploadTarget()?.name }}”
-      } @else { Upload {{ fileUpladFileNb() }} file(s) here }
+      {{ fileUpladFileNb() }} file(s) to “{{ fileUploadTarget()?.name }}” }
+      @else { Upload {{ fileUpladFileNb() }} file(s) here }
     </div>
   </div>
   }
