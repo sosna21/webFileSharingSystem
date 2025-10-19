@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild, viewChildren } from '@angular/core';
-import { AppFile, FileStatus } from '../../../core/models/app-file.model';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, linkedSignal, signal, viewChild, viewChildren } from '@angular/core';
+import { AppFile, FileStatus, ProgressStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
-import { CommonModule, JsonPipe } from '@angular/common';
-import { NgbDropdownModule, NgbModal, NgbTooltip, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { CommonModule, DecimalPipe, JsonPipe } from '@angular/common';
+import { NgbDropdownModule, NgbModal, NgbTooltip, NgbTooltipModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
@@ -18,11 +18,12 @@ import { DragPreviewComponent } from "./drag-preview/drag-preview.component";
 import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../core/utils/dom-drag-utils';
+import { FileUploadService } from '../../../core/services/file-upload.service';
 
 
 @Component({
   selector: 'app-base-table',
-  imports: [CommonModule, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent, DragPreviewComponent, JsonPipe],
+  imports: [CommonModule, DecimalPipe, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent, DragPreviewComponent, JsonPipe, NgbProgressbarModule],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,12 +34,13 @@ import { DragDropUtils } from '../../../core/utils/dom-drag-utils';
   }
 })
 export class BaseTableComponent {
-  // overlay = inject(DragOverlayService);
+  readonly FileStatus = FileStatus;
+  readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(NgbModal);
+  private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
-  fileResponseResponse = this.fileService.fileResponseResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
   files = this.fileService.files;
   selectedFiles = computed(() => this.files().filter(file => file.checked));
@@ -301,7 +303,7 @@ export class BaseTableComponent {
 
     bulkAction<AppFile>({
       items: filesToDelete,
-      action: file => this.fileService.deleteFile(file.id),
+      action: file => this.fileService.deleteFile(file),
       beforeStart: file => this.updateFile(file, { loading: true }),
       onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
       onError: (file, err) => {
@@ -364,6 +366,11 @@ export class BaseTableComponent {
     }
   }
 
+  onRowDragOver(event: DragEvent, row: AppFile) {
+    event.preventDefault();
+    this.dragDrop.setDropEffect(event, this.dragDrop.allowAppFiles(event) || this.uploadDragDrop.allowExternalFiles(event));
+  }
+
   onRowDragLeave(event: DragEvent, file: AppFile) {
     event.preventDefault();
     if (!DragDropUtils.isTrueDragLeave(event))
@@ -382,11 +389,12 @@ export class BaseTableComponent {
   }
 
   async onRowDrop(event: DragEvent, targetFile: AppFile) {
-    DragDropUtils.preventAndStop(event);
+    event.preventDefault();
+    event.stopPropagation();
     // External files
     if (this.uploadDragDrop.allowExternalFiles(event)) {
       //const files = this.uploadDragDrop.getDroppedFiles(event);
-      const destinationId = this.uploadDragDrop.getDestinationFolder(targetFile, this.currentDirectoryId() ?? -1);
+      const destinationId = this.uploadDragDrop.getDestinationFolder(targetFile, this.currentDirectoryId());
       await this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
       return;
     }
@@ -407,10 +415,16 @@ export class BaseTableComponent {
     }
   }
 
+  onTableDragOver(event: DragEvent) {
+    event.preventDefault();
+    this.dragDrop.setDropEffect(event, this.dragDrop.allowAppFiles(event) || this.uploadDragDrop.allowExternalFiles(event));
+  }
+
   async onTableDrop(event: DragEvent) {
     event.preventDefault();
+    event.stopPropagation();
     if (this.uploadDragDrop.allowExternalFiles(event)) {
-      const destinationId = this.currentDirectoryId() ?? -1;
+      const destinationId = this.currentDirectoryId();
       await this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
       return;
     }
@@ -424,5 +438,9 @@ export class BaseTableComponent {
     if (this.uploadDragDrop.hoveredTarget()?.type === 'table') {
       this.uploadDragDrop.clearHover();
     }
+  }
+
+  getFileSize(fileSize: string) {
+    return +fileSize.split(' ')[0];
   }
 }

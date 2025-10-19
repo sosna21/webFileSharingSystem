@@ -14,6 +14,7 @@
   <div
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
+    (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
     class="table-scroll-wrapper overflow-auto h-100 px-1"
   >
@@ -64,6 +65,7 @@
           (dragstart)="onRowDragStart($event, file)"
           (dragleave)="onRowDragLeave($event, file)"
           (dragenter)="onRowDragEnter($event, file)"
+          (dragover)="onRowDragOver($event, file)"
           (drop)="onRowDrop($event, file)"
           [class.drop-folder-hover]="
             (dragOverFileId() === file.id ||
@@ -71,14 +73,21 @@
             canBeTargetDirectory(file)
           "
         >
-          <!--Checkobox-->
-          <td class="d-table-cell align-middle">
-            <span
-              class="spinner-border spinner-border-sm"
-              [hidden]="!file.loading"
-            ></span>
+          <td class="d-table-cell align-middle text-center">
+            @if (file.fileStatus === FileStatus.Incomplete) {
+            <i
+              class="bi bi-x-octagon text-danger"
+              style="-webkit-text-stroke: 1px; font-size: large"
+              appClicableIcon
+              ngbTooltip="Cancel upload"
+              [openDelay]="300"
+            ></i>
+            } @else if (file.loading) {
+            <span class="spinner-border spinner-border-sm"></span>
+            }
           </td>
 
+          @if (file.fileStatus === FileStatus.Completed) {
           <td class="d-table-cell">
             <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
             @if (file.rename) {
@@ -95,6 +104,57 @@
             {{ file.fileName }}
             }
           </td>
+          } @else {
+          <td class="d-table-cell align-middle">
+            <div class="d-flex align-items-center gap-3">
+              <!-- File icon -->
+              <i class="bi fs-4" [ngClass]="file | fileToIcon"></i>
+
+              <!-- File details (name + progress bar) -->
+              <div class="flex-grow-1">
+                <div class="text-truncate">
+                  {{ file.fileName }}
+                  <span
+                    [class]="
+                      file.progressStatus === ProgressStatus.Started
+                        ? 'text-muted'
+                        : file.progressStatus === ProgressStatus.Stopping
+                        ? 'text-warning-emphasis'
+                        : 'text-danger-emphasis'
+                    "
+                    >({{
+                      file.progressStatus === ProgressStatus.Started
+                        ? "Uploading"
+                        : file.progressStatus === ProgressStatus.Stopping
+                        ? "Stopping"
+                        : "Stopped"
+                    }}:
+                    {{
+                      (getFileSize(file.size | fileSize) *
+                        file.uploadProgress) /
+                        100 | number : "1.2-2"
+                    }}/{{ file.size | fileSize }})</span
+                  >
+                </div>
+                <div class="d-flex">
+                  <ngb-progressbar
+                    [value]="file.uploadProgress"
+                    [showValue]="true"
+                    type="primary"
+                    class="mt-1 w-50 border border-secondary"
+                  ></ngb-progressbar>
+                  <div
+                    class="d-flex ms-2 align-items-start"
+                    style="margin-top: -5px"
+                  >
+                    <i appClicableIcon class="bi bi-pause-circle"></i>
+                    <i appClicableIcon class="bi bi-play-circle-fill"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+          }
 
           <!--Favorites -->
           <td class="d-none d-md-table-cell align-middle">
