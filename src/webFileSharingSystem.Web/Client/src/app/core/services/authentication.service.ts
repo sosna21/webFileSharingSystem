@@ -87,4 +87,10 @@ export class AuthenticationService {
     this.localStorageManager.removeUser();
     this._currentUser.set(null);
   }
+
+  updateCurrentUserUsedSpace(difference: number): void {
+    if (!this._currentUser()) return;
+    this._currentUser.update(user => ({ ...user, usedSpace: user!.usedSpace + difference } as User));
+    localStorage.setItem('currentUser', JSON.stringify(this._currentUser()));
+  }
 }

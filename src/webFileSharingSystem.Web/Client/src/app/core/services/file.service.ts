@@ -1,11 +1,12 @@
 import { computed, inject, Injectable, linkedSignal, OnInit, signal } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
-import { AppFile } from '../models/app-file.model';
+import { AppFile, FileStatus } from '../models/app-file.model';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
 import { Router } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
+import { tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +15,7 @@ export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly sharesUrl = `${environment.apiUrl}/Share`;
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthenticationService);
   private readonly http = inject(HttpClient);
 
   public readonly mode = signal<'GetAll' | 'GetSharedWithMe' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent'>('GetAll');
@@ -84,9 +86,11 @@ export class FileService {
     return this.http.put(api, filesToMoveIds);
   }
 
-  deleteFile(fileId: number) {
-    const api = `${this.currentBaseUrl()}/Delete/${fileId}`;
-    return this.http.delete(api);
+  deleteFile(file: AppFile) {
+    const api = `${this.currentBaseUrl()}/Delete/${file.id}`;
+    return this.http.delete(api).pipe(tap({
+      next: () => this.authService.updateCurrentUserUsedSpace(-file.size)
+    }));
   }
 
   constructor() {
