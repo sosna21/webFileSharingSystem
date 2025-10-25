@@ -40,7 +40,7 @@ export class HomeComponent implements OnInit {
   resetNewFolderName() {
     this.newFolderName.set(this.findUniqueDirName());
   }
-  
+
   createDirectory() {
     this.fileService.createDirectory(this.newFolderName()).subscribe({
       next: (response) => {
@@ -65,5 +65,9 @@ export class HomeComponent implements OnInit {
     if (!this.showDirCreate())
       this.showDirCreate.set(true);
     this.newFolderName.set(this.findUniqueDirName());
+  }
+
+  refetchFiles() {
+    this.fileService._fileResource.reload();
   }
 }

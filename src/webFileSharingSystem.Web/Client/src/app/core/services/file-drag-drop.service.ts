@@ -12,7 +12,7 @@ export class FileDragDropService {
   private readonly toast = inject(ToastService);
   private readonly baseFiles = this.fileService.files;
 
-  readonly dragOverTarget = signal<{ type: 'file' | 'breadcrumb'; id: number } | null>(null);
+  readonly dragOverTarget = signal<{ type: 'file' | 'breadcrumb'; id: number | null } | null>(null);
   readonly draggedFiles = signal<AppFile[]>([]);
 
   startDrag(files: AppFile[]) {
@@ -24,7 +24,7 @@ export class FileDragDropService {
     this.draggedFiles.set([]);
   }
 
-  moveFiles(targetDirId: number, targetDirName: string) {
+  moveFiles(targetDirId: number | null, targetDirName: string) {
     const filesToMove = this.draggedFiles();
     this.clearDrag();
     if (filesToMove.length === 0) return;
@@ -82,7 +82,7 @@ export class FileDragDropService {
   /**
    * Mark the current drag over target
    */
-  setDragOverTarget(type: 'file' | 'breadcrumb', id: number): void {
+  setDragOverTarget(type: 'file' | 'breadcrumb', id: number | null): void {
     this.dragOverTarget.set({ type, id });
   }
 

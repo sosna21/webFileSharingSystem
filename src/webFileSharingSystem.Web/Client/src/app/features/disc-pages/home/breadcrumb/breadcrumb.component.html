@@ -8,6 +8,7 @@
         class="px-2 py-1"
         (drop)="onDrop($event, breadcrumb)"
         (dragenter)="onDragEnter($event, breadcrumb)"
+        (dragover)="onDragOver($event)"
         (dragleave)="onDragLeave($event, breadcrumb)"
         (dragend)="onDragEnd($event, breadcrumb)"
         [class]="

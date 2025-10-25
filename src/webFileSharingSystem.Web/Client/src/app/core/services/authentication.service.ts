@@ -17,8 +17,8 @@ export class AuthenticationService {
   private localStorageManager = inject(LocalStorageManagementService);
   private router = inject(Router);
   private _currentUser = signal<User | null>(null);
-  currentUser = this._currentUser.asReadonly();
-  isAuthenticated = computed(() => !!this._currentUser());
+  readonly currentUser = this._currentUser.asReadonly();
+  readonly isAuthenticated = computed(() => !!this._currentUser());
 
 
   constructor() {

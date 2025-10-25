@@ -1,5 +1,5 @@
 <app-base-table-context-menu
-  [position]="position()"
+  [position]="contextMenuPosition()"
   [selectedFiles]="selectedFiles()"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
@@ -8,7 +8,7 @@
 />
 
 <div
-  class="table-wrapper position-relative h-100 bg-secondary bg-opacity-10 rounded rounded-4 px-2 py-3"
+  class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
   [class.table-drop-hover]="fileUploadTableTarget()"
 >
   <div
@@ -21,6 +21,7 @@
     <table class="table table-hover table-sm no-select my-0">
       <thead class="table-primary sticky-top">
         <tr>
+          <th scope="col" style="width: 3%">ID</th>
           <th scope="col" style="width: 3%">
             <label class="lbl-checkbox">
               <input
@@ -73,6 +74,7 @@
             canBeTargetDirectory(file)
           "
         >
+          <td class="d-table-cell align-middle text-center">{{ file.id }}</td>
           <td class="d-table-cell align-middle text-center">
             @if (file.fileStatus === FileStatus.Incomplete) {
             <i
@@ -116,11 +118,12 @@
                   {{ file.fileName }}
                   <span
                     [class]="
-                      file.progressStatus === ProgressStatus.Started
+                      'small ' +
+                      (file.progressStatus === ProgressStatus.Started
                         ? 'text-muted'
                         : file.progressStatus === ProgressStatus.Stopping
                         ? 'text-warning-emphasis'
-                        : 'text-danger-emphasis'
+                        : 'text-danger-emphasis')
                     "
                     >({{
                       file.progressStatus === ProgressStatus.Started
@@ -130,25 +133,42 @@
                         : "Stopped"
                     }}:
                     {{
-                      (getFileSize(file.size | fileSize) *
-                        file.uploadProgress) /
-                        100 | number : "1.2-2"
+                      getFileSize(file.size | fileSize) * file.uploadProgress
+                        | number : "1.2-2"
                     }}/{{ file.size | fileSize }})</span
                   >
                 </div>
                 <div class="d-flex">
                   <ngb-progressbar
-                    [value]="file.uploadProgress"
+                    [value]="file.uploadProgress * 100"
                     [showValue]="true"
                     type="primary"
+                    [animated]="file.progressStatus === ProgressStatus.Stopping"
+                    [striped]="file.progressStatus !== ProgressStatus.Stopped"
                     class="mt-1 w-50 border border-secondary"
                   ></ngb-progressbar>
                   <div
                     class="d-flex ms-2 align-items-start"
                     style="margin-top: -5px"
                   >
-                    <i appClicableIcon class="bi bi-pause-circle"></i>
-                    <i appClicableIcon class="bi bi-play-circle-fill"></i>
+                    <i
+                      appClicableIcon
+                      class="bi bi-pause-circle"
+                      [disabled]="
+                        file.progressStatus !== ProgressStatus.Started
+                      "
+                      ngbTooltip="Pause upload"
+                      [openDelay]="300"
+                    ></i>
+                    <i
+                      appClicableIcon
+                      class="bi bi-play-circle-fill"
+                      [disabled]="
+                        file.progressStatus === ProgressStatus.Started
+                      "
+                      ngbTooltip="Resume upload"
+                      [openDelay]="300"
+                    ></i>
                   </div>
                 </div>
               </div>

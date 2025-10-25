@@ -1,4 +1,4 @@
 export interface Breadcrumb {
-  id: number;
+  id: number | null;
   fileName: string;
 }

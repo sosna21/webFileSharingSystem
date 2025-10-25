@@ -10,7 +10,7 @@ namespace webFileSharingSystem.Core.Interfaces
 {
     public interface IUploadService
     {
-        Task<(Result result, PartialFileInfo? partialFileInfo)> CreateNewFileAsync(int userId,
+        Task<(Result result, File? file)> CreateNewFileAsync(int userId,
             int? parentId,
             string fileName,
             string? mimeType, long size);

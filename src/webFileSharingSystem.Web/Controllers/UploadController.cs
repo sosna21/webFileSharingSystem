@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Web.Contracts.Requests;
+using webFileSharingSystem.Web.Contracts.Responses;
 
 namespace webFileSharingSystem.Web.Controllers
 {
@@ -23,16 +25,17 @@ namespace webFileSharingSystem.Web.Controllers
 
         [HttpPost]
         [Route("Start")]
-        public async Task<ActionResult<PartialFileInfo>> StartFileUploadAsync([FromBody] UploadFileInfoRequest request)
+        public async Task<ActionResult<File>> StartFileUploadAsync([FromBody] UploadFileInfoRequest request)
         {
             var userId = _currentUserService.UserId;
 
-            var (result, partialFileInfo) = await _uploadService.CreateNewFileAsync(userId!.Value, request.ParentId,
+            var (result, file) = await _uploadService.CreateNewFileAsync(userId!.Value, request.ParentId,
                 request.FileName, request.MimeType,
                 request.Size);
             if (!result.Succeeded) return BadRequest(result.Errors);
-
-            return Ok(partialFileInfo);
+            
+            var fileResponse = ToFileResponse(file!);
+            return Ok(fileResponse);
         }
         
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -104,7 +107,26 @@ namespace webFileSharingSystem.Web.Controllers
                 await _uploadService.EnsureDirectoriesExist(userId!.Value, request.ParentId, request.Folders);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
-            return Ok(file!.Id);
+            var response = ToFileResponse(file!);
+            return Ok(response);
+        }
+        
+        private FileResponse ToFileResponse(File file)
+        {
+            return new FileResponse
+            {
+                Id = file.Id,
+                FileName = file.FileName,
+                MimeType = file.MimeType,
+                Size = file.Size,
+                IsShared = file.IsShared,
+                IsFavourite = file.IsFavourite,
+                IsDirectory = file.IsDirectory,
+                ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
+                FileStatus = file.FileStatus,
+                PartialFileInfo = file.PartialFileInfo,
+                UploadProgress = 0
+            };
         }
     }
 }

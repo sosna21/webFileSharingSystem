@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, linkedSignal, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, linkedSignal, signal, viewChild, viewChildren } from '@angular/core';
 import { AppFile, FileStatus, ProgressStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
@@ -17,13 +17,16 @@ import { ConfirmationModalComponent } from '../../../core/components/confirmatio
 import { DragPreviewComponent } from "./drag-preview/drag-preview.component";
 import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
-import { DragDropUtils } from '../../../core/utils/dom-drag-utils';
+import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
+import { UploadStatus } from '../../../core/models/upload-progress-info.model';
 
 
 @Component({
   selector: 'app-base-table',
-  imports: [CommonModule, DecimalPipe, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent, DragPreviewComponent, JsonPipe, NgbProgressbarModule],
+  imports: [CommonModule, DecimalPipe, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, 
+    FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent, 
+    DragPreviewComponent, NgbProgressbarModule],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,12 +45,20 @@ export class BaseTableComponent {
   private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
-  files = this.fileService.files;
+  files = linkedSignal<AppFile[]>(() => this.fileService.files().map(f => this.uploadService.uploadProgresses().hasOwnProperty(f.id)
+    ? {
+      ...f,
+      uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
+      progressStatus: this.uploadService.uploadProgresses()[f.id].status === UploadStatus.InProgress
+        ? ProgressStatus.Started
+        : ProgressStatus.Stopped
+    }
+    : f));
   selectedFiles = computed(() => this.files().filter(file => file.checked));
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(BaseTableContextMenuComponent);
-  position = signal<{ x: number, y: number }>({ x: 0, y: 0 });
+  contextMenuPosition = signal<{ x: number, y: number }>({ x: 0, y: 0 });
 
   lastSelectedFileId = signal<number | null>(null);
   renameInput = signal('');
@@ -231,7 +242,7 @@ export class BaseTableComponent {
 
   private openContextMenu(position: { x: number; y: number }) {
     this.contextMenu()?.close();
-    this.position.set(position);
+    this.contextMenuPosition.set(position);
     this.contextMenu()?.open();
   }
 

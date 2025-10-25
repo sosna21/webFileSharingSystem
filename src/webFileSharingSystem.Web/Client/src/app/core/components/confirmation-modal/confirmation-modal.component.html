@@ -9,10 +9,11 @@
 </div>
 
 <div class="modal-body">
-  <p style="white-space: pre-wrap;">{{ message() }}
-      @if (showPermanentDeleteWarning()) {
-    <span class="text-danger"><br>This operation can not be undone.</span>
-  }
+  <p class="d-grid overflow-hidden" style="white-space: pre-wrap; ">
+    {{ message() }}
+    @if (showPermanentDeleteWarning()) {
+    <span class="text-danger"><br />This operation can not be undone.</span>
+    }
   </p>
 </div>
 

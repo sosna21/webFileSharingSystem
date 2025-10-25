@@ -7,6 +7,7 @@ import { debouncedSignal } from '../utils/signal-utils';
 import { Router } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
 import { tap } from 'rxjs';
+import { AuthenticationService } from './authentication.service';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +26,7 @@ export class FileService {
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-  public readonly files = linkedSignal<AppFile[]>(() => this.fileResponseResource()?.items.sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
+  public readonly files = linkedSignal<AppFile[]>(() => this.filesData()?.items.sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
 
   private readonly currentBaseUrl = computed(() => {
     return this.mode() === 'GetSharedWithMe' ? this.sharesUrl : this.fileUrl;
@@ -33,7 +34,7 @@ export class FileService {
   private readonly _debouncedSearchedPhrase = debouncedSignal(this.searchedPhrase, 300, '');
   private readonly _request = computed(() => `${this.currentBaseUrl()}/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
       ${this.parentId() ? '&ParentId=' + this.parentId() : ''}${(this._debouncedSearchedPhrase() !== '') ? '&SearchedPhrase=' + this._debouncedSearchedPhrase() : ''}`);
-  private readonly _fileResource = httpResource<FileResponse>(() => this._request());
+  readonly _fileResource = httpResource<FileResponse>(() => this._request());
 
   private readonly _linkedFilesResponse = linkedSignal<FileResponse | undefined, FileResponse | undefined>({
     source: () => this._fileResource.value(),
@@ -45,7 +46,7 @@ export class FileService {
     }
   });
   public readonly fileResource = this._fileResource.asReadonly();
-  public readonly fileResponseResource = this._linkedFilesResponse.asReadonly();
+  public readonly filesData = this._linkedFilesResponse.asReadonly();
 
   //breadcumbs
   private readonly _breadcrumbsQuery = computed(() => this.parentId() !== null ? `${this.fileUrl}/GetFilePath/${this.parentId()}` : undefined);
@@ -80,7 +81,7 @@ export class FileService {
     return this.http.post<AppFile>(api, null);
   }
 
-  moveFiles(filesToMove: AppFile[], targetDirectoryId: number) {
+  moveFiles(filesToMove: AppFile[], targetDirectoryId: number | null) {
     const api = `${this.currentBaseUrl()}/Move/${targetDirectoryId}`;
     const filesToMoveIds = filesToMove.map(file => file.id);
     return this.http.put(api, filesToMoveIds);
@@ -112,5 +113,14 @@ export class FileService {
   private extractFolderId(url: string): number | null {
     const match = url.match(/folder\/(\d+)/);
     return match ? +match[1] : null;
+  }
+
+  addFileIfNotExists(file: AppFile) {
+    if (this.files().find(f => f.id === file.id)) return;
+    this.files.update(files => [...files, file]);
+  }
+
+  completeUploadFile(fileId: number): void {
+    this.files.update(files => files.map(file => file.id === fileId ? { ...file, fileStatus: FileStatus.Completed } : file));
   }
 }

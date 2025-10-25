@@ -34,7 +34,7 @@ namespace webFileSharingSystem.Core.Services
         }
 
 
-        public async Task<(Result result, PartialFileInfo? partialFileInfo)> CreateNewFileAsync(int userId,
+        public async Task<(Result result, File? file)> CreateNewFileAsync(int userId,
             int? parentId,
             string fileName,
             string? mimeType, long size)
@@ -95,7 +95,7 @@ namespace webFileSharingSystem.Core.Services
                 //TODO What if given key already exists in the cache? 
                 if (partialFileInfo is not null)
                     UserFileCache[(userId, file.Id)] = new PartialFileInfoCache(userId, fileGuidId, partialFileInfo);
-                return (Result.Success(), partialFileInfo);
+                return (Result.Success(), file);
             }
             catch
             {
@@ -285,7 +285,6 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure("Problem with creating directories"), null);
                 parentId = directoryFile.Id;
             }
-
             return (Result.Success(), directoryFile);
         }
         

@@ -37,6 +37,7 @@ tr {
 }
 
 .table-wrapper {
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
   .drop-overlay {
     position: absolute;
     top: -5px;
@@ -69,7 +70,6 @@ tr {
   font-size: 1.3rem;
 }
 
-
 .table > :where(tbody) > tr.drop-folder-hover > * {
   background-color: rgba(13, 110, 253, 0.12) !important;
 }
@@ -77,13 +77,3 @@ tr {
   outline: 2px dashed #0d6efd !important;
   outline-offset: -2px;
 }
-
-// @keyframes show-in {
-//   from {
-//     opacity: 100%;
-//   }
-
-//   to {
-//     opacity: 0;
-//   }
-// }

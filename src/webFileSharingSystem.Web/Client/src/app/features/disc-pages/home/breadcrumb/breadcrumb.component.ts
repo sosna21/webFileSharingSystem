@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Breadcrumb } from '../../../../core/models/breadcrumb.model';
 import { FileDragDropService } from '../../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../../core/services/file-upload-drag-drop.service';
-import { DragDropUtils } from '../../../../core/utils/dom-drag-utils';
+import { DragDropUtils } from '../../../../core/utils/drag-drop-utils';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -23,13 +23,13 @@ export class BreadcrumbComponent {
   readonly breadCrumbsResource = this.fileService.breadCrumbsResource;
   readonly breadCrumbs = computed(() => [this.homeBreadcrumb, ...(this.breadCrumbsResource.value() ?? [])]);
   readonly homeBreadcrumb: Breadcrumb = {
-    id: -1,
+    id: null,
     fileName: 'Home'
   };
   readonly dragOverBreadcrumbId = computed(() => this.dragDrop.dragOverTarget()?.type === 'breadcrumb' ?
     this.dragDrop.dragOverTarget()?.id
     : this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb'
-      ? this.uploadDragDrop.hoveredTarget()?.target?.id : null
+      ? this.uploadDragDrop.hoveredTarget()?.target?.id : -1
   );
 
   selectFolder(folderId: number | null) {
@@ -62,8 +62,12 @@ export class BreadcrumbComponent {
       this.uploadDragDrop.setHoverTarget({ type: 'breadcrumb', target: breadcrumb }, event);
     } else if (this.dragDrop.allowAppFiles(event)) {
       this.dragDrop.setDragOverTarget('breadcrumb', breadcrumb.id);
-      this.dragDrop.setDropEffect(event, true);
     }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    this.dragDrop.setDropEffect(event, this.dragDrop.allowAppFiles(event) || this.uploadDragDrop.allowExternalFiles(event));
   }
 
   onDrop(event: DragEvent, breadcrumb: Breadcrumb) {

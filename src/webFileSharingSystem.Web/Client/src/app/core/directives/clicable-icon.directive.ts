@@ -4,7 +4,7 @@ import { Directive, computed, input, signal } from '@angular/core';
   selector: 'i[appClicableIcon]',
   standalone: true,
   host: {
-    '[style.cursor]': `'pointer'`,
+    '[style.cursor]': `disabled() ? '' : 'pointer'`,
     '[style.display]': `'inline-block'`,
     '[style.textAlign]': `'center'`,
     '[style.borderRadius]': `'50%'`,
@@ -21,6 +21,7 @@ export class ClicableIconDirective {
   readonly bgSize = input<string>('2rem');
   readonly bgClass = input<string>('bg-secondary-subtle');
   readonly isHovered = signal(false);
+  readonly disabled = input<boolean>(false);
 
-  readonly hoveredClass = computed(() => this.isHovered() ? this.bgClass() : '');
+  readonly hoveredClass = computed(() => this.isHovered() && !this.disabled() ? this.bgClass() : this.disabled() ? 'text-muted' : '');
 }
