@@ -13,7 +13,9 @@ import {
   EMPTY,
   shareReplay,
   last,
-  mergeMap
+  mergeMap,
+  toArray,
+  switchMap
 } from 'rxjs';
 import { PartialFileInfo } from '../models/partial-file-info.model';
 import { AuthenticationService } from './authentication.service';
@@ -26,6 +28,7 @@ import { FileService } from './file.service';
 
 @Injectable({ providedIn: 'root' })
 export class FileUploadService {
+  private readonly numberOfConcurrentFileUploads = 4;
   private readonly numberOfConcurrentChunkUploads = 5;
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthenticationService);
@@ -46,6 +49,95 @@ export class FileUploadService {
 
   public readonly activeUploadsInCurrentFolder = computed(() => this.activeUploads().filter(pi => pi.parentId === this.fileService.parentId()));
   public readonly isUploading = computed(() => this.activeUploads().length > 0);
+
+
+  uploadFiles(
+    directories: {
+      path: string;
+    }[],
+    files: {
+      file: File;
+      path: string;
+    }[],
+    destinationFolderId: number | null = null
+  ) {
+    const dirMap = new Map<string, number>();
+    const directoriesWithFiles = { directories, files };
+
+    return of(directoriesWithFiles).pipe(
+      switchMap(({ directories, files }) => {
+        let successCount = 0;
+        let failCount = 0;
+
+        // Create directories sequentially first
+        return from(directories.sort((a, b) => a.path.length - b.path.length)).pipe(
+          concatMap(dir =>
+            this.ensureDirectoryExists(dir.path, destinationFolderId).pipe(
+              tap(directoryFile => {
+                if (
+                  destinationFolderId === this.fileService.parentId() &&
+                  dir.path.split('/').length === 2
+                ) {
+                  this.fileService.addFileIfNotExists(directoryFile!);
+                }
+                dirMap.set(dir.path, directoryFile!.id);
+              }),
+              catchError(err => {
+                this.toast.show(
+                  'Upload error',
+                  `Failed to create folder '${dir.path}'\nUpload cancelled`,
+                  MessageSeverity.error
+                );
+                return EMPTY;
+              })
+            )
+          ),
+          toArray(), // Wait until all directories created
+          switchMap(() => from(files).pipe(
+            mergeMap(({ file, path }) => {
+              const filePath = path.substring(0, path.lastIndexOf('/', path.length) + 1);
+              const parentId = dirMap.get(filePath) ?? destinationFolderId;
+
+              return this.upload(file, parentId).pipe(
+                tap(() => successCount++),
+                catchError(err => {
+                  failCount++;
+                  this.toast.show(
+                    'Upload error',
+                    `Failed to upload file '${file.name}'`,
+                    MessageSeverity.error
+                  );
+                  return EMPTY;
+                })
+              );
+            }, this.numberOfConcurrentFileUploads),
+            finalize(() => {
+              const totalFiles = files.length;
+
+              if (successCount > 0) {
+                const successMsg =
+                  failCount > 0
+                    ? `${successCount} file(s) uploaded successfully, ${failCount} failed.`
+                    : `${successCount} file(s) uploaded successfully.`;
+
+                this.toast.show(
+                  'Upload complete',
+                  successMsg,
+                  failCount > 0 ? MessageSeverity.info : MessageSeverity.success
+                );
+              } else {
+                this.toast.show(
+                  'Upload failed',
+                  `All ${totalFiles} file(s) failed to upload.`,
+                  MessageSeverity.error
+                );
+              }
+            })
+          ))
+        );
+      })
+    );
+  }
 
 
   public upload(file: File, parentId: number | null) {

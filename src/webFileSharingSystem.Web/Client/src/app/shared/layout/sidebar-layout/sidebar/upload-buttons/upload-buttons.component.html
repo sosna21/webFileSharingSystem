@@ -1,0 +1,18 @@
+<label class="btn btn-info px-0 py-3" tabindex="0" role="button">
+  <input
+    type="file"
+    class="d-none"
+    multiple
+    (change)="uploadSelectedFiles($event)"
+  />
+  Upload files
+</label>
+<label class="btn btn-info px-0 py-3" tabindex="0" role="button">
+  <input
+    type="file"
+    class="d-none"
+    webkitdirectory
+    (change)="uploadSelectedFolder($event)"
+  />
+  Upload folder
+</label>

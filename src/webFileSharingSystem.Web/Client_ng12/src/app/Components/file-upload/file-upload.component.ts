@@ -19,7 +19,6 @@ export class FileUploadComponent implements OnInit {
 
   async fileUpload(files: File[]) {
     const parentId = this.fileExplorerService.currentParentIdValue;
-
     //version1 Upload files at the same time
     from(files).pipe(concatMap((element) => {
       // @ts-ignore

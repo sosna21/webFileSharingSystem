@@ -3,9 +3,7 @@ import { FileService } from './file.service';
 import { ToastService } from './toast.service';
 import { AppFile } from '../models/app-file.model';
 import { Breadcrumb } from '../models/breadcrumb.model';
-import { MessageSeverity } from '../models/toast-info.model';
 import { FileUploadService } from './file-upload.service';
-import { catchError, concatMap, EMPTY, finalize, from, mergeMap, switchMap, tap, toArray } from 'rxjs';
 
 interface HoverTarget {
   type: 'directory' | 'breadcrumb' | 'table';
@@ -88,84 +86,11 @@ export class FileUploadDragDropService {
   }
 
   async uploadDraggedFiles(event: DragEvent, destinationFolderId: number | null) {
-    const dirMap = new Map<string, number>();
     if (!event.dataTransfer || event.dataTransfer.items.length === 0) return;
     this.clearHover();
+    const { directories, files } = await this.getAllFiles(event.dataTransfer.items);
 
-    from(this.getAllFiles(event.dataTransfer.items)).pipe(
-      switchMap(({ directories, files }) => {
-        let successCount = 0;
-        let failCount = 0;
-
-        // Create directories sequentially first
-        return from(directories.sort((a, b) => a.path.length - b.path.length)).pipe(
-          concatMap(dir =>
-            this.uploadService.ensureDirectoryExists(dir.path, destinationFolderId).pipe(
-              tap(directoryFile => {
-                if (
-                  destinationFolderId === this.fileService.parentId() &&
-                  dir.path.split('/').length === 2
-                ) {
-                  this.fileService.addFileIfNotExists(directoryFile!);
-                }
-                dirMap.set(dir.path, directoryFile!.id);
-              }),
-              catchError(err => {
-                this.toast.show(
-                  'Upload error',
-                  `Failed to create folder '${dir.path}'\nUpload cancelled`,
-                  MessageSeverity.error
-                );
-                return EMPTY;
-              })
-            )
-          ),
-          toArray(), // Wait until all directories created
-          switchMap(() => from(files).pipe(
-            mergeMap(({ file, path }) => {
-              const filePath = path.substring(0, path.lastIndexOf('/', path.length) + 1);
-              const parentId = dirMap.get(filePath) ?? destinationFolderId;
-
-              return this.uploadService.upload(file, parentId).pipe(
-                tap(() => successCount++),
-                catchError(err => {
-                  console.log('Upload error for file', file.name, err);
-                  failCount++;
-                  this.toast.show(
-                    'Upload error',
-                    `Failed to upload file '${file.name}'`,
-                    MessageSeverity.error
-                  );
-                  return EMPTY;
-                })
-              );
-            }, this.numberOfConcurrentFileUploads),
-            finalize(() => {
-              const totalFiles = files.length;
-
-              if (successCount > 0) {
-                const successMsg =
-                  failCount > 0
-                    ? `${successCount} file(s) uploaded successfully, ${failCount} failed.`
-                    : `${successCount} file(s) uploaded successfully.`;
-
-                this.toast.show(
-                  'Upload complete',
-                  successMsg,
-                  failCount > 0 ? MessageSeverity.info : MessageSeverity.success
-                );
-              } else {
-                this.toast.show(
-                  'Upload failed',
-                  `All ${totalFiles} file(s) failed to upload.`,
-                  MessageSeverity.error
-                );
-              }
-            })
-          ))
-        );
-      })
-    ).subscribe();
+    this.uploadService.uploadFiles(directories, files, destinationFolderId).subscribe();
   }
 
 
