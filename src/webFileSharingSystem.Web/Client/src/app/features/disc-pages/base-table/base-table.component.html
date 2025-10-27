@@ -3,7 +3,7 @@
   [selectedFiles]="selectedFiles()"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
-  (delete)="deleteFiles()"
+  (delete)="deleteSelectedFiles()"
   (selectFolder)="selectFolder($event)"
 />
 
@@ -80,6 +80,7 @@
             <i
               class="bi bi-x-octagon text-danger"
               style="-webkit-text-stroke: 1px; font-size: large"
+              (click)="cancelUpload(file)"
               appClicableIcon
               ngbTooltip="Cancel upload"
               [openDelay]="300"

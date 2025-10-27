@@ -272,10 +272,18 @@ export class BaseTableComponent {
   }
 
 
-  async deleteFiles() {
+  deleteSelectedFiles() {
     const filesToDelete = this.selectedFiles();
     if (filesToDelete.length === 0) {
       this.toast.show('No files selected', 'Please select files to delete', MessageSeverity.info);
+      return;
+    }
+
+    this.deleteFiles(filesToDelete);
+  }
+
+  private async deleteFiles(filesToDelete: AppFile[]) {
+    if (filesToDelete.length === 0) {
       return;
     }
 
@@ -453,5 +461,11 @@ export class BaseTableComponent {
 
   getFileSize(fileSize: string) {
     return +fileSize.split(' ')[0];
+  }
+
+  cancelUpload(file: AppFile) {
+    if (file.fileStatus !== FileStatus.Incomplete) return;
+    this.uploadService.cancel(file.id);
+    this.deleteFiles([file]);
   }
 }
