@@ -15,7 +15,8 @@ import {
   last,
   mergeMap,
   toArray,
-  switchMap
+  switchMap,
+  Observable
 } from 'rxjs';
 import { PartialFileInfo } from '../models/partial-file-info.model';
 import { AuthenticationService } from './authentication.service';
@@ -29,13 +30,13 @@ import { FileService } from './file.service';
 @Injectable({ providedIn: 'root' })
 export class FileUploadService {
   private readonly numberOfConcurrentFileUploads = 4;
-  private readonly numberOfConcurrentChunkUploads = 5;
+  private readonly numberOfConcurrentChunkUploads = 2;
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthenticationService);
   private readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);
 
-  private readonly uploadingFiles: Record<number, { sub: any; isStopped: boolean }> = {};
+  private readonly uploadingFiles: Record<number, { sub: any; isStopped: boolean; chunkSubs?: any[] }> = {};
   private readonly filesInfo: Record<number, { partial: PartialFileInfo; file: File }> = {};
   public readonly uploadProgresses = signal<Record<number, UploadProgressInfo>>({});
 
@@ -125,7 +126,7 @@ export class FileUploadService {
                   successMsg,
                   failCount > 0 ? MessageSeverity.info : MessageSeverity.success
                 );
-              } else {
+              } else if (failCount > 0) {
                 this.toast.show(
                   'Upload failed',
                   `All ${totalFiles} file(s) failed to upload.`,
@@ -160,12 +161,10 @@ export class FileUploadService {
           this.fileService.files.update(prev => [appFile, ...prev]);
         }
 
-        // the core upload pipeline for this file
         const upload$ = this.sendFile(file, partial, progress => {
           progress.parentId = parentId;
           this.updateProgress(progress);
         }).pipe(
-          // WAIT until the *entire* sendFile stream completes (all chunks done)
           last(),
           concatMap(() => {
             return this.completeFileUpload(partial.fileId);
@@ -178,10 +177,15 @@ export class FileUploadService {
               progress: 1
             });
             delete this.filesInfo[partial.fileId];
-            // cleanup of uploadingFiles happens when we unsubscribe below
             delete this.uploadingFiles[partial.fileId];
           }),
           catchError(err => {
+            // handle user-initiated stop
+            if (err?.message === 'UploadStopped') {
+              // do not show failure toast
+              return EMPTY;
+            }
+
             this.toast.show(
               'Upload error',
               `"${file.name}" failed`,
@@ -193,18 +197,19 @@ export class FileUploadService {
         );
 
         const shared$ = upload$.pipe(
-          // buffer the result while there are subscribers
-          // shareReplay with refCount ensures single execution
           shareReplay({ bufferSize: 1, refCount: true })
         );
 
+        // ensure an uploadingFiles entry exists BEFORE we subscribe so pause() can set isStopped immediately
+        const existingEntry = this.uploadingFiles[partial.fileId];
+        this.uploadingFiles[partial.fileId] = { sub: null, isStopped: existingEntry?.isStopped ?? false, chunkSubs: existingEntry?.chunkSubs ?? [] };
+
         const sub = shared$.subscribe({
-          next: () => { /* leave emmpty; tap updates progress */ },
+          next: () => { /* leave empty; tap updates progress */ },
           error: (e) => console.error('Upload observable error', e)
         });
 
-        // keep a handle for pause/cancel
-        this.uploadingFiles[partial.fileId] = { sub, isStopped: false };
+        this.uploadingFiles[partial.fileId].sub = sub;
 
         return shared$;
       })
@@ -212,20 +217,94 @@ export class FileUploadService {
   }
 
   public pause(fileId: number) {
-    const u = this.uploadingFiles[fileId];
-    if (u) u.isStopped = true;
+    const entry = this.uploadingFiles[fileId] ?? (this.uploadingFiles[fileId] = { sub: null, isStopped: false });
+    entry.isStopped = true;
+
+    const prev = this.uploadProgresses()[fileId];
+    const progress = {
+      status: UploadStatus.Stopping,
+      parentId: prev?.parentId ?? null,
+      fileId,
+      progress: prev?.progress ?? null
+    };
+    this.updateProgress(progress);
+    //Rest is handled by main upload pipeline
+    //In sendFileChunks, when isStopped is detected, no new chunks are started
   }
 
   public cancel(fileId: number) {
-    const u = this.uploadingFiles[fileId];
-    if (u) {
-      u.sub.unsubscribe();
+    const uploadInfo = this.uploadingFiles[fileId];
+    if (uploadInfo) {
+      // unsubscribe main upload subscription
+      uploadInfo.sub?.unsubscribe();
+      // abort any in-flight chunk HTTP requests
+      if (uploadInfo.chunkSubs?.length) {
+        uploadInfo.chunkSubs.forEach(s => {
+          try { s.unsubscribe(); } catch { /* ignore */ }
+        });
+      }
       delete this.uploadingFiles[fileId];
       this.removeProgress(fileId);
     }
   }
 
-  public resume(fileId: number, fileInfo: { partial: PartialFileInfo; file: File }, parentId: number | null = null) {
+  private selectUserFile(): Promise<File> {
+    return new Promise<File>((resolve, reject) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+
+      input.onchange = () => {
+        if (!input.files || input.files.length === 0) {
+          this.toast.show('Cancellation', 'No file selected for resuming upload', MessageSeverity.info);
+          return;
+        }
+        resolve(input.files[0]);
+        document.body.removeChild(input);
+      };
+
+      input.oncancel = () => {
+        this.toast.show('Cancellation', 'File selection cancelled', MessageSeverity.info);
+        document.body.removeChild(input);
+      };
+
+      document.body.appendChild(input);
+      input.click();
+    });
+  }
+
+  public async resume(file: AppFile, parentId: number | null = null) {
+    const fileId = file.id;
+    let fileInfo = this.filesInfo[fileId];
+    if (!fileInfo) {
+      try {
+        const selectedFile = await this.selectUserFile();
+
+        fileInfo = {
+          partial: file.partialFileInfo!,
+          file: selectedFile
+        };
+
+        if (
+          file.fileName !== fileInfo.file.name ||
+          file.size !== fileInfo.file.size ||
+          file.mimeType !== fileInfo.file.type
+        ) {
+          this.toast.show(
+            'File mismatch',
+            'The selected file does not match the original file for resuming upload.',
+            MessageSeverity.error
+          );
+          return;
+        }
+
+        this.filesInfo[fileId] = fileInfo;
+      } catch (err) {
+        this.toast.show('Cancellation', 'File selection cancelled', MessageSeverity.info);
+        return;
+      }
+    }
+
     this.filesInfo[fileId] = fileInfo;
     this.getMissingChunks(fileId).pipe(
       concatMap(missing => {
@@ -233,7 +312,7 @@ export class FileUploadService {
           status: UploadStatus.Resumed,
           parentId,
           fileId,
-          progress: 0
+          progress: file.uploadProgress
         });
 
         const chunks = new Map<number, number[]>();
@@ -260,6 +339,11 @@ export class FileUploadService {
             delete this.uploadingFiles[fileId];
           }),
           catchError(err => {
+            // handle stop
+            if (err?.message === 'UploadStopped') {
+              return EMPTY;
+            }
+
             this.toast.show('Upload error', `"${fileInfo.file.name}" failed during resume`, MessageSeverity.error);
             console.error(err);
             return throwError(() => err);
@@ -267,12 +351,17 @@ export class FileUploadService {
         );
 
         const shared$ = upload$.pipe(shareReplay({ bufferSize: 1, refCount: true }));
+        // create entry before subscribing
+        // ensure isStopped is cleared so resume works
+        const existingResumeEntry = this.uploadingFiles[fileId];
+        this.uploadingFiles[fileId] = { sub: null, isStopped: false, chunkSubs: existingResumeEntry?.chunkSubs ?? [] };
+
         const sub = shared$.subscribe({
           next: () => { },
           error: (e) => console.error('Resume upload error', e)
         });
 
-        this.uploadingFiles[fileId] = { sub, isStopped: false };
+        this.uploadingFiles[fileId].sub = sub;
         return of(null);
       })
     ).subscribe();
@@ -319,40 +408,90 @@ export class FileUploadService {
     partial: PartialFileInfo,
     onProgress: (p: UploadProgressInfo) => void
   ) {
+    const activeChunks = new Set<number>();
+
     const update = (event: HttpEvent<any>, idx: number) => {
       switch (event.type) {
         case HttpEventType.UploadProgress:
-          chunks.get(idx)![2] = event.loaded / (event.total ?? 1);
+          const percentDone = event.loaded / (event.total ?? 1);
+          chunks.get(idx)![2] = percentDone;
           break;
         case HttpEventType.Response:
           chunks.get(idx)![2] = 1;
+          activeChunks.delete(idx);
           break;
       }
-      const progress = [...chunks.values()].reduce((a, b) => a + b[2], 0) / partial.numberOfChunks;
-      const status = this.uploadingFiles[partial.fileId]?.isStopped
-        ? UploadStatus.Stopping
-        : UploadStatus.InProgress;
+
+      const numberOfAlreadyUploadedChunks = partial.numberOfChunks - chunks.size;
+      const progress = ([...chunks.values()].reduce((a, b) => a + b[2], 0) + numberOfAlreadyUploadedChunks) / partial.numberOfChunks;
+
+      const uploadEntry = this.uploadingFiles[partial.fileId];
+      let status: UploadStatus;
+
+      if (uploadEntry?.isStopped) {
+        status = activeChunks.size === 0 ? UploadStatus.Stopped : UploadStatus.Stopping;
+      } else {
+        status = UploadStatus.InProgress;
+      }
+
       onProgress({ status, fileId: partial.fileId, progress });
     };
 
-    return from(Array.from(chunks.entries())).pipe(
+    const entries = Array.from(chunks.entries());
+    const chunks$ = from(entries).pipe(
       mergeMap(([index, [start, end]]) => {
-        const chunk = file.slice(start, end);
-        return this.sendChunk(chunk, partial.fileId, index).pipe(
-          tap(e => update(e, index)),
-          retry(4),
-          catchError(err => {
-            return throwError(() => err);
-          })
-        );
-      }, this.numberOfConcurrentChunkUploads),
-      finalize(() => {
-        const u = this.uploadingFiles[partial.fileId];
-        if (u?.isStopped) {
-          try { u.sub?.unsubscribe(); } catch { /* ignore */ }
-          u.isStopped = false;
-          onProgress({ status: UploadStatus.Stopped, fileId: partial.fileId, progress: null });
+        const detached$ = new Observable<HttpEvent<any>>(observer => {
+          const uploadEntry = this.uploadingFiles[partial.fileId];
+          if (uploadEntry?.isStopped) {
+            observer.complete();
+            return () => { };
+          }
+
+          const chunk = file.slice(start, end);
+          activeChunks.add(index);
+          const inner$ = this.sendChunk(chunk, partial.fileId, index).pipe(
+            tap(e => update(e, index)),
+            retry(4)
+          );
+          const innerSub = inner$.subscribe({
+            next: v => observer.next(v),
+            error: err => observer.error(err),
+            complete: () => observer.complete()
+          });
+
+          const uploadInfo = this.uploadingFiles[partial.fileId];
+          if (uploadInfo) {
+            uploadInfo.chunkSubs = uploadInfo.chunkSubs ?? [];
+            uploadInfo.chunkSubs.push(innerSub);
+          }
+
+          // when innerSub ends, remove it from chunkSubs
+          const cleanup = () => {
+            const uploadInfo = this.uploadingFiles[partial.fileId];
+            if (uploadInfo?.chunkSubs) {
+              uploadInfo.chunkSubs = uploadInfo.chunkSubs.filter(s => s !== innerSub);
+            }
+            activeChunks.delete(index);
+          };
+          innerSub.add(cleanup);
+
+          // Dont unsubscribe innerSub when outer unsubscribes 
+          // this (keeps in-flight HTTP running)
+          return () => { /* only outer subscription teardown */ };
+        })
+
+        return detached$;
+      }, this.numberOfConcurrentChunkUploads)
+    );
+
+
+    return chunks$.pipe(
+      switchMap(() => {
+        const uploadInfo = this.uploadingFiles[partial.fileId];
+        if (uploadInfo?.isStopped) {
+          return throwError(() => new Error('UploadStopped'));
         }
+        return of(null);
       })
     );
   }

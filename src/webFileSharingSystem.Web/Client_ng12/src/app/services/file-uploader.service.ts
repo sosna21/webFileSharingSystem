@@ -1,13 +1,13 @@
-import {Injectable} from '@angular/core';
-import {HttpClient, HttpEvent, HttpEventType} from "@angular/common/http";
-import {BehaviorSubject, from, Observable, of, Subscription, throwError} from "rxjs";
-import {environment} from "../../environments/environment";
-import {UploadFileInfo} from "../models/uploadFileInfo";
-import {PartialFileInfo} from "../models/partialFileInfo";
-import {catchError, concatMap, finalize, last, retry, tap} from "rxjs/operators";
-import {UploadProgressInfo, UploadStatus} from "../Components/common/fileUploadProgress";
-import {AuthenticationService} from "./authentication.service";
-import {ToastrService} from "ngx-toastr";
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpEvent, HttpEventType } from "@angular/common/http";
+import { BehaviorSubject, from, Observable, of, Subscription, throwError } from "rxjs";
+import { environment } from "../../environments/environment";
+import { UploadFileInfo } from "../models/uploadFileInfo";
+import { PartialFileInfo } from "../models/partialFileInfo";
+import { catchError, concatMap, finalize, last, retry, tap } from "rxjs/operators";
+import { UploadProgressInfo, UploadStatus } from "../Components/common/fileUploadProgress";
+import { AuthenticationService } from "./authentication.service";
+import { ToastrService } from "ngx-toastr";
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +21,7 @@ export class FileUploaderService {
   constructor(private http: HttpClient, private authenticationService: AuthenticationService, private toastr: ToastrService) {
   }
 
-  public upload(file: File, parentId: number | null ) {
+  public upload(file: File, parentId: number | null) {
     return new Observable(subscriber => {
       this.startFileUpload(file, parentId).subscribe(partialFileInfo => {
         if (file.size === 0) return;
@@ -70,7 +70,7 @@ export class FileUploaderService {
     })
   }
 
-  public newDirectoryCreatedForUpload( parentId: number | null ){
+  public newDirectoryCreatedForUpload(parentId: number | null) {
     const progress: UploadProgressInfo = {
       status: UploadStatus.Completed,
       parentId: parentId,
@@ -194,7 +194,7 @@ export class FileUploaderService {
       const chunk = file.slice(element[1][0], element[1][1]);
       return this.sendChunk(chunk, partialFileInfo.fileId, element[0]).pipe(retry(4))
         .pipe(tap(event => updateProgress(event, element[0], this.uploadingFiles))
-          ,catchError(error => throwError(error)));
+          , catchError(error => throwError(error)));
     })).pipe(last());
   }
 
@@ -230,10 +230,10 @@ export class FileUploaderService {
   }
 
   ensureDirectoryExists(path: string, parentId: number | null) {
-    if(path.charAt(0) == '/') path = path.slice(1);
+    if (path.charAt(0) == '/') path = path.slice(1);
     let folders = path.split("/").slice(0, -1);
     if (folders.length <= 0) return of(null);
-    return this.http.post<number | null>(`${environment.apiUrl}/Upload/EnsureDirectory`, {parentId, folders});
+    return this.http.post<number | null>(`${environment.apiUrl}/Upload/EnsureDirectory`, { parentId, folders });
   }
 }
 

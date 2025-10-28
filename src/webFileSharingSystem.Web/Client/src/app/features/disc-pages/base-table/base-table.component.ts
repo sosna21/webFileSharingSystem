@@ -24,8 +24,8 @@ import { UploadStatus } from '../../../core/models/upload-progress-info.model';
 
 @Component({
   selector: 'app-base-table',
-  imports: [CommonModule, DecimalPipe, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule, 
-    FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent, 
+  imports: [CommonModule, DecimalPipe, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule,
+    FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent,
     DragPreviewComponent, NgbProgressbarModule],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
@@ -49,9 +49,11 @@ export class BaseTableComponent {
     ? {
       ...f,
       uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
-      progressStatus: this.uploadService.uploadProgresses()[f.id].status === UploadStatus.InProgress
+      progressStatus: this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.InProgress
         ? ProgressStatus.Started
-        : ProgressStatus.Stopped
+        : this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.Stopping
+          ? ProgressStatus.Stopping
+          : ProgressStatus.Stopped
     }
     : f));
   selectedFiles = computed(() => this.files().filter(file => file.checked));
@@ -282,9 +284,9 @@ export class BaseTableComponent {
     this.deleteFiles(filesToDelete);
   }
 
-  private async deleteFiles(filesToDelete: AppFile[]) {
+  private async deleteFiles(filesToDelete: AppFile[]): Promise<boolean> {
     if (filesToDelete.length === 0) {
-      return;
+      return false;
     }
 
     const maxLines = 5;
@@ -318,7 +320,7 @@ export class BaseTableComponent {
       'Cancel',
       true
     );
-    if (!confirmationResult) return;
+    if (!confirmationResult) return false;
 
     bulkAction<AppFile>({
       items: filesToDelete,
@@ -336,6 +338,7 @@ export class BaseTableComponent {
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: count => `Deleted ${count} file(s) successfully`
     });
+    return true;
   }
 
   // Drag and drop logic for moving and uploading files
@@ -459,13 +462,24 @@ export class BaseTableComponent {
     }
   }
 
+  stopFileUpload(file: AppFile) {
+    if (file.progressStatus !== ProgressStatus.Started) return;
+    file.progressStatus = ProgressStatus.Stopping;
+    this.uploadService.pause(file.id);
+  }
+
+  continueFileUpload(file: AppFile) {
+    if (file.progressStatus !== ProgressStatus.Stopped) return;
+    this.uploadService.resume(file, this.currentDirectoryId());
+  }
+
   getFileSize(fileSize: string) {
     return +fileSize.split(' ')[0];
   }
 
-  cancelUpload(file: AppFile) {
+  async cancelUpload(file: AppFile) {
     if (file.fileStatus !== FileStatus.Incomplete) return;
-    this.uploadService.cancel(file.id);
-    this.deleteFiles([file]);
+    if (await this.deleteFiles([file]))
+       this.uploadService.cancel(file.id);
   }
 }

@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, linkedSignal, OnInit, signal } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
-import { AppFile, FileStatus } from '../models/app-file.model';
+import { AppFile, FileStatus, ProgressStatus } from '../models/app-file.model';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
@@ -26,7 +26,7 @@ export class FileService {
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-  public readonly files = linkedSignal<AppFile[]>(() => this.filesData()?.items.sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
+  public readonly files = linkedSignal<AppFile[]>(() => this.filesData()?.items.map(file => ({ ...file, progressStatus: ProgressStatus.Stopped })).sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
 
   private readonly currentBaseUrl = computed(() => {
     return this.mode() === 'GetSharedWithMe' ? this.sharesUrl : this.fileUrl;
