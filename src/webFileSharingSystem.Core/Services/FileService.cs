@@ -15,13 +15,15 @@ namespace webFileSharingSystem.Core.Services
         private readonly IGuardService _guard;
         private readonly IFilePersistenceService _filePersistenceService;
         private readonly IUploadService _uploadService;
+        private readonly IUserLocks _userLocks;
 
-        public FileService(IUnitOfWork unitOfWork, IGuardService guard, IFilePersistenceService filePersistenceService, IUploadService uploadService)
+        public FileService(IUnitOfWork unitOfWork, IGuardService guard, IFilePersistenceService filePersistenceService, IUploadService uploadService, IUserLocks userLocks)
         {
             _unitOfWork = unitOfWork;
             _guard = guard;
             _filePersistenceService = filePersistenceService;
             _uploadService = uploadService;
+            _userLocks = userLocks;
         }
 
         public async Task<(Result<OperationResult>, IEnumerable<FilePathPart>?)> GetPathToFileAsync(int fileId,
@@ -69,7 +71,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (!await _guard.UserCanPerform(userId, file, ShareAccessMode.ReadWrite, cancellationToken))
                 return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
-            
+
             var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(userId, parentId, directoryName), cancellationToken);
             if (!isNameAvailable)
                 return (Result.Failure(OperationResult.BadRequest, "Directory with that name already exists"), null);
@@ -80,18 +82,26 @@ namespace webFileSharingSystem.Core.Services
                 ? (Result.Success<OperationResult>(), file)
                 : (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
         }
-        
+
         public async Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default)
         {
-            var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
-            if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
-            if (!await _guard.UserCanPerform(userId, fileToDelete, ShareAccessMode.FullAccess, cancellationToken))
-                return Result.Failure(OperationResult.Unauthorized, "You are not authorized to remove that file");
-            if (fileToDelete.IsDirectory)
-                return await DeleteDirectoryAsync(fileId, userId, cancellationToken);
-            return await DeleteFileAsync(fileId, userId, cancellationToken);
+            var releaser = await _userLocks.AcquireAsync(userId, cancellationToken);
+            try
+            {
+                var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
+                if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
+                if (!await _guard.UserCanPerform(userId, fileToDelete, ShareAccessMode.FullAccess, cancellationToken))
+                    return Result.Failure(OperationResult.Unauthorized, "You are not authorized to remove that file");
+                if (fileToDelete.IsDirectory)
+                    return await DeleteDirectoryAsync(fileId, userId, cancellationToken);
+                return await DeleteFileAsync(fileId, userId, cancellationToken);
+            }
+            finally
+            {
+                releaser.Dispose();
+            }
         }
-        
+
         public async Task<Result<OperationResult>> DeleteFileAsync(int fileId, int userId,
             CancellationToken cancellationToken = default)
         {
@@ -99,18 +109,18 @@ namespace webFileSharingSystem.Core.Services
             if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
             if (!await _guard.UserCanPerform(userId, fileToDelete, ShareAccessMode.FullAccess, cancellationToken))
                 return Result.Failure(OperationResult.Unauthorized, "You are not authorized to remove that file");
-            
+
             _uploadService.CancelFileUpload(userId, fileId);
 
             _unitOfWork.Repository<File>().Remove(fileToDelete);
 
             if (fileToDelete.ParentId is not null)
             {
-                await UpdateParentFileSizes(fileToDelete.ParentId.Value, -(long) fileToDelete.Size, cancellationToken);
+                await UpdateParentFileSizes(fileToDelete.ParentId.Value, -(long)fileToDelete.Size, cancellationToken);
             }
 
             var fileOwnerUseSpaceUpdateResult =
-                await UpdateUserUsedSpace(fileToDelete.UserId, -(long) fileToDelete.Size, cancellationToken);
+                await UpdateUserUsedSpace(fileToDelete.UserId, -(long)fileToDelete.Size, cancellationToken);
 
             if (!fileOwnerUseSpaceUpdateResult.Succeeded)
                 return Result.Failure(OperationResult.BadRequest, fileOwnerUseSpaceUpdateResult.Errors);
@@ -119,7 +129,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (await _unitOfWork.Repository<File>().CountAsync(new FindFileByFileGuidSpecs(guidToRemove), cancellationToken) <= 1)
             {
-               await _filePersistenceService.DeleteExistingFile(userId, guidToRemove);
+                await _filePersistenceService.DeleteExistingFile(userId, guidToRemove);
             }
 
             return await _unitOfWork.Complete(cancellationToken) > 0
@@ -144,12 +154,12 @@ namespace webFileSharingSystem.Core.Services
 
             if (directoryToDelete.ParentId is not null)
             {
-                await UpdateParentFileSizes(directoryToDelete.ParentId.Value, -(long) directoryToDelete.Size,
+                await UpdateParentFileSizes(directoryToDelete.ParentId.Value, -(long)directoryToDelete.Size,
                     cancellationToken);
             }
 
             var directoryOwnerUseSpaceUpdateResult =
-                await UpdateUserUsedSpace(directoryToDelete.UserId, -(long) directoryToDelete.Size,
+                await UpdateUserUsedSpace(directoryToDelete.UserId, -(long)directoryToDelete.Size,
                     cancellationToken);
 
             if (!directoryOwnerUseSpaceUpdateResult.Succeeded)
@@ -193,7 +203,7 @@ namespace webFileSharingSystem.Core.Services
             if (fileIds.Except(filesToMove.Select(f => f.Id)).Any())
                 return Result.Failure(OperationResult.BadRequest, "Some files not found");
 
-            var filesToMoveTotalSIze = filesToMove.Sum(f => (long) f.Size);
+            var filesToMoveTotalSIze = filesToMove.Sum(f => (long)f.Size);
 
             var directoryOwnerUseSpaceUpdateResult =
                 await UpdateUserUsedSpace(newOwnerUserId, filesToMoveTotalSIze,
@@ -211,7 +221,7 @@ namespace webFileSharingSystem.Core.Services
 
                 if (fileToMove.ParentId is not null)
                 {
-                    await UpdateParentFileSizes(fileToMove.ParentId.Value, -(long) fileToMove.Size,
+                    await UpdateParentFileSizes(fileToMove.ParentId.Value, -(long)fileToMove.Size,
                         cancellationToken);
                 }
 
@@ -219,16 +229,16 @@ namespace webFileSharingSystem.Core.Services
 
                 if (newParentId is not null)
                 {
-                    await UpdateParentFileSizes(newParentId.Value, (long) fileToMove.Size,
+                    await UpdateParentFileSizes(newParentId.Value, (long)fileToMove.Size,
                         cancellationToken);
                 }
 
                 _unitOfWork.Repository<File>().Update(fileToMove);
 
                 if (oldOwnersFileSizesMoved.ContainsKey(fileToMove.UserId))
-                    oldOwnersFileSizesMoved[fileToMove.UserId] += (long) fileToMove.Size;
+                    oldOwnersFileSizesMoved[fileToMove.UserId] += (long)fileToMove.Size;
                 else
-                    oldOwnersFileSizesMoved[fileToMove.UserId] = (long) fileToMove.Size;
+                    oldOwnersFileSizesMoved[fileToMove.UserId] = (long)fileToMove.Size;
             }
 
             foreach (var (oldUserId, totalFilesSize) in oldOwnersFileSizesMoved)
@@ -270,7 +280,7 @@ namespace webFileSharingSystem.Core.Services
             if (fileIds.Except(filesToCopy.Select(f => f.Id)).Any())
                 return Result.Failure(OperationResult.BadRequest, "Some files not found");
 
-            var filesToCopyTotalSize = filesToCopy.Sum(f => (long) f.Size);
+            var filesToCopyTotalSize = filesToCopy.Sum(f => (long)f.Size);
 
             var directoryOwnerUseSpaceUpdateResult =
                 await UpdateUserUsedSpace(newOwnerUserId, filesToCopyTotalSize,
@@ -301,7 +311,7 @@ namespace webFileSharingSystem.Core.Services
 
                 if (newParentId is not null)
                 {
-                    await UpdateParentFileSizes(newParentId.Value, (long) fileToCopy.Size,
+                    await UpdateParentFileSizes(newParentId.Value, (long)fileToCopy.Size,
                         cancellationToken);
                 }
             }
@@ -318,19 +328,13 @@ namespace webFileSharingSystem.Core.Services
 
             foreach (var fileToUpdate in filesToUpdateSize)
             {
-                // Uncomment and replace after changing file.Size to long from ulong
-                // if (appUser.UsedSpace + sizeToAdd >= 0)
-                //     appUser.UsedSpace += sizeToAdd;
-                // else
-                //     appUser.UsedSpace = 0; //TODO log error message
-
                 switch (sizeToAdd)
                 {
-                    case < 0 when fileToUpdate.Size >= (ulong) -sizeToAdd:
-                        fileToUpdate.Size -= (ulong) -sizeToAdd;
+                    case < 0 when fileToUpdate.Size >= (ulong)-sizeToAdd:
+                        fileToUpdate.Size -= (ulong)-sizeToAdd;
                         break;
                     case >= 0:
-                        fileToUpdate.Size += (ulong) sizeToAdd;
+                        fileToUpdate.Size += (ulong)sizeToAdd;
                         break;
                     default:
                         fileToUpdate.Size = 0; //TODO log error message
@@ -350,14 +354,14 @@ namespace webFileSharingSystem.Core.Services
 
             switch (sizeToAdd)
             {
-                case < 0 when appUser.UsedSpace >= (ulong) -sizeToAdd:
-                    appUser.UsedSpace -= (ulong) -sizeToAdd;
+                case < 0 when appUser.UsedSpace >= (ulong)-sizeToAdd:
+                    appUser.UsedSpace -= (ulong)-sizeToAdd;
                     break;
-                case >= 0 when appUser.UsedSpace + (ulong) sizeToAdd > appUser.Quota:
+                case >= 0 when appUser.UsedSpace + (ulong)sizeToAdd > appUser.Quota:
                     Result.Failure($"User does not have enough free space, userId: {userId}");
                     break;
                 case >= 0:
-                    appUser.UsedSpace += (ulong) sizeToAdd;
+                    appUser.UsedSpace += (ulong)sizeToAdd;
                     break;
                 default:
                     appUser.UsedSpace = 0; //TODO log error message

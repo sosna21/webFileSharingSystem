@@ -23,7 +23,7 @@ namespace webFileSharingSystem.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            
+
             if (configuration.GetValue<bool>("UseInMemoryDatabase"))
             {
                 services.AddDbContext<ApplicationDbContext>(
@@ -51,28 +51,28 @@ namespace webFileSharingSystem.Infrastructure
             services.AddScoped<IApplicationDbContext>(provider => provider.GetService<ApplicationDbContext>()!);
 
             //services.AddScoped<IDomainEventService, DomainEventService>();
-            
+
             services.AddIdentityCore<IdentityUser>()
                 .AddRoles<IdentityRole>()
                 .AddRoleManager<RoleManager<IdentityRole>>()
                 .AddSignInManager<SignInManager<IdentityUser>>()
                 .AddRoleValidator<RoleValidator<IdentityRole>>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-            
+
             var jwtSection = configuration.GetSection(nameof(JwtSettings));
             services.Configure<JwtSettings>(jwtSection);
 
             // configure jwt authentication
             var jwtSettings = jwtSection.Get<JwtSettings>();
-            
+
             var storageSection = configuration.GetSection(nameof(StorageSettings));
             services.Configure<StorageSettings>(storageSection);
-            
+
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                ValidAlgorithms = new []{ SecurityAlgorithms.HmacSha512 },
+                ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha512 },
                 ValidIssuer = jwtSettings.Issuer,
                 ValidAudience = jwtSettings.Audience,
                 ClockSkew = TimeSpan.Zero,
@@ -94,7 +94,8 @@ namespace webFileSharingSystem.Infrastructure
             };
 
             services.AddSingleton(hawkCredential);
-            
+            services.AddSingleton<IUserLocks, UserLocks>();
+            services.AddHostedService<UserLocksCleanupService>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
                     options => options.TokenValidationParameters = tokenValidationParameters)
                 .AddScheme<HawkAuthSchemeOptions, HawkAuthHandler>(HawkSettings.Scheme, options =>
@@ -103,11 +104,9 @@ namespace webFileSharingSystem.Infrastructure
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<InternalCustomQueriesRepository>();
-            
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IHawkAuthService, HawkAuthService>();
             services.AddTransient<TokenService>();
-            
             services.AddHostedService(sp => new MaintainRefreshTokensService(sp));
 
 
@@ -115,7 +114,7 @@ namespace webFileSharingSystem.Infrastructure
             {
                 options.AddPolicy("AdminOnly", policy => policy.RequireRole("Administrator"));
             });
-            
+
 
             return services;
         }
