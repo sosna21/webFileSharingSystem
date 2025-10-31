@@ -19,7 +19,8 @@ import { FileDragDropService } from '../../../core/services/file-drag-drop.servi
 import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
-import { UploadStatus } from '../../../core/models/upload-progress-info.model';
+import { UploadProgressInfo, UploadStatus } from '../../../core/models/upload-progress-info.model';
+import { async } from 'rxjs';
 
 
 @Component({
@@ -45,17 +46,34 @@ export class BaseTableComponent {
   private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
-  files = linkedSignal<AppFile[]>(() => this.fileService.files().map(f => this.uploadService.uploadProgresses().hasOwnProperty(f.id)
-    ? {
-      ...f,
-      uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
-      progressStatus: this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.InProgress
-        ? ProgressStatus.Started
-        : this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.Stopping
-          ? ProgressStatus.Stopping
-          : ProgressStatus.Stopped
+  files = linkedSignal<{ files: AppFile[], uploadProgress: Record<number, UploadProgressInfo> }, AppFile[]>({
+    source: () => ({ files: this.fileService.files(), uploadProgress: this.uploadService.uploadProgresses() }),
+    computation: (source, previous) => {
+      const files = source.files.map(f => source.uploadProgress.hasOwnProperty(f.id)
+        ? {
+          ...f,
+          uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
+          progressStatus: this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.InProgress
+            ? ProgressStatus.Started
+            : this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.Stopping
+              ? ProgressStatus.Stopping
+              : ProgressStatus.Stopped
+        }
+        : f);
+
+      if (!previous || !previous.value || previous.value.length === 0)
+        return files;
+      
+      // Preserve checked state
+      const prevFileMap = new Map<number, AppFile>();
+      previous.value.forEach(f => prevFileMap.set(f.id, f));
+      return files.map(f => {
+        const prevFile = prevFileMap.get(f.id);
+        return prevFile ? { ...f, checked: prevFile.checked } : f;
+      });
     }
-    : f));
+  });
+
   selectedFiles = computed(() => this.files().filter(file => file.checked));
 
   tooltips = viewChildren(NgbTooltip);
@@ -480,6 +498,6 @@ export class BaseTableComponent {
   async cancelUpload(file: AppFile) {
     if (file.fileStatus !== FileStatus.Incomplete) return;
     if (await this.deleteFiles([file]))
-       this.uploadService.cancel(file.id);
+      this.uploadService.cancel(file.id);
   }
 }

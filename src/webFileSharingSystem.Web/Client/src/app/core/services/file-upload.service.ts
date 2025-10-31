@@ -158,7 +158,7 @@ export class FileUploadService {
         });
 
         if (parentId === this.fileService.parentId()) {
-          this.fileService.files.update(prev => [appFile, ...prev]);
+          this.fileService.addFileIfNotExists(appFile);
         }
 
         const upload$ = this.sendFile(file, partial, progress => {
