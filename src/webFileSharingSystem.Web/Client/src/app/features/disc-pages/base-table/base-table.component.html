@@ -5,6 +5,9 @@
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
   (delete)="deleteSelectedFiles()"
   (selectFolder)="selectFolder($event)"
+  (pauseUpload)="stopFilesUpload($event)"
+  (resumeUpload)="continueFilesUpload($event)"
+  (cancelUpload)="cancelFilesUpload($event)"
 />
 
 <div
@@ -188,7 +191,9 @@
           <!--Favorites -->
           <td class="d-none d-md-table-cell align-middle">
             <i
+              #favIcon
               appClicableIcon
+              [disabled]="file.fileStatus === FileStatus.Incomplete"
               class="bi fs-5"
               [class]="
                 file.isFavourite
@@ -197,7 +202,9 @@
               "
               (click)="changeFavourite([file], !file.isFavourite)"
               [ngbTooltip]="
-                file.isFavourite
+                file.fileStatus === FileStatus.Incomplete
+                  ? undefined
+                  : file.isFavourite
                   ? 'Remove from favourites'
                   : 'Add to favourites'
               "
@@ -209,10 +216,17 @@
           <td class="d-none d-md-table-cell align-middle">
             <i
               appClicableIcon
+              [disabled]="file.fileStatus === FileStatus.Incomplete"
               class="bi bi-share-fill fs-5"
               [class.text-primary]="file.isShared"
               [class.text-secondary]="!file.isShared"
-              [ngbTooltip]="file.isShared ? 'Manage shares' : 'Share file'"
+              [ngbTooltip]="
+                file.fileStatus === FileStatus.Incomplete
+                  ? undefined
+                  : file.isShared
+                  ? 'Manage shares'
+                  : 'Share file'
+              "
               [openDelay]="300"
             ></i>
           </td>

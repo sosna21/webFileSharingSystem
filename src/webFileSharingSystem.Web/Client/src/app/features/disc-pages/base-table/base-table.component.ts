@@ -20,7 +20,6 @@ import { FileUploadDragDropService } from '../../../core/services/file-upload-dr
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
 import { UploadProgressInfo, UploadStatus } from '../../../core/models/upload-progress-info.model';
-import { async } from 'rxjs';
 
 
 @Component({
@@ -63,7 +62,7 @@ export class BaseTableComponent {
 
       if (!previous || !previous.value || previous.value.length === 0)
         return files;
-      
+
       // Preserve checked state
       const prevFileMap = new Map<number, AppFile>();
       previous.value.forEach(f => prevFileMap.set(f.id, f));
@@ -208,7 +207,7 @@ export class BaseTableComponent {
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
-    const filesToUpdate = files.filter(file => file.isFavourite !== changeTo);
+    const filesToUpdate = files.filter(file => file.fileStatus === FileStatus.Completed && file.isFavourite !== changeTo);
     if (filesToUpdate.length === 0) return;
 
     this.tooltips().forEach(t => t.close());
@@ -480,10 +479,18 @@ export class BaseTableComponent {
     }
   }
 
+  stopFilesUpload(files: AppFile[]) {
+    files.forEach(this.stopFileUpload.bind(this));
+  }
+
   stopFileUpload(file: AppFile) {
     if (file.progressStatus !== ProgressStatus.Started) return;
     file.progressStatus = ProgressStatus.Stopping;
     this.uploadService.pause(file.id);
+  }
+
+  continueFilesUpload(files: AppFile[]) {
+    files.forEach(this.continueFileUpload.bind(this));
   }
 
   continueFileUpload(file: AppFile) {
@@ -493,6 +500,12 @@ export class BaseTableComponent {
 
   getFileSize(fileSize: string) {
     return +fileSize.split(' ')[0];
+  }
+
+  async cancelFilesUpload(files: AppFile[]) {
+    const incompleteFiles = files.filter(file => file.fileStatus === FileStatus.Incomplete);
+    if (await this.deleteFiles(incompleteFiles))
+      incompleteFiles.forEach(file => this.uploadService.cancel(file.id));
   }
 
   async cancelUpload(file: AppFile) {

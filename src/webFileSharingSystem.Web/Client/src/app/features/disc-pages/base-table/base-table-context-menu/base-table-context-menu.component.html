@@ -1,47 +1,152 @@
-<div ngbDropdown container="body">
+<div ngbDropdown container="body" #menu="ngbDropdown" [autoClose]="'outside'">
   <div
     class="position-fixed"
     ngbDropdownToggle
     [ngStyle]="{ left: `${position().x}px`, top: `${position().y}px` }"
   ></div>
+
   <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
-    @let selectedFile = selectedFiles()[0]; @let selectedFilesCount =
-    selectedFiles().length;
-    <button ngbDropdownItem>
-      <i class="bi bi-download me-1"></i> Download
-    </button>
-    <button
-      ngbDropdownItem
-      [disabled]="selectedFiles().length !== 1"
-      (click)="rename.emit(selectedFile)"
-    >
-      <i class="bi bi-pencil me-1"></i> Rename
-    </button>
-    <button ngbDropdownItem><i class="bi bi-files me-1"></i> Copy</button>
-    <button ngbDropdownItem>
-      <i class="bi bi-folder-symlink me-1"></i> Move
-    </button>
-    <button
-      ngbDropdownItem
-      (click)="toggleFavourite.emit(anySelectedFileIsUnFavourite())"
-    >
-      <i class="bi bi-star me-1"></i>
-      {{
-        anySelectedFileIsUnFavourite()
-          ? selectedFilesCount > 1
-            ? "Favourite all"
-            : "Add to favourites"
-          : selectedFilesCount > 1
-          ? "Unfavourite all"
-          : "Remove from favourites"
-      }}
+    @if(mixedFileComplition()) {
+    <button ngbDropdownItem disabled class="text-danger">
+      <i class="bi bi-exclamation-triangle me-1"></i> Some files are still
+      uploading
     </button>
     <div class="dropdown-divider"></div>
-    <button ngbDropdownItem><i class="bi bi-share me-1"></i> Share</button>
-    <button ngbDropdownItem>
-      <i class="bi bi-link me-1"></i> Generate share link
-    </button>
+
+    <div ngbDropdown #uploadsSubmenu="ngbDropdown" placement="right-top">
+      <button
+        ngbDropdownItem
+        ngbDropdownAnchor
+        (click)="uploadsSubmenu.toggle()"
+        class="d-flex"
+      >
+        Manage uploads <span class="ms-auto">→</span>
+      </button>
+      <div ngbDropdownMenu>
+        <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+      </div>
+    </div>
+
     <div class="dropdown-divider"></div>
-    <button ngbDropdownItem (click)="delete.emit()"><i class="bi bi-trash me-1"></i> Delete</button>
+
+    <div ngbDropdown #fileSubmenu="ngbDropdown" placement="right-top">
+      <button
+        ngbDropdownItem
+        ngbDropdownAnchor
+        (click)="fileSubmenu.toggle()"
+        class="d-flex"
+      >
+        Manage files <span class="ms-auto">→</span>
+      </button>
+      <div ngbDropdownMenu>
+        <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+      </div>
+    </div>
+    } @if (areAllFilesIncomplete()) {
+    <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+    } @if(areAllFilesComplete()) {
+    <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+    }
   </div>
 </div>
+
+@let selectedFile = selectedFiles()[0]; @let selectedFilesCount =
+selectedFiles().length;
+
+<ng-template #uploadActions>
+  <button
+    ngbDropdownItem
+    (click)="pauseUploadClicked(); menu.close()"
+    [disabled]="
+      allFilesHaveSameUploadStatus() &&
+      selectedFile.progressStatus !== ProgressStatus.Started
+    "
+  >
+    <i
+      class="bi bi-pause-circle me-1"
+      [class.text-warning]="
+        !(
+          allFilesHaveSameUploadStatus() &&
+          selectedFile.progressStatus !== ProgressStatus.Started
+        )
+      "
+    ></i>
+    Pause Upload
+  </button>
+
+  <button
+    ngbDropdownItem
+    (click)="resumeUploadClicked(); menu.close()"
+    [disabled]="
+      allFilesHaveSameUploadStatus() &&
+      selectedFile.progressStatus === ProgressStatus.Started
+    "
+  >
+    <i
+      class="bi bi-play-circle-fill me-1"
+      [class.text-success]="
+        !(
+          allFilesHaveSameUploadStatus() &&
+          selectedFile.progressStatus === ProgressStatus.Started
+        )
+      "
+    ></i>
+    Resume Upload
+  </button>
+
+  <button ngbDropdownItem (click)="cancelUploadClicked(); menu.close()">
+    <i class="bi bi-x-circle text-danger me-1"></i> Cancel Upload
+  </button>
+</ng-template>
+
+<ng-template #fileActions>
+  <button ngbDropdownItem (click)="download.emit(); menu.close()">
+    <i class="bi bi-download me-1"></i> Download
+  </button>
+
+  <button
+    ngbDropdownItem
+    [disabled]="selectedFiles().length !== 1"
+    (click)="rename.emit(selectedFile); menu.close()"
+  >
+    <i class="bi bi-pencil me-1"></i> Rename
+  </button>
+
+  <button ngbDropdownItem (click)="copy.emit(); menu.close()">
+    <i class="bi bi-files me-1"></i> Copy
+  </button>
+  <button ngbDropdownItem (click)="move.emit(); menu.close()">
+    <i class="bi bi-folder-symlink me-1"></i> Move
+  </button>
+
+  <button
+    ngbDropdownItem
+    (click)="toggleFavourite.emit(anySelectedFileIsUnFavourite()); menu.close()"
+  >
+    <i class="bi bi-star me-1"></i>
+    {{
+      anySelectedFileIsUnFavourite()
+        ? selectedFilesCount > 1
+          ? "Favourite all"
+          : "Add to favourites"
+        : selectedFilesCount > 1
+        ? "Unfavourite all"
+        : "Remove from favourites"
+    }}
+  </button>
+
+  <div class="dropdown-divider"></div>
+
+  <button ngbDropdownItem (click)="share.emit(); menu.close()">
+    <i class="bi bi-share me-1"></i> Share
+  </button>
+  <button ngbDropdownItem (click)="generateLink.emit(); menu.close()">
+    <i class="bi bi-link me-1"></i> Generate share link
+  </button>
+
+  <div class="dropdown-divider"></div>
+
+  <button ngbDropdownItem (click)="delete.emit(); menu.close()">
+    <i class="bi bi-trash me-1"></i> Delete
+  </button>
+</ng-template>

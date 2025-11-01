@@ -14,7 +14,7 @@ import { Directive, computed, input, signal } from '@angular/core';
     '[style.height]': 'bgSize()',
     '[class]': 'hoveredClass()',
     '(mouseenter)': 'isHovered.set(true)',
-    '(mouseleave)': 'isHovered.set(false)'
+    '(mouseleave)': 'isHovered.set(false)',
   }
 })
 export class ClicableIconDirective {
@@ -23,5 +23,5 @@ export class ClicableIconDirective {
   readonly isHovered = signal(false);
   readonly disabled = input<boolean>(false);
 
-  readonly hoveredClass = computed(() => this.isHovered() && !this.disabled() ? this.bgClass() : this.disabled() ? 'text-muted' : '');
+  readonly hoveredClass = computed(() => this.isHovered() && !this.disabled() ? this.bgClass() : this.disabled() ? 'opacity-50  ' : '');
 }
