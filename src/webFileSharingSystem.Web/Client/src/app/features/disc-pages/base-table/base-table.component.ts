@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, linke
 import { AppFile, FileStatus, ProgressStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
-import { CommonModule, DecimalPipe, JsonPipe } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { NgbDropdownModule, NgbModal, NgbTooltip, NgbTooltipModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
@@ -20,6 +20,7 @@ import { FileUploadDragDropService } from '../../../core/services/file-upload-dr
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
 import { UploadProgressInfo, UploadStatus } from '../../../core/models/upload-progress-info.model';
+import { ActionType } from '../../../core/models/action-type.model';
 
 
 @Component({
@@ -74,6 +75,7 @@ export class BaseTableComponent {
   });
 
   selectedFiles = computed(() => this.files().filter(file => file.checked));
+  filesMarkedForAction = this.fileService.waitingForAction;
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(BaseTableContextMenuComponent);
@@ -358,6 +360,61 @@ export class BaseTableComponent {
     return true;
   }
 
+  initFileMove(files: AppFile[]) {
+    this.fileService.setFilesMarkedForAction(files, ActionType.Move);
+    this.toast.show(
+      'File Move Initialized',
+      files.length === 1
+        ? `Selected '${files[0].fileName}' for moving. Navigate to the target folder and paste the file there.`
+        : `Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
+      MessageSeverity.info
+    );
+  }
+
+  initFileCopy(files: AppFile[]) {
+    this.fileService.setFilesMarkedForAction(files, ActionType.Copy);
+    this.toast.show(
+      'File Copy Initialized',
+      files.length === 1
+        ? `Selected '${files[0].fileName}' for copying. Navigate to the target folder and paste the file there.`
+        : `Selected ${files.length} files for copying. Navigate to the target folder and paste the files there.`,
+      MessageSeverity.info
+    );
+  }
+
+  private moveFiles(filesToMove: AppFile[], targetDir: AppFile) {
+    if (filesToMove.length === 0) return;
+
+    filesToMove.forEach(file => this.updateFile(file, { loading: true }));
+
+    this.fileService.moveFiles(filesToMove.map(f => f.id), targetDir.id).subscribe({
+      next: () => {
+        const filesToMoveIds = filesToMove.map(f => f.id);
+        //remove moved files from fileList
+        this.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
+
+        this.toast.show(
+          filesToMove.length === 1 ? 'File moved' : 'Files moved',
+          filesToMove.length === 1
+            ? `Moved '${filesToMove[0].fileName}' to '${targetDir.fileName}'`
+            : `Moved ${filesToMove.length} file(s) to '${targetDir.fileName}'`,
+          MessageSeverity.success
+        );
+      },
+      error: (err) => {
+        filesToMove.forEach(f => this.updateFile(f, { loading: false }));
+
+        let errorMessage = 'File move failed. Please try again.';
+        if (err.error?.errors) {
+          errorMessage = Object.values(err.error.errors).flat().join(' ');
+        } else if (err.error?.title) {
+          errorMessage = err.error.title;
+        }
+        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
+      }
+    });
+  }
+
   // Drag and drop logic for moving and uploading files
   private readonly fileMoveDragPreview = viewChild(DragPreviewComponent, { read: ElementRef });
   private readonly dragDrop = inject(FileDragDropService);
@@ -369,6 +426,7 @@ export class BaseTableComponent {
   readonly fileUpladFileNb = this.uploadDragDrop.filesNb;
   readonly fileUploadTableTarget = computed(() => this.uploadDragDrop.hoveredTarget()?.type === 'table');
   counter = 1;
+
 
   canBeTargetDirectory(file: AppFile) {
     return file.isDirectory && !file.checked;
@@ -432,7 +490,6 @@ export class BaseTableComponent {
     event.stopPropagation();
     // External files
     if (this.uploadDragDrop.allowExternalFiles(event)) {
-      //const files = this.uploadDragDrop.getDroppedFiles(event);
       const destinationId = this.uploadDragDrop.getDestinationFolder(targetFile, this.currentDirectoryId());
       await this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
       return;
@@ -440,9 +497,11 @@ export class BaseTableComponent {
 
     // Internal files
     if (this.dragDrop.allowAppFiles(event)) {
+      const draggedFiles = this.dragDrop.draggedFiles();
+      this.dragDrop.clearDrag();
       if (!targetFile.isDirectory || targetFile.checked)
         return;
-      this.dragDrop.moveFiles(targetFile.id, targetFile.fileName);
+      this.moveFiles(draggedFiles, targetFile);
     }
   }
 

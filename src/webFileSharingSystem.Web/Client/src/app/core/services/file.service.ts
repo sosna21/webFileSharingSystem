@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
 import { tap } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
+import { ActionType } from '../models/action-type.model';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,20 @@ export class FileService {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthenticationService);
   private readonly http = inject(HttpClient);
+  private readonly actionContext = linkedSignal<Record<number, AppFile>, { files: Set<AppFile>, filesIds: Set<number>, type: ActionType } | null>({
+    source: () => Object.fromEntries(
+      this.files().map(item => [item.id, item])
+    ) as Record<string, AppFile>,
+    computation: (source, previous) => {
+      if (!previous || !previous.value?.files)
+        return null;
+      const resultFiles = [...previous.value.files].map(f => source[f.id] ?? f);
+
+      //Return updated files set
+      return { files: new Set(resultFiles), filesIds: previous.value.filesIds, type: previous.value.type };
+    }
+  });
+  readonly waitingForAction = this.actionContext.asReadonly();
 
   public readonly mode = signal<'GetAll' | 'GetSharedWithMe' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent'>('GetAll');
   public readonly searchedPhrase = signal<string>('');
@@ -81,10 +96,9 @@ export class FileService {
     return this.http.post<AppFile>(api, null);
   }
 
-  moveFiles(filesToMove: AppFile[], targetDirectoryId: number | null) {
-    const api = `${this.currentBaseUrl()}/Move/${targetDirectoryId}`;
-    const filesToMoveIds = filesToMove.map(file => file.id);
-    return this.http.put(api, filesToMoveIds);
+  moveFiles(filesIds: number[], targetDirectoryId: number | null) {
+    const api = `${this.currentBaseUrl()}/Move/${targetDirectoryId ?? -1}`;
+    return this.http.put(api, filesIds);
   }
 
   deleteFile(file: AppFile) {
@@ -122,5 +136,17 @@ export class FileService {
 
   completeUploadFile(fileId: number): void {
     this.files.update(files => files.map(file => file.id === fileId ? { ...file, fileStatus: FileStatus.Completed } : file));
+  }
+
+  setFilesMarkedForAction(files: AppFile[], actionType: ActionType) {
+    this.actionContext.set({ files: new Set(files), filesIds: new Set(files.map(f => f.id)), type: actionType });
+  }
+
+  clearActionContext() {
+    this.actionContext.set(null);
+  }
+
+  updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
+    this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
   }
 }

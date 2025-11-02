@@ -32,9 +32,9 @@ export class BaseTableContextMenuComponent {
   readonly cancelUpload = output<AppFile[]>();
   readonly resumeUpload = output<AppFile[]>();
   readonly pauseUpload = output<AppFile[]>();
-  readonly copy = output();
-  readonly move = output();
-  readonly share = output();
+  readonly copy = output<AppFile[]>();
+  readonly move = output<AppFile[]>();
+  readonly share = output<AppFile[]>();
   readonly generateLink = output();
 
   open() {
@@ -60,5 +60,20 @@ export class BaseTableContextMenuComponent {
   cancelUploadClicked() {
     const incompleteFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Incomplete);
     this.cancelUpload.emit(incompleteFiles);
+  }
+
+  moveClicked() {
+    const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
+    this.move.emit(completedFiles);
+  }
+
+  copyClicked() {
+    const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
+    this.copy.emit(completedFiles);
+  }
+
+  shareClicked() {
+    const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
+    this.share.emit(completedFiles);
   }
 }

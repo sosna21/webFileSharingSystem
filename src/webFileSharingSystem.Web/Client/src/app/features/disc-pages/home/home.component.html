@@ -2,29 +2,74 @@
   <app-base-disc-page-header>
     <i class="bi bi-house-door-fill"></i>
     My files
-    <div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
+    <div class="d-flex gap-4 align-items-baseline" secondaryContent>
+      <div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
+        <i
+          class="bi bi-folder-plus action-icon action-warning"
+          (click)="initDirCreation()"
+          ngbTooltip="Create new folder"
+          [openDelay]="300"
+        ></i>
+        @if (showDirCreate()) {
+        <input
+          appSelectFilename
+          type="text"
+          class="form-control"
+          placeholder="New folder"
+          [(ngModel)]="newFolderName"
+          (keyup.enter)="createDirectory()"
+          (blur)="cancelRename()"
+          (keyup.escape)="cancelRename()"
+        />
+        }
+      </div>
+
       <i
-        class="bi bi-folder-plus"
-        style="cursor: pointer"
-        (click)="initDirCreation()"
-        appHoverClass="text-warning"
-        ngbTooltip="Create new folder"
+        class="bi bi-scissors action-icon action-primary"
+        [class.disabled]="!hasSelectedFiles()"
+        ngbTooltip="Cut"
         [openDelay]="300"
+        (click)="onCut()"
       ></i>
-      @if (showDirCreate()) {
-      <input
-        appSelectFilename
-        type="text"
-        class="form-control"
-        placeholder="New folder"
-        [(ngModel)]="newFolderName"
-        (keyup.enter)="createDirectory()"
-        (blur)="cancelRename()"
-        (keyup.escape)="cancelRename()"
-      />
-      }
+      <i
+        class="bi bi-copy action-icon action-primary"
+        [class.disabled]="!hasSelectedFiles()"
+        ngbTooltip="Copy"
+        [openDelay]="300"
+        (click)="onCopy()"
+      ></i>
+      <i
+        class="bi bi-clipboard action-icon action-primary"
+        [class.disabled]="!canPaste()"
+        ngbTooltip="Paste"
+        [openDelay]="300"
+        (click)="onPaste()"
+      ></i>
+      <i
+        class="bi bi-pencil action-icon action-primary"
+        [class.disabled]="!hasSelectedFiles()"
+        ngbTooltip="Rename"
+        [openDelay]="300"
+        (click)="onRename()"
+      ></i>
+      <i
+        class="bi bi-share action-icon action-primary"
+        [class.disabled]="!hasSelectedFiles()"
+        ngbTooltip="Share"
+        [openDelay]="300"
+        (click)="onShare()"
+      ></i>
+      <i
+        class="bi bi-trash action-icon action-danger"
+        [class.disabled]="!hasSelectedFiles()"
+        ngbTooltip="Delete"
+        [openDelay]="300"
+        (click)="onDelete()"
+      ></i>
     </div>
-    <button class="btn btn-primary" (click)="refetchFiles()">Refetch files</button>
+    <button class="btn btn-primary" (click)="refetchFiles()">
+      Refetch files
+    </button>
   </app-base-disc-page-header>
   <app-breadcrumb class="mt-n2" />
 </app-base-disc-page>

@@ -9,6 +9,8 @@ import { HoverClassDirective } from '../../../core/directives/hover-class.direct
 import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
+import { ActionType } from '../../../core/models/action-type.model';
+import { AppFile } from '../../../core/models/app-file.model';
 
 @Component({
   selector: 'app-home',
@@ -23,6 +25,11 @@ export class HomeComponent implements OnInit {
   private readonly names = computed(() => this.fileService.files().map(file => file.fileName));
   readonly showDirCreate = signal(false);
   readonly newFolderName = signal('');
+  readonly files = this.fileService.files;
+  readonly activeAction = this.fileService.waitingForAction;
+  readonly selectedFiles = computed(() => this.files().filter(file => file.checked));
+  readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
+  readonly canPaste = computed(() => this.activeAction() !== null);
 
   ngOnInit(): void {
     this.fileService.mode.set('GetAll');
@@ -70,4 +77,73 @@ export class HomeComponent implements OnInit {
   refetchFiles() {
     this.fileService._fileResource.reload();
   }
+
+  onCut() {
+    if (!this.hasSelectedFiles()) return;
+    this.fileService.setFilesMarkedForAction(this.selectedFiles(), ActionType.Move);
+  }
+
+  onCopy() {
+    if (!this.hasSelectedFiles()) return;
+    this.fileService.setFilesMarkedForAction(this.selectedFiles(), ActionType.Copy);
+  }
+
+  onPaste() {
+    if (!this.canPaste()) return;
+    const action = this.activeAction();
+    if (!action) return;
+    if (action.type === ActionType.Move) {
+
+      this.moveFiles(Array.from(action.files), this.fileService.parentId(), this.fileService.parentName() ?? 'home directory');
+    }
+    else if (action.type === ActionType.Copy) {
+
+    }
+
+    this.fileService.clearActionContext();
+  }
+
+  onRename() {
+    if (!this.hasSelectedFiles()) return;
+    // TODO: Implement rename logic
+  }
+
+  onShare() {
+    if (!this.hasSelectedFiles()) return;
+    // TODO: Implement share logic
+  }
+
+  onDelete() {
+    if (!this.hasSelectedFiles()) return;
+    // TODO: Implement delete logic
+  }
+
+  private moveFiles(filesToMove: AppFile[], targetDirId: number | null, targetDirName: string | null) {
+    if (filesToMove.length === 0) return;
+
+    this.fileService.moveFiles(filesToMove.map(file => file.id), targetDirId).subscribe({
+      next: () => {
+        //Add moved files to target directory file list
+        this.fileService.files.update(files => [...files, ...filesToMove]);
+        this.fileService._fileResource.reload();
+        this.toast.show(
+          filesToMove.length === 1 ? 'File moved' : 'Files moved',
+          filesToMove.length === 1
+            ? `Moved '${this.files().find(f => f.id === filesToMove[0].id)?.fileName}' to '${targetDirName}'`
+            : `Moved ${filesToMove.length} file(s) to '${targetDirName}'`,
+          MessageSeverity.success
+        );
+      },
+      error: (err) => {
+        let errorMessage = 'File move failed. Please try again.';
+        if (err.error?.errors) {
+          errorMessage = Object.values(err.error.errors).flat().join(' ');
+        } else if (err.error?.title) {
+          errorMessage = err.error.title;
+        }
+        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
+      }
+    });
+  }
+
 }
