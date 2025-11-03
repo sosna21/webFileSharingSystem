@@ -19,7 +19,6 @@ import { FileDragDropService } from '../../../core/services/file-drag-drop.servi
 import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
-import { UploadProgressInfo, UploadStatus } from '../../../core/models/upload-progress-info.model';
 import { ActionType } from '../../../core/models/action-type.model';
 
 
@@ -46,16 +45,7 @@ export class BaseTableComponent {
   private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
-  files = computed(() => this.fileService.files().map(file => this.uploadService.uploadProgresses().hasOwnProperty(file.id) ? {
-    ...file,
-    uploadProgress: this.uploadService.uploadProgresses()[file.id].progress!,
-    progressStatus: this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.InProgress
-      ? ProgressStatus.Started
-      : this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.Stopping
-        ? ProgressStatus.Stopping
-        : ProgressStatus.Stopped
-  }
-    : file));
+  files = this.fileService.files;
 
 
   selectedFiles = computed(() => this.files().filter(file => file.checked));

@@ -369,6 +369,7 @@ export class FileUploadService {
 
   private updateProgress(p: UploadProgressInfo) {
     this.uploadProgresses.update(prev => ({ ...prev, [p.fileId as number]: p }));
+    this.fileService.updateFileUploadProgress(p);
   }
 
   private removeProgress(fileId: number) {

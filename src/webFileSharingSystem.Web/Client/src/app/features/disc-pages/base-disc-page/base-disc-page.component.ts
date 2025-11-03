@@ -18,7 +18,7 @@ export class BaseDiscPageComponent {
 
   itemsPerPage = this.fileService.itemsPerPage;
   currentPage = this.fileService.currentPage;
-  totalItems = computed(() => this.fileService.filesData()?.totalCount || 0);
+  totalItems = computed(() => this.fileService.pagainationData()?.totalItems || 0);
 
   fileResource = this.fileService.fileResource;
 

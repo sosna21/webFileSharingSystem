@@ -11,6 +11,7 @@ import { AuthenticationService } from './authentication.service';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
+import { UploadProgressInfo, UploadStatus } from '../models/upload-progress-info.model';
 
 @Injectable({
   providedIn: 'root'
@@ -44,7 +45,13 @@ export class FileService {
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-  public readonly files = linkedSignal<AppFile[]>(() => this.filesData()?.items.map(file => ({ ...file, progressStatus: ProgressStatus.Stopped })).sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
+  public readonly files = linkedSignal<AppFile[]>(() => this._linkedFilesResponse()?.items.map(file => ({ ...file, progressStatus: ProgressStatus.Stopped })).sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
+  public readonly pagainationData = computed(() => this._linkedFilesResponse() ? ({
+    currentPage: this.currentPage(),
+    itemsPerPage: this.itemsPerPage(),
+    totalItems: this._linkedFilesResponse()!.totalCount,
+    totalPages: this._linkedFilesResponse()!.totalPages
+  }) : null);
 
   private readonly currentBaseUrl = computed(() => {
     return this.mode() === 'GetSharedWithMe' ? this.sharesUrl : this.fileUrl;
@@ -64,7 +71,6 @@ export class FileService {
     }
   });
   public readonly fileResource = this._fileResource.asReadonly();
-  public readonly filesData = this._linkedFilesResponse.asReadonly();
 
   //breadcumbs
   private readonly _breadcrumbsQuery = computed(() => this.parentId() !== null ? `${this.fileUrl}/GetFilePath/${this.parentId()}` : undefined);
@@ -104,12 +110,6 @@ export class FileService {
     return this.http.put(api, filesIds);
   }
 
-  /**
-   * Moves files with UI feedback (loading states, toast notifications, file list updates)
-   * @param filesToMove Array of files to move
-   * @param targetDirectoryId Target directory ID (null for root/home)
-   * @param targetDirectoryName Target directory name for toast message
-   */
   moveFilesWithFeedback(filesToMove: AppFile[], targetDirectoryId: number | null, targetDirectoryName: string) {
     if (filesToMove.length === 0) return;
 
@@ -192,5 +192,23 @@ export class FileService {
 
   updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
     this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
+  }
+
+  updateFileUploadProgress(uploadProgressInfo: UploadProgressInfo) {
+    this.files.update(files => files.map(file => uploadProgressInfo.fileId === file.id ? {
+      ...file,
+      uploadProgress: uploadProgressInfo.progress!,
+      progressStatus: this.mapStatus(uploadProgressInfo.status)
+    }
+      : file
+    ));
+  }
+
+  private mapStatus(status: UploadStatus): ProgressStatus {
+    switch (status) {
+      case UploadStatus.InProgress: return ProgressStatus.Started;
+      case UploadStatus.Stopping: return ProgressStatus.Stopping;
+      default: return ProgressStatus.Stopped;
+    }
   }
 }
