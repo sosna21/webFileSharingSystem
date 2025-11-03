@@ -6,8 +6,6 @@ import { FileDragDropService } from '../../../../core/services/file-drag-drop.se
 import { FileUploadDragDropService } from '../../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../../core/utils/drag-drop-utils';
 import { AppFile } from '../../../../core/models/app-file.model';
-import { ToastService } from '../../../../core/services/toast.service';
-import { MessageSeverity } from '../../../../core/models/toast-info.model';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -22,7 +20,6 @@ import { MessageSeverity } from '../../../../core/models/toast-info.model';
 export class BreadcrumbComponent {
   private readonly dragDrop = inject(FileDragDropService);
   readonly uploadDragDrop = inject(FileUploadDragDropService);
-  readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);
   readonly breadCrumbsResource = this.fileService.breadCrumbsResource;
   readonly breadCrumbs = computed(() => [this.homeBreadcrumb, ...(this.breadCrumbsResource.value() ?? [])]);
@@ -86,40 +83,11 @@ export class BreadcrumbComponent {
 
     // Internal files
     if (this.dragDrop.allowAppFiles(event)) {
-      this.moveFiles(this.dragDrop.draggedFiles(), breadcrumb.id, breadcrumb.fileName);
+      this.fileService.moveFilesWithFeedback(
+        this.dragDrop.draggedFiles(),
+        breadcrumb.id,
+        breadcrumb.fileName
+      );
     }
-  }
-
-  private moveFiles(filesToMove: AppFile[], id: number | null, fileName: string) {
-    if (filesToMove.length === 0) return;
-
-    filesToMove.forEach(file => file.loading = true);
-
-    this.fileService.moveFiles(filesToMove.map(file => file.id), id).subscribe({
-      next: () => {
-        const filesToMoveIds = filesToMove.map(f => f.id);
-        //remove moved files from fileList
-        this.fileService.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
-
-        this.toast.show(
-          filesToMove.length === 1 ? 'File moved' : 'Files moved',
-          filesToMove.length === 1
-            ? `Moved '${filesToMove[0].fileName}' to '${fileName}'`
-            : `Moved ${filesToMove.length} file(s) to '${fileName}'`,
-          MessageSeverity.success
-        );
-      },
-      error: (err) => {
-        filesToMove.forEach(f => f.loading = false);
-
-        let errorMessage = 'File move failed. Please try again.';
-        if (err.error?.errors) {
-          errorMessage = Object.values(err.error.errors).flat().join(' ');
-        } else if (err.error?.title) {
-          errorMessage = err.error.title;
-        }
-        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
-      }
-    });
   }
 }

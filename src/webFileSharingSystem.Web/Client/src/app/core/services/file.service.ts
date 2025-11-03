@@ -9,6 +9,8 @@ import { Breadcrumb } from '../models/breadcrumb.model';
 import { tap } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
 import { ActionType } from '../models/action-type.model';
+import { ToastService } from './toast.service';
+import { MessageSeverity } from '../models/toast-info.model';
 
 @Injectable({
   providedIn: 'root'
@@ -19,6 +21,7 @@ export class FileService {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthenticationService);
   private readonly http = inject(HttpClient);
+  private readonly toast = inject(ToastService);
   private readonly actionContext = linkedSignal<Record<number, AppFile>, { files: Set<AppFile>, filesIds: Set<number>, type: ActionType } | null>({
     source: () => Object.fromEntries(
       this.files().map(item => [item.id, item])
@@ -99,6 +102,47 @@ export class FileService {
   moveFiles(filesIds: number[], targetDirectoryId: number | null) {
     const api = `${this.currentBaseUrl()}/Move/${targetDirectoryId ?? -1}`;
     return this.http.put(api, filesIds);
+  }
+
+  /**
+   * Moves files with UI feedback (loading states, toast notifications, file list updates)
+   * @param filesToMove Array of files to move
+   * @param targetDirectoryId Target directory ID (null for root/home)
+   * @param targetDirectoryName Target directory name for toast message
+   */
+  moveFilesWithFeedback(filesToMove: AppFile[], targetDirectoryId: number | null, targetDirectoryName: string) {
+    if (filesToMove.length === 0) return;
+
+    // Set loading state for files being moved
+    filesToMove.forEach(file => this.updateFile(file, { loading: true }));
+
+    this.moveFiles(filesToMove.map(file => file.id), targetDirectoryId).subscribe({
+      next: () => {
+        const filesToMoveIds = filesToMove.map(f => f.id);
+        // Remove moved files from current file list
+        this.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
+
+        this.toast.show(
+          filesToMove.length === 1 ? 'File moved' : 'Files moved',
+          filesToMove.length === 1
+            ? `Moved '${filesToMove[0].fileName}' to '${targetDirectoryName}'`
+            : `Moved ${filesToMove.length} file(s) to '${targetDirectoryName}'`,
+          MessageSeverity.success
+        );
+      },
+      error: (err) => {
+        // Reset loading state on error
+        filesToMove.forEach(f => this.updateFile(f, { loading: false }));
+
+        let errorMessage = 'File move failed. Please try again.';
+        if (err.error?.errors) {
+          errorMessage = Object.values(err.error.errors).flat().join(' ');
+        } else if (err.error) {
+          errorMessage = err.error;
+        }
+        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
+      }
+    });
   }
 
   deleteFile(file: AppFile) {

@@ -10,7 +10,6 @@ import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../core/models/action-type.model';
-import { AppFile } from '../../../core/models/app-file.model';
 
 @Component({
   selector: 'app-home',
@@ -93,8 +92,11 @@ export class HomeComponent implements OnInit {
     const action = this.activeAction();
     if (!action) return;
     if (action.type === ActionType.Move) {
-
-      this.moveFiles(Array.from(action.files), this.fileService.parentId(), this.fileService.parentName() ?? 'home directory');
+      this.fileService.moveFilesWithFeedback(
+        Array.from(action.files),
+        this.fileService.parentId(),
+        this.fileService.parentName() ?? 'home directory'
+      );
     }
     else if (action.type === ActionType.Copy) {
 
@@ -116,34 +118,6 @@ export class HomeComponent implements OnInit {
   onDelete() {
     if (!this.hasSelectedFiles()) return;
     // TODO: Implement delete logic
-  }
-
-  private moveFiles(filesToMove: AppFile[], targetDirId: number | null, targetDirName: string | null) {
-    if (filesToMove.length === 0) return;
-
-    this.fileService.moveFiles(filesToMove.map(file => file.id), targetDirId).subscribe({
-      next: () => {
-        //Add moved files to target directory file list
-        this.fileService.files.update(files => [...files, ...filesToMove]);
-        this.fileService._fileResource.reload();
-        this.toast.show(
-          filesToMove.length === 1 ? 'File moved' : 'Files moved',
-          filesToMove.length === 1
-            ? `Moved '${this.files().find(f => f.id === filesToMove[0].id)?.fileName}' to '${targetDirName}'`
-            : `Moved ${filesToMove.length} file(s) to '${targetDirName}'`,
-          MessageSeverity.success
-        );
-      },
-      error: (err) => {
-        let errorMessage = 'File move failed. Please try again.';
-        if (err.error?.errors) {
-          errorMessage = Object.values(err.error.errors).flat().join(' ');
-        } else if (err.error) {
-          errorMessage = err.error;
-        }
-        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
-      }
-    });
   }
 
 }

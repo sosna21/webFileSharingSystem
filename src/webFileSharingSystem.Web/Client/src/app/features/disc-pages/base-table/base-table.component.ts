@@ -46,44 +46,17 @@ export class BaseTableComponent {
   private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
-  files = computed(() => this.fileService.files().map(file => this.uploadService.uploadProgresses().hasOwnProperty(file.id) ?  {
-          ...file,
-          uploadProgress: this.uploadService.uploadProgresses()[file.id].progress!,
-          progressStatus: this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.InProgress
-            ? ProgressStatus.Started
-            : this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.Stopping
-              ? ProgressStatus.Stopping
-              : ProgressStatus.Stopped
-        }
-        : file));
+  files = computed(() => this.fileService.files().map(file => this.uploadService.uploadProgresses().hasOwnProperty(file.id) ? {
+    ...file,
+    uploadProgress: this.uploadService.uploadProgresses()[file.id].progress!,
+    progressStatus: this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.InProgress
+      ? ProgressStatus.Started
+      : this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.Stopping
+        ? ProgressStatus.Stopping
+        : ProgressStatus.Stopped
+  }
+    : file));
 
-  // files = linkedSignal<{ files: AppFile[], uploadProgress: Record<number, UploadProgressInfo> }, AppFile[]>({
-  //   source: () => ({ files: this.fileService.files(), uploadProgress: this.uploadService.uploadProgresses() }),
-  //   computation: (source, previous) => {
-  //     const files = source.files.map(f => source.uploadProgress.hasOwnProperty(f.id)
-  //       ? {
-  //         ...f,
-  //         uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
-  //         progressStatus: this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.InProgress
-  //           ? ProgressStatus.Started
-  //           : this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.Stopping
-  //             ? ProgressStatus.Stopping
-  //             : ProgressStatus.Stopped
-  //       }
-  //       : f);
-
-  //     if (!previous || !previous.value || previous.value.length === 0)
-  //       return files;
-
-  //     // Preserve checked state
-  //     const prevFileMap = new Map<number, AppFile>();
-  //     previous.value.forEach(f => prevFileMap.set(f.id, f));
-  //     return files.map(f => {
-  //       const prevFile = prevFileMap.get(f.id);
-  //       return prevFile ? { ...f, checked: prevFile.checked } : f;
-  //     });
-  //   }
-  // });
 
   selectedFiles = computed(() => this.files().filter(file => file.checked));
   filesMarkedForAction = this.fileService.waitingForAction;
@@ -393,39 +366,6 @@ export class BaseTableComponent {
     );
   }
 
-  private moveFiles(filesToMove: AppFile[], targetDir: AppFile) {
-    if (filesToMove.length === 0) return;
-
-    filesToMove.forEach(file => this.updateFile(file, { loading: true }));
-
-    this.fileService.moveFiles(filesToMove.map(f => f.id), targetDir.id).subscribe({
-      next: () => {
-        const filesToMoveIds = filesToMove.map(f => f.id);
-        //remove moved files from fileList
-        this.fileService.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
-
-        this.toast.show(
-          filesToMove.length === 1 ? 'File moved' : 'Files moved',
-          filesToMove.length === 1
-            ? `Moved '${filesToMove[0].fileName}' to '${targetDir.fileName}'`
-            : `Moved ${filesToMove.length} file(s) to '${targetDir.fileName}'`,
-          MessageSeverity.success
-        );
-      },
-      error: (err) => {
-        filesToMove.forEach(f => this.updateFile(f, { loading: false }));
-
-        let errorMessage = 'File move failed. Please try again.';
-        if (err.error?.errors) {
-          errorMessage = Object.values(err.error.errors).flat().join(' ');
-        } else if (err.error?.title) {
-          errorMessage = err.error.title;
-        }
-        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
-      }
-    });
-  }
-
   // Drag and drop logic for moving and uploading files
   private readonly fileMoveDragPreview = viewChild(DragPreviewComponent, { read: ElementRef });
   private readonly dragDrop = inject(FileDragDropService);
@@ -512,7 +452,7 @@ export class BaseTableComponent {
       this.dragDrop.clearDrag();
       if (!targetFile.isDirectory || targetFile.checked)
         return;
-      this.moveFiles(draggedFiles, targetFile);
+      this.fileService.moveFilesWithFeedback(draggedFiles, targetFile.id, targetFile.fileName);
     }
   }
 
