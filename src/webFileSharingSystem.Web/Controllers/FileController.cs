@@ -169,8 +169,8 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
         {
             var dbParentId = parentId == -1 ? (int?) null : parentId;
-            return (await _fileService.MoveFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with moving files");
+            var result = await _fileService.MoveFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
+            return result.ToActionResult(string.Join(", ", result.Errors));
         }
 
         [HttpPost]

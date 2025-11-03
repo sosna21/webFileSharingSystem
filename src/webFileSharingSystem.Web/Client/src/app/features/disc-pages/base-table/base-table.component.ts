@@ -46,33 +46,44 @@ export class BaseTableComponent {
   private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
-  files = linkedSignal<{ files: AppFile[], uploadProgress: Record<number, UploadProgressInfo> }, AppFile[]>({
-    source: () => ({ files: this.fileService.files(), uploadProgress: this.uploadService.uploadProgresses() }),
-    computation: (source, previous) => {
-      const files = source.files.map(f => source.uploadProgress.hasOwnProperty(f.id)
-        ? {
-          ...f,
-          uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
-          progressStatus: this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.InProgress
+  files = computed(() => this.fileService.files().map(file => this.uploadService.uploadProgresses().hasOwnProperty(file.id) ?  {
+          ...file,
+          uploadProgress: this.uploadService.uploadProgresses()[file.id].progress!,
+          progressStatus: this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.InProgress
             ? ProgressStatus.Started
-            : this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.Stopping
+            : this.uploadService.uploadProgresses()[file.id]?.status === UploadStatus.Stopping
               ? ProgressStatus.Stopping
               : ProgressStatus.Stopped
         }
-        : f);
+        : file));
 
-      if (!previous || !previous.value || previous.value.length === 0)
-        return files;
+  // files = linkedSignal<{ files: AppFile[], uploadProgress: Record<number, UploadProgressInfo> }, AppFile[]>({
+  //   source: () => ({ files: this.fileService.files(), uploadProgress: this.uploadService.uploadProgresses() }),
+  //   computation: (source, previous) => {
+  //     const files = source.files.map(f => source.uploadProgress.hasOwnProperty(f.id)
+  //       ? {
+  //         ...f,
+  //         uploadProgress: this.uploadService.uploadProgresses()[f.id].progress!,
+  //         progressStatus: this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.InProgress
+  //           ? ProgressStatus.Started
+  //           : this.uploadService.uploadProgresses()[f.id]?.status === UploadStatus.Stopping
+  //             ? ProgressStatus.Stopping
+  //             : ProgressStatus.Stopped
+  //       }
+  //       : f);
 
-      // Preserve checked state
-      const prevFileMap = new Map<number, AppFile>();
-      previous.value.forEach(f => prevFileMap.set(f.id, f));
-      return files.map(f => {
-        const prevFile = prevFileMap.get(f.id);
-        return prevFile ? { ...f, checked: prevFile.checked } : f;
-      });
-    }
-  });
+  //     if (!previous || !previous.value || previous.value.length === 0)
+  //       return files;
+
+  //     // Preserve checked state
+  //     const prevFileMap = new Map<number, AppFile>();
+  //     previous.value.forEach(f => prevFileMap.set(f.id, f));
+  //     return files.map(f => {
+  //       const prevFile = prevFileMap.get(f.id);
+  //       return prevFile ? { ...f, checked: prevFile.checked } : f;
+  //     });
+  //   }
+  // });
 
   selectedFiles = computed(() => this.files().filter(file => file.checked));
   filesMarkedForAction = this.fileService.waitingForAction;
@@ -98,13 +109,13 @@ export class BaseTableComponent {
 
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
       event.preventDefault();
-      this.files.update(files => files.map(f => ({ ...f, checked: true })));
+      this.fileService.files.update(files => files.map(f => ({ ...f, checked: true })));
     }
   };
 
   checkAllCheckBox(ev: Event) {
     const target = ev.target as HTMLInputElement;
-    this.files.update(files => files.map(file => ({ ...file, checked: target.checked })));
+    this.fileService.files.update(files => files.map(file => ({ ...file, checked: target.checked })));
   }
 
   isFileUploadCompleted(file: AppFile) {
@@ -118,7 +129,7 @@ export class BaseTableComponent {
   // Rename file
   initRename(file: AppFile) {
     this.renameInput.set(file.fileName);
-    this.files.update(files => files.map(f => f === file ? { ...f, rename: true } : f));
+    this.fileService.files.update(files => files.map(f => f === file ? { ...f, rename: true } : f));
   }
 
   rename(file: AppFile) {
@@ -192,7 +203,7 @@ export class BaseTableComponent {
       let startIndex = Math.min(newFileIndex, anchorIndex);
       let endIndex = Math.max(newFileIndex, anchorIndex);
 
-      this.files.update(files => files.map((f, index) => (index >= startIndex && index <= endIndex)
+      this.fileService.files.update(files => files.map((f, index) => (index >= startIndex && index <= endIndex)
         ? { ...f, checked: true }
         : { ...f, checked: false }
       ));
@@ -200,12 +211,12 @@ export class BaseTableComponent {
     }
 
     if (isCtrl) {
-      this.files.update(files => files.map(f => f === file ? { ...f, checked: !f.checked } : f));
+      this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: !f.checked } : f));
       return;
     }
 
     // If no modifiers, select only this file
-    this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+    this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
@@ -245,7 +256,7 @@ export class BaseTableComponent {
     event.stopPropagation();
     const position = { x: event.clientX, y: event.clientY };
     if (!this.selectedFiles().includes(file)) {
-      this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+      this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
     }
 
     this.openContextMenu(position);
@@ -256,7 +267,7 @@ export class BaseTableComponent {
 
     const rect = icon.getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
-    this.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+    this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
 
     this.openContextMenu(position);
   }
@@ -268,12 +279,12 @@ export class BaseTableComponent {
   }
 
   private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
+    this.fileService.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
   }
 
   private updateFileWithNewData(file: AppFile, partialUpdate?: Partial<AppFile>) {
     const updateTime = new Date();
-    this.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate, modificationDate: updateTime } : f));
+    this.fileService.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate, modificationDate: updateTime } : f));
   }
 
   private async openConfirmationModal(title: string, message: string, confirmText: string, cancelText: string, showPermanentDeleteWarning: boolean) {
@@ -345,7 +356,7 @@ export class BaseTableComponent {
       items: filesToDelete,
       action: file => this.fileService.deleteFile(file),
       beforeStart: file => this.updateFile(file, { loading: true }),
-      onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
+      onSuccess: file => this.fileService.files.update(list => list.filter(f => f.id !== file.id)),
       onError: (file, err) => {
         this.toast.show(
           'File deletion',
@@ -391,7 +402,7 @@ export class BaseTableComponent {
       next: () => {
         const filesToMoveIds = filesToMove.map(f => f.id);
         //remove moved files from fileList
-        this.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
+        this.fileService.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
 
         this.toast.show(
           filesToMove.length === 1 ? 'File moved' : 'Files moved',

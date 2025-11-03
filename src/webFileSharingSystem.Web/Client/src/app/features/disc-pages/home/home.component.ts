@@ -138,8 +138,8 @@ export class HomeComponent implements OnInit {
         let errorMessage = 'File move failed. Please try again.';
         if (err.error?.errors) {
           errorMessage = Object.values(err.error.errors).flat().join(' ');
-        } else if (err.error?.title) {
-          errorMessage = err.error.title;
+        } else if (err.error) {
+          errorMessage = err.error;
         }
         this.toast.show('File move failed', errorMessage, MessageSeverity.error);
       }

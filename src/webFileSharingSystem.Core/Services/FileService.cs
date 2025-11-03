@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -184,6 +185,7 @@ namespace webFileSharingSystem.Core.Services
             int userId, CancellationToken cancellationToken = default)
         {
             var newOwnerUserId = userId;
+            var enumeratedFileIds = fileIds as int[] ?? fileIds.ToArray();
             if (newParentId is not null)
             {
                 var parentFile =
@@ -192,15 +194,26 @@ namespace webFileSharingSystem.Core.Services
                 if (!parentFile.IsDirectory)
                     return Result.Failure(OperationResult.BadRequest, "Parent file is not a directory");
                 newOwnerUserId = parentFile.UserId;
-
+                
                 if (!await _guard.UserCanPerform(userId, parentFile, ShareAccessMode.ReadWrite, cancellationToken))
                     return Result.Failure(OperationResult.Unauthorized, "You are not authorized to move some files");
+                
+                var movedSet = new HashSet<int>(enumeratedFileIds);
+                if (movedSet.Contains(newParentId.Value))
+                    return Result.Failure(OperationResult.BadRequest, "The destination folder is the same as one of the moved folders");
+                
+                var destinationAncestors = await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(newParentId.Value, cancellationToken);
+                if (destinationAncestors.Any(destinationAncestor => movedSet.Contains(destinationAncestor.Id)))
+                {
+                    return Result.Failure(OperationResult.BadRequest, "The destination folder is a subfolder of one of the moved folders");
+                }
+                
             }
 
             var filesToMove = (await _unitOfWork.Repository<File>()
-                .FindAsync(new FindFilesByFileIdsSpecs(fileIds), cancellationToken)).ToList();
+                .FindAsync(new FindFilesByFileIdsSpecs(enumeratedFileIds), cancellationToken)).ToList();
 
-            if (fileIds.Except(filesToMove.Select(f => f.Id)).Any())
+            if (enumeratedFileIds.Except(filesToMove.Select(f => f.Id)).Any())
                 return Result.Failure(OperationResult.BadRequest, "Some files not found");
 
             var filesToMoveTotalSIze = filesToMove.Sum(f => (long)f.Size);
