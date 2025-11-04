@@ -9,9 +9,9 @@
 </div>
 
 <div class="modal-body">
-  <p class="d-grid overflow-hidden" style="white-space: pre-wrap; ">
+  <p class="d-grid overflow-hidden" style="white-space: pre-wrap">
     {{ message() }}
-    @if (showPermanentDeleteWarning()) {
+    @if (showPermanentWarning()) {
     <span class="text-danger"><br />This operation can not be undone.</span>
     }
   </p>

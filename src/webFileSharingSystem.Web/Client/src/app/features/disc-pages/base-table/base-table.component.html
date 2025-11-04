@@ -3,7 +3,7 @@
   [selectedFiles]="selectedFiles()"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
-  (delete)="deleteSelectedFiles()"
+  (delete)="deleteFiles($event)"
   (selectFolder)="selectFolder($event)"
   (pauseUpload)="stopFilesUpload($event)"
   (resumeUpload)="continueFilesUpload($event)"

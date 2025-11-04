@@ -1,4 +1,4 @@
-import {Component, inject, model} from '@angular/core';
+import { Component, inject, model } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
@@ -6,7 +6,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
   imports: [],
   templateUrl: './confirmation-modal.component.html',
   styleUrl: './confirmation-modal.component.scss',
-  host: { class: 'd-block'},
+  host: { class: 'd-block' },
 })
 export class ConfirmationModalComponent {
   readonly activeModal = inject(NgbActiveModal);
@@ -14,5 +14,5 @@ export class ConfirmationModalComponent {
   readonly message = model('Are you sure?');
   readonly confirmText = model('Yes');
   readonly cancelText = model('Cancel');
-  readonly showPermanentDeleteWarning = model(false);
+  readonly showPermanentWarning = model(false);
 }

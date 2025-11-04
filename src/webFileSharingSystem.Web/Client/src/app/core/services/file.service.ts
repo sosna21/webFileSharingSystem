@@ -12,6 +12,8 @@ import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
 import { UploadProgressInfo, UploadStatus } from '../models/upload-progress-info.model';
+import { bulkAction } from '../utils/bulk-action-util';
+import { ModalService } from './modal.service';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +25,7 @@ export class FileService {
   private readonly authService = inject(AuthenticationService);
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
+  private readonly modalService = inject(ModalService);
   private readonly actionContext = linkedSignal<Record<number, AppFile>, { files: Set<AppFile>, filesIds: Set<number>, type: ActionType } | null>({
     source: () => Object.fromEntries(
       this.files().map(item => [item.id, item])
@@ -46,6 +49,7 @@ export class FileService {
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
   public readonly files = linkedSignal<AppFile[]>(() => this._linkedFilesResponse()?.items.map(file => ({ ...file, progressStatus: ProgressStatus.Stopped })).sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
+  public readonly selectedFiles = computed(() => this.files().filter(file => file.checked));
   public readonly pagainationData = computed(() => this._linkedFilesResponse() ? ({
     currentPage: this.currentPage(),
     itemsPerPage: this.itemsPerPage(),
@@ -135,6 +139,67 @@ export class FileService {
       'copy',
       (currentFiles, newFiles) => [...currentFiles, ...(newFiles as AppFile[])]
     );
+  }
+
+  async deleteFilesWithFeedback(filesToDelete: AppFile[]): Promise<boolean> {
+    if (filesToDelete.length === 0) {
+      return false;
+    }
+
+    const maxLines = 5;
+    const totalFiles = filesToDelete.length;
+    const fileNamesList = filesToDelete.map(f => f.fileName);
+
+    let confirmText = '';
+
+    if (totalFiles === 1) {
+      confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
+    }
+    else if (totalFiles > maxLines) {
+      const shownCount = Math.max(1, maxLines - 1);
+      const shown = fileNamesList.slice(0, shownCount);
+      const remainingCount = totalFiles - shownCount;
+      const displayNames = [
+        ...shown.map(name => `• ${name}`),
+        `...and ${remainingCount} more`
+      ];
+      confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+    }
+    else {
+      const displayNames = fileNamesList.map(name => `• ${name}`);
+      confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
+    }
+
+    const confirmationResult = await this.modalService.confirmChoice({
+      title: 'Confirm File Deletion',
+      message: confirmText,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      showPermanentWarning: true
+    });
+    if (!confirmationResult) return false;
+
+    bulkAction<AppFile>({
+      items: filesToDelete,
+      action: file => this.deleteFile(file),
+      beforeStart: file => this.updateFile(file, { loading: true }),
+      onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
+      onError: (file, err) => {
+        this.toast.show(
+          'File deletion',
+          err instanceof Error ? err.message : String(err),
+          MessageSeverity.error
+        );
+        this.turnOffFileLoading(file);
+      },
+      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
+      successMessage: count => `Deleted ${count} file(s) successfully`
+    });
+    return true;
+  }
+
+  turnOffFileLoading(file: AppFile) {
+    this.updateFile(file, { loading: false });
   }
 
   private executeFileOperationWithFeedback<T>(

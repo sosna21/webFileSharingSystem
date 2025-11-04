@@ -10,6 +10,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../core/models/action-type.model';
+import { FileStatus } from '../../../core/models/app-file.model';
 
 @Component({
   selector: 'app-home',
@@ -29,6 +30,8 @@ export class HomeComponent implements OnInit {
   readonly selectedFiles = computed(() => this.files().filter(file => file.checked));
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canPaste = computed(() => this.activeAction() !== null);
+  readonly canFileAction = computed(() => this.selectedFiles().length > 0 && this.selectedFiles().some(file => file.fileStatus === FileStatus.Completed));
+  readonly canRename = computed(() => this.selectedFiles().length === 1 && this.selectedFiles()[0].fileStatus === FileStatus.Completed);
 
   ngOnInit(): void {
     this.fileService.mode.set('GetAll');
@@ -78,12 +81,12 @@ export class HomeComponent implements OnInit {
   }
 
   onCut() {
-    if (!this.hasSelectedFiles()) return;
+    if (!this.canFileAction()) return;
     this.fileService.setFilesMarkedForAction(this.selectedFiles(), ActionType.Move);
   }
 
   onCopy() {
-    if (!this.hasSelectedFiles()) return;
+    if (!this.canFileAction()) return;
     this.fileService.setFilesMarkedForAction(this.selectedFiles(), ActionType.Copy);
   }
 
@@ -110,18 +113,17 @@ export class HomeComponent implements OnInit {
   }
 
   onRename() {
-    if (!this.hasSelectedFiles()) return;
+    if (!this.canRename()) return;
     // TODO: Implement rename logic
   }
 
   onShare() {
-    if (!this.hasSelectedFiles()) return;
+    if (!this.canFileAction()) return;
     // TODO: Implement share logic
   }
 
   onDelete() {
-    if (!this.hasSelectedFiles()) return;
-    // TODO: Implement delete logic
+    if (!this.canFileAction()) return;
+    this.fileService.deleteFilesWithFeedback(this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed));
   }
-
 }

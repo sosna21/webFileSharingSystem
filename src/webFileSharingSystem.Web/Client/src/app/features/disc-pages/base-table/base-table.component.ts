@@ -41,14 +41,11 @@ export class BaseTableComponent {
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
-  private readonly modalService = inject(NgbModal);
   private readonly uploadService = inject(FileUploadService);
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
   files = this.fileService.files;
-
-
-  selectedFiles = computed(() => this.files().filter(file => file.checked));
+  selectedFiles = this.fileService.selectedFiles;
   filesMarkedForAction = this.fileService.waitingForAction;
 
   tooltips = viewChildren(NgbTooltip);
@@ -250,88 +247,8 @@ export class BaseTableComponent {
     this.fileService.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate, modificationDate: updateTime } : f));
   }
 
-  private async openConfirmationModal(title: string, message: string, confirmText: string, cancelText: string, showPermanentDeleteWarning: boolean) {
-    const modalRef = this.modalService.open(ConfirmationModalComponent, { centered: true });
-    const component = modalRef.componentInstance as ConfirmationModalComponent;
-    component.title.set(title);
-    component.message.set(message);
-    component.confirmText.set(confirmText);
-    component.cancelText.set(cancelText);
-    component.showPermanentDeleteWarning.set(showPermanentDeleteWarning);
-
-    try {
-      return await modalRef.result; // resolves with "true" if confirmed
-    } catch {
-      return false;
-    }
-  }
-
-
-  deleteSelectedFiles() {
-    const filesToDelete = this.selectedFiles();
-    if (filesToDelete.length === 0) {
-      this.toast.show('No files selected', 'Please select files to delete', MessageSeverity.info);
-      return;
-    }
-
-    this.deleteFiles(filesToDelete);
-  }
-
-  private async deleteFiles(filesToDelete: AppFile[]): Promise<boolean> {
-    if (filesToDelete.length === 0) {
-      return false;
-    }
-
-    const maxLines = 5;
-    const totalFiles = filesToDelete.length;
-    const fileNamesList = filesToDelete.map(f => f.fileName);
-
-    let confirmText = '';
-
-    if (totalFiles === 1) {
-      confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
-    }
-    else if (totalFiles > maxLines) {
-      const shownCount = Math.max(1, maxLines - 1);
-      const shown = fileNamesList.slice(0, shownCount);
-      const remainingCount = totalFiles - shownCount;
-      const displayNames = [
-        ...shown.map(name => `• ${name}`),
-        `...and ${remainingCount} more`
-      ];
-      confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
-    }
-    else {
-      const displayNames = fileNamesList.map(name => `• ${name}`);
-      confirmText = `Are you sure you want to delete these files?\n${displayNames.join('\n')}`;
-    }
-
-    const confirmationResult = await this.openConfirmationModal(
-      'Confirm File Deletion',
-      confirmText,
-      'Delete',
-      'Cancel',
-      true
-    );
-    if (!confirmationResult) return false;
-
-    bulkAction<AppFile>({
-      items: filesToDelete,
-      action: file => this.fileService.deleteFile(file),
-      beforeStart: file => this.updateFile(file, { loading: true }),
-      onSuccess: file => this.fileService.files.update(list => list.filter(f => f.id !== file.id)),
-      onError: (file, err) => {
-        this.toast.show(
-          'File deletion',
-          err instanceof Error ? err.message : String(err),
-          MessageSeverity.error
-        );
-        this.turnOffFileLoading(file);
-      },
-      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-      successMessage: count => `Deleted ${count} file(s) successfully`
-    });
-    return true;
+  deleteFiles(files: AppFile[]) {
+    this.fileService.deleteFilesWithFeedback(files);
   }
 
   initFileMove(files: AppFile[]) {
@@ -504,13 +421,13 @@ export class BaseTableComponent {
 
   async cancelFilesUpload(files: AppFile[]) {
     const incompleteFiles = files.filter(file => file.fileStatus === FileStatus.Incomplete);
-    if (await this.deleteFiles(incompleteFiles))
+    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach(file => this.uploadService.cancel(file.id));
   }
 
   async cancelUpload(file: AppFile) {
     if (file.fileStatus !== FileStatus.Incomplete) return;
-    if (await this.deleteFiles([file]))
+    if (await this.fileService.deleteFilesWithFeedback([file]))
       this.uploadService.cancel(file.id);
   }
 }

@@ -28,7 +28,7 @@ export class BaseTableContextMenuComponent {
   readonly toggleFavourite = output<boolean>();
   readonly selectFolder = output<number>();
   readonly download = output();
-  readonly delete = output();
+  readonly delete = output<AppFile[]>();
   readonly cancelUpload = output<AppFile[]>();
   readonly resumeUpload = output<AppFile[]>();
   readonly pauseUpload = output<AppFile[]>();
@@ -75,5 +75,10 @@ export class BaseTableContextMenuComponent {
   shareClicked() {
     const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
     this.share.emit(completedFiles);
+  }
+
+  deleteClicked() {
+    const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
+    this.delete.emit(completedFiles);
   }
 }
