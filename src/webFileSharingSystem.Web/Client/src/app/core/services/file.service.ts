@@ -6,7 +6,7 @@ import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
 import { Router } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
-import { tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
@@ -110,37 +110,75 @@ export class FileService {
     return this.http.put(api, filesIds);
   }
 
+  copyFiles(filesIds: number[], targetDirectoryId: number | null) {
+    const api = `${this.currentBaseUrl()}/Copy/${targetDirectoryId ?? -1}`;
+    return this.http.post<AppFile[]>(api, filesIds);
+  }
+
   moveFilesWithFeedback(filesToMove: AppFile[], targetDirectoryId: number | null, targetDirectoryName: string) {
-    if (filesToMove.length === 0) return;
+    this.executeFileOperationWithFeedback(
+      filesToMove,
+      targetDirectoryId,
+      targetDirectoryName,
+      (ids, targetId) => this.moveFiles(ids, targetId),
+      'move',
+      (currentFiles, _, fileIds) => currentFiles.filter(f => !fileIds.includes(f.id))
+    );
+  }
 
-    // Set loading state for files being moved
-    filesToMove.forEach(file => this.updateFile(file, { loading: true }));
+  copyFilesWithFeedback(filesToCopy: AppFile[], targetDirectoryId: number | null, targetDirectoryName: string) {
+    this.executeFileOperationWithFeedback(
+      filesToCopy,
+      targetDirectoryId,
+      targetDirectoryName,
+      (ids, targetId) => this.copyFiles(ids, targetId),
+      'copy',
+      (currentFiles, newFiles) => [...currentFiles, ...(newFiles as AppFile[])]
+    );
+  }
 
-    this.moveFiles(filesToMove.map(file => file.id), targetDirectoryId).subscribe({
-      next: () => {
-        const filesToMoveIds = filesToMove.map(f => f.id);
-        // Remove moved files from current file list
-        this.files.update(files => files.filter(f => !filesToMoveIds.includes(f.id)));
+  private executeFileOperationWithFeedback<T>(
+    files: AppFile[],
+    targetDirectoryId: number | null,
+    targetDirectoryName: string,
+    operation: (fileIds: number[], targetId: number | null) => Observable<T>,
+    operationName: 'move' | 'copy',
+    updateFilesList: (currentFiles: AppFile[], operationResult: T, fileIds: number[]) => AppFile[]
+  ) {
+    if (files.length === 0) return;
+
+    // Set loading state
+    files.forEach(file => this.updateFile(file, { loading: true }));
+
+    const fileIds = files.map(f => f.id);
+    const isPlural = files.length > 1;
+    const operationPastTense = operationName === 'move' ? 'moved' : 'copied';
+    const operationPastTenseCapitalized = operationPastTense.charAt(0).toUpperCase() + operationPastTense.slice(1);
+
+    operation(fileIds, targetDirectoryId).subscribe({
+      next: (result) => {
+        // Update files list based on operation type
+        this.files.update(currentFiles => updateFilesList(currentFiles, result, fileIds));
 
         this.toast.show(
-          filesToMove.length === 1 ? 'File moved' : 'Files moved',
-          filesToMove.length === 1
-            ? `Moved '${filesToMove[0].fileName}' to '${targetDirectoryName}'`
-            : `Moved ${filesToMove.length} file(s) to '${targetDirectoryName}'`,
+          isPlural ? `Files ${operationPastTense}` : `File ${operationPastTense}`,
+          isPlural
+            ? `${operationPastTenseCapitalized} ${files.length} file(s) to '${targetDirectoryName}'`
+            : `${operationPastTenseCapitalized} '${files[0].fileName}' to '${targetDirectoryName}'`,
           MessageSeverity.success
         );
       },
       error: (err) => {
         // Reset loading state on error
-        filesToMove.forEach(f => this.updateFile(f, { loading: false }));
+        files.forEach(f => this.updateFile(f, { loading: false }));
 
-        let errorMessage = 'File move failed. Please try again.';
+        let errorMessage = `File ${operationName} failed. Please try again.`;
         if (err.error?.errors) {
           errorMessage = Object.values(err.error.errors).flat().join(' ');
         } else if (err.error) {
           errorMessage = err.error;
         }
-        this.toast.show('File move failed', errorMessage, MessageSeverity.error);
+        this.toast.show(`File ${operationName} failed`, errorMessage, MessageSeverity.error);
       }
     });
   }

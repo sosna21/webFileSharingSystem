@@ -99,7 +99,11 @@ export class HomeComponent implements OnInit {
       );
     }
     else if (action.type === ActionType.Copy) {
-
+      this.fileService.copyFilesWithFeedback(
+        Array.from(action.files),
+        this.fileService.parentId(),
+        this.fileService.parentName() ?? 'home directory'
+      );
     }
 
     this.fileService.clearActionContext();

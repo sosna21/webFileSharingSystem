@@ -77,7 +77,7 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
             var userId = _currentUserService.UserId;
             var files = await _unitOfWork.Repository<File>()
                 .FindAsync(new GeFilesNamesSpecs(userId!.Value, dbParentId));
@@ -149,7 +149,7 @@ namespace webFileSharingSystem.Web.Controllers
             var (actionResult, file) =
                 await _fileService.CreateDirectoryAsync(parentId, _currentUserService.UserId!.Value, name);
 
-            if (!actionResult.Succeeded) 
+            if (!actionResult.Succeeded)
                 return actionResult.ToActionResult(actionResult.Errors.Length > 0
                 ? actionResult.Errors[0]
                 : "Unknown problem with creating a directory");
@@ -168,7 +168,7 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("Move/{parentId:int}")]
         public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
             var result = await _fileService.MoveFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
             return result.ToActionResult(string.Join(", ", result.Errors));
         }
@@ -177,10 +177,13 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("Copy/{parentId:int}")]
         public async Task<ActionResult> CopyFiles(int parentId, [FromBody] int[] ids)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
-            //TODO check if names of files to move are uniq in target directory
-            return (await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with coping files");
+            var userId = _currentUserService.UserId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
+            (var result, var files) =
+                await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
+            if (!result.Succeeded)
+                return result.ToActionResult("Problem with copying the files");
+            return Ok(files.Select(f => ToFileResponse(f, userId!.Value)));
         }
 
         private FileResponse ToFileResponse(File file, int userId)
@@ -207,7 +210,7 @@ namespace webFileSharingSystem.Web.Controllers
             if (partialFileInfo is null) return null;
             var uploadedChunks = partialFileInfo.PersistenceMap
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
-            return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
+            return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
         }
     }
 }

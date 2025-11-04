@@ -269,7 +269,7 @@ namespace webFileSharingSystem.Core.Services
                 : Result.Failure(OperationResult.Exception, "Problem with moving some files");
         }
 
-        public async Task<Result<OperationResult>> CopyFilesAsync(int? newParentId, IEnumerable<int> fileIds,
+        public async Task<(Result<OperationResult>, IEnumerable<File>)> CopyFilesAsync(int? newParentId, IEnumerable<int> fileIds,
             int userId,
             CancellationToken cancellationToken = default)
         {
@@ -278,20 +278,20 @@ namespace webFileSharingSystem.Core.Services
             {
                 var parentFile =
                     await _unitOfWork.Repository<File>().FindByIdAsync(newParentId.Value, cancellationToken);
-                if (parentFile is null) return Result.Failure(OperationResult.BadRequest, "Parent directory not found");
+                if (parentFile is null) return (Result.Failure(OperationResult.BadRequest, "Parent directory not found"), []);
                 if (!parentFile.IsDirectory)
-                    return Result.Failure(OperationResult.BadRequest, "Parent file is not a directory");
+                    return (Result.Failure(OperationResult.BadRequest, "Parent file is not a directory"), []);
                 newOwnerUserId = parentFile.UserId;
 
                 if (!await _guard.UserCanPerform(userId, parentFile, ShareAccessMode.ReadWrite, cancellationToken))
-                    return Result.Failure(OperationResult.Unauthorized, "You are not authorized to copy some files");
+                    return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to copy some files"), []);
             }
 
             var filesToCopy = (await _unitOfWork.Repository<File>()
                 .FindAsync(new FindFilesByFileIdsSpecs(fileIds), cancellationToken)).ToList();
 
             if (fileIds.Except(filesToCopy.Select(f => f.Id)).Any())
-                return Result.Failure(OperationResult.BadRequest, "Some files not found");
+                return (Result.Failure(OperationResult.BadRequest, "Some files not found"), []);
 
             var filesToCopyTotalSize = filesToCopy.Sum(f => (long)f.Size);
 
@@ -300,13 +300,14 @@ namespace webFileSharingSystem.Core.Services
                     cancellationToken);
 
             if (!directoryOwnerUseSpaceUpdateResult.Succeeded)
-                return Result.Failure(OperationResult.BadRequest, directoryOwnerUseSpaceUpdateResult.Errors);
+                return (Result.Failure(OperationResult.BadRequest, directoryOwnerUseSpaceUpdateResult.Errors), []);
 
+            var copiedFiles = new List<File>();
             foreach (var fileToCopy in filesToCopy)
             {
 
                 if (!await _guard.UserCanPerform(userId, fileToCopy, ShareAccessMode.ReadWrite, cancellationToken))
-                    return Result.Failure(OperationResult.Unauthorized, "You are not authorized to move some files");
+                    return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to move some files"), []);
 
                 var file = new File
                 {
@@ -319,7 +320,7 @@ namespace webFileSharingSystem.Core.Services
                     FileGuid = fileToCopy.FileGuid,
                     FileStatus = FileStatus.Completed
                 };
-
+                copiedFiles.Add(file);
                 _unitOfWork.Repository<File>().Add(file);
 
                 if (newParentId is not null)
@@ -330,8 +331,8 @@ namespace webFileSharingSystem.Core.Services
             }
 
             return await _unitOfWork.Complete(cancellationToken) > 0
-                ? Result.Success<OperationResult>()
-                : Result.Failure(OperationResult.Exception, "Problem with coping some files");
+                ? (Result.Success<OperationResult>(), copiedFiles)
+                : (Result.Failure(OperationResult.Exception, "Problem with coping some files"), []);
         }
 
         private async Task UpdateParentFileSizes(int parentId, long sizeToAdd, CancellationToken cancellationToken)
