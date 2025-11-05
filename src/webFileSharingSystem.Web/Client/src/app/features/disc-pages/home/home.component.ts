@@ -114,7 +114,7 @@ export class HomeComponent implements OnInit {
 
   onRename() {
     if (!this.canRename()) return;
-    // TODO: Implement rename logic
+    this.fileService.updateFile(this.selectedFiles()[0], { rename: true });
   }
 
   onShare() {

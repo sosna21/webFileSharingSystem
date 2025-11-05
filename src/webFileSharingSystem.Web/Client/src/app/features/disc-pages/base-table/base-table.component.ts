@@ -13,7 +13,6 @@ import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { BaseTableContextMenuComponent } from "./base-table-context-menu/base-table-context-menu.component";
 import { bulkAction } from '../../../core/utils/bulk-action-util';
-import { ConfirmationModalComponent } from '../../../core/components/confirmation-modal/confirmation-modal.component';
 import { DragPreviewComponent } from "./drag-preview/drag-preview.component";
 import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
@@ -53,7 +52,6 @@ export class BaseTableComponent {
   contextMenuPosition = signal<{ x: number, y: number }>({ x: 0, y: 0 });
 
   lastSelectedFileId = signal<number | null>(null);
-  renameInput = signal('');
   currentDirectoryId = this.fileService.parentId;
 
   onKeydown(event: KeyboardEvent) {
@@ -88,13 +86,19 @@ export class BaseTableComponent {
 
   // Rename file
   initRename(file: AppFile) {
-    this.renameInput.set(file.fileName);
     this.fileService.files.update(files => files.map(f => f === file ? { ...f, rename: true } : f));
   }
 
-  rename(file: AppFile) {
-    const newFileName = this.renameInput().trim();
-    this.renameInput.set('');
+  private turnOffFileLoading(file: AppFile) {
+    this.updateFile(file, { loading: false });
+  }
+
+  private cancelRename(file: AppFile) {
+    this.updateFile(file, { rename: false });
+  }
+
+  rename(file: AppFile, newFileName: string) {
+    newFileName = newFileName.trim();
 
     if (newFileName === '') {
       this.toast.show('File rename', 'File name cannot be empty', MessageSeverity.error);
@@ -125,17 +129,9 @@ export class BaseTableComponent {
     }).add(() => this.turnOffFileLoading(file));
   }
 
-  private turnOffFileLoading(file: AppFile) {
-    this.updateFile(file, { loading: false });
-  }
-
-  private cancelRename(file: AppFile) {
-    this.updateFile(file, { rename: false });
-  }
-
   fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
     if ($event.key === 'Enter') {
-      this.rename(file);
+      this.rename(file, ($event.target as HTMLInputElement).value);
     } else if ($event.key === 'Escape') {
       this.cancelRename(file);
     }
