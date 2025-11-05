@@ -54,44 +54,29 @@
 selectedFiles().length;
 
 <ng-template #uploadActions>
+  @let disablePause = allFilesHaveSameUploadStatus() &&
+  selectedFile.progressStatus !== ProgressStatus.Started; @let disableResume =
+  allFilesHaveSameUploadStatus() && selectedFile.progressStatus ===
+  ProgressStatus.Started;
   <button
     ngbDropdownItem
-    (click)="pauseUploadClicked(); menu.close()"
-    [disabled]="
-      allFilesHaveSameUploadStatus() &&
-      selectedFile.progressStatus !== ProgressStatus.Started
-    "
+    (click)="resumeUploadClicked(); menu.close()"
+    [disabled]="disableResume"
   >
     <i
-      class="bi bi-pause-circle me-1"
-      [class.text-warning]="
-        !(
-          allFilesHaveSameUploadStatus() &&
-          selectedFile.progressStatus !== ProgressStatus.Started
-        )
-      "
+      class="bi bi-play-circle-fill me-1"
+      [class.text-success]="!disableResume"
     ></i>
-    Pause Upload
+    Resume Upload
   </button>
 
   <button
     ngbDropdownItem
-    (click)="resumeUploadClicked(); menu.close()"
-    [disabled]="
-      allFilesHaveSameUploadStatus() &&
-      selectedFile.progressStatus === ProgressStatus.Started
-    "
+    (click)="pauseUploadClicked(); menu.close()"
+    [disabled]="disablePause"
   >
-    <i
-      class="bi bi-play-circle-fill me-1"
-      [class.text-success]="
-        !(
-          allFilesHaveSameUploadStatus() &&
-          selectedFile.progressStatus === ProgressStatus.Started
-        )
-      "
-    ></i>
-    Resume Upload
+    <i class="bi bi-pause-circle me-1" [class.text-warning]="!disablePause"></i>
+    Pause Upload
   </button>
 
   <button ngbDropdownItem (click)="cancelUploadClicked(); menu.close()">
@@ -101,7 +86,7 @@ selectedFiles().length;
 
 <ng-template #fileActions>
   <button ngbDropdownItem (click)="download.emit(); menu.close()">
-    <i class="bi bi-download me-1"></i> Download
+    <i class="bi bi-download me-1 text-primary"></i> Download
   </button>
 
   <button
@@ -109,21 +94,29 @@ selectedFiles().length;
     [disabled]="selectedFiles().length !== 1"
     (click)="rename.emit(selectedFile); menu.close()"
   >
-    <i class="bi bi-pencil me-1"></i> Rename
+    <i
+      class="bi bi-pencil me-1"
+      [class.text-info-emphasis]="selectedFiles().length === 1"
+    ></i>
+    Rename
   </button>
 
   <button ngbDropdownItem (click)="copyClicked(); menu.close()">
-    <i class="bi bi-files me-1"></i> Copy
+    <i class="bi bi-files me-1 text-warning-emphasis"></i> Copy
   </button>
   <button ngbDropdownItem (click)="moveClicked(); menu.close()">
-    <i class="bi bi-folder-symlink me-1"></i> Move
+    <i class="bi bi-folder-symlink me-1 text-warning-emphasis"></i> Move
   </button>
 
   <button
     ngbDropdownItem
     (click)="toggleFavourite.emit(anySelectedFileIsUnFavourite()); menu.close()"
   >
-    <i class="bi bi-star me-1"></i>
+    <i
+      class="bi bi-star me-1"
+      [class.text-warning]="anySelectedFileIsUnFavourite()"
+      [class.text-muted]="!anySelectedFileIsUnFavourite()"
+    ></i>
     {{
       anySelectedFileIsUnFavourite()
         ? selectedFilesCount > 1
@@ -138,15 +131,15 @@ selectedFiles().length;
   <div class="dropdown-divider"></div>
 
   <button ngbDropdownItem (click)="shareClicked(); menu.close()">
-    <i class="bi bi-share me-1"></i> Share
+    <i class="bi bi-share me-1 text-primary"></i> Share
   </button>
   <button ngbDropdownItem (click)="generateLink.emit(); menu.close()">
-    <i class="bi bi-link me-1"></i> Generate share link
+    <i class="bi bi-link me-1 text-primary-emphasis"></i> Generate share link
   </button>
 
   <div class="dropdown-divider"></div>
 
   <button ngbDropdownItem (click)="deleteClicked(); menu.close()">
-    <i class="bi bi-trash me-1"></i> Delete
+    <i class="bi bi-trash me-1 text-danger"></i> Delete
   </button>
 </ng-template>
