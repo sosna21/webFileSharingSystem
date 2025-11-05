@@ -85,6 +85,12 @@ selectedFiles().length;
 </ng-template>
 
 <ng-template #fileActions>
+  @if (showOpenFolder()) {
+  <button ngbDropdownItem (click)="openFolder.emit(selectedFile); menu.close()">
+    <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
+  </button>
+  }
+
   <button ngbDropdownItem (click)="download.emit(); menu.close()">
     <i class="bi bi-download me-1 text-primary"></i> Download
   </button>

@@ -1,6 +1,7 @@
 <app-base-table-context-menu
   [position]="contextMenuPosition()"
   [selectedFiles]="selectedFiles()"
+  (openFolder)="selectFolder($event.id)"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
   (delete)="deleteFiles($event)"
@@ -107,9 +108,9 @@
               appSelectFilename
               type="text"
               style="min-width: 85%"
-              [(ngModel)]="renameInput"
+              [ngModel]="file.fileName"
               [placeholder]="file.fileName"
-              (focusout)="rename(file)"
+              (focusout)="rename(file, $any($event.target).value)"
               (keydown)="fileRenameKeyDown($event, file)"
             />
             } @else {
@@ -222,6 +223,7 @@
           <td class="d-none d-md-table-cell align-middle">
             <i
               appClicableIcon
+              (click)="shareFile([file])"
               [disabled]="file.fileStatus === FileStatus.Incomplete"
               class="bi bi-share-fill fs-5"
               [class.text-primary]="file.isShared"

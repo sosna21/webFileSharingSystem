@@ -14,7 +14,7 @@ import { FileStatus } from '../../../core/models/app-file.model';
 
 @Component({
   selector: 'app-home',
-  imports: [NgbCollapseModule, NgbPaginationModule, FormsModule, BaseDiscPageHeaderComponent, BaseDiscPageComponent, BreadcrumbComponent, SelectFilenameDirective, HoverClassDirective, NgbTooltipModule],
+  imports: [NgbCollapseModule, NgbPaginationModule, FormsModule, BaseDiscPageHeaderComponent, BaseDiscPageComponent, BreadcrumbComponent, SelectFilenameDirective, NgbTooltipModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
