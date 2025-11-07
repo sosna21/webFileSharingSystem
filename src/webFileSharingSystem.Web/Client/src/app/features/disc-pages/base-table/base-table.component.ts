@@ -19,6 +19,7 @@ import { FileUploadDragDropService } from '../../../core/services/file-upload-dr
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
 import { ActionType } from '../../../core/models/action-type.model';
+import { FileShareService } from '../../../core/services/file-share.service';
 
 
 @Component({
@@ -41,6 +42,8 @@ export class BaseTableComponent {
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
   private readonly uploadService = inject(FileUploadService);
+  private readonly shareService = inject(FileShareService);
+
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
   files = this.fileService.files;
@@ -205,6 +208,10 @@ export class BaseTableComponent {
           : `Removed ${count} files from favourites`;
       }
     });
+  }
+
+  shareFile(files: AppFile[]) {
+    this.shareService.shareFilesWithFeedback(files);
   }
 
   contextMenuClick(event: MouseEvent, file: AppFile) {

@@ -11,6 +11,7 @@ import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../core/models/action-type.model';
 import { FileStatus } from '../../../core/models/app-file.model';
+import { FileShareService } from '../../../core/services/file-share.service';
 
 @Component({
   selector: 'app-home',
@@ -21,6 +22,7 @@ import { FileStatus } from '../../../core/models/app-file.model';
 })
 export class HomeComponent implements OnInit {
   private readonly fileService = inject(FileService);
+  private readonly shareService = inject(FileShareService);
   private readonly toast = inject(ToastService);
   private readonly names = computed(() => this.fileService.files().map(file => file.fileName));
   readonly showDirCreate = signal(false);
@@ -119,7 +121,7 @@ export class HomeComponent implements OnInit {
 
   onShare() {
     if (!this.canFileAction()) return;
-    // TODO: Implement share logic
+    this.shareService.shareFilesWithFeedback(this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed));
   }
 
   onDelete() {

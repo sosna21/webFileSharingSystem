@@ -82,6 +82,21 @@ export class FileService {
   public readonly breadCrumbsResource = this._breadCrumbsResource.asReadonly();
 
 
+  constructor() {
+    const currentUrl = this.router.url; // e.g. "/disc/home/folder/123"
+
+    if (currentUrl.startsWith('/disc/home')) {
+      // home context
+      this.mode.set('GetAll');
+      const dirId = this.extractFolderId(currentUrl);
+      this.goToFolder(dirId);
+    } else if (currentUrl.startsWith('/disc/shared-with-me')) {
+      // shared-with-me context
+      this.mode.set('GetSharedWithMe');
+      const dirId = this.extractFolderId(currentUrl);
+      this.goToFolder(dirId);
+    }
+  }
 
   goToFolder(folderId: number | null) {
     this.parentId.set(folderId);
@@ -253,22 +268,6 @@ export class FileService {
     return this.http.delete(api).pipe(tap({
       next: () => this.authService.updateCurrentUserUsedSpace(-file.size)
     }));
-  }
-
-  constructor() {
-    const currentUrl = this.router.url; // e.g. "/disc/home/folder/123"
-
-    if (currentUrl.startsWith('/disc/home')) {
-      // home context
-      this.mode.set('GetAll');
-      const dirId = this.extractFolderId(currentUrl);
-      this.goToFolder(dirId);
-    } else if (currentUrl.startsWith('/disc/shared-with-me')) {
-      // shared-with-me context
-      this.mode.set('GetSharedWithMe');
-      const dirId = this.extractFolderId(currentUrl);
-      this.goToFolder(dirId);
-    }
   }
 
   private extractFolderId(url: string): number | null {
