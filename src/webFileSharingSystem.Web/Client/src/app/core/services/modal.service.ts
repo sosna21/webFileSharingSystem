@@ -1,6 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { ConfirmationModalComponent } from '../components/confirmation-modal/confirmation-modal.component';
+import { NgbDateStruct, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { ConfirmationModalComponent } from '../../features/modals/confirmation-modal/confirmation-modal.component';
+import { FileShareModalComponent } from '../../features/modals/file-share-modal/file-share-modal.component';
+import { DatePickerModalComponent } from '../../features/modals/date-picker-modal/date-picker-modal.component';
+import { DateUtils } from '../utils/date-utils';
+import { AppFile } from '../models/app-file.model';
 
 @Injectable({
   providedIn: 'root'
@@ -33,6 +37,49 @@ export class ModalService {
       return false;
     }
   }
+
+  addFileShareModal(options: {
+    filesToShare: AppFile[];
+    title?: string;
+  }) {
+    this.modalService.dismissAll(null);
+    try {
+      const modalRef = this.modalService.open(FileShareModalComponent, { centered: true });
+      const componentInstance = modalRef.componentInstance as FileShareModalComponent;
+
+      componentInstance.filesToShare.set(options.filesToShare);
+      if (options.title) componentInstance.title.set(options.title);
+
+      return modalRef.result.catch(() => null);
+    } catch {
+      return new Promise(() => null);
+    }
+  }
+
+  pickDateTime(options: {
+    title?: string,
+    initialDate?: Date,
+    minDate?: Date,
+    maxDate?: Date,
+    pickTime?: boolean,
+    initialTime?: { hour: number; minute: number; second: number }
+  }): Promise<Date | null> {
+    try {
+      const modalRef = this.modalService.open(DatePickerModalComponent, { centered: true });
+      const componentInstance = modalRef.componentInstance as DatePickerModalComponent;
+      componentInstance.date.set(options.initialDate ? DateUtils.dateToStruct(options.initialDate) : DateUtils.dateToStruct(new Date()));
+      componentInstance.minDate.set(options.minDate ? DateUtils.dateToStruct(options.minDate) : null);
+      componentInstance.maxDate.set(options.maxDate ? DateUtils.dateToStruct(options.maxDate) : null);
+      componentInstance.pickTime.set(options.pickTime ?? true);
+      componentInstance.time.set(options.initialTime ?? { hour: 12, minute: 0, second: 0 });
+      if (options.title) componentInstance.title.set(options.title);
+
+      return modalRef.result.catch(() => null); // resolves null on cancel
+    } catch {
+      return new Promise(() => null);
+    }
+  }
+
 
   constructor() { }
 }
