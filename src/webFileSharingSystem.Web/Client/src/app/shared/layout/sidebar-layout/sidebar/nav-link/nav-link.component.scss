@@ -9,3 +9,7 @@ a:hover:not(.active) {
 a:hover {
   transform: translateX(5px);
 }
+
+.nav-link.link-body-emphasis:focus {
+  color:  var(--bs-emphasis-color) !important;
+}
