@@ -27,7 +27,7 @@ namespace webFileSharingSystem.Web.Controllers
         }
 
         [HttpPost]
-        [Route("{fileId:int}/Add")]
+        [Route("{fileId:int}")]
         public async Task<ActionResult> AddShareAsync(int fileId, [FromBody] AddFileShareRequest request,
             CancellationToken cancellationToken = default)
         {
@@ -48,35 +48,43 @@ namespace webFileSharingSystem.Web.Controllers
                     .FindAsync(new FindSharesByWithUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
                 .SingleOrDefault();
 
-            if (request.Update is null)
+            if (existingShare is not null) return BadRequest("This file is already shared with that user");
+
+            var newShare = new Share
             {
-                if (existingShare is not null) return BadRequest("File is already shared with that user");
-                
-                    _unitOfWork.Repository<Share>().Add(new Share
-                    {
-                        SharedByUserId = userId!.Value,
-                        SharedWithUserId = applicationUser.Id,
-                        FileId = fileId,
-                        AccessMode = request.AccessMode,
-                        ValidUntil = request.AccessDuration is null ? DateTime.MaxValue : DateTime.UtcNow + XmlConvert.ToTimeSpan(request.AccessDuration)
-                    });
+                SharedByUserId = userId!.Value,
+                SharedWithUserId = applicationUser.Id,
+                FileId = fileId,
+                AccessMode = request.AccessMode,
+                ValidUntil = request.ShareValidTo ?? DateTime.MaxValue,
+            };
+            _unitOfWork.Repository<Share>().Add(newShare);
 
-                fileToShare.IsShared = true;
-                _unitOfWork.Repository<File>().Update(fileToShare);
-            }
-            else
-            {
-                if (existingShare is null) return BadRequest("This share does not exist, so can not be updated");
-
-                existingShare.AccessMode = request.AccessMode;
-                existingShare.ValidUntil = request.AccessDuration is null ? DateTime.MaxValue : DateTime.UtcNow + XmlConvert.ToTimeSpan(request.AccessDuration);
-
-                _unitOfWork.Repository<Share>().Update(existingShare);
-            }
-
-            if (await _unitOfWork.Complete(cancellationToken) > 0) return Ok();
+            fileToShare.IsShared = true;
+            _unitOfWork.Repository<File>().Update(fileToShare);
+            
+            if (await _unitOfWork.Complete(cancellationToken) > 0) return Ok(newShare);
 
             return BadRequest("Problem with adding share");
+        }
+
+        [HttpPut]
+        [Route("{shareId:int}")]
+        public async Task<ActionResult> UpdateShareAsync(int shareId, [FromBody] UpdateFileShareRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var userId = _currentUserService.UserId;
+
+            var share = await _unitOfWork.Repository<Share>().FindByIdAsync(shareId, cancellationToken);
+            if (share is null) return BadRequest("Share doesn't exist or you do not have access");
+            
+            share.AccessMode = request.AccessMode;
+            share.ValidUntil = request.ShareValidTo ?? DateTime.MaxValue;
+
+            _unitOfWork.Repository<Share>().Update(share);
+            
+            if (await _unitOfWork.Complete(cancellationToken) > 0) return Ok(share);
+            return BadRequest("Problem with updating share");
         }
         
         [HttpGet]
@@ -106,8 +114,11 @@ namespace webFileSharingSystem.Web.Controllers
             if (await _unitOfWork.Repository<Share>().CountAsync(share => share.FileId == shareToRemove.FileId) <= 1)
             {
                 var fileToStopShare = await _unitOfWork.Repository<File>().FindByIdAsync(shareToRemove.FileId);
-                fileToStopShare.IsShared = false;
-                _unitOfWork.Repository<File>().Update(fileToStopShare);
+                if (fileToStopShare is not null)
+                {
+                    fileToStopShare.IsShared = false;
+                    _unitOfWork.Repository<File>().Update(fileToStopShare);
+                }
             }
 
             if (await _unitOfWork.Complete() > 0) return Ok();
@@ -129,8 +140,11 @@ namespace webFileSharingSystem.Web.Controllers
             if (await _unitOfWork.Repository<Share>().CountAsync(share => share.FileId == shareToDelete.FileId) <= 1)
             {
                 var fileToStopShare = await _unitOfWork.Repository<File>().FindByIdAsync(shareToDelete.FileId);
-                fileToStopShare.IsShared = false;
-                _unitOfWork.Repository<File>().Update(fileToStopShare);
+                if (fileToStopShare is not null)
+                {
+                    fileToStopShare.IsShared = false;
+                    _unitOfWork.Repository<File>().Update(fileToStopShare);
+                }
             }
 
             if (await _unitOfWork.Complete() > 0) return Ok();

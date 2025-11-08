@@ -1,4 +1,5 @@
-﻿using webFileSharingSystem.Core.Entities;
+﻿using System;
+using webFileSharingSystem.Core.Entities;
 
 namespace webFileSharingSystem.Web.Contracts.Requests
 {
@@ -6,7 +7,6 @@ namespace webFileSharingSystem.Web.Contracts.Requests
     {
         public string UserNameToShareWith { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
-        public string? AccessDuration { get; set; }
-        public bool? Update { get; set; }
+        public DateTime? ShareValidTo { get; set; }
     }
 }
