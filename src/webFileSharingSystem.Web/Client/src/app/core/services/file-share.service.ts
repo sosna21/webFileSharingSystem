@@ -8,10 +8,9 @@ import { bulkAction } from '../utils/bulk-action-util';
 import { MessageSeverity } from '../models/toast-info.model';
 import { FileService } from './file.service';
 import { ToastService } from './toast.service';
-import { share } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FileShareService {
   private readonly sharesUrl = `${environment.apiUrl}/Share`;
@@ -20,37 +19,56 @@ export class FileShareService {
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
 
-  constructor() { }
+  constructor() {}
 
   shareFile(file: AppFile, shareRequest: AddShareRequest) {
-    const api = `${this.sharesUrl}/${file.id}/Add`;
+    const api = `${this.sharesUrl}/${file.id}`;
     return this.http.post(api, shareRequest);
   }
 
   async shareFilesWithFeedback(files: AppFile[]) {
-    const shareTitle = files.length === 1 ? `Share '${files[0].fileName}'` : `Share ${files.length} files`;
-    const shareResult = await this.modalService.addFileShareModal({ title: shareTitle, filesToShare: files });
-    if (!shareResult) return;
+    const shareTitle =
+      files.length === 1
+        ? `Share '${files[0].fileName}'`
+        : `Share ${files.length} files`;
+    const shareResults: AddShareRequest[] | null =
+      await this.modalService.addFileShareModal({
+        title: shareTitle,
+        filesToShare: files,
+      });
+    if (!shareResults) return;
 
-    //TODO
-    // Combine shareResult users to share with each file in bulk action
-    //const shareRequests = ...
+    // Combine each shareResult with each file
+    const shareRequests: { file: AppFile; shareRequest: AddShareRequest }[] =
+      files.flatMap((file) =>
+        shareResults.map((sr) => ({ file, shareRequest: sr }))
+      );
 
-    // bulkAction<{file: AppFile, shareRequest: AddShareRequest}>({
-    //   items: ...,
-    //   action: file => this.shareFile(file, shareResult),
-    //   beforeStart: file => this.fileService.updateFile(file, { loading: true }),
-    //   onSuccess: file => this.fileService.turnOffFileLoading(file),
-    //   onError: (file, err) => {
-    //     this.toast.show(
-    //       'Failed to share file',
-    //       err instanceof Error ? err.message : String(err),
-    //       MessageSeverity.error
-    //     );
-    //     this.fileService.turnOffFileLoading(file);
-    //   },
-    //   toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-    //   successMessage: count => `Shared ${count} file(s) successfully`
-    // });
+    bulkAction<{ file: AppFile; shareRequest: AddShareRequest }>({
+      items: shareRequests,
+      action: (item) => this.shareFile(item.file, item.shareRequest),
+      beforeStart: (item) =>
+        this.fileService.updateFile(item.file, { loading: true }),
+      onSuccess: (item) =>
+        this.fileService.updateFile(item.file, {
+          loading: false,
+          isShared: true,
+        }),
+      onError: (item, err) => {
+        this.toast.show(
+          'Failed to share file',
+          err instanceof Error ? err.message : String(err),
+          MessageSeverity.error
+        );
+        this.fileService.turnOffFileLoading(item.file);
+      },
+      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
+      successMessage: (count, updated) => {
+        if (count === 1) {
+          return `Shared '${updated[0].file.fileName}' with ${updated[0].shareRequest.UserNameToShareWith}`;
+        }
+        return `Files shared successfully`;
+      },
+    });
   }
 }

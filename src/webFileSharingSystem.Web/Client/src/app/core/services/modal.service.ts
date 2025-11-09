@@ -1,10 +1,11 @@
 import { inject, Injectable } from '@angular/core';
-import { NgbDateStruct, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ConfirmationModalComponent } from '../../features/modals/confirmation-modal/confirmation-modal.component';
 import { FileShareModalComponent } from '../../features/modals/file-share-modal/file-share-modal.component';
 import { DatePickerModalComponent } from '../../features/modals/date-picker-modal/date-picker-modal.component';
 import { DateUtils } from '../utils/date-utils';
 import { AppFile } from '../models/app-file.model';
+import { AddShareRequest } from '../models/add-share-request.model';
 
 @Injectable({
   providedIn: 'root'
@@ -41,7 +42,7 @@ export class ModalService {
   addFileShareModal(options: {
     filesToShare: AppFile[];
     title?: string;
-  }) {
+  }): Promise<AddShareRequest[] | null> {
     this.modalService.dismissAll(null);
     try {
       const modalRef = this.modalService.open(FileShareModalComponent, { centered: true });

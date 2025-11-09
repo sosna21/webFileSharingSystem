@@ -3,5 +3,5 @@ import { ShareAccessMode } from "./share-access-mode.model";
 export interface AddShareRequest {
   UserNameToShareWith: string,
   AccessMode: ShareAccessMode,
-  AccessDuration?: Date,
+  ShareValidTo?: Date,
 }

@@ -89,7 +89,7 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
 
-            (Result<OperationResult> result, IEnumerable<Share> shares) = await _shareService.GetSharesForFileAsync(fileId, userId!.Value);
+            (_, IEnumerable<Share> shares) = await _shareService.GetSharesForFileAsync(fileId, userId!.Value);
 
             var shareResponses = new List<ShareResponse>();
             foreach (var share in shares)
