@@ -39,7 +39,9 @@ namespace webFileSharingSystem.Web.Controllers
                 request.AccessMode, request.ShareValidTo, userId!.Value, cancellationToken);
 
             if (!result.Succeeded) return result.ToActionResult(result.Errors.Length > 0 ? result.Errors[0] : "Problem with adding share");
-            return Ok(share);
+            var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(share!.SharedWithUserId, cancellationToken))!.UserName;
+            var response = ToShareResponse(share, userName!);
+            return Ok(response);
         }
 
         [HttpPut]
@@ -48,8 +50,11 @@ namespace webFileSharingSystem.Web.Controllers
             CancellationToken cancellationToken = default)
         {
             var userId = _currentUserService.UserId;
-            var result = await _shareService.UpdateShareAsync(shareId, request.AccessMode, request.ShareValidTo, userId!.Value, cancellationToken);
-            return result.ToActionResult("Problem with updating share");
+            (Result<OperationResult> result, Share? updatedShare) = await _shareService.UpdateShareAsync(shareId, request.AccessMode, request.ShareValidTo, userId!.Value, cancellationToken);
+            if (!result.Succeeded) return result.ToActionResult("Problem with updating share");
+            var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(updatedShare!.SharedWithUserId, cancellationToken))!.UserName;
+            var response = ToShareResponse(updatedShare, userName!);
+            return Ok(response);
         }
         
         [HttpGet]
@@ -90,18 +95,13 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
 
             (_, IEnumerable<Share> shares) = await _shareService.GetSharesForFileAsync(fileId, userId!.Value);
+            
 
             var shareResponses = new List<ShareResponse>();
             foreach (var share in shares)
             {
                 var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(share.SharedWithUserId))!.UserName;
-                shareResponses.Add(new ShareResponse
-                {
-                    ShareId = share.Id,
-                    SharedWithUserName = userName!,
-                    AccessMode = share.AccessMode,
-                    ValidUntil = share.ValidUntil
-                });
+                shareResponses.Add(ToShareResponse(share, userName!));
             }
 
             return shareResponses;
@@ -133,6 +133,17 @@ namespace webFileSharingSystem.Web.Controllers
                 SharedUserName = sharedFile.SharedUserName,
                 AccessMode = sharedFile.AccessMode,
                 ValidUntil = sharedFile.ValidUntil
+            };
+        }
+
+        private static ShareResponse ToShareResponse(Share share, string userName)
+        {
+            return new ShareResponse
+            {
+                ShareId = share.Id,
+                SharedWithUserName = userName,
+                AccessMode = share.AccessMode,
+                ValidUntil = share.ValidUntil
             };
         }
     }

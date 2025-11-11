@@ -6,6 +6,10 @@ import { DatePickerModalComponent } from '../../features/modals/date-picker-moda
 import { DateUtils } from '../utils/date-utils';
 import { AppFile } from '../models/app-file.model';
 import { AddShareRequest } from '../models/add-share-request.model';
+import { FileSharesManagementModalComponent } from '../../features/modals/file-shares-management-modal/file-shares-management-modal.component';
+import { EditFileShareModalComponent } from '../../features/modals/edit-file-share-modal/edit-file-share-modal.component';
+import { Share } from '../models/share.model';
+import { UpdateFileShareRequest } from '../models/update-share-request.model';
 
 @Injectable({
   providedIn: 'root'
@@ -49,6 +53,26 @@ export class ModalService {
       const componentInstance = modalRef.componentInstance as FileShareModalComponent;
 
       componentInstance.filesToShare.set(options.filesToShare);
+      if (options.title) componentInstance.title.set(options.title);
+
+      return modalRef.result.catch(() => null);
+    } catch {
+      return new Promise(() => null);
+    }
+  }
+
+  editFileShareModal(options: {
+    shareToModify: Share;
+    title?: string;
+  }, closeOtherModals = true): Promise<UpdateFileShareRequest | null> {
+    if (closeOtherModals) {
+      this.modalService.dismissAll(null);
+    }
+    try {
+      const modalRef = this.modalService.open(EditFileShareModalComponent, { centered: true });
+      const componentInstance = modalRef.componentInstance as EditFileShareModalComponent;
+
+      componentInstance.shareToModify.set(options.shareToModify);
       if (options.title) componentInstance.title.set(options.title);
 
       return modalRef.result.catch(() => null);
