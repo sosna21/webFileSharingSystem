@@ -22,6 +22,8 @@ namespace webFileSharingSystem.Core.Services
         public async Task<(Result<OperationResult>, Share?)> AddShareAsync(int fileId, string userNameToShareWith, ShareAccessMode accessMode,
             DateTime? validUntil, int currentUserId, CancellationToken cancellationToken = default)
         {
+            if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40)) return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
+
             var applicationUser = (await _unitOfWork.Repository<ApplicationUser>()
                     .FindAsync(new FindUserByUserNameSpecs(userNameToShareWith), cancellationToken))
                 .SingleOrDefault();
@@ -57,11 +59,12 @@ namespace webFileSharingSystem.Core.Services
                 : (Result.Failure(OperationResult.Exception, "Problem with adding share"), null);
         }
 
-        public async Task<Result<OperationResult>> UpdateShareAsync(int shareId, ShareAccessMode accessMode, DateTime? validUntil,
+        public async Task<(Result<OperationResult>, Share? updatedShare)> UpdateShareAsync(int shareId, ShareAccessMode accessMode, DateTime? validUntil,
             int currentUserId, CancellationToken cancellationToken = default)
         {
+            if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40)) return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
             var share = await _unitOfWork.Repository<Share>().FindByIdAsync(shareId, cancellationToken);
-            if (share is null) return Result.Failure(OperationResult.BadRequest, "Share doesn't exist or you do not have access");
+            if (share is null) return (Result.Failure(OperationResult.BadRequest, "Share doesn't exist or you do not have access"), null);
 
             share.AccessMode = accessMode;
             share.ValidUntil = validUntil ?? DateTime.MaxValue;
@@ -69,8 +72,8 @@ namespace webFileSharingSystem.Core.Services
             _unitOfWork.Repository<Share>().Update(share);
 
             return await _unitOfWork.Complete(cancellationToken) > 0
-                ? Result.Success<OperationResult>()
-                : Result.Failure(OperationResult.Exception, "Problem with updating share");
+                ? (Result.Success<OperationResult>(), share)
+                : (Result.Failure(OperationResult.Exception, "Problem with updating share"), null);
         }
 
         public async Task<Result<OperationResult>> RemoveShareByFileIdAsync(int fileId, int userId, CancellationToken cancellationToken = default)

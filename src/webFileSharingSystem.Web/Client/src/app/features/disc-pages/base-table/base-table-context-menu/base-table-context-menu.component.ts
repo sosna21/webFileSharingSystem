@@ -24,6 +24,7 @@ export class BaseTableContextMenuComponent {
   readonly anySelectedFileIsUnFavourite = computed(() => this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed).some(file => !file.isFavourite));
   readonly mixedFileComplition = computed(() => !this.areAllFilesIncomplete() && !this.areAllFilesComplete());
   readonly showOpenFolder = computed(() => this.selectedFiles().length === 1 && this.selectedFiles()[0].isDirectory && this.selectedFiles()[0].fileStatus === FileStatus.Completed);
+  readonly showManageShares = computed(() => this.selectedFiles().length === 1 && this.selectedFiles()[0].fileStatus === FileStatus.Completed && this.selectedFiles()[0].isShared);
 
   readonly rename = output<AppFile>();
   readonly toggleFavourite = output<boolean>();
@@ -36,6 +37,7 @@ export class BaseTableContextMenuComponent {
   readonly copy = output<AppFile[]>();
   readonly move = output<AppFile[]>();
   readonly share = output<AppFile[]>();
+  readonly manageShares = output<AppFile>();
   readonly generateLink = output();
   readonly openFolder = output<AppFile>();
 

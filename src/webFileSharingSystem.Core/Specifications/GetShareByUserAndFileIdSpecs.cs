@@ -1,4 +1,5 @@
-﻿using webFileSharingSystem.Core.Entities;
+﻿using System;
+using webFileSharingSystem.Core.Entities;
 
 namespace webFileSharingSystem.Core.Specifications
 {
@@ -7,7 +8,8 @@ namespace webFileSharingSystem.Core.Specifications
         public GetShareByUserAndFileIdSpecs(int userId, int fileId)
             : base(share => 
                 share.SharedByUserId == userId 
-                && share.FileId == fileId)
+                && share.FileId == fileId
+                )
         { }
     }
 }

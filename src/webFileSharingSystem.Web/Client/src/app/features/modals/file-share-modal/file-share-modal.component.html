@@ -39,8 +39,8 @@
           type="radio"
           name="permission"
           id="readOnly"
-          [checked]="selectedPermission() === 'read-only'"
-          (change)="setPermission('read-only')"
+          [checked]="selectedPermission() === ShareAccessMode.ReadOnly"
+          (change)="setPermission(ShareAccessMode.ReadOnly)"
         />
         <label class="form-check-label" for="readOnly">
           <strong>Read Only</strong>
@@ -53,8 +53,8 @@
           type="radio"
           name="permission"
           id="readWrite"
-          [checked]="selectedPermission() === 'read-write'"
-          (change)="setPermission('read-write')"
+          [checked]="selectedPermission() === ShareAccessMode.ReadWrite"
+          (change)="setPermission(ShareAccessMode.ReadWrite)"
         />
         <label class="form-check-label" for="readWrite">
           <strong>Read and Write</strong>
@@ -69,8 +69,8 @@
           type="radio"
           name="permission"
           id="fullControl"
-          [checked]="selectedPermission() === 'full-control'"
-          (change)="setPermission('full-control')"
+          [checked]="selectedPermission() === ShareAccessMode.FullAccess"
+          (change)="setPermission(ShareAccessMode.FullAccess)"
         />
         <label class="form-check-label" for="fullControl">
           <strong>Full Control</strong>

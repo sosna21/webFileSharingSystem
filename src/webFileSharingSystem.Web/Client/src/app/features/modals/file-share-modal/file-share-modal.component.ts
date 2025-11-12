@@ -19,6 +19,7 @@ export class FileShareModalComponent {
   readonly activeModal = inject(NgbActiveModal);
   readonly modalService = inject(ModalService);
   readonly toast = inject(ToastService);
+  readonly ShareAccessMode = ShareAccessMode;
 
   readonly filesToShare = model<AppFile[]>([]);
   readonly title = model('Share file');
@@ -36,13 +37,11 @@ export class FileShareModalComponent {
   );
 
   // Permission options
-  readonly selectedPermission = signal<
-    'read-only' | 'read-write' | 'full-control'
-  >('read-only');
+  readonly selectedPermission = signal<ShareAccessMode>(ShareAccessMode.ReadOnly);
 
   // Share duration
   readonly shareDuration = signal<number>(24); // Default 24 hours
-  setPermission(permission: 'read-only' | 'read-write' | 'full-control') {
+  setPermission(permission: ShareAccessMode) {
     this.selectedPermission.set(permission);
   }
 
@@ -57,11 +56,7 @@ export class FileShareModalComponent {
     const usersToShareWith = this.shareWith().split(',').map(user => user.trim()).filter(user => user);
     const shareRequests: AddShareRequest[] = usersToShareWith.map(user => ({
       UserNameToShareWith: user,
-      AccessMode: this.selectedPermission() === 'read-only'
-        ? ShareAccessMode.ReadOnly
-        : this.selectedPermission() === 'read-write'
-        ? ShareAccessMode.ReadWrite
-        : ShareAccessMode.FullAccess,
+      AccessMode: this.selectedPermission(),
       ShareValidTo: shareUntil ?? undefined
     }));
 
@@ -71,6 +66,10 @@ export class FileShareModalComponent {
   async onDurationChange($event: Event) {
     this.selectedCustomDuration.set(null);
     if (this.shareDuration() !== 0) return;
+    await this.pickCustomDateTime();
+  }
+
+  private async pickCustomDateTime() {
     this.activeModal.update({ modalDialogClass: 'd-none' });
     const result = await this.modalService.pickDateTime({
       title: 'Select Share Expiration Date and Time',

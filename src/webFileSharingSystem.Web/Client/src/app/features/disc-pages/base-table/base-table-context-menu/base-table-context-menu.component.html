@@ -136,9 +136,19 @@ selectedFiles().length;
 
   <div class="dropdown-divider"></div>
 
+  @if (showManageShares()) {
+  <button
+    ngbDropdownItem
+    (click)="manageShares.emit(selectedFile); menu.close()"
+  >
+    <i class="bi bi-share me-1 text-primary"></i> Manage shares
+  </button>
+  }@else {
   <button ngbDropdownItem (click)="shareClicked(); menu.close()">
     <i class="bi bi-share me-1 text-primary"></i> Share
   </button>
+  }
+
   <button ngbDropdownItem (click)="generateLink.emit(); menu.close()">
     <i class="bi bi-link me-1 text-primary-emphasis"></i> Generate share link
   </button>

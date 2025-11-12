@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
@@ -51,25 +50,25 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             (Result<OperationResult> result, Share? updatedShare) = await _shareService.UpdateShareAsync(shareId, request.AccessMode, request.ShareValidTo, userId!.Value, cancellationToken);
-            if (!result.Succeeded) return result.ToActionResult("Problem with updating share");
+            if (!result.Succeeded) return result.ToActionResult(result.Errors.Length > 0 ? result.Errors[0] : "Problem with updating share");
             var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(updatedShare!.SharedWithUserId, cancellationToken))!.UserName;
             var response = ToShareResponse(updatedShare, userName!);
             return Ok(response);
         }
-        
+
         [HttpGet]
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllSharedFilenamesInFolder(int parentId = -1)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
             var userId = _currentUserService.UserId;
             //TODO temporary solution - resolve in another way
-            var sharedFiles = _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, dbParentId, 
+            var sharedFiles = _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, dbParentId,
                 new GetSharedFilesSpec<SharedFile>(dbParentId, ""));
             return await sharedFiles.Select(e => e.FileName).ToListAsync();
         }
-        
-        
+
+
         [HttpDelete]
         [Route("RemoveShare/{fileId:int}")]
         public async Task<ActionResult> RemoveShare(int fileId)
@@ -80,11 +79,11 @@ namespace webFileSharingSystem.Web.Controllers
         }
 
         [HttpDelete]
-        [Route("Delete/{id:int}")]
-        public async Task<ActionResult> DeleteShare(int id)
+        [Route("{shareId:int}")]
+        public async Task<ActionResult> DeleteShare(int shareId)
         {
             var userId = _currentUserService.UserId;
-            var result = await _shareService.DeleteShareAsync(id, userId!.Value);
+            var result = await _shareService.DeleteShareAsync(shareId, userId!.Value);
             return result.ToActionResult("Problem with deleting the share");
         }
 
@@ -95,7 +94,6 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
 
             (_, IEnumerable<Share> shares) = await _shareService.GetSharesForFileAsync(fileId, userId!.Value);
-            
 
             var shareResponses = new List<ShareResponse>();
             foreach (var share in shares)
@@ -106,7 +104,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             return shareResponses;
         }
-        
+
         [HttpGet]
         [Route("GetSharedWithMe")]
         public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
@@ -115,7 +113,7 @@ namespace webFileSharingSystem.Web.Controllers
             return await _unitOfWork.Repository<SharedFile>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     ToSharedFileResponse,
-                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId, 
+                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
                         new GetSharedFilesSpec<SharedFile>(request.ParentId, request.SearchedPhrase)));
         }
 
@@ -143,7 +141,7 @@ namespace webFileSharingSystem.Web.Controllers
                 ShareId = share.Id,
                 SharedWithUserName = userName,
                 AccessMode = share.AccessMode,
-                ValidUntil = share.ValidUntil
+                ValidUntil = share.ValidUntil == DateTime.MaxValue ? null : share.ValidUntil
             };
         }
     }

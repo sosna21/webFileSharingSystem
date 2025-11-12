@@ -23,8 +23,10 @@ export class ModalService {
     confirmText?: string;
     cancelText?: string;
     showPermanentWarning?: boolean;
-  }) {
-    this.modalService.dismissAll(null);
+  }, closeOtherModals = true): Promise<boolean> {
+    if (closeOtherModals) {
+      this.modalService.dismissAll(null);
+    }
     try {
       const modalRef = this.modalService.open(ConfirmationModalComponent, { centered: true });
       const componentInstance = modalRef.componentInstance as ConfirmationModalComponent;
@@ -43,11 +45,31 @@ export class ModalService {
     }
   }
 
+  manageSharesModal(options: {
+    sharedFile: AppFile;
+    title?: string;
+  }) {
+    this.modalService.dismissAll(null);
+    try {
+      const modalRef = this.modalService.open(FileSharesManagementModalComponent, { centered: true, size: 'lg', scrollable: true });
+      const componentInstance = modalRef.componentInstance as FileSharesManagementModalComponent;
+
+      componentInstance.sharedFile.set(options.sharedFile);
+      if (options.title) componentInstance.title.set(options.title);
+
+      return modalRef.result.catch(() => null);
+    } catch {
+      return new Promise(() => null);
+    }
+  }
+
   addFileShareModal(options: {
     filesToShare: AppFile[];
     title?: string;
-  }): Promise<AddShareRequest[] | null> {
-    this.modalService.dismissAll(null);
+  }, closeOtherModals = true): Promise<AddShareRequest[] | null> {
+    if (closeOtherModals) {
+      this.modalService.dismissAll(null);
+    }
     try {
       const modalRef = this.modalService.open(FileShareModalComponent, { centered: true });
       const componentInstance = modalRef.componentInstance as FileShareModalComponent;
@@ -104,7 +126,4 @@ export class ModalService {
       return new Promise(() => null);
     }
   }
-
-
-  constructor() { }
 }

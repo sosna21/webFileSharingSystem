@@ -1,0 +1,92 @@
+<div class="modal-header bg-primary-subtle d-flex">
+  <h4 class="modal-title">{{ title() }}</h4>
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss()"
+  ></button>
+</div>
+
+<div class="modal-body d-grid">
+  <div class="d-flex justify-content-center gap-2 align-items-center">
+    Select existing share to edit or
+    <button class="btn btn-sm btn-primary" (click)="openAddShareModal()">
+      Create new
+    </button>
+  </div>
+  <hr />
+  <div
+    class="table-responsive p-3 rounded"
+    sty
+    style="
+      min-height: 30vh;
+      background-color: rgba(var(--bs-secondary-rgb), 0.1);
+    "
+  >
+    <div class="table-scroll-container overflow-auto h-100">
+      @if (sharesResource.isLoading()) {
+      <div class="d-grid h-100 justify-content-center align-items-center">
+        <div class="spinner-border ms-aut" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      }@else if (sharesResource.hasValue()) {
+      <table class="table table-sm table-hover mb-0">
+        <thead class="sticky-top">
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Shared with:</th>
+            <th scope="col">Access mode:</th>
+            <th scope="col">Valid until:</th>
+            <th scope="col" width="25%">Action:</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (share of sharesResource.value(); track share.shareId) {
+          <tr class="align-bottom">
+            <td>
+              <i
+                appClicableIcon
+                class="bi bi-x-circle text-danger fs-5"
+                (click)="deleteShare(share)"
+                ngbTooltip="Cancel share"
+                [openDelay]="300"
+              ></i>
+            </td>
+            <td>
+              {{ share.sharedWithUserName }}
+            </td>
+            <td>
+              {{ getAccessModeName(share.accessMode) }}
+            </td>
+            <td>
+              {{ getLocalised(share.validUntil) ?? "No expiration" }}
+            </td>
+            <td>
+              <button
+                class="btn btn-sm btn-outline-warning w-100"
+                (click)="openEditShareModal(share)"
+              >
+                Edit
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      }
+    </div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button
+    ngbAutofocus
+    type="button"
+    class="btn btn-secondary w-25"
+    (click)="activeModal.close(true)"
+  >
+    Exit
+  </button>
+</div>

@@ -2,14 +2,14 @@ import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 export interface BulkActionOptions<T> {
-  items: T[];
-  action: (item: T) => Observable<any>;
-  updateItem?: (item: T, changes: Partial<T>) => void;
-  onSuccess?: (item: T) => void;
-  onError?: (item: T, error: unknown) => void;
-  beforeStart?: (item: T) => void;
-  toast: (title: string, message: string, severity: any) => void;
-  successMessage: (count: number, items: T[]) => string;
+    items: T[];
+    action: (item: T) => Observable<any>;
+    updateItem?: (item: T, changes: Partial<T>) => void;
+    onSuccess?: (item: T) => void;
+    onError?: (item: T, error: any) => void;
+    beforeStart?: (item: T) => void;
+    toast: (title: string, message: string, severity: any) => void;
+    successMessage: (count: number, items: T[]) => string;
 }
 
 export function bulkAction<T>(opts: BulkActionOptions<T>) {

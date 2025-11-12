@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, linkedSignal, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { AppFile, FileStatus, ProgressStatus } from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
 import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { NgbDropdownModule, NgbModal, NgbTooltip, NgbTooltipModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDropdownModule, NgbTooltip, NgbTooltipModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
@@ -20,6 +20,7 @@ import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { FileUploadService } from '../../../core/services/file-upload.service';
 import { ActionType } from '../../../core/models/action-type.model';
 import { FileShareService } from '../../../core/services/file-share.service';
+import { ModalService } from '../../../core/services/modal.service';
 
 
 @Component({
@@ -43,6 +44,7 @@ export class BaseTableComponent {
   private readonly toast = inject(ToastService);
   private readonly uploadService = inject(FileUploadService);
   private readonly shareService = inject(FileShareService);
+  private readonly modalService = inject(ModalService);
 
   fileResource = this.fileService.fileResource;
   areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
@@ -125,8 +127,8 @@ export class BaseTableComponent {
         this.toast.show('File rename', 'File renamed successfully', MessageSeverity.success);
         this.updateFileWithNewData(file, { fileName: newFileName });
       },
-      error: (err: unknown) => {
-        this.toast.show('File rename', err instanceof Error ? err.message : String(err), MessageSeverity.error);
+      error: (err) => {
+        this.toast.show('File rename', err.error || String(err), MessageSeverity.error);
         this.cancelRename(file);
       }
     }).add(() => this.turnOffFileLoading(file));
@@ -192,7 +194,7 @@ export class BaseTableComponent {
       onError: (_, err) => {
         this.toast.show(
           'Favourite update failed',
-          err instanceof Error ? err.message : String(err),
+          err.error || String(err),
           MessageSeverity.error
         );
       },
@@ -208,6 +210,10 @@ export class BaseTableComponent {
           : `Removed ${count} files from favourites`;
       }
     });
+  }
+
+  showShareManagementModal(sharedFile: AppFile) {
+    this.modalService.manageSharesModal({ sharedFile: sharedFile, title: `Manage shares for file: '${sharedFile.fileName}'` });
   }
 
   shareFile(files: AppFile[]) {

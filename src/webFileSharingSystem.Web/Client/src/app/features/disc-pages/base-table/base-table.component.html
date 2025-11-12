@@ -6,6 +6,7 @@
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
   (delete)="deleteFiles($event)"
   (share)="shareFile($event)"
+  (manageShares)="showShareManagementModal($event)"
   (selectFolder)="selectFolder($event)"
   (pauseUpload)="stopFilesUpload($event)"
   (resumeUpload)="continueFilesUpload($event)"
@@ -56,7 +57,6 @@
         <tr>
           <td colspan="100%" class="text-center fs-5">
             @if (files().length === 0 && !fileResource.isLoading()) {
-            <!-- <i class="bi bi-inbox fs-1"></i> -->
             <div>No files found.</div>
             }
           </td>
@@ -224,7 +224,11 @@
           <td class="d-none d-md-table-cell align-middle">
             <i
               appClicableIcon
-              (click)="shareFile([file])"
+              (click)="
+                file.isShared
+                  ? showShareManagementModal(file)
+                  : shareFile([file])
+              "
               [disabled]="file.fileStatus === FileStatus.Incomplete"
               class="bi bi-share-fill fs-5"
               [class.text-primary]="file.isShared"

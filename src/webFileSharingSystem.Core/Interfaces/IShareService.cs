@@ -12,7 +12,7 @@ namespace webFileSharingSystem.Core.Interfaces
         Task<(Result<OperationResult>, Share?)> AddShareAsync(int fileId, string userNameToShareWith, ShareAccessMode accessMode,
             DateTime? validUntil, int currentUserId, CancellationToken cancellationToken = default);
 
-        Task<Result<OperationResult>> UpdateShareAsync(int shareId, ShareAccessMode accessMode, DateTime? validUntil,
+        Task<(Result<OperationResult>, Share? updatedShare)> UpdateShareAsync(int shareId, ShareAccessMode accessMode, DateTime? validUntil,
             int currentUserId, CancellationToken cancellationToken = default);
 
         Task<Result<OperationResult>> RemoveShareByFileIdAsync(int fileId, int userId, CancellationToken cancellationToken = default);
