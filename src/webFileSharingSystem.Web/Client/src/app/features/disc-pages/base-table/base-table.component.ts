@@ -1,19 +1,37 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild, viewChildren } from '@angular/core';
-import { AppFile, FileStatus, ProgressStatus } from '../../../core/models/app-file.model';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+  viewChildren,
+} from '@angular/core';
+import {
+  AppFile,
+  FileStatus,
+  ProgressStatus,
+} from '../../../core/models/app-file.model';
 import { FileService } from '../../../core/services/file.service';
-import { FileToIconPipe } from "../../../core/pipes/file-to-icon.pipe";
+import { FileToIconPipe } from '../../../core/pipes/file-to-icon.pipe';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { NgbDropdownModule, NgbTooltip, NgbTooltipModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
+import {
+  NgbDropdownModule,
+  NgbTooltip,
+  NgbTooltipModule,
+  NgbProgressbarModule,
+} from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
-import { FileSizePipe } from "../../../core/pipes/file-size.pipe";
+import { FileSizePipe } from '../../../core/pipes/file-size.pipe';
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
-import { BaseTableContextMenuComponent } from "./base-table-context-menu/base-table-context-menu.component";
+import { BaseTableContextMenuComponent } from './base-table-context-menu/base-table-context-menu.component';
 import { bulkAction } from '../../../core/utils/bulk-action-util';
-import { DragPreviewComponent } from "./drag-preview/drag-preview.component";
+import { DragPreviewComponent } from './drag-preview/drag-preview.component';
 import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
@@ -21,13 +39,26 @@ import { FileUploadService } from '../../../core/services/file-upload.service';
 import { ActionType } from '../../../core/models/action-type.model';
 import { FileShareService } from '../../../core/services/file-share.service';
 import { ModalService } from '../../../core/services/modal.service';
-
+import { DownloadService } from '../../../core/services/download.service';
+import { lastValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-base-table',
-  imports: [CommonModule, DecimalPipe, FileToIconPipe, NgbTooltipModule, NgbDropdownModule, TimeagoModule,
-    FileSizePipe, ClicableIconDirective, FormsModule, SelectFilenameDirective, BaseTableContextMenuComponent,
-    DragPreviewComponent, NgbProgressbarModule],
+  imports: [
+    CommonModule,
+    DecimalPipe,
+    FileToIconPipe,
+    NgbTooltipModule,
+    NgbDropdownModule,
+    TimeagoModule,
+    FileSizePipe,
+    ClicableIconDirective,
+    FormsModule,
+    SelectFilenameDirective,
+    BaseTableContextMenuComponent,
+    DragPreviewComponent,
+    NgbProgressbarModule,
+  ],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,26 +66,29 @@ import { ModalService } from '../../../core/services/modal.service';
     class: 'h-100',
     style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
-  }
+  },
 })
 export class BaseTableComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
+  private readonly downloadService = inject(DownloadService);
   private readonly toast = inject(ToastService);
   private readonly uploadService = inject(FileUploadService);
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
 
   fileResource = this.fileService.fileResource;
-  areAllCheckboxesChecked = computed(() => this.files().length > 0 && this.files().every(file => file.checked));
+  areAllCheckboxesChecked = computed(
+    () => this.files().length > 0 && this.files().every((file) => file.checked)
+  );
   files = this.fileService.files;
   selectedFiles = this.fileService.selectedFiles;
   filesMarkedForAction = this.fileService.waitingForAction;
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(BaseTableContextMenuComponent);
-  contextMenuPosition = signal<{ x: number, y: number }>({ x: 0, y: 0 });
+  contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   lastSelectedFileId = signal<number | null>(null);
   currentDirectoryId = this.fileService.parentId;
@@ -72,13 +106,17 @@ export class BaseTableComponent {
 
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
       event.preventDefault();
-      this.fileService.files.update(files => files.map(f => ({ ...f, checked: true })));
+      this.fileService.files.update((files) =>
+        files.map((f) => ({ ...f, checked: true }))
+      );
     }
-  };
+  }
 
   checkAllCheckBox(ev: Event) {
     const target = ev.target as HTMLInputElement;
-    this.fileService.files.update(files => files.map(file => ({ ...file, checked: target.checked })));
+    this.fileService.files.update((files) =>
+      files.map((file) => ({ ...file, checked: target.checked }))
+    );
   }
 
   isFileUploadCompleted(file: AppFile) {
@@ -91,7 +129,9 @@ export class BaseTableComponent {
 
   // Rename file
   initRename(file: AppFile) {
-    this.fileService.files.update(files => files.map(f => f === file ? { ...f, rename: true } : f));
+    this.fileService.files.update((files) =>
+      files.map((f) => (f === file ? { ...f, rename: true } : f))
+    );
   }
 
   private turnOffFileLoading(file: AppFile) {
@@ -106,7 +146,11 @@ export class BaseTableComponent {
     newFileName = newFileName.trim();
 
     if (newFileName === '') {
-      this.toast.show('File rename', 'File name cannot be empty', MessageSeverity.error);
+      this.toast.show(
+        'File rename',
+        'File name cannot be empty',
+        MessageSeverity.error
+      );
       this.cancelRename(file);
       return;
     }
@@ -114,24 +158,39 @@ export class BaseTableComponent {
       this.cancelRename(file);
       return;
     }
-    if (this.files().some(f => f.fileName === newFileName)) {
-      this.toast.show('File rename', 'File with this name already exists', MessageSeverity.error);
+    if (this.files().some((f) => f.fileName === newFileName)) {
+      this.toast.show(
+        'File rename',
+        'File with this name already exists',
+        MessageSeverity.error
+      );
       this.cancelRename(file);
       return;
     }
 
     this.updateFile(file, { loading: true, rename: false });
 
-    this.fileService.renameFile(file.id, newFileName).subscribe({
-      next: () => {
-        this.toast.show('File rename', 'File renamed successfully', MessageSeverity.success);
-        this.updateFileWithNewData(file, { fileName: newFileName });
-      },
-      error: (err) => {
-        this.toast.show('File rename', err.error || String(err), MessageSeverity.error);
-        this.cancelRename(file);
-      }
-    }).add(() => this.turnOffFileLoading(file));
+    this.fileService
+      .renameFile(file.id, newFileName)
+      .subscribe({
+        next: () => {
+          this.toast.show(
+            'File rename',
+            'File renamed successfully',
+            MessageSeverity.success
+          );
+          this.updateFileWithNewData(file, { fileName: newFileName });
+        },
+        error: (err) => {
+          this.toast.show(
+            'File rename',
+            err.error || String(err),
+            MessageSeverity.error
+          );
+          this.cancelRename(file);
+        },
+      })
+      .add(() => this.turnOffFileLoading(file));
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
@@ -153,44 +212,63 @@ export class BaseTableComponent {
     const localLastSelectedFileId = this.lastSelectedFileId();
 
     //if the shift key is pressed, we need to keep the last selected file id,
-    // as it will be used as an anchor for the selection
+    // it will be used as an anchor for the selection
     if (!isShift) {
       this.lastSelectedFileId.set(file.id);
     }
 
     if (isShift) {
-      const newFileIndex = this.files().findIndex(f => f === file);
-      const anchorIndex = this.files().findIndex(f => f.id === localLastSelectedFileId);
+      const newFileIndex = this.files().findIndex((f) => f === file);
+      const anchorIndex = this.files().findIndex(
+        (f) => f.id === localLastSelectedFileId
+      );
       let startIndex = Math.min(newFileIndex, anchorIndex);
       let endIndex = Math.max(newFileIndex, anchorIndex);
 
-      this.fileService.files.update(files => files.map((f, index) => (index >= startIndex && index <= endIndex)
-        ? { ...f, checked: true }
-        : { ...f, checked: false }
-      ));
+      this.fileService.files.update((files) =>
+        files.map((f, index) =>
+          index >= startIndex && index <= endIndex
+            ? { ...f, checked: true }
+            : { ...f, checked: false }
+        )
+      );
       return;
     }
 
     if (isCtrl) {
-      this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: !f.checked } : f));
+      this.fileService.files.update((files) =>
+        files.map((f) => (f === file ? { ...f, checked: !f.checked } : f))
+      );
       return;
     }
 
     // If no modifiers, select only this file
-    this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+    this.fileService.files.update((files) =>
+      files.map((f) =>
+        f === file ? { ...f, checked: true } : { ...f, checked: false }
+      )
+    );
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
-    const filesToUpdate = files.filter(file => file.fileStatus === FileStatus.Completed && file.isFavourite !== changeTo);
+    const filesToUpdate = files.filter(
+      (file) =>
+        file.fileStatus === FileStatus.Completed &&
+        file.isFavourite !== changeTo
+    );
     if (filesToUpdate.length === 0) return;
 
-    this.tooltips().forEach(t => t.close());
+    this.tooltips().forEach((t) => t.close());
 
     bulkAction<AppFile>({
       items: filesToUpdate,
-      action: file => this.fileService.setFavourite(file),
-      beforeStart: file => this.updateFile(file, { loading: true }),
-      onSuccess: file => this.updateFileWithNewData(file, { isFavourite: changeTo, loading: false }),
+      action: (file) => this.fileService.setFavourite(file),
+      beforeStart: (file) => this.updateFile(file, { loading: true }),
+      onSuccess: (file) =>
+        this.updateFileWithNewData(file, {
+          isFavourite: changeTo,
+          loading: false,
+        }),
       onError: (_, err) => {
         this.toast.show(
           'Favourite update failed',
@@ -208,12 +286,19 @@ export class BaseTableComponent {
         return changeTo
           ? `Added ${count} files to favourites`
           : `Removed ${count} files from favourites`;
-      }
+      },
     });
   }
 
+  downloadFiles(files: AppFile[]) {
+    this.downloadService.downloadFilesWithFeedback(files);
+  }
+
   showShareManagementModal(sharedFile: AppFile) {
-    this.modalService.manageSharesModal({ sharedFile: sharedFile, title: `Manage shares for file: '${sharedFile.fileName}'` });
+    this.modalService.manageSharesModal({
+      sharedFile: sharedFile,
+      title: `Manage shares for file: '${sharedFile.fileName}'`,
+    });
   }
 
   shareFile(files: AppFile[]) {
@@ -225,7 +310,11 @@ export class BaseTableComponent {
     event.stopPropagation();
     const position = { x: event.clientX, y: event.clientY };
     if (!this.selectedFiles().includes(file)) {
-      this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+      this.fileService.files.update((files) =>
+        files.map((f) =>
+          f === file ? { ...f, checked: true } : { ...f, checked: false }
+        )
+      );
     }
 
     this.openContextMenu(position);
@@ -236,7 +325,11 @@ export class BaseTableComponent {
 
     const rect = icon.getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
-    this.fileService.files.update(files => files.map(f => f === file ? { ...f, checked: true } : { ...f, checked: false }));
+    this.fileService.files.update((files) =>
+      files.map((f) =>
+        f === file ? { ...f, checked: true } : { ...f, checked: false }
+      )
+    );
 
     this.openContextMenu(position);
   }
@@ -248,12 +341,23 @@ export class BaseTableComponent {
   }
 
   private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.fileService.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
+    this.fileService.files.update((files) =>
+      files.map((f) => (f.id === file.id ? { ...f, ...partialUpdate } : f))
+    );
   }
 
-  private updateFileWithNewData(file: AppFile, partialUpdate?: Partial<AppFile>) {
+  private updateFileWithNewData(
+    file: AppFile,
+    partialUpdate?: Partial<AppFile>
+  ) {
     const updateTime = new Date();
-    this.fileService.files.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate, modificationDate: updateTime } : f));
+    this.fileService.files.update((files) =>
+      files.map((f) =>
+        f.id === file.id
+          ? { ...f, ...partialUpdate, modificationDate: updateTime }
+          : f
+      )
+    );
   }
 
   deleteFiles(files: AppFile[]) {
@@ -283,17 +387,31 @@ export class BaseTableComponent {
   }
 
   // Drag and drop logic for moving and uploading files
-  private readonly fileMoveDragPreview = viewChild(DragPreviewComponent, { read: ElementRef });
+  private readonly fileMoveDragPreview = viewChild(DragPreviewComponent, {
+    read: ElementRef,
+  });
   private readonly dragDrop = inject(FileDragDropService);
   readonly uploadDragDrop = inject(FileUploadDragDropService);
-  readonly dragOverFileId = computed(() => this.dragDrop.dragOverTarget()?.type === 'file' ? this.dragDrop.dragOverTarget()?.id : null);
-  readonly fileUploadDragOverFileId = computed(() => this.uploadDragDrop.hoveredTarget()?.target?.id);
+  readonly dragOverFileId = computed(() =>
+    this.dragDrop.dragOverTarget()?.type === 'file'
+      ? this.dragDrop.dragOverTarget()?.id
+      : null
+  );
+  readonly fileUploadDragOverFileId = computed(
+    () => this.uploadDragDrop.hoveredTarget()?.target?.id
+  );
   readonly fileUploadTarget = this.uploadDragDrop.uploadTarget;
-  readonly fileUploadHoverTargetCorrect = computed(() => this.uploadDragDrop.hoveredTarget() && this.uploadDragDrop.hoveredTarget()?.target?.id === this.uploadDragDrop.uploadTarget()?.id);
+  readonly fileUploadHoverTargetCorrect = computed(
+    () =>
+      this.uploadDragDrop.hoveredTarget() &&
+      this.uploadDragDrop.hoveredTarget()?.target?.id ===
+        this.uploadDragDrop.uploadTarget()?.id
+  );
   readonly fileUpladFileNb = this.uploadDragDrop.filesNb;
-  readonly fileUploadTableTarget = computed(() => this.uploadDragDrop.hoveredTarget()?.type === 'table');
+  readonly fileUploadTableTarget = computed(
+    () => this.uploadDragDrop.hoveredTarget()?.type === 'table'
+  );
   counter = 1;
-
 
   canBeTargetDirectory(file: AppFile) {
     return file.isDirectory && !file.checked;
@@ -307,10 +425,14 @@ export class BaseTableComponent {
     const draggedFiles = this.selectedFiles();
     this.dragDrop.startDrag(draggedFiles);
 
-    event.dataTransfer?.setData('application/json', JSON.stringify(draggedFiles));
+    event.dataTransfer?.setData(
+      'application/json',
+      JSON.stringify(draggedFiles)
+    );
     event.dataTransfer!.effectAllowed = 'move';
 
-    const previewEl = this.fileMoveDragPreview()?.nativeElement.firstElementChild as HTMLElement;
+    const previewEl = this.fileMoveDragPreview()?.nativeElement
+      .firstElementChild as HTMLElement;
     if (previewEl) {
       event.dataTransfer!.setDragImage(previewEl, 0, 0);
     }
@@ -322,7 +444,10 @@ export class BaseTableComponent {
     if (this.uploadDragDrop.allowExternalFiles(event)) {
       if (row.isDirectory) {
         event.stopPropagation();
-        this.uploadDragDrop.setHoverTarget({ type: 'directory', target: row }, event);
+        this.uploadDragDrop.setHoverTarget(
+          { type: 'directory', target: row },
+          event
+        );
       }
     } else if (this.dragDrop.allowAppFiles(event)) {
       this.dragDrop.setDragOverTarget('file', row.id);
@@ -332,13 +457,16 @@ export class BaseTableComponent {
 
   onRowDragOver(event: DragEvent, row: AppFile) {
     event.preventDefault();
-    this.dragDrop.setDropEffect(event, this.dragDrop.allowAppFiles(event) || this.uploadDragDrop.allowExternalFiles(event));
+    this.dragDrop.setDropEffect(
+      event,
+      this.dragDrop.allowAppFiles(event) ||
+        this.uploadDragDrop.allowExternalFiles(event)
+    );
   }
 
   onRowDragLeave(event: DragEvent, file: AppFile) {
     event.preventDefault();
-    if (!DragDropUtils.isTrueDragLeave(event))
-      return;
+    if (!DragDropUtils.isTrueDragLeave(event)) return;
 
     if (
       this.uploadDragDrop.hoveredTarget()?.type === 'directory' &&
@@ -357,7 +485,10 @@ export class BaseTableComponent {
     event.stopPropagation();
     // External files
     if (this.uploadDragDrop.allowExternalFiles(event)) {
-      const destinationId = this.uploadDragDrop.getDestinationFolder(targetFile, this.currentDirectoryId());
+      const destinationId = this.uploadDragDrop.getDestinationFolder(
+        targetFile,
+        this.currentDirectoryId()
+      );
       await this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
       return;
     }
@@ -366,9 +497,12 @@ export class BaseTableComponent {
     if (this.dragDrop.allowAppFiles(event)) {
       const draggedFiles = this.dragDrop.draggedFiles();
       this.dragDrop.clearDrag();
-      if (!targetFile.isDirectory || targetFile.checked)
-        return;
-      this.fileService.moveFilesWithFeedback(draggedFiles, targetFile.id, targetFile.fileName);
+      if (!targetFile.isDirectory || targetFile.checked) return;
+      this.fileService.moveFilesWithFeedback(
+        draggedFiles,
+        targetFile.id,
+        targetFile.fileName
+      );
     }
   }
 
@@ -376,13 +510,20 @@ export class BaseTableComponent {
     event.preventDefault();
 
     if (this.uploadDragDrop.allowExternalFiles(event)) {
-      this.uploadDragDrop.setHoverTarget({ type: 'table', target: null }, event);
+      this.uploadDragDrop.setHoverTarget(
+        { type: 'table', target: null },
+        event
+      );
     }
   }
 
   onTableDragOver(event: DragEvent) {
     event.preventDefault();
-    this.dragDrop.setDropEffect(event, this.dragDrop.allowAppFiles(event) || this.uploadDragDrop.allowExternalFiles(event));
+    this.dragDrop.setDropEffect(
+      event,
+      this.dragDrop.allowAppFiles(event) ||
+        this.uploadDragDrop.allowExternalFiles(event)
+    );
   }
 
   async onTableDrop(event: DragEvent) {
@@ -397,8 +538,7 @@ export class BaseTableComponent {
 
   onTableDragLeave(event: DragEvent) {
     event.preventDefault();
-    if (!DragDropUtils.isTrueDragLeave(event))
-      return;
+    if (!DragDropUtils.isTrueDragLeave(event)) return;
 
     if (this.uploadDragDrop.hoveredTarget()?.type === 'table') {
       this.uploadDragDrop.clearHover();
@@ -429,9 +569,11 @@ export class BaseTableComponent {
   }
 
   async cancelFilesUpload(files: AppFile[]) {
-    const incompleteFiles = files.filter(file => file.fileStatus === FileStatus.Incomplete);
+    const incompleteFiles = files.filter(
+      (file) => file.fileStatus === FileStatus.Incomplete
+    );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-      incompleteFiles.forEach(file => this.uploadService.cancel(file.id));
+      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
   }
 
   async cancelUpload(file: AppFile) {

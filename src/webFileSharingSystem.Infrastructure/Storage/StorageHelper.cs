@@ -13,14 +13,9 @@ namespace webFileSharingSystem.Infrastructure.Storage
             while (visited.Add(currentFile.Id))
             {
                 yield return currentFile;
-                if (currentFile.ParentId is null)
+                if (currentFile.ParentId is null || !fileDictionary.TryGetValue(currentFile.ParentId.Value, out currentFile))
                 {
                     yield break;
-                }
-
-                if (!fileDictionary.TryGetValue(currentFile.ParentId.Value, out currentFile))
-                {
-                    throw new Exception("invalid parent id");
                 }
             }
 

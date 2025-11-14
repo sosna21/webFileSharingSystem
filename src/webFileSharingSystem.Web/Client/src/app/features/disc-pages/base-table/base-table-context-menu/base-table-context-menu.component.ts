@@ -29,7 +29,7 @@ export class BaseTableContextMenuComponent {
   readonly rename = output<AppFile>();
   readonly toggleFavourite = output<boolean>();
   readonly selectFolder = output<number>();
-  readonly download = output();
+  readonly download = output<AppFile[]>();
   readonly delete = output<AppFile[]>();
   readonly cancelUpload = output<AppFile[]>();
   readonly resumeUpload = output<AppFile[]>();
@@ -84,5 +84,10 @@ export class BaseTableContextMenuComponent {
   deleteClicked() {
     const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
     this.delete.emit(completedFiles);
+  }
+
+  downloadClicked() {
+    const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
+    this.download.emit(completedFiles);
   }
 }

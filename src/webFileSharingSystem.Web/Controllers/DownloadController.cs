@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,15 +11,14 @@ using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Storage;
 using File = webFileSharingSystem.Core.Entities.File;
-using SystemIOFile = System.IO.File;
 
 namespace webFileSharingSystem.Web.Controllers
 {
     public class DownloadController : BaseController
     {
-        private const string DownloadSingleFileActionName = "";
-        private const string DownloadMultipleFilesActionName = "Multiple";
-        private const string GenerateDownloadUrlActionName = "GenerateUrl";
+        private const string GenerateDownloadUrlActionName = "url";
+        private const string DownloadSingleFileActionName = "file";
+        private const string DownloadMultipleFilesActionName = "archive";
         
         private readonly IUnitOfWork _unitOfWork;
 
@@ -40,29 +40,31 @@ namespace webFileSharingSystem.Web.Controllers
         }
         
         [HttpPost]
-        [Route(GenerateDownloadUrlActionName + "/{fileId:int}")]
-        public async Task<ActionResult> GenerateDownloadUrl(int fileId, CancellationToken cancellationToken = default)
-        {
-            var downloadUrl = GetDownloadUrl(GenerateDownloadUrlActionName, DownloadSingleFileActionName);
-            
-            var bewit = _hawkAuthService.GenerateBewit(Request.Host.Value, downloadUrl, _currentUserService.UserId!.Value);
-
-            return Ok(new { Url = QueryHelpers.AddQueryString(downloadUrl, "bewit", bewit)});
-        }
-        
-        [HttpPost]
         [Route(GenerateDownloadUrlActionName)]
-        public async Task<ActionResult> GenerateDownloadUrlMultipleFiles([FromQuery] int[] fileIds, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> GenerateDownloadUrl([FromQuery] int[] fileIds, CancellationToken cancellationToken = default)
         {
-            var downloadUrl = GetDownloadUrl(GenerateDownloadUrlActionName, DownloadMultipleFilesActionName);
+            if (fileIds.Length == 0)
+                return BadRequest("No file IDs provided");
+            
+            string downloadUrl;
+            if (fileIds.Length > 1)
+                downloadUrl = GetDownloadUrl(DownloadMultipleFilesActionName, fileIds);
+            else
+            {
+                var file = await _unitOfWork.Repository<File>().FindByIdAsync(fileIds[0], cancellationToken); 
+                if (file is null)
+                    return BadRequest("File not found");
+                downloadUrl = GetDownloadUrl(file.IsDirectory ? DownloadMultipleFilesActionName : DownloadSingleFileActionName, fileIds);
+            }
             
             var bewit = _hawkAuthService.GenerateBewit(Request.Host.Value, downloadUrl, _currentUserService.UserId!.Value);
-
-            return Ok(new { Url = QueryHelpers.AddQueryString(downloadUrl, "bewit", bewit)});
+            var url = QueryHelpers.AddQueryString(downloadUrl, "bewit", bewit);
+            
+            return Ok(new { Url = url });
         }
 
         [HttpGet]
-        [Route(DownloadSingleFileActionName + "{fileId:int}")]
+        [Route(DownloadSingleFileActionName + "/{fileId:int}")]
         [Authorize(AuthenticationSchemes = HawkSettings.Scheme)]
         public async Task<ActionResult> DownloadFileAsync(int fileId, CancellationToken cancellationToken = default)
         {
@@ -85,7 +87,7 @@ namespace webFileSharingSystem.Web.Controllers
                 EnableRangeProcessing = true
             };
         }
-        
+
         [HttpGet]
         [Route(DownloadMultipleFilesActionName)]
         [Authorize(AuthenticationSchemes = HawkSettings.Scheme)]
@@ -94,14 +96,14 @@ namespace webFileSharingSystem.Web.Controllers
         {
             const string archiveName = "Archive.zip";
             const string ErrorMessage = "Files or directories does not exist or you do not have access";
-            
+
             Response.ContentType = "application/octet-stream";
-            Response.Headers.Add("Content-Disposition", $"attachment; filename=\"{archiveName}\"");
+            Response.Headers.ContentDisposition = $"attachment; filename=\"{archiveName}\"";
 
             var filesToDownload =
                 (await _unitOfWork.CustomQueriesRepository().GetListOfAllFilesFromLocations(fileIds, cancellationToken))
                 .ToDictionary(k => k.Id);
-            
+
             var userId = _currentUserService.UserId!.Value;
 
             if (fileIds.Except(filesToDownload.Keys).Any()) return BadRequest(ErrorMessage);
@@ -110,10 +112,11 @@ namespace webFileSharingSystem.Web.Controllers
 
             foreach (var (_, fileToDownload) in filesToDownload.Where(f => fileIds.Contains(f.Key)))
             {
-                if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly, cancellationToken))
+                if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly,
+                        cancellationToken))
                     return Unauthorized(ErrorMessage);
             }
-            
+
             using (var archive = new ZipArchive(Response.BodyWriter.AsStream(), ZipArchiveMode.Create))
             {
                 foreach (var file in filesToDownload.Values.Where(f => !f.IsDirectory))
@@ -121,25 +124,41 @@ namespace webFileSharingSystem.Web.Controllers
                     var computedFilePath = string.Join("/",
                         file.FindRelativeFilePath(filesToDownload).Reverse()
                             .Select(f => f.FileName));
-                    var entry = archive.CreateEntry(computedFilePath);
+                    var entry = archive.CreateEntry(computedFilePath, CompressionLevel.NoCompression);
                     await using (var entryStream = entry.Open())
                     {
-                        var fileStream = await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value, cancellationToken);
-                        await fileStream.CopyToAsync(entryStream, cancellationToken);
+                        try
+                        {
+                            var fileStream =
+                                await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value,
+                                    cancellationToken);
+                            await fileStream.CopyToAsync(entryStream, cancellationToken);
+                        }
+                        catch (Exception)
+                        {
+                            return BadRequest("One of the files cannot be retrieved.");
+                        }
                     }
                 }
             }
-
+            
             return new EmptyResult();
         }
+        
+        //Single: https://localhost:5001/api/Download/1004
+        //Multiple: https://localhost:5001/api/Download/?fileIds=1004
 
-        private string GetDownloadUrl(string oldAction, string newAction)
+        private string GetDownloadUrl(string actionName, int[] fileIds)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+            var baseUrl = $"{Request.Scheme}://{Request.Host.Value}"; //Multiple: baseUrl: https://localhost:5001 Taki sam
+            
+            var newPath = Request.Path.Value!.Replace(GenerateDownloadUrlActionName, actionName);// .Replace("//", "/"); //multiple: /api/Download/ //signle: /api/Download/1004
+            if (actionName is DownloadMultipleFilesActionName)
+                newPath = $"{newPath}/{Request.QueryString}"; //QueryHelpers.AddQueryString(newPath, "fileIds", string.Join(",", fileIds.Select(id => id.ToString())));
+            else 
+                newPath = $"{newPath}/{fileIds.First()}";
 
-            var newPath = Request.Path.Value!.Replace(oldAction, newAction).Replace("//", "/");
-
-            return $"{baseUrl}{newPath}{Request.QueryString}";
+            return $"{baseUrl}{newPath}";
         }
     }
 }
