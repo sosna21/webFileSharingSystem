@@ -3,11 +3,10 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { FormsModule } from '@angular/forms';
 import { ModalService } from '../../../core/services/modal.service';
 import { AppFile } from '../../../core/models/app-file.model';
-import { ToastService } from '../../../core/services/toast.service';
-import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { DateUtils } from '../../../core/utils/date-utils';
 import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
 import { AddShareRequest } from '../../../core/models/add-share-request.model';
+import { FileShareService } from '../../../core/services/file-share.service';
 
 @Component({
   selector: 'app-file-share-modal',
@@ -17,8 +16,8 @@ import { AddShareRequest } from '../../../core/models/add-share-request.model';
 })
 export class FileShareModalComponent {
   readonly activeModal = inject(NgbActiveModal);
-  readonly modalService = inject(ModalService);
-  readonly toast = inject(ToastService);
+  private readonly modalService = inject(ModalService);
+  private readonly shareService = inject(FileShareService);
   readonly ShareAccessMode = ShareAccessMode;
 
   readonly filesToShare = model<AppFile[]>([]);
@@ -37,7 +36,9 @@ export class FileShareModalComponent {
   );
 
   // Permission options
-  readonly selectedPermission = signal<ShareAccessMode>(ShareAccessMode.ReadOnly);
+  readonly selectedPermission = signal<ShareAccessMode>(
+    ShareAccessMode.ReadOnly
+  );
 
   // Share duration
   readonly shareDuration = signal<number>(24); // Default 24 hours
@@ -53,11 +54,14 @@ export class FileShareModalComponent {
     }
 
     //Create array of share requests for each user to share with (comma separated shareWith string)
-    const usersToShareWith = this.shareWith().split(',').map(user => user.trim()).filter(user => user);
-    const shareRequests: AddShareRequest[] = usersToShareWith.map(user => ({
+    const usersToShareWith = this.shareWith()
+      .split(',')
+      .map((user) => user.trim())
+      .filter((user) => user);
+    const shareRequests: AddShareRequest[] = usersToShareWith.map((user) => ({
       UserNameToShareWith: user,
       AccessMode: this.selectedPermission(),
-      ShareValidTo: shareUntil ?? undefined
+      ShareValidTo: shareUntil ?? undefined,
     }));
 
     this.activeModal.close(shareRequests);
@@ -86,16 +90,10 @@ export class FileShareModalComponent {
     this.selectedCustomDuration.set(result);
   }
 
-  generateShareLink() {
-    // TODO: Implement actual link generation flow.
-    // Temporary friendly notice to avoid runtime error on click.
-    this.toast.show(
-      'Share link',
-      this.sharingMultipleFiles()
-        ? 'Generating links will be available soon.'
-        : 'Generating a share link will be available soon.',
-      MessageSeverity.info,
-      3000
+  async generateShareLink() {
+    await this.shareService.generateShareLinkWithFeedback(
+      this.filesToShare().map((f) => f.id),
+      false
     );
   }
 }

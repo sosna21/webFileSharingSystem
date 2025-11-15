@@ -1,0 +1,73 @@
+<div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
+  <i
+    class="bi bi-folder-plus action-icon action-warning"
+    (click)="initDirCreation()"
+    ngbTooltip="Create new folder"
+    [openDelay]="300"
+  ></i>
+  @if (showDirCreate()) {
+  <input
+    appSelectFilename
+    type="text"
+    class="form-control"
+    placeholder="New folder"
+    [(ngModel)]="newFolderName"
+    (keyup.enter)="createDirectory()"
+    (blur)="cancelRename()"
+    (keyup.escape)="cancelRename()"
+  />
+  }
+</div>
+<div class="vr h-75 mt-auto"></div>
+<div class="align-self-center d-flex gap-4 h-100 align-items-end">
+  <i
+    class="bi bi-scissors action-icon action-primary"
+    [class.disabled]="!canFileAction()"
+    ngbTooltip="Cut"
+    [openDelay]="300"
+    (click)="onCut()"
+  ></i>
+  <i
+    class="bi bi-copy action-icon action-primary"
+    [class.disabled]="!canFileAction()"
+    ngbTooltip="Copy"
+    [openDelay]="300"
+    (click)="onCopy()"
+  ></i>
+  <i
+    class="bi bi-clipboard action-icon action-primary"
+    [class.disabled]="!canPaste()"
+    ngbTooltip="Paste"
+    [openDelay]="300"
+    (click)="onPaste()"
+  ></i>
+  <div class="vr h-75 mt-auto"></div>
+  <i
+    class="bi bi-download action-icon action-primary"
+    [class.disabled]="!canFileAction()"
+    ngbTooltip="Download"
+    [openDelay]="300"
+    (click)="onDownload()"
+  ></i>
+  <i
+    class="bi bi-pencil action-icon action-primary"
+    [class.disabled]="!canRename()"
+    ngbTooltip="Rename"
+    [openDelay]="300"
+    (click)="onRename()"
+  ></i>
+  <i
+    class="bi bi-share action-icon action-primary"
+    [class.disabled]="!canFileAction()"
+    ngbTooltip="Share"
+    [openDelay]="300"
+    (click)="onShare()"
+  ></i>
+  <i
+    class="bi bi-trash action-icon action-danger"
+    [class.disabled]="!canFileAction()"
+    ngbTooltip="Delete"
+    [openDelay]="300"
+    (click)="onDelete()"
+  ></i>
+</div>
