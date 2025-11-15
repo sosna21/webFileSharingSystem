@@ -144,19 +144,12 @@ namespace webFileSharingSystem.Web.Controllers
             
             return new EmptyResult();
         }
-        
-        //Single: https://localhost:5001/api/Download/1004
-        //Multiple: https://localhost:5001/api/Download/?fileIds=1004
 
         private string GetDownloadUrl(string actionName, int[] fileIds)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host.Value}"; //Multiple: baseUrl: https://localhost:5001 Taki sam
-            
-            var newPath = Request.Path.Value!.Replace(GenerateDownloadUrlActionName, actionName);// .Replace("//", "/"); //multiple: /api/Download/ //signle: /api/Download/1004
-            if (actionName is DownloadMultipleFilesActionName)
-                newPath = $"{newPath}/{Request.QueryString}"; //QueryHelpers.AddQueryString(newPath, "fileIds", string.Join(",", fileIds.Select(id => id.ToString())));
-            else 
-                newPath = $"{newPath}/{fileIds.First()}";
+            var baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+            var newPath = Request.Path.Value!.Replace(GenerateDownloadUrlActionName, actionName);
+            newPath = actionName is DownloadMultipleFilesActionName ? $"{newPath}/{Request.QueryString}" : $"{newPath}/{fileIds.First()}";
 
             return $"{baseUrl}{newPath}";
         }

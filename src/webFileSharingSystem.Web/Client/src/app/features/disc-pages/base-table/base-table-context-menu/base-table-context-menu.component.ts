@@ -38,7 +38,7 @@ export class BaseTableContextMenuComponent {
   readonly move = output<AppFile[]>();
   readonly share = output<AppFile[]>();
   readonly manageShares = output<AppFile>();
-  readonly generateLink = output();
+  readonly generateLink = output<AppFile[]>();
   readonly openFolder = output<AppFile>();
 
   open() {
@@ -89,5 +89,10 @@ export class BaseTableContextMenuComponent {
   downloadClicked() {
     const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
     this.download.emit(completedFiles);
+  }
+
+  generateLinkClicked() {
+    const completedFiles = this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed);
+    this.generateLink.emit(completedFiles);
   }
 }

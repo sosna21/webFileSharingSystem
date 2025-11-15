@@ -97,10 +97,7 @@ export class BaseTableComponent {
     const target = event.target as HTMLElement;
 
     // Allow Ctrl+A if the target is an input or textarea (for text selection)
-    if (
-      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') &&
-      !(target as HTMLInputElement).readOnly
-    ) {
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
       return;
     }
 
@@ -292,6 +289,32 @@ export class BaseTableComponent {
 
   downloadFiles(files: AppFile[]) {
     this.downloadService.downloadFilesWithFeedback(files);
+  }
+
+  async generateShareLink(files: AppFile[]) {
+    const downloadLink = await lastValueFrom(
+      this.downloadService.getDownloadLink(files.map((f) => f.id))
+    ).catch((error) => {
+      this.toast.show(
+        'Link Generation Failed',
+        error?.error || String(error),
+        MessageSeverity.error
+      );
+      return null;
+    });
+    if (!downloadLink) return;
+
+    const result = await this.modalService.copyToClipboard({
+      textToCopy: downloadLink.url,
+      title: 'Share Link',
+    });
+
+    if (!result) return;
+    this.toast.show(
+      'Copied to Clipboard',
+      'Share link has been copied to clipboard',
+      MessageSeverity.success
+    );
   }
 
   showShareManagementModal(sharedFile: AppFile) {

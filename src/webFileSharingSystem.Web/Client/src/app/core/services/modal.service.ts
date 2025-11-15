@@ -10,32 +10,43 @@ import { FileSharesManagementModalComponent } from '../../features/modals/file-s
 import { EditFileShareModalComponent } from '../../features/modals/edit-file-share-modal/edit-file-share-modal.component';
 import { Share } from '../models/share.model';
 import { UpdateFileShareRequest } from '../models/update-share-request.model';
+import { CopyToClipboardModalComponent } from '../../features/modals/copy-to-clipboard-modal/copy-to-clipboard-modal.component';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ModalService {
   private readonly modalService = inject(NgbModal);
 
-  async confirmChoice(options: {
-    title?: string;
-    message?: string;
-    confirmText?: string;
-    cancelText?: string;
-    showPermanentWarning?: boolean;
-  }, closeOtherModals = true): Promise<boolean> {
+  async confirmChoice(
+    options: {
+      title?: string;
+      message?: string;
+      confirmText?: string;
+      cancelText?: string;
+      showPermanentWarning?: boolean;
+    },
+    closeOtherModals = true
+  ): Promise<boolean> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);
     }
     try {
-      const modalRef = this.modalService.open(ConfirmationModalComponent, { centered: true });
-      const componentInstance = modalRef.componentInstance as ConfirmationModalComponent;
+      const modalRef = this.modalService.open(ConfirmationModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as ConfirmationModalComponent;
       if (options.title) componentInstance.title.set(options.title);
       if (options.message) componentInstance.message.set(options.message);
-      if (options.confirmText) componentInstance.confirmText.set(options.confirmText);
-      if (options.cancelText) componentInstance.cancelText.set(options.cancelText);
+      if (options.confirmText)
+        componentInstance.confirmText.set(options.confirmText);
+      if (options.cancelText)
+        componentInstance.cancelText.set(options.cancelText);
       if (options.showPermanentWarning)
-        componentInstance.showPermanentWarning.set(options.showPermanentWarning);
+        componentInstance.showPermanentWarning.set(
+          options.showPermanentWarning
+        );
 
       const result = await modalRef.result;
       if (result) return true;
@@ -45,14 +56,15 @@ export class ModalService {
     }
   }
 
-  manageSharesModal(options: {
-    sharedFile: AppFile;
-    title?: string;
-  }) {
+  manageSharesModal(options: { sharedFile: AppFile; title?: string }) {
     this.modalService.dismissAll(null);
     try {
-      const modalRef = this.modalService.open(FileSharesManagementModalComponent, { centered: true, size: 'lg', scrollable: true });
-      const componentInstance = modalRef.componentInstance as FileSharesManagementModalComponent;
+      const modalRef = this.modalService.open(
+        FileSharesManagementModalComponent,
+        { centered: true, size: 'lg', scrollable: true }
+      );
+      const componentInstance =
+        modalRef.componentInstance as FileSharesManagementModalComponent;
 
       componentInstance.sharedFile.set(options.sharedFile);
       if (options.title) componentInstance.title.set(options.title);
@@ -63,16 +75,22 @@ export class ModalService {
     }
   }
 
-  addFileShareModal(options: {
-    filesToShare: AppFile[];
-    title?: string;
-  }, closeOtherModals = true): Promise<AddShareRequest[] | null> {
+  addFileShareModal(
+    options: {
+      filesToShare: AppFile[];
+      title?: string;
+    },
+    closeOtherModals = true
+  ): Promise<AddShareRequest[] | null> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);
     }
     try {
-      const modalRef = this.modalService.open(FileShareModalComponent, { centered: true });
-      const componentInstance = modalRef.componentInstance as FileShareModalComponent;
+      const modalRef = this.modalService.open(FileShareModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as FileShareModalComponent;
 
       componentInstance.filesToShare.set(options.filesToShare);
       if (options.title) componentInstance.title.set(options.title);
@@ -83,16 +101,22 @@ export class ModalService {
     }
   }
 
-  editFileShareModal(options: {
-    shareToModify: Share;
-    title?: string;
-  }, closeOtherModals = true): Promise<UpdateFileShareRequest | null> {
+  editFileShareModal(
+    options: {
+      shareToModify: Share;
+      title?: string;
+    },
+    closeOtherModals = true
+  ): Promise<UpdateFileShareRequest | null> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);
     }
     try {
-      const modalRef = this.modalService.open(EditFileShareModalComponent, { centered: true });
-      const componentInstance = modalRef.componentInstance as EditFileShareModalComponent;
+      const modalRef = this.modalService.open(EditFileShareModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as EditFileShareModalComponent;
 
       componentInstance.shareToModify.set(options.shareToModify);
       if (options.title) componentInstance.title.set(options.title);
@@ -104,26 +128,65 @@ export class ModalService {
   }
 
   pickDateTime(options: {
-    title?: string,
-    initialDate?: Date,
-    minDate?: Date,
-    maxDate?: Date,
-    pickTime?: boolean,
-    initialTime?: { hour: number; minute: number; second: number }
+    title?: string;
+    initialDate?: Date;
+    minDate?: Date;
+    maxDate?: Date;
+    pickTime?: boolean;
+    initialTime?: { hour: number; minute: number; second: number };
   }): Promise<Date | null> {
     try {
-      const modalRef = this.modalService.open(DatePickerModalComponent, { centered: true });
-      const componentInstance = modalRef.componentInstance as DatePickerModalComponent;
-      componentInstance.date.set(options.initialDate ? DateUtils.dateToStruct(options.initialDate) : DateUtils.dateToStruct(new Date()));
-      componentInstance.minDate.set(options.minDate ? DateUtils.dateToStruct(options.minDate) : null);
-      componentInstance.maxDate.set(options.maxDate ? DateUtils.dateToStruct(options.maxDate) : null);
+      const modalRef = this.modalService.open(DatePickerModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as DatePickerModalComponent;
+      componentInstance.date.set(
+        options.initialDate
+          ? DateUtils.dateToStruct(options.initialDate)
+          : DateUtils.dateToStruct(new Date())
+      );
+      componentInstance.minDate.set(
+        options.minDate ? DateUtils.dateToStruct(options.minDate) : null
+      );
+      componentInstance.maxDate.set(
+        options.maxDate ? DateUtils.dateToStruct(options.maxDate) : null
+      );
       componentInstance.pickTime.set(options.pickTime ?? true);
-      componentInstance.time.set(options.initialTime ?? { hour: 12, minute: 0, second: 0 });
+      componentInstance.time.set(
+        options.initialTime ?? { hour: 12, minute: 0, second: 0 }
+      );
       if (options.title) componentInstance.title.set(options.title);
 
       return modalRef.result.catch(() => null); // resolves null on cancel
     } catch {
       return new Promise(() => null);
+    }
+  }
+
+  copyToClipboard(
+    options: {
+      textToCopy: string;
+      title?: string;
+      message?: string;
+    },
+    closeOtherModals = true
+  ): Promise<boolean> {
+    if (closeOtherModals) {
+      this.modalService.dismissAll(null);
+    }
+    try {
+      const modalRef = this.modalService.open(CopyToClipboardModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as CopyToClipboardModalComponent;
+      componentInstance.textToCopy.set(options.textToCopy);
+      if (options.title) componentInstance.title.set(options.title);
+
+      return modalRef.result.catch(() => false);
+    } catch {
+      return new Promise(() => false);
     }
   }
 }
