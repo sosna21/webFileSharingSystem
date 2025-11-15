@@ -29,6 +29,7 @@ namespace webFileSharingSystem.Web
             services.AddInfrastructure(_config);
 
             services.Configure<GoogleAuthSetting>(_config.GetSection(nameof(GoogleAuthSetting)));
+            services.Configure<DownloadTokenOptions>(_config.GetSection("DownloadToken"));
 
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 

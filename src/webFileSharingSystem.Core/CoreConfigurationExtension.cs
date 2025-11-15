@@ -12,6 +12,7 @@ namespace webFileSharingSystem.Core
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<IShareService, ShareService>();
             services.AddScoped<IGuardService, GuardService>();
+            services.AddScoped<IDownloadService, DownloadService>();
             
             services.AddHostedService(sp => new RefreshUploadCacheService(sp));
             

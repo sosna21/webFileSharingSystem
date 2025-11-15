@@ -1,16 +1,11 @@
-﻿using System;
-using System.IO.Compression;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using webFileSharingSystem.Core.Entities;
+using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
-using webFileSharingSystem.Infrastructure.Storage;
-using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.Web.Controllers
 {
@@ -20,70 +15,57 @@ namespace webFileSharingSystem.Web.Controllers
         private const string DownloadSingleFileActionName = "file";
         private const string DownloadMultipleFilesActionName = "archive";
         
-        private readonly IUnitOfWork _unitOfWork;
-
         private readonly ICurrentUserService _currentUserService;
-
-        private readonly IFilePersistenceService _filePersistenceService;
         private readonly IHawkAuthService _hawkAuthService;
-        private readonly IGuardService _guardService;
+        private readonly IDownloadService _downloadService;
 
 
-        public DownloadController(IUnitOfWork unitOfWork, ICurrentUserService currentUserService,
-            IFilePersistenceService filePersistenceService, IHawkAuthService hawkAuthService, IGuardService guardService)
+        public DownloadController(ICurrentUserService currentUserService,
+            IHawkAuthService hawkAuthService, IDownloadService downloadService)
         {
-            _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
-            _filePersistenceService = filePersistenceService;
             _hawkAuthService = hawkAuthService;
-            _guardService = guardService;
+            _downloadService = downloadService;
         }
         
         [HttpPost]
         [Route(GenerateDownloadUrlActionName)]
-        public async Task<ActionResult> GenerateDownloadUrl([FromQuery] int[] fileIds, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> GenerateDownloadUrl([FromQuery] int[] fileIds,
+            CancellationToken cancellationToken = default)
         {
             if (fileIds.Length == 0)
                 return BadRequest("No file IDs provided");
-            
-            string downloadUrl;
-            if (fileIds.Length > 1)
-                downloadUrl = GetDownloadUrl(DownloadMultipleFilesActionName, fileIds);
-            else
-            {
-                var file = await _unitOfWork.Repository<File>().FindByIdAsync(fileIds[0], cancellationToken); 
-                if (file is null)
-                    return BadRequest("File not found");
-                downloadUrl = GetDownloadUrl(file.IsDirectory ? DownloadMultipleFilesActionName : DownloadSingleFileActionName, fileIds);
-            }
-            
-            var bewit = _hawkAuthService.GenerateBewit(Request.Host.Value, downloadUrl, _currentUserService.UserId!.Value);
-            var url = QueryHelpers.AddQueryString(downloadUrl, "bewit", bewit);
-            
+
+            var (result, action, token) = await _downloadService.PrepareDownloadAsync(fileIds, _currentUserService.UserId!.Value, cancellationToken);
+            if (!result.Succeeded)
+                return result.ToActionResult("Unable to prepare download");
+
+            var actionName = action == DownloadActionType.File ? DownloadSingleFileActionName : DownloadMultipleFilesActionName;
+
+            // Build URL
+            var baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+            var url = $"{baseUrl}/api/Download/{actionName}?token={token}";
+
+            // Add bewit
+            var bewit = _hawkAuthService.GenerateBewit(Request.Host.Value!, url, _currentUserService.UserId!.Value);
+            url = QueryHelpers.AddQueryString(url, "bewit", bewit);
+
             return Ok(new { Url = url });
         }
-
+        
         [HttpGet]
-        [Route(DownloadSingleFileActionName + "/{fileId:int}")]
+        [Route(DownloadSingleFileActionName)]
         [Authorize(AuthenticationSchemes = HawkSettings.Scheme)]
-        public async Task<ActionResult> DownloadFileAsync(int fileId, CancellationToken cancellationToken = default)
+        public async Task<ActionResult> DownloadFileAsync([FromQuery] string token, CancellationToken cancellationToken = default)
         {
-            const string ErrorMessage = "File does not exist or you do not have access";
-
             var userId = _currentUserService.UserId!.Value;
-            var fileToDownload = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
-            if (fileToDownload is null) return BadRequest(ErrorMessage);
-            
-            if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly, cancellationToken))
-                return Unauthorized(ErrorMessage);
+            var (result, file) = await _downloadService.GetSingleFileAsync(token, userId, cancellationToken);
+            if (!result.Succeeded)
+                return result.ToActionResult("File does not exist or you do not have access");
 
-            if (fileToDownload.IsDirectory) return BadRequest("Directory can't be downloaded");
-
-            var fileStream = await _filePersistenceService.GetFileStream(userId, fileToDownload.FileGuid!.Value, cancellationToken);
-
-            return new FileStreamResult(fileStream, string.IsNullOrEmpty(fileToDownload.MimeType) ? "application/octet-stream" : fileToDownload.MimeType)
+            return new FileStreamResult(file!.FileStream, string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType)
             {
-                FileDownloadName = fileToDownload.FileName,
+                FileDownloadName = file.FileName,
                 EnableRangeProcessing = true
             };
         }
@@ -91,67 +73,18 @@ namespace webFileSharingSystem.Web.Controllers
         [HttpGet]
         [Route(DownloadMultipleFilesActionName)]
         [Authorize(AuthenticationSchemes = HawkSettings.Scheme)]
-        public async Task<ActionResult> DownloadMultipleFilesAsync([FromQuery] int[] fileIds,
+        public async Task<ActionResult> DownloadMultipleFilesAsync([FromQuery] string token,
             CancellationToken cancellationToken = default)
         {
             const string archiveName = "Archive.zip";
-            const string ErrorMessage = "Files or directories does not exist or you do not have access";
-
             Response.ContentType = "application/octet-stream";
             Response.Headers.ContentDisposition = $"attachment; filename=\"{archiveName}\"";
-
-            var filesToDownload =
-                (await _unitOfWork.CustomQueriesRepository().GetListOfAllFilesFromLocations(fileIds, cancellationToken))
-                .ToDictionary(k => k.Id);
-
             var userId = _currentUserService.UserId!.Value;
+            var result = await _downloadService.WriteArchiveToAsync(token, userId, Response.BodyWriter.AsStream(), cancellationToken);
+            if (!result.Succeeded)
+                return result.ToActionResult("Files or directories does not exist or you do not have access");
 
-            if (fileIds.Except(filesToDownload.Keys).Any()) return BadRequest(ErrorMessage);
-
-            var fileUserIds = filesToDownload.Select(f => f.Value.UserId).Distinct().ToList();
-
-            foreach (var (_, fileToDownload) in filesToDownload.Where(f => fileIds.Contains(f.Key)))
-            {
-                if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly,
-                        cancellationToken))
-                    return Unauthorized(ErrorMessage);
-            }
-
-            using (var archive = new ZipArchive(Response.BodyWriter.AsStream(), ZipArchiveMode.Create))
-            {
-                foreach (var file in filesToDownload.Values.Where(f => !f.IsDirectory))
-                {
-                    var computedFilePath = string.Join("/",
-                        file.FindRelativeFilePath(filesToDownload).Reverse()
-                            .Select(f => f.FileName));
-                    var entry = archive.CreateEntry(computedFilePath, CompressionLevel.NoCompression);
-                    await using (var entryStream = entry.Open())
-                    {
-                        try
-                        {
-                            var fileStream =
-                                await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value,
-                                    cancellationToken);
-                            await fileStream.CopyToAsync(entryStream, cancellationToken);
-                        }
-                        catch (Exception)
-                        {
-                            return BadRequest("One of the files cannot be retrieved.");
-                        }
-                    }
-                }
-            }
-            
             return new EmptyResult();
-        }
-
-        private string GetDownloadUrl(string actionName, int[] fileIds)
-        {
-            var baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
-            var newPath = Request.Path.Value!.Replace(GenerateDownloadUrlActionName, actionName);
-            newPath = actionName is DownloadMultipleFilesActionName ? $"{newPath}/{Request.QueryString}" : $"{newPath}/{fileIds.First()}";
-
-            return $"{baseUrl}{newPath}";
         }
     }
 }
