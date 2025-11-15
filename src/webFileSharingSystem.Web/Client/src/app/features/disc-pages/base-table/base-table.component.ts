@@ -292,28 +292,8 @@ export class BaseTableComponent {
   }
 
   async generateShareLink(files: AppFile[]) {
-    const downloadLink = await lastValueFrom(
-      this.downloadService.getDownloadLink(files.map((f) => f.id))
-    ).catch((error) => {
-      this.toast.show(
-        'Link Generation Failed',
-        error?.error || String(error),
-        MessageSeverity.error
-      );
-      return null;
-    });
-    if (!downloadLink) return;
-
-    const result = await this.modalService.copyToClipboard({
-      textToCopy: downloadLink.url,
-      title: 'Share Link',
-    });
-
-    if (!result) return;
-    this.toast.show(
-      'Copied to Clipboard',
-      'Share link has been copied to clipboard',
-      MessageSeverity.success
+    await this.shareService.generateShareLinkWithFeedback(
+      files.map((f) => f.id)
     );
   }
 

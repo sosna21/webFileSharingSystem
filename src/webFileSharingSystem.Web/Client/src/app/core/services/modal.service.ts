@@ -18,6 +18,10 @@ import { CopyToClipboardModalComponent } from '../../features/modals/copy-to-cli
 export class ModalService {
   private readonly modalService = inject(NgbModal);
 
+  closeAll() {
+    this.modalService.dismissAll();
+  }
+
   async confirmChoice(
     options: {
       title?: string;

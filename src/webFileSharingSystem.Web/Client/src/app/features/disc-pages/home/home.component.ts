@@ -1,49 +1,84 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { NgbCollapseModule, NgbPaginationModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
+import {
+  NgbCollapseModule,
+  NgbPaginationModule,
+  NgbTooltipModule,
+} from '@ng-bootstrap/ng-bootstrap';
 import { FileService } from '../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
-import { BaseDiscPageHeaderComponent } from "../base-disc-page/base-disc-page-header/base-disc-page-header.component";
-import { BaseDiscPageComponent } from "../base-disc-page/base-disc-page.component";
-import { BreadcrumbComponent } from "./breadcrumb/breadcrumb.component";
-import { HoverClassDirective } from '../../../core/directives/hover-class.directive';
+import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
+import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
+import { BreadcrumbComponent } from './breadcrumb/breadcrumb.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../core/models/action-type.model';
 import { FileStatus } from '../../../core/models/app-file.model';
 import { FileShareService } from '../../../core/services/file-share.service';
+import { DownloadService } from '../../../core/services/download.service';
 
 @Component({
   selector: 'app-home',
-  imports: [NgbCollapseModule, NgbPaginationModule, FormsModule, BaseDiscPageHeaderComponent, BaseDiscPageComponent, BreadcrumbComponent, SelectFilenameDirective, NgbTooltipModule],
+  imports: [
+    NgbCollapseModule,
+    NgbPaginationModule,
+    FormsModule,
+    BaseDiscPageHeaderComponent,
+    BaseDiscPageComponent,
+    BreadcrumbComponent,
+    SelectFilenameDirective,
+    NgbTooltipModule,
+  ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent implements OnInit {
   private readonly fileService = inject(FileService);
   private readonly shareService = inject(FileShareService);
   private readonly toast = inject(ToastService);
-  private readonly names = computed(() => this.fileService.files().map(file => file.fileName));
+  private readonly downloadService = inject(DownloadService);
+  private readonly names = computed(() =>
+    this.fileService.files().map((file) => file.fileName)
+  );
   readonly showDirCreate = signal(false);
   readonly newFolderName = signal('');
   readonly files = this.fileService.files;
   readonly activeAction = this.fileService.waitingForAction;
-  readonly selectedFiles = computed(() => this.files().filter(file => file.checked));
+  readonly selectedFiles = computed(() =>
+    this.files().filter((file) => file.checked)
+  );
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canPaste = computed(() => this.activeAction() !== null);
-  readonly canFileAction = computed(() => this.selectedFiles().length > 0 && this.selectedFiles().some(file => file.fileStatus === FileStatus.Completed));
-  readonly canRename = computed(() => this.selectedFiles().length === 1 && this.selectedFiles()[0].fileStatus === FileStatus.Completed);
+  readonly canFileAction = computed(
+    () =>
+      this.selectedFiles().length > 0 &&
+      this.selectedFiles().some(
+        (file) => file.fileStatus === FileStatus.Completed
+      )
+  );
+  readonly canRename = computed(
+    () =>
+      this.selectedFiles().length === 1 &&
+      this.selectedFiles()[0].fileStatus === FileStatus.Completed
+  );
 
   ngOnInit(): void {
     this.fileService.mode.set('GetAll');
   }
 
   findUniqueDirName(): string {
-    let dirName = "New folder";
+    let dirName = 'New folder';
     let counter = 0;
     while (this.names().includes(dirName)) {
-      dirName = `New folder (${++counter})`
+      dirName = `New folder (${++counter})`;
     }
     return dirName;
   }
@@ -55,13 +90,21 @@ export class HomeComponent implements OnInit {
   createDirectory() {
     this.fileService.createDirectory(this.newFolderName()).subscribe({
       next: (response) => {
-        this.fileService.files.update(files => [response, ...files]);
+        this.fileService.files.update((files) => [response, ...files]);
         this.newFolderName.set(this.findUniqueDirName());
-        this.toast.show("New directory created", `Directory "${response.fileName}" has been created`, MessageSeverity.success);
+        this.toast.show(
+          'New directory created',
+          `Directory "${response.fileName}" has been created`,
+          MessageSeverity.success
+        );
       },
       error: (error) => {
-        this.toast.show("Error creating directory", error?.error, MessageSeverity.error);
-      }
+        this.toast.show(
+          'Error creating directory',
+          error?.error,
+          MessageSeverity.error
+        );
+      },
     });
 
     this.cancelRename();
@@ -73,8 +116,7 @@ export class HomeComponent implements OnInit {
   }
 
   initDirCreation() {
-    if (!this.showDirCreate())
-      this.showDirCreate.set(true);
+    if (!this.showDirCreate()) this.showDirCreate.set(true);
     this.newFolderName.set(this.findUniqueDirName());
   }
 
@@ -82,14 +124,32 @@ export class HomeComponent implements OnInit {
     this.fileService._fileResource.reload();
   }
 
+  onDownload() {
+    this.downloadService.downloadFilesWithFeedback(
+      this.selectedFiles().filter(
+        (file) => file.fileStatus === FileStatus.Completed
+      )
+    );
+  }
+
   onCut() {
     if (!this.canFileAction()) return;
-    this.fileService.setFilesMarkedForAction(this.selectedFiles(), ActionType.Move);
+    this.fileService.setFilesMarkedForAction(
+      this.selectedFiles().filter(
+        (file) => file.fileStatus === FileStatus.Completed
+      ),
+      ActionType.Move
+    );
   }
 
   onCopy() {
     if (!this.canFileAction()) return;
-    this.fileService.setFilesMarkedForAction(this.selectedFiles(), ActionType.Copy);
+    this.fileService.setFilesMarkedForAction(
+      this.selectedFiles().filter(
+        (file) => file.fileStatus === FileStatus.Completed
+      ),
+      ActionType.Copy
+    );
   }
 
   onPaste() {
@@ -102,8 +162,7 @@ export class HomeComponent implements OnInit {
         this.fileService.parentId(),
         this.fileService.parentName() ?? 'home directory'
       );
-    }
-    else if (action.type === ActionType.Copy) {
+    } else if (action.type === ActionType.Copy) {
       this.fileService.copyFilesWithFeedback(
         Array.from(action.files),
         this.fileService.parentId(),
@@ -121,11 +180,19 @@ export class HomeComponent implements OnInit {
 
   onShare() {
     if (!this.canFileAction()) return;
-    this.shareService.shareFilesWithFeedback(this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed));
+    this.shareService.shareFilesWithFeedback(
+      this.selectedFiles().filter(
+        (file) => file.fileStatus === FileStatus.Completed
+      )
+    );
   }
 
   onDelete() {
     if (!this.canFileAction()) return;
-    this.fileService.deleteFilesWithFeedback(this.selectedFiles().filter(file => file.fileStatus === FileStatus.Completed));
+    this.fileService.deleteFilesWithFeedback(
+      this.selectedFiles().filter(
+        (file) => file.fileStatus === FileStatus.Completed
+      )
+    );
   }
 }
