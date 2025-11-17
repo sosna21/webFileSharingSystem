@@ -1,587 +1,409 @@
+import { CommonModule, NgTemplateOutlet, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  ElementRef,
-  inject,
+  input,
+  linkedSignal,
+  model,
   signal,
-  viewChild,
-  viewChildren,
 } from '@angular/core';
-import {
-  AppFile,
-  FileStatus,
-  ProgressStatus,
-} from '../../../core/models/app-file.model';
-import { FileService } from '../../../core/services/file.service';
-import { FileToIconPipe } from '../../../core/pipes/file-to-icon.pipe';
-import { CommonModule, DecimalPipe } from '@angular/common';
-import {
-  NgbDropdownModule,
-  NgbTooltip,
-  NgbTooltipModule,
-  NgbProgressbarModule,
-} from '@ng-bootstrap/ng-bootstrap';
-import { TimeagoModule } from 'ngx-timeago';
-import { FileSizePipe } from '../../../core/pipes/file-size.pipe';
-import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
-import { FormsModule } from '@angular/forms';
-import { ToastService } from '../../../core/services/toast.service';
-import { MessageSeverity } from '../../../core/models/toast-info.model';
-import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
-import { BaseTableContextMenuComponent } from './base-table-context-menu/base-table-context-menu.component';
-import { bulkAction } from '../../../core/utils/bulk-action-util';
-import { DragPreviewComponent } from './drag-preview/drag-preview.component';
-import { FileDragDropService } from '../../../core/services/file-drag-drop.service';
-import { FileUploadDragDropService } from '../../../core/services/file-upload-drag-drop.service';
-import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
-import { FileUploadService } from '../../../core/services/file-upload.service';
-import { ActionType } from '../../../core/models/action-type.model';
-import { FileShareService } from '../../../core/services/file-share.service';
-import { ModalService } from '../../../core/services/modal.service';
-import { DownloadService } from '../../../core/services/download.service';
-import { lastValueFrom } from 'rxjs';
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { RowColorRule } from '../../../core/models/row-color-rule.model';
+import { TableColumn, SortState, FilterOption } from '../../../core/models/table-column.model';
 
 @Component({
   selector: 'app-base-table',
-  imports: [
-    CommonModule,
-    DecimalPipe,
-    FileToIconPipe,
-    NgbTooltipModule,
-    NgbDropdownModule,
-    TimeagoModule,
-    FileSizePipe,
-    ClicableIconDirective,
-    FormsModule,
-    SelectFilenameDirective,
-    BaseTableContextMenuComponent,
-    DragPreviewComponent,
-    NgbProgressbarModule,
-  ],
+  imports: [CommonModule, NgbDropdownModule, NgTemplateOutlet, DatePipe],
   templateUrl: './base-table.component.html',
   styleUrl: './base-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    class: 'h-100',
-    style: 'max-height: 100%; min-height: 400px',
-    '(window:keydown)': 'onKeydown($event)',
-  },
 })
-export class BaseTableComponent {
-  readonly FileStatus = FileStatus;
-  readonly ProgressStatus = ProgressStatus;
-  private readonly fileService = inject(FileService);
-  private readonly downloadService = inject(DownloadService);
-  private readonly toast = inject(ToastService);
-  private readonly uploadService = inject(FileUploadService);
-  private readonly shareService = inject(FileShareService);
-  private readonly modalService = inject(ModalService);
+export class BaseTableComponent<T extends object> {
+  // Inputs
+  readonly data = input.required<T[]>();
+  readonly addId = input(false);
+  readonly columns = input<TableColumn<T>[]>([]);
+  readonly rowColorRules = input<RowColorRule<T>[]>([]);
+  readonly singleSelect = input<boolean>(false);
+  readonly rowSize = input<'lg' | 'md' | 'sm'>('lg');
+  readonly rowSizeClass = computed(() => ({
+    'table-sm': this.rowSize() === 'md',
+    'ultra-small': this.rowSize() === 'sm',
+  }));
 
-  fileResource = this.fileService.fileResource;
-  areAllCheckboxesChecked = computed(
-    () => this.files().length > 0 && this.files().every((file) => file.checked)
-  );
-  files = this.fileService.files;
-  selectedFiles = this.fileService.selectedFiles;
-  filesMarkedForAction = this.fileService.waitingForAction;
+  // Two way bindings
+  readonly selectedRows = model<T[]>([]);
 
-  tooltips = viewChildren(NgbTooltip);
-  contextMenu = viewChild(BaseTableContextMenuComponent);
-  contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Signals
+  private readonly lastSelectedRow = signal<T | null>(null);
+  readonly sortState = signal<SortState[]>([]);
+  private _sortOrderCounter = 0;
 
-  lastSelectedFileId = signal<number | null>(null);
-  currentDirectoryId = this.fileService.parentId;
+  readonly dragging = signal<null | 'standard' | 'ctrl' | 'shift'>(null);
+  readonly dragSelectionAnchor = signal<T | null>(null);
+  readonly filesSelectedBeforeDrag = signal<T[]>([]);
 
-  onKeydown(event: KeyboardEvent) {
-    const target = event.target as HTMLElement;
-
-    // Allow Ctrl+A if the target is an input or textarea (for text selection)
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
-      event.preventDefault();
-      this.fileService.files.update((files) =>
-        files.map((f) => ({ ...f, checked: true }))
-      );
-    }
+  get sortOrderCounter() {
+    return this._sortOrderCounter++;
   }
 
-  checkAllCheckBox(ev: Event) {
-    const target = ev.target as HTMLInputElement;
-    this.fileService.files.update((files) =>
-      files.map((file) => ({ ...file, checked: target.checked }))
-    );
-  }
+  filters = linkedSignal<{ data: T[]; columns: TableColumn<T>[] }, Record<string, FilterOption[]>>({
+    source: () => ({ data: this.data(), columns: this.columns() }),
+    computation: (newSource, prevData) => {
+      const newFilters: Record<string, FilterOption[]> = {};
+      const prevFilters = prevData?.value ?? {};
 
-  isFileUploadCompleted(file: AppFile) {
-    return file.fileStatus === FileStatus.Completed;
-  }
+      for (const col of newSource.columns) {
+        const distinctMap = new Map<string, unknown>();
+        if (col.disableFilters) continue;
 
-  selectFolder(folderId: number) {
-    this.fileService.goToFolder(folderId);
-  }
+        for (const row of newSource.data) {
+          let val = (row as any)[col.key];
+          let key: string;
 
-  // Rename file
-  initRename(file: AppFile) {
-    this.fileService.files.update((files) =>
-      files.map((f) => (f === file ? { ...f, rename: true } : f))
-    );
-  }
+          if (col.customFilter) {
+            const result = col.customFilter(val);
+            key = result;
+            val = result;
+          } else {
+            if (val instanceof Date) {
+              key = val.toISOString().split('T')[0];
+            } else {
+              key = String(val);
+            }
+          }
 
-  private turnOffFileLoading(file: AppFile) {
-    this.updateFile(file, { loading: false });
-  }
-
-  private cancelRename(file: AppFile) {
-    this.updateFile(file, { rename: false });
-  }
-
-  rename(file: AppFile, newFileName: string) {
-    newFileName = newFileName.trim();
-
-    if (newFileName === '') {
-      this.toast.show(
-        'File rename',
-        'File name cannot be empty',
-        MessageSeverity.error
-      );
-      this.cancelRename(file);
-      return;
-    }
-    if (newFileName === file.fileName) {
-      this.cancelRename(file);
-      return;
-    }
-    if (this.files().some((f) => f.fileName === newFileName)) {
-      this.toast.show(
-        'File rename',
-        'File with this name already exists',
-        MessageSeverity.error
-      );
-      this.cancelRename(file);
-      return;
-    }
-
-    this.updateFile(file, { loading: true, rename: false });
-
-    this.fileService
-      .renameFile(file.id, newFileName)
-      .subscribe({
-        next: () => {
-          this.toast.show(
-            'File rename',
-            'File renamed successfully',
-            MessageSeverity.success
-          );
-          this.updateFileWithNewData(file, { fileName: newFileName });
-        },
-        error: (err) => {
-          this.toast.show(
-            'File rename',
-            err.error || String(err),
-            MessageSeverity.error
-          );
-          this.cancelRename(file);
-        },
-      })
-      .add(() => this.turnOffFileLoading(file));
-  }
-
-  fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
-    if ($event.key === 'Enter') {
-      this.rename(file, ($event.target as HTMLInputElement).value);
-    } else if ($event.key === 'Escape') {
-      this.cancelRename(file);
-    }
-    $event.stopPropagation();
-  }
-
-  selectFile(file: AppFile, event: MouseEvent) {
-    const isCtrl = event.ctrlKey || event.metaKey;
-    const isShift = event.shiftKey;
-
-    if (this.lastSelectedFileId() === null)
-      this.lastSelectedFileId.set(this.files()[0].id);
-
-    const localLastSelectedFileId = this.lastSelectedFileId();
-
-    //if the shift key is pressed, we need to keep the last selected file id,
-    // it will be used as an anchor for the selection
-    if (!isShift) {
-      this.lastSelectedFileId.set(file.id);
-    }
-
-    if (isShift) {
-      const newFileIndex = this.files().findIndex((f) => f === file);
-      const anchorIndex = this.files().findIndex(
-        (f) => f.id === localLastSelectedFileId
-      );
-      let startIndex = Math.min(newFileIndex, anchorIndex);
-      let endIndex = Math.max(newFileIndex, anchorIndex);
-
-      this.fileService.files.update((files) =>
-        files.map((f, index) =>
-          index >= startIndex && index <= endIndex
-            ? { ...f, checked: true }
-            : { ...f, checked: false }
-        )
-      );
-      return;
-    }
-
-    if (isCtrl) {
-      this.fileService.files.update((files) =>
-        files.map((f) => (f === file ? { ...f, checked: !f.checked } : f))
-      );
-      return;
-    }
-
-    // If no modifiers, select only this file
-    this.fileService.files.update((files) =>
-      files.map((f) =>
-        f === file ? { ...f, checked: true } : { ...f, checked: false }
-      )
-    );
-  }
-
-  changeFavourite(files: AppFile[], changeTo: boolean) {
-    const filesToUpdate = files.filter(
-      (file) =>
-        file.fileStatus === FileStatus.Completed &&
-        file.isFavourite !== changeTo
-    );
-    if (filesToUpdate.length === 0) return;
-
-    this.tooltips().forEach((t) => t.close());
-
-    bulkAction<AppFile>({
-      items: filesToUpdate,
-      action: (file) => this.fileService.setFavourite(file),
-      beforeStart: (file) => this.updateFile(file, { loading: true }),
-      onSuccess: (file) =>
-        this.updateFileWithNewData(file, {
-          isFavourite: changeTo,
-          loading: false,
-        }),
-      onError: (_, err) => {
-        this.toast.show(
-          'Favourite update failed',
-          err.error || String(err),
-          MessageSeverity.error
-        );
-      },
-      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-      successMessage: (count, updated) => {
-        if (count === 1) {
-          return changeTo
-            ? `Added '${updated[0].fileName}' to favourites`
-            : `Removed '${updated[0].fileName}' from favourites`;
+          if (!distinctMap.has(key)) {
+            distinctMap.set(key, val);
+          }
         }
-        return changeTo
-          ? `Added ${count} files to favourites`
-          : `Removed ${count} files from favourites`;
-      },
-    });
-  }
 
-  downloadFiles(files: AppFile[]) {
-    this.downloadService.downloadFilesWithFeedback(files);
-  }
+        const prevColumnFilters = prevFilters[col.key as string] ?? [];
 
-  async generateShareLink(files: AppFile[]) {
-    await this.shareService.generateShareLinkWithFeedback(
-      files.map((f) => f.id)
-    );
-  }
-
-  showShareManagementModal(sharedFile: AppFile) {
-    this.modalService.manageSharesModal({
-      sharedFile: sharedFile,
-      title: `Manage shares for file: '${sharedFile.fileName}'`,
-    });
-  }
-
-  shareFile(files: AppFile[]) {
-    this.shareService.shareFilesWithFeedback(files);
-  }
-
-  contextMenuClick(event: MouseEvent, file: AppFile) {
-    event.preventDefault();
-    event.stopPropagation();
-    const position = { x: event.clientX, y: event.clientY };
-    if (!this.selectedFiles().includes(file)) {
-      this.fileService.files.update((files) =>
-        files.map((f) =>
-          f === file ? { ...f, checked: true } : { ...f, checked: false }
-        )
-      );
-    }
-
-    this.openContextMenu(position);
-  }
-
-  actionIconClick(event: MouseEvent, icon: HTMLElement, file: AppFile) {
-    event.stopPropagation();
-
-    const rect = icon.getBoundingClientRect();
-    const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
-    this.fileService.files.update((files) =>
-      files.map((f) =>
-        f === file ? { ...f, checked: true } : { ...f, checked: false }
-      )
-    );
-
-    this.openContextMenu(position);
-  }
-
-  private openContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.contextMenu()?.open();
-  }
-
-  private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.fileService.files.update((files) =>
-      files.map((f) => (f.id === file.id ? { ...f, ...partialUpdate } : f))
-    );
-  }
-
-  private updateFileWithNewData(
-    file: AppFile,
-    partialUpdate?: Partial<AppFile>
-  ) {
-    const updateTime = new Date();
-    this.fileService.files.update((files) =>
-      files.map((f) =>
-        f.id === file.id
-          ? { ...f, ...partialUpdate, modificationDate: updateTime }
-          : f
-      )
-    );
-  }
-
-  deleteFiles(files: AppFile[]) {
-    this.fileService.deleteFilesWithFeedback(files);
-  }
-
-  initFileMove(files: AppFile[]) {
-    this.fileService.setFilesMarkedForAction(files, ActionType.Move);
-    this.toast.show(
-      'File Move Initialized',
-      files.length === 1
-        ? `Selected '${files[0].fileName}' for moving. Navigate to the target folder and paste the file there.`
-        : `Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
-      MessageSeverity.info
-    );
-  }
-
-  initFileCopy(files: AppFile[]) {
-    this.fileService.setFilesMarkedForAction(files, ActionType.Copy);
-    this.toast.show(
-      'File Copy Initialized',
-      files.length === 1
-        ? `Selected '${files[0].fileName}' for copying. Navigate to the target folder and paste the file there.`
-        : `Selected ${files.length} files for copying. Navigate to the target folder and paste the files there.`,
-      MessageSeverity.info
-    );
-  }
-
-  // Drag and drop logic for moving and uploading files
-  private readonly fileMoveDragPreview = viewChild(DragPreviewComponent, {
-    read: ElementRef,
-  });
-  private readonly dragDrop = inject(FileDragDropService);
-  readonly uploadDragDrop = inject(FileUploadDragDropService);
-  readonly dragOverFileId = computed(() =>
-    this.dragDrop.dragOverTarget()?.type === 'file'
-      ? this.dragDrop.dragOverTarget()?.id
-      : null
-  );
-  readonly fileUploadDragOverFileId = computed(
-    () => this.uploadDragDrop.hoveredTarget()?.target?.id
-  );
-  readonly fileUploadTarget = this.uploadDragDrop.uploadTarget;
-  readonly fileUploadHoverTargetCorrect = computed(
-    () =>
-      this.uploadDragDrop.hoveredTarget() &&
-      this.uploadDragDrop.hoveredTarget()?.target?.id ===
-        this.uploadDragDrop.uploadTarget()?.id
-  );
-  readonly fileUpladFileNb = this.uploadDragDrop.filesNb;
-  readonly fileUploadTableTarget = computed(
-    () => this.uploadDragDrop.hoveredTarget()?.type === 'table'
-  );
-  counter = 1;
-
-  canBeTargetDirectory(file: AppFile) {
-    return file.isDirectory && !file.checked;
-  }
-
-  onRowDragStart(event: DragEvent, file: AppFile) {
-    if (!file.checked) {
-      event.preventDefault();
-      return;
-    }
-    const draggedFiles = this.selectedFiles();
-    this.dragDrop.startDrag(draggedFiles);
-
-    event.dataTransfer?.setData(
-      'application/json',
-      JSON.stringify(draggedFiles)
-    );
-    event.dataTransfer!.effectAllowed = 'move';
-
-    const previewEl = this.fileMoveDragPreview()?.nativeElement
-      .firstElementChild as HTMLElement;
-    if (previewEl) {
-      event.dataTransfer!.setDragImage(previewEl, 0, 0);
-    }
-  }
-
-  onRowDragEnter(event: DragEvent, row: AppFile) {
-    event.preventDefault();
-
-    if (this.uploadDragDrop.allowExternalFiles(event)) {
-      if (row.isDirectory) {
-        event.stopPropagation();
-        this.uploadDragDrop.setHoverTarget(
-          { type: 'directory', target: row },
-          event
-        );
+        newFilters[col.key as string] = Array.from(distinctMap.values())
+          .sort((a, b) => {
+            if (a == null && b == null) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+            // Dates
+            if (a instanceof Date && b instanceof Date) {
+              return a.getTime() - b.getTime();
+            }
+            // Numbers
+            if (typeof a === 'number' && typeof b === 'number') {
+              return a - b;
+            }
+            // Fallback to string
+            return String(a).localeCompare(String(b), undefined, { numeric: true });
+          })
+          .map((v) => ({
+            value: v,
+            selected: this.getPrevOrDefault(prevColumnFilters, v),
+          }));
       }
-    } else if (this.dragDrop.allowAppFiles(event)) {
-      this.dragDrop.setDragOverTarget('file', row.id);
-      this.dragDrop.setDropEffect(event, true);
-    }
+      return newFilters;
+    },
+  });
+
+  private getPrevOrDefault(prevFilterOptions: FilterOption[], value: unknown): boolean {
+    const prevFilter = prevFilterOptions.find((fo) => this.valuesEqual(fo.value, value));
+    return prevFilter ? prevFilter.selected : true;
   }
 
-  onRowDragOver(event: DragEvent, row: AppFile) {
-    event.preventDefault();
-    this.dragDrop.setDropEffect(
-      event,
-      this.dragDrop.allowAppFiles(event) ||
-        this.uploadDragDrop.allowExternalFiles(event)
-    );
-  }
-
-  onRowDragLeave(event: DragEvent, file: AppFile) {
-    event.preventDefault();
-    if (!DragDropUtils.isTrueDragLeave(event)) return;
-
-    if (
-      this.uploadDragDrop.hoveredTarget()?.type === 'directory' &&
-      this.uploadDragDrop.hoveredTarget()?.target?.id === file.id
-    ) {
-      this.uploadDragDrop.clearHover();
+  private valuesEqual(a: unknown, b: unknown): boolean {
+    if (a instanceof Date && b instanceof Date) {
+      return a.getTime() === b.getTime();
     }
 
-    if (this.dragDrop.dragOverTarget()?.id === file.id) {
-      this.dragDrop.clearDragOverTarget();
-    }
+    return a === b;
   }
 
-  async onRowDrop(event: DragEvent, targetFile: AppFile) {
-    event.preventDefault();
-    event.stopPropagation();
-    // External files
-    if (this.uploadDragDrop.allowExternalFiles(event)) {
-      const destinationId = this.uploadDragDrop.getDestinationFolder(
-        targetFile,
-        this.currentDirectoryId()
+  // Derived
+  filteredData = computed(() => {
+    let result = this.data();
+    // Apply filters
+    for (const [key, options] of Object.entries(this.filters())) {
+      const allowedValues = options.filter((o) => o.selected).map((o) => o.value);
+
+      result = result.filter((row) => {
+        let rowVal = (row as any)[key];
+        const column = this.columns().find((col) => col.key === key);
+        if (column && column.customFilter) {
+          rowVal = column.customFilter(rowVal);
+        }
+
+        return allowedValues.some((v) => this.valuesEqual(v, rowVal));
+      });
+    }
+
+    // Apply sorting
+    const sortedSortState = this.sortState().sort((a, b) => (a.order > b.order ? -1 : 1));
+    for (const sort of sortedSortState) {
+      result.sort((a, b) => {
+        const av = (a as any)[sort.key];
+        const bv = (b as any)[sort.key];
+        if (av == null && bv == null) return 0;
+        if (av == null) return sort.direction === 'asc' ? -1 : 1;
+        if (bv == null) return sort.direction === 'asc' ? 1 : -1;
+        return sort.direction === 'asc'
+          ? av > bv
+            ? 1
+            : av < bv
+              ? -1
+              : 0
+          : av < bv
+            ? 1
+            : av > bv
+              ? -1
+              : 0;
+      });
+    }
+
+    return result;
+  });
+
+  toggleSort(key: string) {
+    const current = [...this.sortState()];
+    const existing = current.find((s) => s.key === key);
+    if (!existing) {
+      current.push({ key, direction: 'asc', order: this.sortOrderCounter });
+    } else if (existing.direction === 'asc') {
+      existing.direction = 'desc';
+    } else {
+      const idx = current.indexOf(existing);
+      current.splice(idx, 1);
+    }
+    this.sortState.set(current);
+  }
+
+  toggleFilterValue(colKey: string, value: unknown) {
+    this.clearRowSelection();
+    this.filters.update((f) => {
+      const options = f[colKey];
+      const opt = options.find((o) => o.value === value);
+      if (opt) opt.selected = !opt.selected;
+      return { ...f };
+    });
+  }
+
+  singleSelectFilterValue(colKey: string, value: unknown) {
+    this.clearRowSelection();
+    this.filters.update((f) => {
+      const options = f[colKey];
+      options.forEach((opt) =>
+        opt.value === value ? (opt.selected = true) : (opt.selected = false),
       );
-      await this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
+      return { ...f };
+    });
+  }
+
+  clearRowSelection() {
+    if (this.selectedRows().length === 0) return;
+    this.selectedRows.set([]);
+  }
+
+  filterByValue(colKey: string, event: Event) {
+    this.clearRowSelection();
+    const input = event.target as HTMLInputElement;
+    const filterValue = input.value.trim().toLowerCase();
+
+    this.filters.update((f) => {
+      const options = f[colKey];
+
+      options.forEach((opt) =>
+        String(opt.value).trim().toLowerCase().includes(filterValue)
+          ? (opt.selected = true)
+          : (opt.selected = false),
+      );
+      return { ...f };
+    });
+  }
+
+  getAppliedFiltersNb(colKey: string) {
+    const colFilters = this.filters()[colKey];
+    const filtered = colFilters.filter((filter) => !filter.selected);
+    return filtered.length;
+  }
+
+  restetFilters(colKey: string) {
+    this.filters.update((f) => {
+      const options = f[colKey];
+      options.forEach((opt) => (opt.selected = true));
+      return { ...f };
+    });
+  }
+
+  handleRowClick(event: MouseEvent, idx: number) {
+    const row = this.filteredData()[idx];
+
+    if (!this.singleSelect()) {
+      const isCtrl = event.ctrlKey || event.metaKey;
+      const isShift = event.shiftKey;
+
+      if (this.lastSelectedRow() === null) this.lastSelectedRow.set(this.filteredData()[0]);
+
+      const localLastSelectedRow = this.lastSelectedRow();
+
+      //if the shift key is pressed, we need to keep the last selected file id,
+      // as it will be used as an anchor for the selection
+
+      if (!isShift) {
+        this.lastSelectedRow.set(row);
+      }
+
+      if (isShift) {
+        const newFileIndex = idx;
+        const anchorIndex = this.filteredData().findIndex((f) => f === localLastSelectedRow);
+        this.selectRowsBetween(newFileIndex, anchorIndex);
+        return;
+      }
+
+      if (isCtrl) {
+        if (this.isRowSelected(row))
+          this.selectedRows.update((rows) => [...rows.filter((r) => !this.compareRows(row, r))]);
+        else this.selectedRows.set([...this.selectedRows(), row]);
+        return;
+      }
+    }
+
+    this.selectedRows.set([row]);
+  }
+
+  private selectRowsBetween(firstIndex: number, secondIndex: number) {
+    const startIndex = Math.min(firstIndex, secondIndex);
+    const endIndex = Math.max(firstIndex, secondIndex);
+
+    const rows = this.filteredData().filter((_, index) => index >= startIndex && index <= endIndex);
+    this.selectedRows.set(rows);
+  }
+
+  isRowSelected(row: T) {
+    // Try ID-based matching if 'id' exists in the row
+    if ('id' in (row as object)) {
+      const idKey = 'id' as keyof T;
+      return this.selectedRows().some((r) => r[idKey] === row[idKey]);
+    }
+    // Fallback to reference equality
+    return this.selectedRows().includes(row);
+  }
+
+  private compareRows(row1: T, row2: T) {
+    // Try ID-based matching if 'id' exists in the row
+    if ('id' in (row1 as object) && 'id' in (row2 as object)) {
+      const idKey = 'id' as keyof T;
+      return row1[idKey] === row2[idKey];
+    }
+    return row1 === row2;
+  }
+
+  private getRowIndex(row: T) {
+    return this.filteredData().findIndex((r) => this.compareRows(r, row));
+  }
+
+  rowClasses(row: T): string {
+    for (const rule of this.rowColorRules()) {
+      if (rule.predicate(row)) return rule.className;
+    }
+    return '';
+  }
+
+  getColKeyAsString(col: TableColumn<T>): string {
+    return col.key as string;
+  }
+
+  getColKeyAsKeyOfT(col: TableColumn<T>) {
+    return col.key as keyof T;
+  }
+
+  getSortStateByKey(key: string) {
+    return this.sortState().find((s) => s.key === key);
+  }
+
+  isValDateType(arg: T[keyof T]) {
+    return arg instanceof Date;
+  }
+
+  isLastFilterOptLeft(colKey: string) {
+    return this.filters()[colKey].filter((filter) => filter.selected).length <= 1;
+  }
+
+  isColDateType(colKey: string) {
+    const sample = this.data()[0];
+    if (!sample || !(colKey in sample)) {
+      return false;
+    }
+    return this.data().some((row) => row[colKey as keyof T] instanceof Date);
+  }
+
+  tryGetRowId<T>(row: T) {
+    if ('id' in (row as object)) {
+      const idKey = 'id' as keyof T;
+      return row[idKey];
+    }
+    return null;
+  }
+
+  onRowMouseDown(row: T, event: MouseEvent) {
+    if (event.button !== 0) return; // left button only
+    event.preventDefault();
+    this.filesSelectedBeforeDrag.set(this.selectedRows());
+
+    if (event.ctrlKey) {
+      this.dragging.set('ctrl');
+    } else if (event.shiftKey) {
+      this.dragging.set('shift');
+    } else {
+      this.dragging.set('standard');
+    }
+    this.dragSelectionAnchor.set(row);
+  }
+
+  onRowMouseEnter(row: T) {
+    if (!this.dragging || !this.dragSelectionAnchor()) return;
+
+    const firstIndex = this.getRowIndex(this.dragSelectionAnchor()!);
+    const secondIndex = this.getRowIndex(row);
+    this.dragSelectRows(firstIndex, secondIndex);
+  }
+
+  onRowMouseUp(row: T) {
+    if (!this.dragging() || !this.dragSelectionAnchor()) return;
+    if (this.dragging() && this.compareRows(row, this.dragSelectionAnchor()!)) {
+      this.endDragSelection();
       return;
     }
 
-    // Internal files
-    if (this.dragDrop.allowAppFiles(event)) {
-      const draggedFiles = this.dragDrop.draggedFiles();
-      this.dragDrop.clearDrag();
-      if (!targetFile.isDirectory || targetFile.checked) return;
-      this.fileService.moveFilesWithFeedback(
-        draggedFiles,
-        targetFile.id,
-        targetFile.fileName
-      );
+    const firstIndex = this.getRowIndex(this.dragSelectionAnchor()!);
+    const secondIndex = this.getRowIndex(row);
+    this.dragSelectRows(firstIndex, secondIndex);
+
+    this.endDragSelection();
+  }
+
+  onMouseUpWindow(event: MouseEvent) {
+    this.endDragSelection();
+  }
+
+  private dragSelectRows(firstIndex: number, secondIndex: number) {
+    this.selectRowsBetween(firstIndex, secondIndex);
+
+    if (this.dragging() === 'shift') {
+      //add to selection rows from selectedBeforeDrag
+      const rowsToAdd = this.filesSelectedBeforeDrag().filter((row) => !this.isRowSelected(row));
+      this.selectedRows.update((rows) => [...rows, ...rowsToAdd]);
+    } else if (this.dragging() == 'ctrl') {
+      const rowsToAdd = this.filesSelectedBeforeDrag().filter((row) => !this.isRowSelected(row));
+      const rowsToRemove = this.filesSelectedBeforeDrag().filter((row) => !rowsToAdd.includes(row));
+      this.selectedRows.update((rows) => [
+        ...rows.filter((row) => !rowsToRemove.includes(row)),
+        ...rowsToAdd,
+      ]);
     }
   }
 
-  onTableDragEnter(event: DragEvent) {
-    event.preventDefault();
-
-    if (this.uploadDragDrop.allowExternalFiles(event)) {
-      this.uploadDragDrop.setHoverTarget(
-        { type: 'table', target: null },
-        event
-      );
-    }
-  }
-
-  onTableDragOver(event: DragEvent) {
-    event.preventDefault();
-    this.dragDrop.setDropEffect(
-      event,
-      this.dragDrop.allowAppFiles(event) ||
-        this.uploadDragDrop.allowExternalFiles(event)
-    );
-  }
-
-  async onTableDrop(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.uploadDragDrop.allowExternalFiles(event)) {
-      const destinationId = this.currentDirectoryId();
-      await this.uploadDragDrop.uploadDraggedFiles(event, destinationId);
-      return;
-    }
-  }
-
-  onTableDragLeave(event: DragEvent) {
-    event.preventDefault();
-    if (!DragDropUtils.isTrueDragLeave(event)) return;
-
-    if (this.uploadDragDrop.hoveredTarget()?.type === 'table') {
-      this.uploadDragDrop.clearHover();
-    }
-  }
-
-  stopFilesUpload(files: AppFile[]) {
-    files.forEach(this.stopFileUpload.bind(this));
-  }
-
-  stopFileUpload(file: AppFile) {
-    if (file.progressStatus !== ProgressStatus.Started) return;
-    file.progressStatus = ProgressStatus.Stopping;
-    this.uploadService.pause(file.id);
-  }
-
-  continueFilesUpload(files: AppFile[]) {
-    files.forEach(this.continueFileUpload.bind(this));
-  }
-
-  continueFileUpload(file: AppFile) {
-    if (file.progressStatus !== ProgressStatus.Stopped) return;
-    this.uploadService.resume(file, this.currentDirectoryId());
-  }
-
-  getFileSize(fileSize: string) {
-    return +fileSize.split(' ')[0];
-  }
-
-  async cancelFilesUpload(files: AppFile[]) {
-    const incompleteFiles = files.filter(
-      (file) => file.fileStatus === FileStatus.Incomplete
-    );
-    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  }
-
-  async cancelUpload(file: AppFile) {
-    if (file.fileStatus !== FileStatus.Incomplete) return;
-    if (await this.fileService.deleteFilesWithFeedback([file]))
-      this.uploadService.cancel(file.id);
+  private endDragSelection() {
+    this.dragging.set(null);
+    this.dragSelectionAnchor.set(null);
   }
 }

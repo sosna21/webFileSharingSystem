@@ -11,8 +11,8 @@
     } }
   </div>
 
-  <ng-content select="table">
-    <app-base-table />
+  <ng-content select="table, [data-view]">
+    No table provided.
   </ng-content>
 
   @if (showPagination()) {

@@ -1,4 +1,4 @@
-import { AfterViewInit, Directive, ElementRef, HostListener, inject, OnInit } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, inject, OnInit } from '@angular/core';
 
 @Directive({
   selector: 'input[type="text"][appSelectFilename]',
@@ -10,6 +10,7 @@ export class SelectFilenameDirective implements OnInit, AfterViewInit {
   private el = inject(ElementRef<HTMLInputElement>);
 
   ngOnInit() {
+    console.log('SelectFilenameDirective initialized');
     const input = this.el.nativeElement;
     input.focus();
   }

@@ -1,302 +1,118 @@
-<app-base-table-context-menu
-  [position]="contextMenuPosition()"
-  [selectedFiles]="selectedFiles()"
-  (openFolder)="selectFolder($event.id)"
-  (rename)="initRename($event)"
-  (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
-  (delete)="deleteFiles($event)"
-  (share)="shareFile($event)"
-  (manageShares)="showShareManagementModal($event)"
-  (selectFolder)="selectFolder($event)"
-  (pauseUpload)="stopFilesUpload($event)"
-  (resumeUpload)="continueFilesUpload($event)"
-  (cancelUpload)="cancelFilesUpload($event)"
-  (move)="initFileMove($event)"
-  (copy)="initFileCopy($event)"
-  (download)="downloadFiles($event)"
-  (generateLink)="generateShareLink($event)"
-/>
-
-<div
-  class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
-  [class.table-drop-hover]="fileUploadTableTarget()"
->
-  <div
-    (dragleave)="onTableDragLeave($event)"
-    (dragenter)="onTableDragEnter($event)"
-    (dragover)="onTableDragOver($event)"
-    (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper overflow-auto h-100 px-1"
-  >
-    <table class="table table-hover table-sm no-select my-0">
-      <thead class="table-primary sticky-top">
-        <tr>
-          <th scope="col" style="width: 3%">ID</th>
-          <th scope="col" style="width: 3%">
-            <label class="lbl-checkbox">
-              <input
-                type="checkbox"
-                [checked]="areAllCheckboxesChecked()"
-                (change)="checkAllCheckBox($event)"
-              />
-            </label>
-          </th>
-          <th scope="col" class="text-left">File Name</th>
-          <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
-            Favourite
-          </th>
-          <th scope="col" class="d-none d-md-table-cell" style="width: 5%">
-            Share
-          </th>
-          <th scope="col" style="width: 5%">Actions</th>
-          <th scope="col" style="width: 6%">Size</th>
-          <th scope="col" class="d-none d-sm-table-cell" style="width: 12%">
-            Last Modification
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="100%" class="text-center fs-5">
-            @if (files().length === 0 && !fileResource.isLoading()) {
-            <div>No files found.</div>
-            }
-          </td>
-        </tr>
-        @for (file of files(); track file.id; let i = $index) { @let
-        isSelectable = file.isDirectory;
-        <tr
-          (contextmenu)="contextMenuClick($event, file)"
-          [class.selected-row]="file.checked"
-          (click)="selectFile(file, $event)"
-          (dblclick)="isSelectable ? selectFolder(file.id) : null"
-          [class.selectable]="isSelectable"
-          draggable="true"
-          (dragstart)="onRowDragStart($event, file)"
-          (dragleave)="onRowDragLeave($event, file)"
-          (dragenter)="onRowDragEnter($event, file)"
-          (dragover)="onRowDragOver($event, file)"
-          (drop)="onRowDrop($event, file)"
-          [class.opacity-50]="
-            filesMarkedForAction()?.type === 1 &&
-            filesMarkedForAction()?.filesIds!.has(file.id)
-          "
-          [class.drop-folder-hover]="
-            (dragOverFileId() === file.id ||
-              fileUploadDragOverFileId() === file.id) &&
-            canBeTargetDirectory(file)
-          "
-        >
-          <td class="d-table-cell align-middle text-center">{{ file.id }}</td>
-          <td class="d-table-cell align-middle text-center">
-            @if (file.fileStatus === FileStatus.Incomplete) {
-            <i
-              class="bi bi-x-octagon text-danger"
-              style="-webkit-text-stroke: 1px; font-size: large"
-              (click)="cancelUpload(file)"
-              appClicableIcon
-              ngbTooltip="Cancel upload"
-              [openDelay]="300"
-            ></i>
-            } @else if (file.loading) {
-            <span class="spinner-border spinner-border-sm"></span>
-            }
-          </td>
-
-          @if (file.fileStatus === FileStatus.Completed) {
-          <td class="d-table-cell">
-            <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-            @if (file.rename) {
-            <input
-              appSelectFilename
-              type="text"
-              style="min-width: 85%"
-              [ngModel]="file.fileName"
-              [placeholder]="file.fileName"
-              (focusout)="rename(file, $any($event.target).value)"
-              (keydown)="fileRenameKeyDown($event, file)"
-            />
-            } @else {
-            {{ file.fileName }}
-            }
-          </td>
+<table class="table table-hover no-select" [class]="rowSizeClass()">
+  <thead class="sticky-top">
+    <tr class="table-primary">
+      @for (col of columns(); track col.key) {
+        @let keyAsString = getColKeyAsString(col);
+        @let sortState = getSortStateByKey(keyAsString);
+        <th (click)="toggleSort(keyAsString)" style="cursor: pointer">
+          {{ col.header }}
+          <span> {{ sortState ? (sortState!.direction === "asc" ? "▲" : "▼") : "⇅" }} </span>
+        </th>
+      }
+    </tr>
+    <tr>
+      @for (col of columns(); track col.key) {
+        <th>
+          @if (col.disableFilters) {
+            <button class="btn btn-sm btn-light border border-black" disabled>Filtruj</button>
           } @else {
-          <td class="d-table-cell align-middle">
-            <div class="d-flex align-items-center gap-3">
-              <!-- File icon -->
-              <i class="bi fs-4" [ngClass]="file | fileToIcon"></i>
-
-              <!-- File details (name + progress bar) -->
-              <div class="flex-grow-1">
-                <div class="text-truncate">
-                  {{ file.fileName }}
-                  <span
-                    [class]="
-                      'small ' +
-                      (file.progressStatus === ProgressStatus.Started
-                        ? 'text-muted'
-                        : file.progressStatus === ProgressStatus.Stopping
-                        ? 'text-warning-emphasis'
-                        : 'text-danger-emphasis')
-                    "
-                    >({{
-                      file.progressStatus === ProgressStatus.Started
-                        ? "Uploading"
-                        : file.progressStatus === ProgressStatus.Stopping
-                        ? "Stopping"
-                        : "Stopped"
-                    }}:
-                    {{
-                      getFileSize(file.size | fileSize) * file.uploadProgress
-                        | number : "1.2-2"
-                    }}/{{ file.size | fileSize }})</span
+            @let keyAsString = getColKeyAsString(col);
+            @let columnFiltersNb = getAppliedFiltersNb(keyAsString);
+            @let lastFilterLeft = isLastFilterOptLeft(keyAsString);
+            @let iscolDate = isColDateType(keyAsString);
+            <div ngbDropdown container="body">
+              <button class="btn btn-sm btn-light border border-black" ngbDropdownToggle>
+                Filtruj {{ columnFiltersNb > 0 ? `(${columnFiltersNb})` : "" }}
+              </button>
+              <div ngbDropdownMenu style="min-width: 180px">
+                <div class="mx-2 d-grid gap-1">
+                  <button
+                    (click)="restetFilters(keyAsString); searchFilter.value = ''"
+                    class="btn btn-sm btn-outline-secondary w-100"
                   >
+                    Wyczyść wszystkie
+                  </button>
+                  <input
+                    #searchFilter
+                    [disabled]="iscolDate"
+                    (keyup)="filterByValue(keyAsString, $event)"
+                    [placeholder]="iscolDate ? 'Niedostępne' : 'Wyszukaj'"
+                    type="text"
+                    class="form-control form-control-sm"
+                  />
                 </div>
-                <div class="d-flex">
-                  <ngb-progressbar
-                    [value]="file.uploadProgress * 100"
-                    [showValue]="true"
-                    [type]="
-                      file.progressStatus === ProgressStatus.Started
-                        ? 'primary'
-                        : file.progressStatus === ProgressStatus.Stopping
-                        ? 'warning'
-                        : 'secondary'
-                    "
-                    [animated]="file.progressStatus === ProgressStatus.Stopping"
-                    [striped]="file.progressStatus !== ProgressStatus.Stopped"
-                    class="mt-1 w-50 border border-secondary"
-                  ></ngb-progressbar>
-                  <div
-                    class="d-flex ms-2 align-items-start"
-                    style="margin-top: -5px"
-                  >
-                    <i
-                      appClicableIcon
-                      class="bi bi-pause-circle"
-                      [disabled]="
-                        file.progressStatus !== ProgressStatus.Started
+                <div class="dropdown-divider"></div>
+                <div class="overflow-auto text-nowrap" style="max-height: 260px">
+                  @for (opt of filters()[keyAsString]; track opt.value) {
+                    <!-- Do not allow to unselect last active value from dropdown -->
+                    @let disableFilter = opt.selected && lastFilterLeft;
+                    <div
+                      class="form-check mx-2 text-start border-bottom"
+                      (click)="
+                        !disableFilter && toggleFilterValue(keyAsString, opt.value);
+                        searchFilter.value = ''
                       "
-                      (click)="stopFileUpload(file)"
-                      ngbTooltip="Pause upload"
-                      [openDelay]="300"
-                    ></i>
-                    <i
-                      appClicableIcon
-                      class="bi bi-play-circle-fill"
-                      [disabled]="
-                        file.progressStatus === ProgressStatus.Started
+                      (dblclick)="
+                        singleSelectFilterValue(keyAsString, opt.value); searchFilter.value = ''
                       "
-                      (click)="continueFileUpload(file)"
-                      ngbTooltip="Resume upload"
-                      [openDelay]="300"
-                    ></i>
-                  </div>
+                    >
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        [checked]="opt.selected"
+                        [disabled]="disableFilter"
+                      />
+                      <label class="form-check-label">
+                        @if (isValDateType($any(opt.value))) {
+                          {{ $any(opt.value) | date: "shortDate" }}
+                        } @else if (opt.value == null || opt.value == "") {
+                          {{ "\< Puste \>" }}
+                        } @else {
+                          {{ opt.value }}
+                        }
+                      </label>
+                    </div>
+                  }
                 </div>
               </div>
             </div>
-          </td>
           }
-
-          <!--Favorites -->
-          <td class="d-none d-md-table-cell align-middle">
-            <i
-              #favIcon
-              appClicableIcon
-              [disabled]="file.fileStatus === FileStatus.Incomplete"
-              class="bi fs-5"
-              [class]="
-                file.isFavourite
-                  ? 'bi-star-fill text-warning'
-                  : 'bi-star text-secondary'
-              "
-              (click)="changeFavourite([file], !file.isFavourite)"
-              [ngbTooltip]="
-                file.fileStatus === FileStatus.Incomplete
-                  ? undefined
-                  : file.isFavourite
-                  ? 'Remove from favourites'
-                  : 'Add to favourites'
-              "
-              [openDelay]="300"
-            ></i>
+        </th>
+      }
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of filteredData(); track tryGetRowId(row) ?? $index) {
+      @let isSelected = isRowSelected(row);
+      <tr
+        [id]="addId() ? tryGetRowId(row) : null"
+        [class.selected]="isSelected"
+        [class]="rowClasses(row)"
+        (click)="handleRowClick($event, $index)"
+        (mousedown)="!singleSelect() && onRowMouseDown(row, $event)"
+        (mouseenter)="onRowMouseEnter(row)"
+        (mouseup)="onRowMouseUp(row)"
+      >
+        @for (col of columns(); track col.key) {
+          @let key = getColKeyAsKeyOfT(col);
+          <td>
+            @if (col.customTemplate) {
+              <ng-container
+                *ngTemplateOutlet="col.customTemplate; context: { $implicit: row[key], row: row }"
+              >
+              </ng-container>
+            } @else if (isValDateType(row[key])) {
+              {{ row[key] | date: "shortDate" }}
+            } @else {
+              {{ row[key] }}
+            }
           </td>
-
-          <!--Share-->
-          <td class="d-none d-md-table-cell align-middle">
-            <i
-              appClicableIcon
-              (click)="
-                file.isShared
-                  ? showShareManagementModal(file)
-                  : shareFile([file])
-              "
-              [disabled]="file.fileStatus === FileStatus.Incomplete"
-              class="bi bi-share-fill fs-5"
-              [class.text-primary]="file.isShared"
-              [class.text-secondary]="!file.isShared"
-              [ngbTooltip]="
-                file.fileStatus === FileStatus.Incomplete
-                  ? undefined
-                  : file.isShared
-                  ? 'Manage shares'
-                  : 'Share file'
-              "
-              [openDelay]="300"
-            ></i>
-          </td>
-
-          <!--Actions-->
-          <td class="d-table-cell align-middle">
-            <i
-              #icon
-              appClicableIcon
-              class="bi bi-three-dots fs-5"
-              (click)="actionIconClick($event, icon, file)"
-              ngbTooltip="Show more actions"
-              [openDelay]="300"
-            ></i>
-          </td>
-
-          <!--File size-->
-          <td class="d-table-cell align-middle">{{ file.size | fileSize }}</td>
-
-          <!--Last modification date-->
-          <td class="d-none d-sm-table-cell align-middle">
-            <div>
-              <span [ngbTooltip]="file.modificationDate | date : 'medium'">{{
-                file.modificationDate | timeago
-              }}</span>
-            </div>
-          </td>
-        </tr>
         }
-      </tbody>
-    </table>
-
-    @if (files().length === 0) {
-    <div
-      class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
-    >
-      <i class="bi bi-upload" style="font-size: 5rem"></i>
-      <div class="fs-3">Drop files here to upload</div>
-    </div>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="9999" class="text-center py-4 fs-5">Brak danych spełniających warunki.</td>
+      </tr>
     }
-  </div>
-  <!-- overlay lives OUTSIDE the scrollable container -->
-  @if (fileUploadTarget()) {
-  <div class="drop-overlay">
-    <div class="drop-overlay-text">
-      @if (fileUploadHoverTargetCorrect()) { Upload
-      {{ fileUpladFileNb() }} file(s) to “{{ fileUploadTarget()?.name }}” }
-      @else { Upload {{ fileUpladFileNb() }} file(s) here }
-    </div>
-  </div>
-  }
-</div>
-
-<!-- Do not remove this -->
-<!-- Invisible drag preview component, necessary for drag preview view snapshot -->
-<div style="position: absolute; top: -9999px; left: -9999px">
-  <app-drag-preview [files]="selectedFiles()" />
-</div>
+  </tbody>
+</table>
