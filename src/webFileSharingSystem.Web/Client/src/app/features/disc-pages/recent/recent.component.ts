@@ -3,11 +3,10 @@ import { FileService } from '../../../core/services/file.service';
 import {BaseDiscPageComponent} from '../base-disc-page/base-disc-page.component';
 import {BaseDiscPageHeaderComponent} from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { MyFilesComponent } from "../my-files/my-files.component";
-import { OldTableComponent } from "../old-table/old-table.component";
 
 @Component({
   selector: 'app-recent',
-  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent, MyFilesComponent, OldTableComponent],
+  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent, MyFilesComponent],
   templateUrl: './recent.component.html',
   styleUrl: './recent.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -12,11 +12,8 @@ export interface AppFile {
   fileStatus: FileStatus;
   uploadProgress: number;
   partialFileInfo?: PartialFileInfo;
-  checked: boolean;
-  rename: boolean;
   stopping: boolean;
   progressStatus: ProgressStatus;
-  loading: boolean
 }
 
 export enum FileStatus {

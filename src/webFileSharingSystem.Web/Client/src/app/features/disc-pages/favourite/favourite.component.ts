@@ -3,11 +3,10 @@ import { BaseDiscPageComponent } from "../base-disc-page/base-disc-page.componen
 import { BaseDiscPageHeaderComponent } from "../base-disc-page/base-disc-page-header/base-disc-page-header.component";
 import {FileService} from '../../../core/services/file.service';
 import { MyFilesComponent } from "../my-files/my-files.component";
-import { OldTableComponent } from "../old-table/old-table.component";
 
 @Component({
   selector: 'app-favourite',
-  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent, MyFilesComponent, OldTableComponent],
+  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent, MyFilesComponent],
   templateUrl: './favourite.component.html',
   styleUrl: './favourite.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

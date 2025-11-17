@@ -144,23 +144,21 @@ export class FileShareService {
         shareResults.map((sr) => ({ file, shareRequest: sr }))
       );
 
-    bulkAction<{ file: AppFile; shareRequest: AddShareRequest }>({
+    bulkAction<{ file: AppFile; shareRequest: AddShareRequest}>({
       items: shareRequests,
       action: (item) => this.shareFile(item.file, item.shareRequest),
-      beforeStart: (item) =>
-        this.fileService.updateFile(item.file, { loading: true }),
-      onSuccess: (item) =>
-        this.fileService.updateFile(item.file, {
-          loading: false,
-          isShared: true,
-        }),
+      beforeStart: (item) => this.fileService.setLoading(item.file.id, true),
+      onSuccess: (item) => {
+        this.fileService.updateFile(item.file, { isShared: true });
+        this.fileService.setLoading(item.file.id, false);
+      },
       onError: (item, err) => {
         this.toast.show(
           'Failed to share file',
           err.error || String(err),
           MessageSeverity.error
         );
-        this.fileService.turnOffFileLoading(item.file);
+        this.fileService.setLoading(item.file.id, false);
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: (count, updated) => {

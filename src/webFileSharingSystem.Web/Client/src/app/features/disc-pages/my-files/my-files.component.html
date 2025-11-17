@@ -68,7 +68,7 @@
             ngbTooltip="Cancel upload"
             [openDelay]="300"
           ></i>
-          } @else if (file.loading) {
+          } @else if (isLoading(file.id)) {
           <span class="spinner-border spinner-border-sm"></span>
           }
         </td>
@@ -82,7 +82,7 @@
         <td cdk-cell *cdkCellDef="let file">
           @if (file.fileStatus === FileStatus.Completed) {
           <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-          @if (file.rename) {
+          @if (editingId() === file.id) {
           <input
             appSelectFilename
             type="text"
@@ -309,14 +309,14 @@
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
         (contextmenu)="contextMenuClick($event, file)"
-        [class.selected-row]="file.checked"
+        [class.selected-row]="selectedIds().has(file.id)"
         (click)="selectFile(file, $event)"
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
         [class.selectable]="file.isDirectory"
         [draggable]="
           file.fileStatus === FileStatus.Completed &&
-          !file.loading &&
-          !file.rename
+          !isLoading(file.id) &&
+          !isEditing(file.id)
         "
         (dragstart)="onRowDragStart($event, file)"
         (dragleave)="onRowDragLeave($event, file)"

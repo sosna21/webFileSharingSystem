@@ -32,9 +32,7 @@ export class FileActionsStripComponent {
   readonly newFolderName = signal('');
   readonly files = this.fileService.files;
   readonly activeAction = this.fileService.waitingForAction;
-  readonly selectedFiles = computed(() =>
-    this.files().filter((file) => file.checked)
-  );
+  readonly selectedFiles = this.fileService.selectedFiles;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canPaste = computed(() => this.activeAction() !== null);
   readonly canFileAction = computed(
@@ -147,7 +145,7 @@ export class FileActionsStripComponent {
 
   onRename() {
     if (!this.canRename()) return;
-    this.fileService.updateFile(this.selectedFiles()[0], { rename: true });
+    this.fileService.editingId.set(this.selectedFiles()[0].id);
   }
 
   onShare() {

@@ -49,7 +49,14 @@ export class FileService {
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
   public readonly files = linkedSignal<AppFile[]>(() => this._linkedFilesResponse()?.items.map(file => ({ ...file, progressStatus: ProgressStatus.Stopped })).sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []);
-  public readonly selectedFiles = computed(() => this.files().filter(file => file.checked));
+  // UI state shared across components
+  public readonly selectedIds = signal<Set<number>>(new Set());
+  public readonly editingId = signal<number | null>(null);
+  public readonly loadingIds = signal<Set<number>>(new Set());
+  public readonly selectedFiles = computed(() => {
+    const ids = this.selectedIds();
+    return this.files().filter(f => ids.has(f.id));
+  });
   public readonly pagainationData = computed(() => this._linkedFilesResponse() ? ({
     currentPage: this.currentPage(),
     itemsPerPage: this.itemsPerPage(),
@@ -107,6 +114,15 @@ export class FileService {
       this.router.navigate(
         ['/disc', 'home', 'folder', folderId]
       );
+  }
+
+  // Shared UI helpers
+  public setLoading(id: number, value: boolean) {
+    this.loadingIds.update(prev => {
+      const next = new Set(prev);
+      if (value) next.add(id); else next.delete(id);
+      return next;
+    });
   }
 
   renameFile(id: number, newFileName: string) {
@@ -197,7 +213,7 @@ export class FileService {
     bulkAction<AppFile>({
       items: filesToDelete,
       action: file => this.deleteFile(file),
-      beforeStart: file => this.updateFile(file, { loading: true }),
+      beforeStart: file => this.setLoading(file.id, true),
       onSuccess: file => this.files.update(list => list.filter(f => f.id !== file.id)),
       onError: (file, err) => {
         this.toast.show(
@@ -205,16 +221,12 @@ export class FileService {
           err instanceof Error ? err.message : String(err),
           MessageSeverity.error
         );
-        this.turnOffFileLoading(file);
+        this.setLoading(file.id, false);
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: count => `Deleted ${count} file(s) successfully`
     });
     return true;
-  }
-
-  turnOffFileLoading(file: AppFile) {
-    this.updateFile(file, { loading: false });
   }
 
   private executeFileOperationWithFeedback<T>(
@@ -226,9 +238,10 @@ export class FileService {
     updateFilesList: (currentFiles: AppFile[], operationResult: T, fileIds: number[]) => AppFile[]
   ) {
     if (files.length === 0) return;
+    if (targetDirectoryName === '') targetDirectoryName = 'Root';
 
     // Set loading state
-    files.forEach(file => this.updateFile(file, { loading: true }));
+    files.forEach(file => this.setLoading(file.id, true));
 
     const fileIds = files.map(f => f.id);
     const isPlural = files.length > 1;
@@ -240,6 +253,9 @@ export class FileService {
         // Update files list based on operation type
         this.files.update(currentFiles => updateFilesList(currentFiles, result, fileIds));
 
+        // Clear loading state for impacted files
+        fileIds.forEach(id => this.setLoading(id, false));
+
         this.toast.show(
           isPlural ? `Files ${operationPastTense}` : `File ${operationPastTense}`,
           isPlural
@@ -250,7 +266,7 @@ export class FileService {
       },
       error: (err) => {
         // Reset loading state on error
-        files.forEach(f => this.updateFile(f, { loading: false }));
+        files.forEach(f => this.setLoading(f.id, false));
 
         let errorMessage = `File ${operationName} failed. Please try again.`;
         if (err.error?.errors) {

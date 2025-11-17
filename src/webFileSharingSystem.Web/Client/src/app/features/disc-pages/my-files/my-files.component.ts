@@ -80,7 +80,10 @@ export class MyFilesComponent {
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   readonly singleSelect = signal(false);
-  readonly fileSelectionBeforeDrag = signal<AppFile[]>([]);
+  readonly fileSelectionBeforeDragIds = signal<Set<number>>(new Set());
+  readonly selectedIds = this.fileService.selectedIds;
+  readonly editingId = this.fileService.editingId;
+  readonly loadingIds = this.fileService.loadingIds;
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([
     'id',
@@ -93,11 +96,15 @@ export class MyFilesComponent {
     'lastModification',
   ]);
   fileResource = this.fileService.fileResource;
-  areAllCheckboxesChecked = computed(
-    () => this.files().length > 0 && this.files().every((file) => file.checked)
+  areAllCheckboxesChecked = computed(() =>
+    this.files().length > 0 && this.selectedIds().size === this.files().length
   );
   files = this.fileService.files;
-  selectedFiles = this.fileService.selectedFiles;
+  selectedFiles = computed(() => {
+    const ids = this.selectedIds();
+    const list = this.files();
+    return list.filter((f) => ids.has(f.id));
+  });
   filesMarkedForAction = this.fileService.waitingForAction;
 
   tooltips = viewChildren(NgbTooltip);
@@ -110,6 +117,19 @@ export class MyFilesComponent {
   readonly dragSelectionAnchorId = signal<number | null>(null);
   readonly dragging = signal<null | 'standard' | 'ctrl' | 'shift'>(null);
 
+  isSelected(id: number): boolean {
+    return this.selectedIds().has(id);
+  }
+  isEditing(id: number): boolean {
+    return this.editingId() === id;
+  }
+  isLoading(id: number): boolean {
+    return this.loadingIds().has(id);
+  }
+  private setLoading(id: number, value: boolean) {
+    this.fileService.setLoading(id, value);
+  }
+
   onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
 
@@ -120,28 +140,29 @@ export class MyFilesComponent {
 
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
       event.preventDefault();
-      this.fileService.files.update((files) =>
-        files.map((f) => ({ ...f, checked: true }))
-      );
+      const all = new Set(this.files().map((f) => f.id));
+      this.selectedIds.set(all);
     }
   }
 
   checkAllCheckBox(ev: Event) {
     const target = ev.target as HTMLInputElement;
-    this.fileService.files.update((files) =>
-      files.map((file) => ({ ...file, checked: target.checked }))
-    );
+    if (target.checked) {
+      this.selectedIds.set(new Set(this.files().map((f) => f.id)));
+    } else {
+      this.selectedIds.set(new Set());
+    }
   }
 
   onRowMouseDown(row: AppFile, event: MouseEvent) {
     if (
       event.button !== 0 ||
       this.singleSelect() ||
-      (row.checked && !(event.ctrlKey || event.shiftKey))
+      (this.isSelected(row.id) && !(event.ctrlKey || event.shiftKey))
     )
       return; // left button only
     event.preventDefault();
-    this.fileSelectionBeforeDrag.set(this.files());
+    this.fileSelectionBeforeDragIds.set(new Set(this.selectedIds()));
 
     if (event.ctrlKey) {
       this.dragging.set('ctrl');
@@ -177,45 +198,44 @@ export class MyFilesComponent {
     const currentIndex = this.files().findIndex((f) => f.id === currentFile.id);
 
     if (this.dragging() === 'shift') {
-      this.files.update((files) =>
-        files.map((f, index) => {
-          if (
+      const range = new Set(
+        this.files()
+          .filter((_, index) =>
             index >= Math.min(anchorIndex, currentIndex) &&
             index <= Math.max(anchorIndex, currentIndex)
-          ) {
-            return { ...f, checked: true };
-          } else return f;
-        })
+          )
+          .map((f) => f.id)
       );
+      this.selectedIds.update((prev) => new Set([...prev, ...range]));
     } else if (this.dragging() == 'ctrl') {
-      this.files.set(
-        this.fileSelectionBeforeDrag().map((f, index) => {
-          if (
-            index >= Math.min(anchorIndex, currentIndex) &&
-            index <= Math.max(anchorIndex, currentIndex)
-          ) {
-            return { ...f, checked: !f.checked };
-          } else return f;
-        })
-      );
+      const startSet = new Set(this.fileSelectionBeforeDragIds());
+      const idsInRange = this.files()
+        .filter((_, index) =>
+          index >= Math.min(anchorIndex, currentIndex) &&
+          index <= Math.max(anchorIndex, currentIndex)
+        )
+        .map((f) => f.id);
+      const next = new Set(startSet);
+      idsInRange.forEach((id) => {
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+      });
+      this.selectedIds.set(next);
     } else {
-      this.files.update((files) =>
-        files.map((f, index) => {
-          if (
-            index >= Math.min(anchorIndex, currentIndex) &&
-            index <= Math.max(anchorIndex, currentIndex)
-          ) {
-            return { ...f, checked: true };
-          } else return { ...f, checked: false };
-        })
-      );
+      const rangeIds = this.files()
+        .filter((_, index) =>
+          index >= Math.min(anchorIndex, currentIndex) &&
+          index <= Math.max(anchorIndex, currentIndex)
+        )
+        .map((f) => f.id);
+      this.selectedIds.set(new Set(rangeIds));
     }
   }
 
   private endDragSelection() {
     this.dragging.set(null);
     this.dragSelectionAnchorId.set(null);
-    this.fileSelectionBeforeDrag.set([]);
+    this.fileSelectionBeforeDragIds.set(new Set());
   }
 
   isFileUploadCompleted(file: AppFile) {
@@ -228,17 +248,11 @@ export class MyFilesComponent {
 
   // Rename file
   initRename(file: AppFile) {
-    this.fileService.files.update((files) =>
-      files.map((f) => (f === file ? { ...f, rename: true } : f))
-    );
-  }
-
-  private turnOffFileLoading(file: AppFile) {
-    this.updateFile(file, { loading: false });
+    this.editingId.set(file.id);
   }
 
   private cancelRename(file: AppFile) {
-    this.updateFile(file, { rename: false });
+    if (this.isEditing(file.id)) this.editingId.set(null);
   }
 
   rename(file: AppFile, newFileName: string) {
@@ -268,7 +282,8 @@ export class MyFilesComponent {
       return;
     }
 
-    this.updateFile(file, { loading: true, rename: false });
+    this.setLoading(file.id, true);
+    this.editingId.set(null);
 
     this.fileService
       .renameFile(file.id, newFileName)
@@ -290,7 +305,7 @@ export class MyFilesComponent {
           this.cancelRename(file);
         },
       })
-      .add(() => this.turnOffFileLoading(file));
+        .add(() => this.setLoading(file.id, false));
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
@@ -322,32 +337,27 @@ export class MyFilesComponent {
       const anchorIndex = this.files().findIndex(
         (f) => f.id === localLastSelectedFileId
       );
-      let startIndex = Math.min(newFileIndex, anchorIndex);
-      let endIndex = Math.max(newFileIndex, anchorIndex);
-
-      this.fileService.files.update((files) =>
-        files.map((f, index) =>
-          index >= startIndex && index <= endIndex
-            ? { ...f, checked: true }
-            : { ...f, checked: false }
-        )
-      );
+      const startIndex = Math.min(newFileIndex, anchorIndex);
+      const endIndex = Math.max(newFileIndex, anchorIndex);
+      const rangeIds = this.files()
+        .filter((_, idx) => idx >= startIndex && idx <= endIndex)
+        .map((f) => f.id);
+      this.selectedIds.set(new Set(rangeIds));
       return;
     }
 
     if (isCtrl) {
-      this.fileService.files.update((files) =>
-        files.map((f) => (f === file ? { ...f, checked: !f.checked } : f))
-      );
+      this.selectedIds.update((prev) => {
+        const next = new Set(prev);
+        if (next.has(file.id)) next.delete(file.id);
+        else next.add(file.id);
+        return next;
+      });
       return;
     }
 
     // If no modifiers, select only this file
-    this.fileService.files.update((files) =>
-      files.map((f) =>
-        f === file ? { ...f, checked: true } : { ...f, checked: false }
-      )
-    );
+    this.selectedIds.set(new Set([file.id]));
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
@@ -363,18 +373,19 @@ export class MyFilesComponent {
     bulkAction<AppFile>({
       items: filesToUpdate,
       action: (file) => this.fileService.setFavourite(file),
-      beforeStart: (file) => this.updateFile(file, { loading: true }),
-      onSuccess: (file) =>
-        this.updateFileWithNewData(file, {
-          isFavourite: changeTo,
-          loading: false,
-        }),
+      beforeStart: (file) => this.setLoading(file.id, true),
+      onSuccess: (file) => {
+        this.updateFileWithNewData(file, { isFavourite: changeTo });
+        this.setLoading(file.id, false);
+      },
       onError: (_, err) => {
         this.toast.show(
           'Favourite update failed',
           err.error || String(err),
           MessageSeverity.error
         );
+        // best-effort to clean loading
+        // here we cannot know the file id from _ reliably, so skip
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: (count, updated) => {
@@ -416,11 +427,7 @@ export class MyFilesComponent {
     event.stopPropagation();
     const position = { x: event.clientX, y: event.clientY };
     if (!this.selectedFiles().includes(file)) {
-      this.fileService.files.update((files) =>
-        files.map((f) =>
-          f === file ? { ...f, checked: true } : { ...f, checked: false }
-        )
-      );
+      this.selectedIds.set(new Set([file.id]));
     }
 
     this.openContextMenu(position);
@@ -431,11 +438,7 @@ export class MyFilesComponent {
 
     const rect = icon.getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
-    this.fileService.files.update((files) =>
-      files.map((f) =>
-        f === file ? { ...f, checked: true } : { ...f, checked: false }
-      )
-    );
+    this.selectedIds.set(new Set([file.id]));
 
     this.openContextMenu(position);
   }
@@ -520,11 +523,11 @@ export class MyFilesComponent {
   counter = 1;
 
   canBeTargetDirectory(file: AppFile) {
-    return file.isDirectory && !file.checked;
+    return file.isDirectory && !this.isSelected(file.id);
   }
 
   onRowDragStart(event: DragEvent, file: AppFile) {
-    if (!file.checked || event.ctrlKey || event.shiftKey) {
+    if (!this.isSelected(file.id) || event.ctrlKey || event.shiftKey) {
       event.preventDefault();
       return;
     }
@@ -603,7 +606,7 @@ export class MyFilesComponent {
     if (this.dragDrop.allowAppFiles(event)) {
       const draggedFiles = this.dragDrop.draggedFiles();
       this.dragDrop.clearDrag();
-      if (!targetFile.isDirectory || targetFile.checked) return;
+      if (!targetFile.isDirectory || this.isSelected(targetFile.id)) return;
       this.fileService.moveFilesWithFeedback(
         draggedFiles,
         targetFile.id,
