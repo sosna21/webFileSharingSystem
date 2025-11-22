@@ -20,13 +20,11 @@ import {
 import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
-import { ActionType } from '../../../core/models/action-type.model';
 import {
   FileStatus,
   ProgressStatus,
   AppFile,
 } from '../../../core/models/app-file.model';
-import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { FileSizePipe } from '../../../core/pipes/file-size.pipe';
 import { FileToIconPipe } from '../../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../../core/services/download.service';
@@ -37,7 +35,6 @@ import { FileUploadService } from '../../../core/services/file-upload.service';
 import { FileService } from '../../../core/services/file.service';
 import { ModalService } from '../../../core/services/modal.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { bulkAction } from '../../../core/utils/bulk-action-util';
 import { DragDropUtils } from '../../../core/utils/drag-drop-utils';
 import { BaseTableContextMenuComponent } from './base-table-context-menu/base-table-context-menu.component';
 import { DragPreviewComponent } from './drag-preview/drag-preview.component';
@@ -75,7 +72,6 @@ export class MyFilesComponent {
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
   private readonly downloadService = inject(DownloadService);
-  private readonly toast = inject(ToastService);
   private readonly uploadService = inject(FileUploadService);
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
@@ -96,8 +92,9 @@ export class MyFilesComponent {
     'lastModification',
   ]);
   fileResource = this.fileService.fileResource;
-  areAllCheckboxesChecked = computed(() =>
-    this.files().length > 0 && this.selectedIds().size === this.files().length
+  areAllCheckboxesChecked = computed(
+    () =>
+      this.files().length > 0 && this.selectedIds().size === this.files().length
   );
   files = this.fileService.files;
   selectedFiles = computed(() => {
@@ -120,9 +117,11 @@ export class MyFilesComponent {
   isSelected(id: number): boolean {
     return this.selectedIds().has(id);
   }
+
   isEditing(id: number): boolean {
     return this.editingId() === id;
   }
+
   isLoading(id: number): boolean {
     return this.loadingIds().has(id);
   }
@@ -200,9 +199,10 @@ export class MyFilesComponent {
     if (this.dragging() === 'shift') {
       const range = new Set(
         this.files()
-          .filter((_, index) =>
-            index >= Math.min(anchorIndex, currentIndex) &&
-            index <= Math.max(anchorIndex, currentIndex)
+          .filter(
+            (_, index) =>
+              index >= Math.min(anchorIndex, currentIndex) &&
+              index <= Math.max(anchorIndex, currentIndex)
           )
           .map((f) => f.id)
       );
@@ -210,9 +210,10 @@ export class MyFilesComponent {
     } else if (this.dragging() == 'ctrl') {
       const startSet = new Set(this.fileSelectionBeforeDragIds());
       const idsInRange = this.files()
-        .filter((_, index) =>
-          index >= Math.min(anchorIndex, currentIndex) &&
-          index <= Math.max(anchorIndex, currentIndex)
+        .filter(
+          (_, index) =>
+            index >= Math.min(anchorIndex, currentIndex) &&
+            index <= Math.max(anchorIndex, currentIndex)
         )
         .map((f) => f.id);
       const next = new Set(startSet);
@@ -223,9 +224,10 @@ export class MyFilesComponent {
       this.selectedIds.set(next);
     } else {
       const rangeIds = this.files()
-        .filter((_, index) =>
-          index >= Math.min(anchorIndex, currentIndex) &&
-          index <= Math.max(anchorIndex, currentIndex)
+        .filter(
+          (_, index) =>
+            index >= Math.min(anchorIndex, currentIndex) &&
+            index <= Math.max(anchorIndex, currentIndex)
         )
         .map((f) => f.id);
       this.selectedIds.set(new Set(rangeIds));
@@ -251,68 +253,15 @@ export class MyFilesComponent {
     this.editingId.set(file.id);
   }
 
-  private cancelRename(file: AppFile) {
-    if (this.isEditing(file.id)) this.editingId.set(null);
-  }
-
   rename(file: AppFile, newFileName: string) {
-    console.log('Focusout rename');
-    newFileName = newFileName.trim();
-
-    if (newFileName === '') {
-      this.toast.show(
-        'File rename',
-        'File name cannot be empty',
-        MessageSeverity.error
-      );
-      this.cancelRename(file);
-      return;
-    }
-    if (newFileName === file.fileName) {
-      this.cancelRename(file);
-      return;
-    }
-    if (this.files().some((f) => f.fileName === newFileName)) {
-      this.toast.show(
-        'File rename',
-        'File with this name already exists',
-        MessageSeverity.error
-      );
-      this.cancelRename(file);
-      return;
-    }
-
-    this.setLoading(file.id, true);
-    this.editingId.set(null);
-
-    this.fileService
-      .renameFile(file.id, newFileName)
-      .subscribe({
-        next: () => {
-          this.toast.show(
-            'File rename',
-            'File renamed successfully',
-            MessageSeverity.success
-          );
-          this.updateFileWithNewData(file, { fileName: newFileName });
-        },
-        error: (err) => {
-          this.toast.show(
-            'File rename',
-            err.error || String(err),
-            MessageSeverity.error
-          );
-          this.cancelRename(file);
-        },
-      })
-        .add(() => this.setLoading(file.id, false));
+    this.fileService.renameFileWithFeedback(file, newFileName);
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
     if ($event.key === 'Enter') {
       this.rename(file, ($event.target as HTMLInputElement).value);
     } else if ($event.key === 'Escape') {
-      this.cancelRename(file);
+      this.editingId.set(null);
     }
     $event.stopPropagation();
   }
@@ -361,44 +310,8 @@ export class MyFilesComponent {
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
-    const filesToUpdate = files.filter(
-      (file) =>
-        file.fileStatus === FileStatus.Completed &&
-        file.isFavourite !== changeTo
-    );
-    if (filesToUpdate.length === 0) return;
-
+    this.fileService.changeFilesFavouriteWithFeedback(files, changeTo);
     this.tooltips().forEach((t) => t.close());
-
-    bulkAction<AppFile>({
-      items: filesToUpdate,
-      action: (file) => this.fileService.setFavourite(file),
-      beforeStart: (file) => this.setLoading(file.id, true),
-      onSuccess: (file) => {
-        this.updateFileWithNewData(file, { isFavourite: changeTo });
-        this.setLoading(file.id, false);
-      },
-      onError: (_, err) => {
-        this.toast.show(
-          'Favourite update failed',
-          err.error || String(err),
-          MessageSeverity.error
-        );
-        // best-effort to clean loading
-        // here we cannot know the file id from _ reliably, so skip
-      },
-      toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-      successMessage: (count, updated) => {
-        if (count === 1) {
-          return changeTo
-            ? `Added '${updated[0].fileName}' to favourites`
-            : `Removed '${updated[0].fileName}' from favourites`;
-        }
-        return changeTo
-          ? `Added ${count} files to favourites`
-          : `Removed ${count} files from favourites`;
-      },
-    });
   }
 
   downloadFiles(files: AppFile[]) {
@@ -449,50 +362,16 @@ export class MyFilesComponent {
     this.contextMenu()?.open();
   }
 
-  private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.fileService.files.update((files) =>
-      files.map((f) => (f.id === file.id ? { ...f, ...partialUpdate } : f))
-    );
-  }
-
-  private updateFileWithNewData(
-    file: AppFile,
-    partialUpdate?: Partial<AppFile>
-  ) {
-    const updateTime = new Date();
-    this.fileService.files.update((files) =>
-      files.map((f) =>
-        f.id === file.id
-          ? { ...f, ...partialUpdate, modificationDate: updateTime }
-          : f
-      )
-    );
-  }
-
   deleteFiles(files: AppFile[]) {
     this.fileService.deleteFilesWithFeedback(files);
   }
 
   initFileMove(files: AppFile[]) {
-    this.fileService.setFilesMarkedForAction(files, ActionType.Move);
-    this.toast.show(
-      'File Move Initialized',
-      files.length === 1
-        ? `Selected '${files[0].fileName}' for moving. Navigate to the target folder and paste the file there.`
-        : `Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
-      MessageSeverity.info
-    );
+    this.fileService.markFilesToMoveWithFeedback(files);
   }
 
   initFileCopy(files: AppFile[]) {
-    this.fileService.setFilesMarkedForAction(files, ActionType.Copy);
-    this.toast.show(
-      'File Copy Initialized',
-      files.length === 1
-        ? `Selected '${files[0].fileName}' for copying. Navigate to the target folder and paste the file there.`
-        : `Selected ${files.length} files for copying. Navigate to the target folder and paste the files there.`,
-      MessageSeverity.info
-    );
+    this.fileService.markFilesToCopyWithFeedback(files);
   }
 
   // Drag and drop logic for moving and uploading files

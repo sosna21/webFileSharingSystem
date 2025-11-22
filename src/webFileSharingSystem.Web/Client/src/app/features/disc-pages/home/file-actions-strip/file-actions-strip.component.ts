@@ -104,21 +104,19 @@ export class FileActionsStripComponent {
 
   onCut() {
     if (!this.canFileAction()) return;
-    this.fileService.setFilesMarkedForAction(
+    this.fileService.markFilesToMoveWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed
-      ),
-      ActionType.Move
+      )
     );
   }
 
   onCopy() {
     if (!this.canFileAction()) return;
-    this.fileService.setFilesMarkedForAction(
+    this.fileService.markFilesToCopyWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed
-      ),
-      ActionType.Copy
+      )
     );
   }
 
