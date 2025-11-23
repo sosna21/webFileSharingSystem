@@ -88,13 +88,8 @@ export class FileService {
         .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
   );
   // UI state shared across components
-  public readonly selectedIds = signal<Set<number>>(new Set());
-  public readonly editingId = signal<number | null>(null);
-  public readonly loadingIds = signal<Set<number>>(new Set());
-  public readonly selectedFiles = computed(() => {
-    const ids = this.selectedIds();
-    return this.files().filter((f) => ids.has(f.id));
-  });
+  public readonly editingId = signal<number | null>(null); // (keep for now)
+  public readonly loadingIds = signal<Set<number>>(new Set()); // (keep for now)
   public readonly pagainationData = computed(() =>
     this._linkedFilesResponse()
       ? {

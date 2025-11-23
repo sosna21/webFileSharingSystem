@@ -63,7 +63,7 @@
           <i
             class="bi bi-x-octagon text-danger"
             style="-webkit-text-stroke: 1px; font-size: large"
-            (click)="cancelUpload(file)"
+            (click)="cancelFilesUpload([file])"
             appClicableIcon
             ngbTooltip="Cancel upload"
             [openDelay]="300"
@@ -148,7 +148,7 @@
                     appClicableIcon
                     class="bi bi-pause-circle"
                     [disabled]="file.progressStatus !== ProgressStatus.Started"
-                    (click)="stopFileUpload(file)"
+                    (click)="stopFilesUpload([file])"
                     ngbTooltip="Pause upload"
                     [openDelay]="300"
                   ></i>
@@ -156,7 +156,7 @@
                     appClicableIcon
                     class="bi bi-play-circle-fill"
                     [disabled]="file.progressStatus === ProgressStatus.Started"
-                    (click)="continueFileUpload(file)"
+                    (click)="continueFilesUpload([file])"
                     ngbTooltip="Resume upload"
                     [openDelay]="300"
                   ></i>
@@ -321,7 +321,7 @@
         (dragstart)="onRowDragStart($event, file)"
         (dragleave)="onRowDragLeave($event, file)"
         (dragenter)="onRowDragEnter($event, file)"
-        (dragover)="onRowDragOver($event, file)"
+        (dragover)="onRowDragOver($event)"
         (drop)="onRowDrop($event, file)"
         (mousedown)="onRowMouseDown(file, $event)"
         (mouseenter)="onRowMouseEnter(file)"
@@ -352,8 +352,8 @@
   <div class="drop-overlay">
     <div class="drop-overlay-text">
       @if (fileUploadHoverTargetCorrect()) { Upload
-      {{ fileUpladFileNb() }} file(s) to “{{ fileUploadTarget()?.name }}” }
-      @else { Upload {{ fileUpladFileNb() }} file(s) here }
+      {{ fileUploadFileNb() }} file(s) to “{{ fileUploadTarget()?.name }}” }
+      @else { Upload {{ fileUploadFileNb() }} file(s) here }
     </div>
   </div>
   }

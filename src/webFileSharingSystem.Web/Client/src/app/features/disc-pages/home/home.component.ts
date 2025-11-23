@@ -3,7 +3,6 @@ import {
   Component,
   inject,
   OnInit,
-  signal,
 } from '@angular/core';
 import {
   NgbCollapseModule,
@@ -14,8 +13,9 @@ import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-he
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BreadcrumbComponent } from './breadcrumb/breadcrumb.component';
 import { FileActionsStripComponent } from './file-actions-strip/file-actions-strip.component';
-import { MyFilesComponent } from "../my-files/my-files.component";
+import { MyFilesComponent } from '../my-files/my-files.component';
 import { AppFile } from '../../../core/models/app-file.model';
+import { SelectionService } from '../../../core/services/selection.service';
 
 @Component({
   selector: 'app-home',
@@ -27,16 +27,19 @@ import { AppFile } from '../../../core/models/app-file.model';
     BreadcrumbComponent,
     FileActionsStripComponent,
     MyFilesComponent,
-],
+  ],
+  providers: [SelectionService<AppFile>],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent implements OnInit {
   private readonly fileService = inject(FileService);
-  readonly files = this.fileService.files;
+  private readonly selectionService = inject(SelectionService<AppFile>);
 
-  readonly selectedRows = signal<AppFile[]>([]);
+  constructor() {
+    this.selectionService.init(this.fileService.files);
+  }
 
   ngOnInit(): void {
     this.fileService.mode.set('GetAll');

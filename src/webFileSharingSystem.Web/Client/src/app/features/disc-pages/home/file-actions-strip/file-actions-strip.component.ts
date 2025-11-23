@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../../core/models/action-type.model';
-import { FileStatus } from '../../../../core/models/app-file.model';
+import { AppFile, FileStatus } from '../../../../core/models/app-file.model';
 import { MessageSeverity } from '../../../../core/models/toast-info.model';
 import { FileService } from '../../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +9,7 @@ import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { DownloadService } from '../../../../core/services/download.service';
 import { FileShareService } from '../../../../core/services/file-share.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { SelectionService } from '../../../../core/services/selection.service';
 
 @Component({
   selector: 'app-file-actions-strip',
@@ -21,6 +22,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 })
 export class FileActionsStripComponent {
   private readonly fileService = inject(FileService);
+  private readonly selectionService = inject(SelectionService<AppFile>);
 
   private readonly shareService = inject(FileShareService);
   private readonly toast = inject(ToastService);
@@ -32,7 +34,7 @@ export class FileActionsStripComponent {
   readonly newFolderName = signal('');
   readonly files = this.fileService.files;
   readonly activeAction = this.fileService.waitingForAction;
-  readonly selectedFiles = this.fileService.selectedFiles;
+  readonly selectedFiles = this.selectionService.selectedItems;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canPaste = computed(() => this.activeAction() !== null);
   readonly canFileAction = computed(
