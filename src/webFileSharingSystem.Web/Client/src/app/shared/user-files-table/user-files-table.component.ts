@@ -1,3 +1,4 @@
+import { CdkTableModule } from '@angular/cdk/table';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -5,6 +6,7 @@ import {
   computed,
   ElementRef,
   inject,
+  input,
   signal,
   TrackByFunction,
   viewChild,
@@ -18,28 +20,27 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
-import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
-import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
+import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
+import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
 import {
   FileStatus,
   ProgressStatus,
   AppFile,
-} from '../../../core/models/app-file.model';
-import { FileSizePipe } from '../../../core/pipes/file-size.pipe';
-import { FileToIconPipe } from '../../../core/pipes/file-to-icon.pipe';
-import { DownloadService } from '../../../core/services/download.service';
-import { FileShareService } from '../../../core/services/file-share.service';
-import { FileUploadService } from '../../../core/services/file-upload.service';
-import { FileService } from '../../../core/services/file.service';
-import { ModalService } from '../../../core/services/modal.service';
-import { BaseTableContextMenuComponent } from './base-table-context-menu/base-table-context-menu.component';
-import { DragPreviewComponent } from './drag-preview/drag-preview.component';
-import { CdkTableModule } from '@angular/cdk/table';
-import { SelectionService } from '../../../core/services/selection.service';
-import { TableDragDropFacade } from '../../../core/services/table-drag-drop-facade.service';
+} from '../../core/models/app-file.model';
+import { FileSizePipe } from '../../core/pipes/file-size.pipe';
+import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
+import { DownloadService } from '../../core/services/download.service';
+import { FileShareService } from '../../core/services/file-share.service';
+import { FileUploadService } from '../../core/services/file-upload.service';
+import { FileService } from '../../core/services/file.service';
+import { ModalService } from '../../core/services/modal.service';
+import { SelectionService } from '../../core/services/selection.service';
+import { TableDragDropFacade } from '../../core/services/table-drag-drop-facade.service';
+import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
+import { UserFilesContextMenuComponent } from './user-files-context-menu/user-files-context-menu.component';
 
 @Component({
-  selector: 'app-my-files',
+  selector: 'app-user-files-table',
   imports: [
     CommonModule,
     DecimalPipe,
@@ -51,13 +52,13 @@ import { TableDragDropFacade } from '../../../core/services/table-drag-drop-faca
     ClicableIconDirective,
     FormsModule,
     SelectFilenameDirective,
-    BaseTableContextMenuComponent,
+    UserFilesContextMenuComponent,
     DragPreviewComponent,
     NgbProgressbarModule,
     CdkTableModule,
   ],
-  templateUrl: './my-files.component.html',
-  styleUrl: './my-files.component.scss',
+  templateUrl: './user-files-table.component.html',
+  styleUrl: './user-files-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'h-100',
@@ -66,7 +67,7 @@ import { TableDragDropFacade } from '../../../core/services/table-drag-drop-faca
   },
   providers: [TableDragDropFacade],
 })
-export class MyFilesComponent {
+export class UserFilesTableComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
@@ -99,7 +100,7 @@ export class MyFilesComponent {
   );
 
   tooltips = viewChildren(NgbTooltip);
-  contextMenu = viewChild(BaseTableContextMenuComponent);
+  contextMenu = viewChild(UserFilesContextMenuComponent);
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;

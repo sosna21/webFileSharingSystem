@@ -13,9 +13,9 @@ import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-he
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BreadcrumbComponent } from './breadcrumb/breadcrumb.component';
 import { FileActionsStripComponent } from './file-actions-strip/file-actions-strip.component';
-import { MyFilesComponent } from '../my-files/my-files.component';
 import { AppFile } from '../../../core/models/app-file.model';
 import { SelectionService } from '../../../core/services/selection.service';
+import { UserFilesTableComponent } from '../../../shared/user-files-table/user-files-table.component';
 
 @Component({
   selector: 'app-home',
@@ -26,7 +26,7 @@ import { SelectionService } from '../../../core/services/selection.service';
     BaseDiscPageComponent,
     BreadcrumbComponent,
     FileActionsStripComponent,
-    MyFilesComponent,
+    UserFilesTableComponent
   ],
   providers: [SelectionService<AppFile>],
   templateUrl: './home.component.html',

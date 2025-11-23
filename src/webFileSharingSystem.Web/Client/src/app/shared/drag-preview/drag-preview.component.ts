@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { AppFile } from '../../../../core/models/app-file.model';
-import { FileToIconPipe } from "../../../../core/pipes/file-to-icon.pipe";
+import { AppFile } from '../../core/models/app-file.model';
+import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
+
 
 @Component({
   selector: 'app-drag-preview',
