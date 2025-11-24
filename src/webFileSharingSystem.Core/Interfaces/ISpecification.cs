@@ -27,6 +27,11 @@ namespace webFileSharingSystem.Core.Interfaces
         
         Expression<Func<object, IEnumerable<T>, TOut>>? GroupByResult { get; }
 
+        // Projection selector (used when no grouping applied)
+        Expression<Func<T, TOut>>? Selector { get; }
+
+        bool IsDistinct { get; }
+
         int? Take { get; }
         
         int? Skip { get; }

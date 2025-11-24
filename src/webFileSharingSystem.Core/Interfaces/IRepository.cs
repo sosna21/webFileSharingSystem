@@ -26,6 +26,12 @@ namespace webFileSharingSystem.Core.Interfaces
 
         Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, IQueryable<TEntity> customQuery, CancellationToken cancellationToken = default);
         
+        // Pagination for specifications with projection (and optional grouping)
+        Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, ISpecification<TEntity, TResult> specification, CancellationToken cancellationToken = default);
+
+        // Pagination for specifications with projection plus mapping to final output
+        Task<PaginatedList<TOut>> PaginatedListFindAsync<TSpecResult, TOut>(int pageNumber, int pageSize, Func<TSpecResult, TOut> mapToResult, ISpecification<TEntity, TSpecResult> specification, CancellationToken cancellationToken = default);
+        
         Task<bool> ContainsAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default);
         
         Task<bool> ContainsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
