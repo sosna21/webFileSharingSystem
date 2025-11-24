@@ -112,11 +112,15 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<PaginatedList<FileResponse>> GetFilesSharedByMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId!.Value;
-            return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+            var files = await _unitOfWork.Repository<Share>()
+                .PaginatedListFindAsync<File, FileResponse>(
+                    request.PageNumber,
+                    request.PageSize,
                     file => ToFileResponse(file, userId),
-                    _unitOfWork.CustomQueriesRepository().GetListOfFilesSharedByUserIdQuery(userId,
-                        new GetSharedFilesSpec<File>(request.ParentId, request.SearchedPhrase)));
+                    new GetSharedByUserFilesSpec(userId, request.SearchedPhrase)
+                );
+
+            return files;
         }
 
         [HttpPut]
@@ -191,6 +195,7 @@ namespace webFileSharingSystem.Web.Controllers
             return new FileResponse
             {
                 Id = file.Id,
+                ParentId = file.ParentId,
                 FileName = file.FileName,
                 MimeType = file.MimeType,
                 Size = file.Size,
