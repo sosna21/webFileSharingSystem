@@ -6,6 +6,7 @@ namespace webFileSharingSystem.Web.Contracts.Responses
     public class FileResponse
     {
         public int Id { get; set; }
+        public int? ParentId { get; set; }
         public string FileName { get; set; } = null!;
         public string? MimeType { get; set; }
         public ulong Size { get; set; } 

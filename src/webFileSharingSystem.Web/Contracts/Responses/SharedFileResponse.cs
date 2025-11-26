@@ -16,6 +16,6 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public int? ShareId { get; set; }
         public string SharedUserName { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
-        public DateTime ValidUntil { get; set; }
+        public DateTime? ValidUntil { get; set; }
     }
 }
