@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  linkedSignal,
 } from '@angular/core';
 import { FileService } from '../../../../core/services/file.service';
 import { RouterLink } from '@angular/router';
@@ -27,14 +28,21 @@ export class BreadcrumbComponent {
   readonly uploadDragDrop = inject(FileUploadDragDropService);
   private readonly fileService = inject(FileService);
   readonly breadCrumbsResource = this.fileService.breadCrumbsResource;
-  readonly breadCrumbs = computed(() => [
-    this.homeBreadcrumb,
-    ...(this.breadCrumbsResource.value() ?? []),
-  ]);
+  readonly breadCrumbs = linkedSignal<Breadcrumb[] | undefined, Breadcrumb[]>({
+    source: () => this.breadCrumbsResource.value(),
+    computation: (source, previous) => {
+      if (source) return [this.homeBreadcrumb, ...source];
+      if (this.breadCrumbsResource.isLoading() && previous)
+        return previous.value;
+      return [this.homeBreadcrumb];
+    },
+  });
+
   readonly homeBreadcrumb: Breadcrumb = {
     id: null,
     fileName: 'Home',
   };
+
   readonly dragOverBreadcrumbId = computed(() =>
     this.dragDrop.dragOverTarget()?.type === 'breadcrumb'
       ? this.dragDrop.dragOverTarget()?.id
