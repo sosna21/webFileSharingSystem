@@ -29,7 +29,6 @@ import { ModalService } from './modal.service';
 })
 export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
-  private readonly sharesUrl = `${environment.apiUrl}/Share`;
   private readonly router = inject(Router);
   private readonly authService = inject(AuthenticationService);
   private readonly http = inject(HttpClient);
@@ -61,11 +60,7 @@ export class FileService {
   readonly waitingForAction = this.actionContext.asReadonly();
 
   public readonly mode = signal<
-    | 'GetAll'
-    | 'GetSharedWithMe'
-    | 'GetSharedByMe'
-    | 'GetFavourites'
-    | 'GetRecent'
+    'GetAll' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent'
   >('GetAll');
   public readonly searchedPhrase = signal<string>('');
   public readonly parentId = signal<number | null>(null);
@@ -88,8 +83,8 @@ export class FileService {
         .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
   );
   // UI state shared across components
-  public readonly editingId = signal<number | null>(null); // (keep for now)
-  public readonly loadingIds = signal<Set<number>>(new Set()); // (keep for now)
+  public readonly editingId = signal<number | null>(null);
+  public readonly loadingIds = signal<Set<number>>(new Set());
   public readonly pagainationData = computed(() =>
     this._linkedFilesResponse()
       ? {
@@ -101,16 +96,15 @@ export class FileService {
       : null
   );
 
-  private readonly currentBaseUrl = computed(() => {
-    return this.mode() === 'GetSharedWithMe' ? this.sharesUrl : this.fileUrl;
-  });
   private readonly _debouncedSearchedPhrase = debouncedSignal(
     this.searchedPhrase,
     300,
     ''
   );
   private readonly _request = computed(
-    () => `${this.currentBaseUrl()}/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
+    () => `${
+      this.fileUrl
+    }/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
       ${this.parentId() ? '&ParentId=' + this.parentId() : ''}${
       this._debouncedSearchedPhrase() !== ''
         ? '&SearchedPhrase=' + this._debouncedSearchedPhrase()
@@ -139,9 +133,11 @@ export class FileService {
       ? `${this.fileUrl}/GetFilePath/${this.parentId()}`
       : undefined
   );
+
   private readonly _breadCrumbsResource = httpResource<Breadcrumb[]>(() =>
     this._breadcrumbsQuery()
   );
+
   public readonly breadCrumbsResource = this._breadCrumbsResource.asReadonly();
 
   constructor() {
@@ -150,11 +146,6 @@ export class FileService {
     if (currentUrl.startsWith('/disc/home')) {
       // home context
       this.mode.set('GetAll');
-      const dirId = this.extractFolderId(currentUrl);
-      this.goToFolder(dirId);
-    } else if (currentUrl.startsWith('/disc/shared-with-me')) {
-      // shared-with-me context
-      this.mode.set('GetSharedWithMe');
       const dirId = this.extractFolderId(currentUrl);
       this.goToFolder(dirId);
     }
@@ -168,7 +159,7 @@ export class FileService {
   }
 
   renameFile(id: number, newFileName: string) {
-    const api = `${this.currentBaseUrl()}/Rename/${id}?name=${newFileName}`;
+    const api = `${this.fileUrl}/Rename/${id}?name=${newFileName}`;
     return this.http.put(api, null);
   }
 
@@ -187,17 +178,17 @@ export class FileService {
   }
 
   moveFiles(filesIds: number[], targetDirectoryId: number | null) {
-    const api = `${this.currentBaseUrl()}/Move/${targetDirectoryId ?? -1}`;
+    const api = `${this.fileUrl}/Move/${targetDirectoryId ?? -1}`;
     return this.http.put(api, filesIds);
   }
 
   copyFiles(filesIds: number[], targetDirectoryId: number | null) {
-    const api = `${this.currentBaseUrl()}/Copy/${targetDirectoryId ?? -1}`;
+    const api = `${this.fileUrl}/Copy/${targetDirectoryId ?? -1}`;
     return this.http.post<AppFile[]>(api, filesIds);
   }
 
   deleteFile(file: AppFile) {
-    const api = `${this.currentBaseUrl()}/Delete/${file.id}`;
+    const api = `${this.fileUrl}/Delete/${file.id}`;
     return this.http.delete(api).pipe(
       tap({
         next: () => this.authService.updateCurrentUserUsedSpace(-file.size),
