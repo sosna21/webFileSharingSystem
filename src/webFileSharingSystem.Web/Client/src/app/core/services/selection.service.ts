@@ -98,7 +98,6 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   onRowMouseDown(row: T, event: MouseEvent) {
     if (event.button !== 0) return;
     if (this.isSelected(row.id) && !(event.ctrlKey || event.shiftKey)) return;
-    event.preventDefault();
     this.beforeDragIds.set(new Set(this.selectedIds()));
     this.dragging.set(
       event.ctrlKey ? 'ctrl' : event.shiftKey ? 'shift' : 'standard'
@@ -110,7 +109,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     if (!this.dragging() || !this.dragSelectionAnchorId()) return;
     this.dragSelectRows(row);
   }
-  
+
   onRowMouseUp(row: T) {
     if (!this.dragging() || !this.dragSelectionAnchorId()) return;
     if (this.dragSelectionAnchorId() === row.id) {
