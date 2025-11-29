@@ -1,13 +1,9 @@
-import { PartialFileInfo } from "./partial-file-info.model";
+import { BaseFile } from './base-file.model';
+import { PartialFileInfo } from './partial-file-info.model';
 
-export interface AppFile {
-  id: number;
-  fileName: string;
-  mimeType?: string;
-  size: number;
+export interface AppFile extends BaseFile {
   isFavourite: boolean;
-  isShared: boolean
-  isDirectory: boolean;
+  isShared: boolean;
   modificationDate: Date;
   fileStatus: FileStatus;
   uploadProgress: number;
@@ -18,7 +14,7 @@ export interface AppFile {
 
 export enum FileStatus {
   Completed,
-  Incomplete
+  Incomplete,
 }
 
 export enum ProgressStatus {

@@ -10,10 +10,16 @@ import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-he
 import { UserFilesTableComponent } from '../../../shared/user-files-table/user-files-table.component';
 import { SelectionService } from '../../../core/services/selection.service';
 import { AppFile } from '../../../core/models/app-file.model';
+import { FileActionsStripComponent } from '../home/file-actions-strip/file-actions-strip.component';
 
 @Component({
   selector: 'app-recent',
-  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent, UserFilesTableComponent],
+  imports: [
+    BaseDiscPageComponent,
+    BaseDiscPageHeaderComponent,
+    UserFilesTableComponent,
+    FileActionsStripComponent,
+  ],
   providers: [SelectionService<AppFile>],
   templateUrl: './recent.component.html',
   styleUrl: './recent.component.scss',

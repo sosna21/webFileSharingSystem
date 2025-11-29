@@ -9,11 +9,17 @@ import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-he
 import { FileService } from '../../../core/services/file.service';
 import { AppFile } from '../../../core/models/app-file.model';
 import { SelectionService } from '../../../core/services/selection.service';
-import { UserFilesTableComponent } from "../../../shared/user-files-table/user-files-table.component";
+import { UserFilesTableComponent } from '../../../shared/user-files-table/user-files-table.component';
+import { FileActionsStripComponent } from '../home/file-actions-strip/file-actions-strip.component';
 
 @Component({
   selector: 'app-favourite',
-  imports: [BaseDiscPageComponent, BaseDiscPageHeaderComponent, UserFilesTableComponent],
+  imports: [
+    BaseDiscPageComponent,
+    BaseDiscPageHeaderComponent,
+    UserFilesTableComponent,
+    FileActionsStripComponent,
+  ],
   providers: [SelectionService<AppFile>],
   templateUrl: './favourite.component.html',
   styleUrl: './favourite.component.scss',

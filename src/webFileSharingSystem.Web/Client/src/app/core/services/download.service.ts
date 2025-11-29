@@ -5,6 +5,7 @@ import { DownloadResponse } from '../models/download-response.model';
 import { AppFile } from '../models/app-file.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
+import { BaseFile } from '../models/base-file.model';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +22,7 @@ export class DownloadService {
     return this.http.post<DownloadResponse>(url, {});
   }
 
-  downloadFilesWithFeedback(files: AppFile[]) {
+  downloadFilesWithFeedback(files: BaseFile[]) {
     this.getDownloadLink(files.map((f) => f.id)).subscribe({
       next: (response) => {
         window.location.href = response.url;
