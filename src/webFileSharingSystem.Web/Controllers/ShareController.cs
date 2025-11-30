@@ -105,38 +105,6 @@ namespace webFileSharingSystem.Web.Controllers
             return shareResponses;
         }
 
-        [HttpGet]
-        [Route("GetSharedWithMe")]
-        public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
-        {
-            var userId = _currentUserService.UserId;
-            var sharedFiles =  await _unitOfWork.Repository<SharedFile>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    ToSharedFileResponse,
-                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
-                        new GetSharedFilesSpec<SharedFile>(request.ParentId, request.SearchedPhrase)));
-            return sharedFiles;
-        }
-
-        private static SharedFileResponse ToSharedFileResponse(SharedFile sharedFile)
-        {
-            return new SharedFileResponse
-            {
-                Id = sharedFile.Id,
-                UserId = sharedFile.UserId,
-                FileName = sharedFile.FileName,
-                MimeType = sharedFile.MimeType,
-                Size = sharedFile.Size,
-                IsDirectory = sharedFile.IsDirectory,
-                ShareId = sharedFile.ShareId,
-                SharedUserName = sharedFile.SharedUserName,
-                AccessMode = sharedFile.AccessMode,
-                ValidUntil = sharedFile.ValidUntil == DateTime.MaxValue 
-                    ? null 
-                    : DateTime.SpecifyKind(sharedFile.ValidUntil, DateTimeKind.Utc)
-            };
-        }
-
         private static ShareResponse ToShareResponse(Share share, string userName)
         {
             return new ShareResponse

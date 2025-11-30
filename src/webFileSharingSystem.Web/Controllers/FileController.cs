@@ -122,6 +122,19 @@ namespace webFileSharingSystem.Web.Controllers
 
             return files;
         }
+        
+        [HttpGet]
+        [Route("GetSharedWithMe")]
+        public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
+        {
+            var userId = _currentUserService.UserId;
+            var sharedFiles =  await _unitOfWork.Repository<SharedFile>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    ToSharedFileResponse,
+                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
+                        new GetSharedFilesSpec<SharedFile>(request.ParentId, request.SearchedPhrase)));
+            return sharedFiles;
+        }
 
         [HttpPut]
         [Route("SetFavourite/{id:int}")]
@@ -207,6 +220,25 @@ namespace webFileSharingSystem.Web.Controllers
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
                     _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+            };
+        }
+        
+        private static SharedFileResponse ToSharedFileResponse(SharedFile sharedFile)
+        {
+            return new SharedFileResponse
+            {
+                Id = sharedFile.Id,
+                UserId = sharedFile.UserId,
+                FileName = sharedFile.FileName,
+                MimeType = sharedFile.MimeType,
+                Size = sharedFile.Size,
+                IsDirectory = sharedFile.IsDirectory,
+                ShareId = sharedFile.ShareId,
+                SharedUserName = sharedFile.SharedUserName,
+                AccessMode = sharedFile.AccessMode,
+                ValidUntil = sharedFile.ValidUntil == DateTime.MaxValue 
+                    ? null 
+                    : DateTime.SpecifyKind(sharedFile.ValidUntil, DateTimeKind.Utc)
             };
         }
 
