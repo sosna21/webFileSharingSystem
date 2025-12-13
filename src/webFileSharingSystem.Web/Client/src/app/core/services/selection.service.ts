@@ -47,6 +47,33 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
       const all = new Set(this.filesSig().map((f) => f.id));
       this.selectedIds.set(all);
     }
+    else if (this.selectedIds().size > 0) {
+      if (event.key === 'Escape') {
+        this.selectedIds.set(new Set());
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        const files = this.filesSig();
+        const selectedIds = this.selectedIds();
+        let anchorId = this.fileSelectionAnchorId();  
+        if (anchorId === null && selectedIds.size > 0) {
+          anchorId = selectedIds.values().next().value!;
+        }
+        const anchorIndex = files.findIndex(f => f.id === anchorId);
+        let newIndex: number;
+        if (event.key === 'ArrowUp') {
+          newIndex = Math.max(0, anchorIndex - 1);
+        } else {
+          newIndex = Math.min(files.length - 1, anchorIndex + 1);
+        }
+        const newAnchorId = files[newIndex].id;
+        this.fileSelectionAnchorId.set(newAnchorId);
+        if (event.shiftKey) {
+          this.selectedIds.update((prev) => new Set([...prev, newAnchorId]));
+        } else {
+          this.selectedIds.set(new Set([newAnchorId]));
+        }
+      }
+    }
   }
 
   toggleAll(checked: boolean) {
