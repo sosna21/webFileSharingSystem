@@ -7,13 +7,12 @@ import {
 } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { AppFile, FileStatus, ProgressStatus } from '../models/app-file.model';
-import { HttpClient, httpResource } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
 import { Router } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
-import { Observable, tap } from 'rxjs';
-import { AuthenticationService } from './authentication.service';
+import { Observable } from 'rxjs';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
@@ -23,6 +22,10 @@ import {
 } from '../models/upload-progress-info.model';
 import { bulkAction } from '../utils/bulk-action-util';
 import { ModalService } from './modal.service';
+import { FileApiService } from './api/file-api.service';
+import { BaseFile } from '../models/base-file.model';
+import { SharedFile } from '../models/shared-file.model';
+import { ShareAccessMode } from '../models/share-access-mode.model';
 
 @Injectable({
   providedIn: 'root',
@@ -30,19 +33,17 @@ import { ModalService } from './modal.service';
 export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly router = inject(Router);
-  private readonly authService = inject(AuthenticationService);
-  private readonly http = inject(HttpClient);
+  private readonly fileApiService = inject(FileApiService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private readonly actionContext = linkedSignal<
-    Record<number, AppFile>,
-    { files: Set<AppFile>; filesIds: Set<number>; type: ActionType } | null
+    Record<number, BaseFile>,
+    { files: Set<BaseFile>; filesIds: Set<number>; type: ActionType } | null
   >({
     source: () =>
-      Object.fromEntries(this.files().map((item) => [item.id, item])) as Record<
-        string,
-        AppFile
-      >,
+      Object.fromEntries(
+        this.userFiles().map((item) => [item.id, item])
+      ) as Record<string, BaseFile>,
     computation: (source, previous) => {
       if (!previous || !previous.value?.files) return null;
       const resultFiles = [...previous.value.files].map(
@@ -57,10 +58,15 @@ export class FileService {
       };
     },
   });
-  readonly waitingForAction = this.actionContext.asReadonly();
+
+  readonly awaitingActionState = this.actionContext.asReadonly();
 
   public readonly mode = signal<
-    'GetAll' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent'
+    | 'GetAll'
+    | 'GetSharedByMe'
+    | 'GetFavourites'
+    | 'GetRecent'
+    | 'GetSharedWithMe'
   >('GetAll');
   public readonly searchedPhrase = signal<string>('');
   public readonly parentId = signal<number | null>(null);
@@ -73,15 +79,30 @@ export class FileService {
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-  public readonly files = linkedSignal<AppFile[]>(
+
+  public readonly userFiles = linkedSignal<AppFile[]>(
     () =>
       this._linkedFilesResponse()
         ?.items.map((file) => ({
           ...file,
           progressStatus: ProgressStatus.Stopped,
+          accessMode: ShareAccessMode.FullAccess
         }))
         .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
   );
+
+  public readonly sharedFiles = linkedSignal<SharedFile[]>(
+    () =>
+      this._linkedSharedFilesResponse()
+        ?.items.map((file) => ({
+          ...file,
+          progressStatus: ProgressStatus.Stopped,
+          fileStatus: FileStatus.Completed,
+          
+        }))
+        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
+  );
+
   // UI state shared across components
   public readonly editingId = signal<number | null>(null);
   public readonly loadingIds = signal<Set<number>>(new Set());
@@ -111,11 +132,17 @@ export class FileService {
         : ''
     }`
   );
-  readonly _fileResource = httpResource<FileResponse>(() => this._request());
+
+  readonly _fileResource = httpResource<FileResponse<AppFile>>(() =>
+    this.mode() !== 'GetSharedWithMe' ? this._request() : undefined
+  );
+  readonly _sharedFilesResource = httpResource<FileResponse<SharedFile>>(() =>
+    this.mode() === 'GetSharedWithMe' ? this._request() : undefined
+  );
 
   private readonly _linkedFilesResponse = linkedSignal<
-    FileResponse | undefined,
-    FileResponse | undefined
+    FileResponse<AppFile> | undefined,
+    FileResponse<AppFile> | undefined
   >({
     source: () => this._fileResource.value(),
     computation: (source, previous) => {
@@ -125,7 +152,22 @@ export class FileService {
       return source;
     },
   });
+
+  private readonly _linkedSharedFilesResponse = linkedSignal<
+    FileResponse<SharedFile> | undefined,
+    FileResponse<SharedFile> | undefined
+  >({
+    source: () => this._sharedFilesResource.value(),
+    computation: (source, previous) => {
+      if (source === undefined && previous?.value !== undefined) {
+        return previous?.value;
+      }
+      return source;
+    },
+  });
+
   public readonly fileResource = this._fileResource.asReadonly();
+  public readonly sharedFilesResource = this._sharedFilesResource.asReadonly();
 
   //breadcumbs
   private readonly _breadcrumbsQuery = computed(() =>
@@ -154,50 +196,28 @@ export class FileService {
   goToFolder(folderId: number | null) {
     this.parentId.set(folderId);
 
-    if (folderId === null) this.router.navigate(['/disc', 'home']);
-    else this.router.navigate(['/disc', 'home', 'folder', folderId]);
+    if (folderId === null) this.router.navigate(['/disc', this.routeFromMode]);
+    else
+      this.router.navigate(['/disc', this.routeFromMode, 'folder', folderId]);
   }
 
-  renameFile(id: number, newFileName: string) {
-    const api = `${this.fileUrl}/Rename/${id}?name=${newFileName}`;
-    return this.http.put(api, null);
-  }
-
-  setFavourite(file: AppFile) {
-    const api = `${this.fileUrl}/SetFavourite/${
-      file.id
-    }?value=${!file.isFavourite}`;
-    return this.http.put(api, null);
-  }
-
-  createDirectory(name: string) {
-    const api = `${this.fileUrl}/CreateDir/${name}${
-      this.parentId() ? '?parentId=' + this.parentId() : ''
-    }`;
-    return this.http.post<AppFile>(api, null);
-  }
-
-  moveFiles(filesIds: number[], targetDirectoryId: number | null) {
-    const api = `${this.fileUrl}/Move/${targetDirectoryId ?? -1}`;
-    return this.http.put(api, filesIds);
-  }
-
-  copyFiles(filesIds: number[], targetDirectoryId: number | null) {
-    const api = `${this.fileUrl}/Copy/${targetDirectoryId ?? -1}`;
-    return this.http.post<AppFile[]>(api, filesIds);
-  }
-
-  deleteFile(file: AppFile) {
-    const api = `${this.fileUrl}/Delete/${file.id}`;
-    return this.http.delete(api).pipe(
-      tap({
-        next: () => this.authService.updateCurrentUserUsedSpace(-file.size),
-      })
-    );
+  private get routeFromMode() {
+    switch (this.mode()) {
+      case 'GetAll':
+        return 'home';
+      case 'GetSharedByMe':
+        return 'shared-by-me';
+      case 'GetFavourites':
+        return 'favourite';
+      case 'GetRecent':
+        return 'recent';
+      case 'GetSharedWithMe':
+        return 'shared-with-me';
+    }
   }
 
   // Shared UI helpers
-  renameFileWithFeedback(file: AppFile, newFileName: string) {
+  renameFileWithFeedback(file: BaseFile, newFileName: string) {
     newFileName = newFileName.trim();
 
     if (newFileName === '') {
@@ -214,7 +234,7 @@ export class FileService {
       return;
     }
 
-    if (this.files().some((f) => f.fileName === newFileName)) {
+    if (this.userFiles().some((f) => f.fileName === newFileName)) {
       this.toast.show(
         'File rename',
         'File with this name already exists',
@@ -226,7 +246,8 @@ export class FileService {
     this.setLoading(file.id, true);
     this.editingId.set(null);
 
-    this.renameFile(file.id, newFileName)
+    this.fileApiService
+      .renameFile(file.id, newFileName)
       .subscribe({
         next: () => {
           this.toast.show(
@@ -257,7 +278,7 @@ export class FileService {
 
     bulkAction<AppFile>({
       items: filesToUpdate,
-      action: (file) => this.setFavourite(file),
+      action: (file) => this.fileApiService.setFavourite(file.id, changeTo),
       beforeStart: (file) => this.setLoading(file.id, true),
       onSuccess: (file) => {
         this.updateFile(file, { isFavourite: changeTo });
@@ -285,7 +306,7 @@ export class FileService {
     });
   }
 
-  markFilesToCopyWithFeedback(files: AppFile[]) {
+  markFilesToCopyWithFeedback(files: BaseFile[]) {
     this.setFilesMarkedForAction(files, ActionType.Copy);
     this.toast.show(
       'File Copy Initialized',
@@ -296,7 +317,7 @@ export class FileService {
     );
   }
 
-  markFilesToMoveWithFeedback(files: AppFile[]) {
+  markFilesToMoveWithFeedback(files: BaseFile[]) {
     this.setFilesMarkedForAction(files, ActionType.Move);
     this.toast.show(
       'File Move Initialized',
@@ -308,7 +329,7 @@ export class FileService {
   }
 
   moveFilesWithFeedback(
-    filesToMove: AppFile[],
+    filesToMove: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string
   ) {
@@ -316,7 +337,7 @@ export class FileService {
       filesToMove,
       targetDirectoryId,
       targetDirectoryName,
-      (ids, targetId) => this.moveFiles(ids, targetId),
+      (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
       'move',
       (currentFiles, _, fileIds) =>
         currentFiles.filter((f) => !fileIds.includes(f.id))
@@ -324,7 +345,7 @@ export class FileService {
   }
 
   copyFilesWithFeedback(
-    filesToCopy: AppFile[],
+    filesToCopy: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string
   ) {
@@ -332,13 +353,13 @@ export class FileService {
       filesToCopy,
       targetDirectoryId,
       targetDirectoryName,
-      (ids, targetId) => this.copyFiles(ids, targetId),
+      (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
       'copy',
-      (currentFiles, newFiles) => [...currentFiles, ...(newFiles as AppFile[])]
+      (currentFiles, newFiles) => [...currentFiles, ...(newFiles as BaseFile[])]
     );
   }
 
-  async deleteFilesWithFeedback(filesToDelete: AppFile[]): Promise<boolean> {
+  async deleteFilesWithFeedback(filesToDelete: BaseFile[]): Promise<boolean> {
     if (filesToDelete.length === 0) {
       return false;
     }
@@ -378,12 +399,12 @@ export class FileService {
     });
     if (!confirmationResult) return false;
 
-    bulkAction<AppFile>({
+    bulkAction<BaseFile>({
       items: filesToDelete,
-      action: (file) => this.deleteFile(file),
+      action: (file) => this.fileApiService.deleteFile(file.id),
       beforeStart: (file) => this.setLoading(file.id, true),
       onSuccess: (file) =>
-        this.files.update((list) => list.filter((f) => f.id !== file.id)),
+        this.userFiles.update((list) => list.filter((f) => f.id !== file.id)),
       onError: (file, err) => {
         this.toast.show(
           'File deletion',
@@ -399,16 +420,16 @@ export class FileService {
   }
 
   private executeFileOperationWithFeedback<T>(
-    files: AppFile[],
+    files: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
     operation: (fileIds: number[], targetId: number | null) => Observable<T>,
     operationName: 'move' | 'copy',
     updateFilesList: (
-      currentFiles: AppFile[],
+      currentFiles: BaseFile[],
       operationResult: T,
       fileIds: number[]
-    ) => AppFile[]
+    ) => BaseFile[]
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
@@ -425,9 +446,9 @@ export class FileService {
     operation(fileIds, targetDirectoryId).subscribe({
       next: (result) => {
         // Update files list based on operation type
-        this.files.update((currentFiles) =>
-          updateFilesList(currentFiles, result, fileIds)
-        );
+        // this.userFiles.update((currentFiles) =>
+        //   updateFilesList(currentFiles, result, fileIds)
+        // );
 
         // Clear loading state for impacted files
         fileIds.forEach((id) => this.setLoading(id, false));
@@ -462,12 +483,12 @@ export class FileService {
   }
 
   addFileIfNotExists(file: AppFile) {
-    if (this.files().find((f) => f.id === file.id)) return;
-    this.files.update((files) => [...files, file]);
+    if (this.userFiles().find((f) => f.id === file.id)) return;
+    this.userFiles.update((files) => [...files, file]);
   }
 
   completeUploadFile(fileId: number): void {
-    this.files.update((files) =>
+    this.userFiles.update((files) =>
       files.map((file) =>
         file.id === fileId
           ? { ...file, fileStatus: FileStatus.Completed }
@@ -476,7 +497,7 @@ export class FileService {
     );
   }
 
-  setFilesMarkedForAction(files: AppFile[], actionType: ActionType) {
+  setFilesMarkedForAction(files: BaseFile[], actionType: ActionType) {
     this.actionContext.set({
       files: new Set(files),
       filesIds: new Set(files.map((f) => f.id)),
@@ -497,8 +518,8 @@ export class FileService {
     });
   }
 
-  updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.files.update((files) =>
+  updateFile(file: BaseFile, partialUpdate?: Partial<AppFile | SharedFile>) {
+    this.userFiles.update((files) =>
       files.map((f) =>
         f.id === file.id
           ? { ...f, ...partialUpdate, modificationDate: new Date() }
@@ -508,7 +529,7 @@ export class FileService {
   }
 
   updateFileUploadProgress(uploadProgressInfo: UploadProgressInfo) {
-    this.files.update((files) =>
+    this.userFiles.update((files) =>
       files.map((file) =>
         uploadProgressInfo.fileId === file.id
           ? {

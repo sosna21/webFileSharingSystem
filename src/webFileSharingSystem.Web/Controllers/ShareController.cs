@@ -56,7 +56,7 @@ namespace webFileSharingSystem.Web.Controllers
             return Ok(response);
         }
 
-        [HttpGet]
+        /*[HttpGet]
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllSharedFilenamesInFolder(int parentId = -1)
         {
@@ -66,7 +66,7 @@ namespace webFileSharingSystem.Web.Controllers
             var sharedFiles = _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, dbParentId,
                 new GetSharedFilesSpec<SharedFile>(dbParentId, ""));
             return await sharedFiles.Select(e => e.FileName).ToListAsync();
-        }
+        }*/
 
 
         [HttpDelete]

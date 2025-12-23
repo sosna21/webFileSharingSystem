@@ -29,7 +29,7 @@
   ></i>
   <i
     class="bi bi-copy action-icon action-primary"
-    [class.disabled]="!canFileAction()"
+    [class.disabled]="!canCopy()"
     ngbTooltip="Copy"
     [openDelay]="300"
     (click)="onCopy()"

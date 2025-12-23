@@ -56,21 +56,26 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
 
             if (string.IsNullOrEmpty(request.SearchedPhrase))
-                return await _unitOfWork.Repository<File>()
+            {
+                var files = await _unitOfWork.Repository<File>()
                     .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                         file => ToFileResponse(file, userId!.Value),
                         new GetAllFilesSpecs(userId!.Value, request.ParentId));
-
+                return files;
+            }
+            
             if (request.ParentId is null)
                 return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value),
                     new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
-
-            return await _unitOfWork.Repository<File>()
+            
+            var filteredFiles = await _unitOfWork.Repository<File>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value),
                     _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
                         request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
+
+            return filteredFiles;
         }
 
         [HttpGet]

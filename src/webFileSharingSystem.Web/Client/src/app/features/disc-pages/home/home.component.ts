@@ -26,7 +26,7 @@ import { UserFilesTableComponent } from '../../../shared/user-files-table/user-f
     BaseDiscPageComponent,
     BreadcrumbComponent,
     FileActionsStripComponent,
-    UserFilesTableComponent
+    UserFilesTableComponent,
   ],
   providers: [SelectionService<AppFile>],
   templateUrl: './home.component.html',
@@ -38,14 +38,10 @@ export class HomeComponent implements OnInit {
   private readonly selectionService = inject(SelectionService<AppFile>);
 
   constructor() {
-    this.selectionService.init(this.fileService.files);
+    this.selectionService.init(this.fileService.userFiles);
   }
 
   ngOnInit(): void {
     this.fileService.mode.set('GetAll');
-  }
-
-  refetchFiles() {
-    this.fileService._fileResource.reload();
   }
 }

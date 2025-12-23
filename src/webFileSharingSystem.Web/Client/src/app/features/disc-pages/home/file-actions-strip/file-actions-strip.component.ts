@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../../core/models/action-type.model';
-import { AppFile, FileStatus } from '../../../../core/models/app-file.model';
+import { FileStatus } from '../../../../core/models/app-file.model';
 import { MessageSeverity } from '../../../../core/models/toast-info.model';
 import { FileService } from '../../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
@@ -10,6 +10,9 @@ import { DownloadService } from '../../../../core/services/download.service';
 import { FileShareService } from '../../../../core/services/file-share.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SelectionService } from '../../../../core/services/selection.service';
+import { BaseFile } from '../../../../core/models/base-file.model';
+import { FileApiService } from '../../../../core/services/api/file-api.service';
+import { ShareAccessMode } from '../../../../core/models/share-access-mode.model';
 
 @Component({
   selector: 'app-file-actions-strip',
@@ -22,32 +25,43 @@ import { SelectionService } from '../../../../core/services/selection.service';
 })
 export class FileActionsStripComponent {
   private readonly fileService = inject(FileService);
-  private readonly selectionService = inject(SelectionService<AppFile>);
+  private readonly fileApiService = inject(FileApiService);
+  private readonly selectionService = inject(SelectionService<BaseFile>);
 
   private readonly shareService = inject(FileShareService);
   private readonly toast = inject(ToastService);
   private readonly downloadService = inject(DownloadService);
   private readonly names = computed(() =>
-    this.fileService.files().map((file) => file.fileName)
+    this.fileService.userFiles().map((file) => file.fileName)
   );
   readonly showDirCreate = signal(false);
   readonly newFolderName = signal('');
-  readonly files = this.fileService.files;
-  readonly activeAction = this.fileService.waitingForAction;
+  readonly files = this.fileService.userFiles;
+  readonly activeAction = this.fileService.awaitingActionState;
   readonly selectedFiles = this.selectionService.selectedItems;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canPaste = computed(() => this.activeAction() !== null);
-  readonly canFileAction = computed(
+  readonly canCopy = computed(
     () =>
       this.selectedFiles().length > 0 &&
       this.selectedFiles().some(
         (file) => file.fileStatus === FileStatus.Completed
       )
   );
+
+  readonly canFileAction = computed(
+    () =>
+      this.selectedFiles().length > 0 &&
+      this.selectedFiles().some(
+        (file) => file.fileStatus === FileStatus.Completed
+      ) &&
+      this.selectedFiles().every(file => file.accessMode >= ShareAccessMode.ReadWrite)
+  );
   readonly canRename = computed(
     () =>
       this.selectedFiles().length === 1 &&
-      this.selectedFiles()[0].fileStatus === FileStatus.Completed
+      this.selectedFiles()[0].fileStatus === FileStatus.Completed &&
+      this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite
   );
 
   findUniqueDirName(): string {
@@ -64,24 +78,26 @@ export class FileActionsStripComponent {
   }
 
   createDirectory() {
-    this.fileService.createDirectory(this.newFolderName()).subscribe({
-      next: (response) => {
-        this.fileService.files.update((files) => [response, ...files]);
-        this.newFolderName.set(this.findUniqueDirName());
-        this.toast.show(
-          'New directory created',
-          `Directory "${response.fileName}" has been created`,
-          MessageSeverity.success
-        );
-      },
-      error: (error) => {
-        this.toast.show(
-          'Error creating directory',
-          error?.error,
-          MessageSeverity.error
-        );
-      },
-    });
+    this.fileApiService
+      .createDirectory(this.newFolderName(), this.fileService.parentId())
+      .subscribe({
+        next: (response) => {
+          this.fileService.userFiles.update((files) => [response, ...files]);
+          this.newFolderName.set(this.findUniqueDirName());
+          this.toast.show(
+            'New directory created',
+            `Directory "${response.fileName}" has been created`,
+            MessageSeverity.success
+          );
+        },
+        error: (error) => {
+          this.toast.show(
+            'Error creating directory',
+            error?.error,
+            MessageSeverity.error
+          );
+        },
+      });
 
     this.cancelRename();
   }
@@ -114,7 +130,7 @@ export class FileActionsStripComponent {
   }
 
   onCopy() {
-    if (!this.canFileAction()) return;
+    if (!this.canCopy()) return;
     this.fileService.markFilesToCopyWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed

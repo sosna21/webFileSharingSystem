@@ -5,14 +5,17 @@ import { FileService } from './file.service';
 import { ToastService } from './toast.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FileDragDropService {
   private readonly fileService = inject(FileService);
   private readonly toast = inject(ToastService);
-  private readonly baseFiles = this.fileService.files;
+  private readonly baseFiles = this.fileService.userFiles;
 
-  readonly dragOverTarget = signal<{ type: 'file' | 'breadcrumb'; id: number | null } | null>(null);
+  readonly dragOverTarget = signal<{
+    type: 'file' | 'breadcrumb';
+    id: number | null;
+  } | null>(null);
   readonly draggedFiles = signal<AppFile[]>([]);
 
   startDrag(files: AppFile[]) {
@@ -25,12 +28,14 @@ export class FileDragDropService {
   }
 
   private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.baseFiles.update(files => files.map(f => f.id === file.id ? { ...f, ...partialUpdate } : f));
+    this.baseFiles.update((files) =>
+      files.map((f) => (f.id === file.id ? { ...f, ...partialUpdate } : f))
+    );
   }
 
   /**
- * Check if DataTransfer contains app files
- */
+   * Check if DataTransfer contains app files
+   */
   allowAppFiles(event: DragEvent): boolean {
     return event.dataTransfer?.types.includes('application/json') ?? false;
   }

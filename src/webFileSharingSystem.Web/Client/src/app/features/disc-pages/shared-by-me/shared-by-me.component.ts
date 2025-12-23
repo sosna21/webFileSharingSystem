@@ -30,7 +30,7 @@ export class SharedByMeComponent implements OnInit {
   private readonly selectionService = inject(SelectionService<AppFile>);
 
   constructor() {
-    this.selectionService.init(this.fileService.files);
+    this.selectionService.init(this.fileService.userFiles);
   }
 
   ngOnInit(): void {

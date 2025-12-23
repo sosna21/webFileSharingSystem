@@ -36,11 +36,11 @@ import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
 import { TableDragDropFacade } from '../../core/services/table-drag-drop-facade.service';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
-import { SharedFilesService } from '../../core/services/shared-files.service';
 import { SharedFile } from '../../core/models/shared-file.model';
 import { SharedFilesContextMenuComponent } from './shared-files-context-menu/shared-files-context-menu.component';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
+import { FileService } from '../../core/services/file.service';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -73,15 +73,15 @@ import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
 export class SharedFilesTableComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
-  private readonly sharedFilesService = inject(SharedFilesService);
+  private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
   private readonly downloadService = inject(DownloadService);
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly selection = inject(SelectionService<SharedFile>);
   private readonly dragFacade = inject(TableDragDropFacade<AppFile>);
-  readonly editingId = this.sharedFilesService.editingId;
-  readonly loadingIds = this.sharedFilesService.loadingIds;
+  readonly editingId = this.fileService.editingId;
+  readonly loadingIds = this.fileService.loadingIds;
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
     'id',
@@ -93,7 +93,7 @@ export class SharedFilesTableComponent {
     'size',
     'validUntil',
   ]);
-  files = this.sharedFilesService.files;
+  files = this.fileService.sharedFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
   areAllCheckboxesChecked = computed(
@@ -105,7 +105,7 @@ export class SharedFilesTableComponent {
   contextMenu = viewChild(SharedFilesContextMenuComponent);
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  currentDirectoryId = this.sharedFilesService.parentId;
+  currentDirectoryId = this.fileService.parentId;
   trackByFileId: TrackByFunction<SharedFile> = (_, file) => file.id;
 
   isSelected(id: number): boolean {
@@ -153,7 +153,7 @@ export class SharedFilesTableComponent {
   }
 
   selectFolder(folderId: number) {
-    this.sharedFilesService.goToFolder(folderId);
+    this.fileService.goToFolder(folderId);
   }
 
   // Rename file
@@ -162,7 +162,7 @@ export class SharedFilesTableComponent {
   }
 
   rename(file: SharedFile, newFileName: string) {
-    this.sharedFilesService.renameFileWithFeedback(file, newFileName);
+    this.fileService.renameFileWithFeedback(file, newFileName);
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: SharedFile) {

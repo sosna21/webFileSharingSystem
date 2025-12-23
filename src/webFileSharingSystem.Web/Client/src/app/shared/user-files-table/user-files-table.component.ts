@@ -90,10 +90,10 @@ export class UserFilesTableComponent {
     'size',
     'lastModification',
   ]);
-  files = this.fileService.files;
+  files = this.fileService.userFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
-  filesMarkedForAction = this.fileService.waitingForAction;
+  filesMarkedForAction = this.fileService.awaitingActionState;
   areAllCheckboxesChecked = computed(
     () =>
       this.files().length > 0 && this.selectedIds().size === this.files().length

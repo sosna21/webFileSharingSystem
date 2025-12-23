@@ -4,7 +4,7 @@ import { Breadcrumb } from '../../../../core/models/breadcrumb.model';
 import { FileDragDropService } from '../../../../core/services/file-drag-drop.service';
 import { FileUploadDragDropService } from '../../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../../core/utils/drag-drop-utils';
-import { SharedFilesService } from '../../../../core/services/shared-files.service';
+import { FileService } from '../../../../core/services/file.service';
 
 @Component({
   selector: 'app-shares-breadcrumb',
@@ -19,8 +19,8 @@ import { SharedFilesService } from '../../../../core/services/shared-files.servi
 export class SharesBreadcrumbComponent {
   private readonly dragDrop = inject(FileDragDropService);
   readonly uploadDragDrop = inject(FileUploadDragDropService);
-  private readonly sharesService = inject(SharedFilesService);
-  readonly breadCrumbsResource = this.sharesService.breadCrumbsResource;
+  private readonly fileService = inject(FileService);
+  readonly breadCrumbsResource = this.fileService.breadCrumbsResource;
   readonly breadCrumbs = linkedSignal<Breadcrumb[] | undefined, Breadcrumb[]>({
     source: () => this.breadCrumbsResource.value(),
     computation: (source, previous) => {
@@ -46,7 +46,7 @@ export class SharesBreadcrumbComponent {
 
   selectFolder(folderId: number | null) {
     if (folderId === null || folderId < 0) folderId = null;
-    this.sharesService.goToFolder(folderId);
+    this.fileService.goToFolder(folderId);
   }
 
   //TODO: Enable drag and drop in shares breadcrumb
