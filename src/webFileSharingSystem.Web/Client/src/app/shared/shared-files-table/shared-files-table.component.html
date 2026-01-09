@@ -192,9 +192,14 @@
         (dragleave)="onRowDragLeave($event, file)"
         (dragenter)="onRowDragEnter($event, file)"
         (dragover)="onRowDragOver($event)"
+        (drop)="onRowDrop($event, file)"
         (mousedown)="onRowMouseDown(file, $event)"
         (mouseenter)="onRowMouseEnter(file)"
         (mouseup)="onRowMouseUp(file)"
+        [class.opacity-50]="
+          filesMarkedForAction()?.type === 1 &&
+          filesMarkedForAction()?.filesIds!.has(file.id)
+        "
         [class.drop-folder-hover]="
           (dragOverFileId() === file.id ||
             fileUploadDragOverFileId() === file.id) &&

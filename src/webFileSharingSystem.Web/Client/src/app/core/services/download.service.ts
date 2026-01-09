@@ -27,7 +27,7 @@ export class DownloadService {
       next: (response) => {
         window.location.href = response.url;
         this.toast.show(
-          'Download Started',
+          'Download Initialized',
           'Your download will begin shortly.',
           MessageSeverity.success
         );

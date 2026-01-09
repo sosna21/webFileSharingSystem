@@ -49,68 +49,67 @@ export class SharesBreadcrumbComponent {
     this.fileService.goToFolder(folderId);
   }
 
-  //TODO: Enable drag and drop in shares breadcrumb
-  //Disable for Root as it do not support moving or uploading files
-  //Allow only if breadcrumb/directory has enough permissions ( min ReadWrite)
+  onDragLeave(event: DragEvent, breadcrumb: Breadcrumb) {
+    event.preventDefault();
+    if (!DragDropUtils.isTrueDragLeave(event)) return;
 
-  // onDragLeave(event: DragEvent, breadcrumb: Breadcrumb) {
-  //   event.preventDefault();
-  //   if (!DragDropUtils.isTrueDragLeave(event)) return;
+    if (
+      this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb' &&
+      this.uploadDragDrop.hoveredTarget()?.target?.id === breadcrumb.id
+    ) {
+      this.uploadDragDrop.clearHover();
+    }
 
-  //   if (
-  //     this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb' &&
-  //     this.uploadDragDrop.hoveredTarget()?.target?.id === breadcrumb.id
-  //   ) {
-  //     this.uploadDragDrop.clearHover();
-  //   }
+    if (this.dragDrop.dragOverTarget()?.id === breadcrumb.id) {
+      this.dragDrop.clearDragOverTarget();
+    }
+  }
 
-  //   if (this.dragDrop.dragOverTarget()?.id === breadcrumb.id) {
-  //     this.dragDrop.clearDragOverTarget();
-  //   }
-  // }
+  onDragEnd(event: DragEvent, breadcrumb: Breadcrumb) {
+    this.dragDrop.clearDragOverTarget();
+  }
 
-  // onDragEnd(event: DragEvent, breadcrumb: Breadcrumb) {
-  //   this.dragDrop.clearDragOverTarget();
-  // }
+  onDragEnter(event: DragEvent, breadcrumb: Breadcrumb) {
+    event.preventDefault();
 
-  // onDragEnter(event: DragEvent, breadcrumb: Breadcrumb) {
-  //   event.preventDefault();
+    if (this.uploadDragDrop.allowExternalFiles(event)) {
+      this.uploadDragDrop.setHoverTarget(
+        { type: 'breadcrumb', target: breadcrumb },
+        event
+      );
+    } else if (this.dragDrop.allowAppFiles(event)) {
+      this.dragDrop.setDragOverTarget('breadcrumb', breadcrumb.id);
+    }
+  }
 
-  //   if (this.uploadDragDrop.allowExternalFiles(event)) {
-  //     this.uploadDragDrop.setHoverTarget(
-  //       { type: 'breadcrumb', target: breadcrumb },
-  //       event
-  //     );
-  //   } else if (this.dragDrop.allowAppFiles(event)) {
-  //     this.dragDrop.setDragOverTarget('breadcrumb', breadcrumb.id);
-  //   }
-  // }
+  onDragOver(event: DragEvent, breadcrumb: Breadcrumb) {
+    event.preventDefault();
+    this.dragDrop.setDropEffect(
+      event,
+      //this.fileService.hasWritePermission(breadcrumb.id) && //TODO: Enable permission check
+      this.dragDrop.allowAppFiles(event) ||
+        this.uploadDragDrop.allowExternalFiles(event)
+    );
+  }
 
-  // onDragOver(event: DragEvent) {
-  //   event.preventDefault();
-  //   this.dragDrop.setDropEffect(
-  //     event,
-  //     this.dragDrop.allowAppFiles(event) ||
-  //       this.uploadDragDrop.allowExternalFiles(event)
-  //   );
-  // }
+  onDrop(event: DragEvent, breadcrumb: Breadcrumb) {
+    event.preventDefault();
+    this.dragDrop.clearDragOverTarget();
+    //this.fileService.hasWritePermission(breadcrumb.id) && //TODO: Enable permission check
 
-  // onDrop(event: DragEvent, breadcrumb: Breadcrumb) {
-  //   event.preventDefault();
+    // External files
+    if (this.uploadDragDrop.allowExternalFiles(event)) {
+      this.uploadDragDrop.uploadDraggedFiles(event, breadcrumb.id);
+      return;
+    }
 
-  //   // External files
-  //   if (this.uploadDragDrop.allowExternalFiles(event)) {
-  //     this.uploadDragDrop.uploadDraggedFiles(event, breadcrumb.id);
-  //     return;
-  //   }
-
-  //   // Internal files
-  //   if (this.dragDrop.allowAppFiles(event)) {
-  //     this.sharesService.moveFilesWithFeedback(
-  //       this.dragDrop.draggedFiles(),
-  //       breadcrumb.id,
-  //       breadcrumb.fileName
-  //     );
-  //   }
-  // }
+    // Internal files
+    if (this.dragDrop.allowAppFiles(event)) {
+      this.fileService.moveFilesWithFeedback(
+        this.dragDrop.draggedFiles(),
+        breadcrumb.id,
+        breadcrumb.fileName
+      );
+    }
+  }
 }

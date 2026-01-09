@@ -96,6 +96,7 @@ export class SharedFilesTableComponent {
   files = this.fileService.sharedFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
+  filesMarkedForAction = this.fileService.awaitingActionState;
   areAllCheckboxesChecked = computed(
     () =>
       this.files().length > 0 && this.selectedIds().size === this.files().length
@@ -272,16 +273,18 @@ export class SharedFilesTableComponent {
     this.dragFacade.rowDragLeave(event, file as unknown as AppFile);
   }
 
-  // async onRowDrop(event: DragEvent, targetFile: AppFile) {
-  //   await this.dragFacade.rowDrop(
-  //     event,
-  //     targetFile,
-  //     this.currentDirectoryId,
-  //     this.isSelected.bind(this),
-  //     (files, targetId, targetName) =>
-  //       this.fileService.moveFilesWithFeedback(files, targetId, targetName)
-  //   );
-  // }
+  async onRowDrop(event: DragEvent, targetFile: AppFile) {
+    //this.fileService.canPasteToDirectory(targetFile.id); //TODO check if can drop
+
+    await this.dragFacade.rowDrop(
+      event,
+      targetFile,
+      this.currentDirectoryId,
+      this.isSelected.bind(this),
+      (files, targetId, targetName) =>
+        this.fileService.moveFilesWithFeedback(files, targetId, targetName)
+    );
+  }
 
   onTableDragEnter(event: DragEvent) {
     this.dragFacade.tableDragEnter(event);

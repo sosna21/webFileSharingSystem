@@ -100,6 +100,7 @@ export class BreadcrumbComponent {
 
   onDrop(event: DragEvent, breadcrumb: Breadcrumb) {
     event.preventDefault();
+    this.dragDrop.clearDragOverTarget();
 
     // External files
     if (this.uploadDragDrop.allowExternalFiles(event)) {
