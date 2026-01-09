@@ -68,6 +68,7 @@ export class FileService {
     | 'GetRecent'
     | 'GetSharedWithMe'
   >('GetAll');
+
   public readonly searchedPhrase = signal<string>('');
   public readonly parentId = signal<number | null>(null);
   public readonly parentName = computed(() =>
@@ -79,14 +80,13 @@ export class FileService {
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-
   public readonly userFiles = linkedSignal<AppFile[]>(
     () =>
       this._linkedFilesResponse()
         ?.items.map((file) => ({
           ...file,
           progressStatus: ProgressStatus.Stopped,
-          accessMode: ShareAccessMode.FullAccess
+          accessMode: ShareAccessMode.FullAccess,
         }))
         .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
   );
@@ -98,10 +98,15 @@ export class FileService {
           ...file,
           progressStatus: ProgressStatus.Stopped,
           fileStatus: FileStatus.Completed,
-          
         }))
         .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
   );
+
+  public readonly currentFiles = computed<(AppFile | SharedFile)[]>(() => {
+    return this.mode() === 'GetSharedWithMe'
+      ? this.sharedFiles()
+      : this.userFiles();
+  });
 
   // UI state shared across components
   public readonly editingId = signal<number | null>(null);
@@ -132,6 +137,14 @@ export class FileService {
         : ''
     }`
   );
+
+  private refreshActiveList() {
+    if (this.mode() === 'GetSharedWithMe') {
+      this._sharedFilesResource.reload();
+    } else {
+      this._fileResource.reload();
+    }
+  }
 
   readonly _fileResource = httpResource<FileResponse<AppFile>>(() =>
     this.mode() !== 'GetSharedWithMe' ? this._request() : undefined
@@ -196,13 +209,28 @@ export class FileService {
   goToFolder(folderId: number | null) {
     this.parentId.set(folderId);
 
-    if (folderId === null) this.router.navigate(['/disc', this.routeFromMode]);
+    if (folderId === null)
+      this.router.navigate(['/disc', this.mapModeToRoute(this.mode())]);
     else
-      this.router.navigate(['/disc', this.routeFromMode, 'folder', folderId]);
+      this.router.navigate([
+        '/disc',
+        this.mode() === 'GetSharedWithMe'
+          ? this.mapModeToRoute(this.mode())
+          : this.mapModeToRoute('GetAll'),
+        'folder',
+        folderId,
+      ]);
   }
 
-  private get routeFromMode() {
-    switch (this.mode()) {
+  private mapModeToRoute(
+    mode:
+      | 'GetAll'
+      | 'GetSharedByMe'
+      | 'GetFavourites'
+      | 'GetRecent'
+      | 'GetSharedWithMe'
+  ) {
+    switch (mode) {
       case 'GetAll':
         return 'home';
       case 'GetSharedByMe':
@@ -217,6 +245,20 @@ export class FileService {
   }
 
   // Shared UI helpers
+
+  // Update this method to handle both lists
+  updateFile(file: BaseFile, updates: Record<string, any>) {
+    if (this.mode() === 'GetSharedWithMe') {
+      this.sharedFiles.update((files) =>
+        files.map((f) => (f.id === file.id ? { ...f, ...updates } : f))
+      );
+    } else {
+      this.userFiles.update((files) =>
+        files.map((f) => (f.id === file.id ? { ...f, ...updates } : f))
+      );
+    }
+  }
+
   renameFileWithFeedback(file: BaseFile, newFileName: string) {
     newFileName = newFileName.trim();
 
@@ -234,7 +276,7 @@ export class FileService {
       return;
     }
 
-    if (this.userFiles().some((f) => f.fileName === newFileName)) {
+    if (this.currentFiles().some((f) => f.fileName === newFileName)) {
       this.toast.show(
         'File rename',
         'File with this name already exists',
@@ -338,9 +380,7 @@ export class FileService {
       targetDirectoryId,
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
-      'move',
-      (currentFiles, _, fileIds) =>
-        currentFiles.filter((f) => !fileIds.includes(f.id))
+      'move'
     );
   }
 
@@ -354,8 +394,7 @@ export class FileService {
       targetDirectoryId,
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
-      'copy',
-      (currentFiles, newFiles) => [...currentFiles, ...(newFiles as BaseFile[])]
+      'copy'
     );
   }
 
@@ -424,62 +463,44 @@ export class FileService {
     targetDirectoryId: number | null,
     targetDirectoryName: string,
     operation: (fileIds: number[], targetId: number | null) => Observable<T>,
-    operationName: 'move' | 'copy',
-    updateFilesList: (
-      currentFiles: BaseFile[],
-      operationResult: T,
-      fileIds: number[]
-    ) => BaseFile[]
+    operationName: 'move' | 'copy'
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
 
-    // Set loading state
     files.forEach((file) => this.setLoading(file.id, true));
 
     const fileIds = files.map((f) => f.id);
     const isPlural = files.length > 1;
-    const operationPastTense = operationName === 'move' ? 'moved' : 'copied';
-    const operationPastTenseCapitalized =
-      operationPastTense.charAt(0).toUpperCase() + operationPastTense.slice(1);
 
-    operation(fileIds, targetDirectoryId).subscribe({
-      next: (result) => {
-        // Update files list based on operation type
-        // this.userFiles.update((currentFiles) =>
-        //   updateFilesList(currentFiles, result, fileIds)
-        // );
+    operation(fileIds, targetDirectoryId)
+      .subscribe({
+        next: (result) => {
+          // If you still want optimistic updates in SAME typed list, keep them,
+          // but the safe baseline is to refetch after any copy/move:
+          this.refreshActiveList();
 
-        // Clear loading state for impacted files
-        fileIds.forEach((id) => this.setLoading(id, false));
+          this.toast.show(
+            'Success',
+            `File${
+              isPlural ? 's' : ''
+            } ${operationName}d to '${targetDirectoryName}'.`,
+            MessageSeverity.success
+          );
 
-        this.toast.show(
-          isPlural
-            ? `Files ${operationPastTense}`
-            : `File ${operationPastTense}`,
-          isPlural
-            ? `${operationPastTenseCapitalized} ${files.length} file(s) to '${targetDirectoryName}'`
-            : `${operationPastTenseCapitalized} '${files[0].fileName}' to '${targetDirectoryName}'`,
-          MessageSeverity.success
-        );
-      },
-      error: (err) => {
-        // Reset loading state on error
-        files.forEach((f) => this.setLoading(f.id, false));
-
-        let errorMessage = `File ${operationName} failed. Please try again.`;
-        if (err.error?.errors) {
-          errorMessage = Object.values(err.error.errors).flat().join(' ');
-        } else if (err.error) {
-          errorMessage = err.error;
-        }
-        this.toast.show(
-          `File ${operationName} failed`,
-          errorMessage,
-          MessageSeverity.error
-        );
-      },
-    });
+          this.clearActionContext();
+        },
+        error: (err) => {
+          this.toast.show(
+            'Operation failed',
+            `Could not ${operationName} file${isPlural ? 's' : ''}.`,
+            MessageSeverity.error
+          );
+        },
+      })
+      .add(() => {
+        files.forEach((file) => this.setLoading(file.id, false));
+      });
   }
 
   addFileIfNotExists(file: AppFile) {
@@ -516,16 +537,6 @@ export class FileService {
       else next.delete(id);
       return next;
     });
-  }
-
-  updateFile(file: BaseFile, partialUpdate?: Partial<AppFile | SharedFile>) {
-    this.userFiles.update((files) =>
-      files.map((f) =>
-        f.id === file.id
-          ? { ...f, ...partialUpdate, modificationDate: new Date() }
-          : f
-      )
-    );
   }
 
   updateFileUploadProgress(uploadProgressInfo: UploadProgressInfo) {
