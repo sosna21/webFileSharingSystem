@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
-using webFileSharingSystem.Core.Specifications;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
 
@@ -56,17 +53,6 @@ namespace webFileSharingSystem.Web.Controllers
             return Ok(response);
         }
 
-        /*[HttpGet]
-        [Route("GetNames/{parentId:int?}")]
-        public async Task<IEnumerable<string>> GetAllSharedFilenamesInFolder(int parentId = -1)
-        {
-            var dbParentId = parentId == -1 ? (int?)null : parentId;
-            var userId = _currentUserService.UserId;
-            //TODO temporary solution - resolve in another way
-            var sharedFiles = _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, dbParentId,
-                new GetSharedFilesSpec<SharedFile>(dbParentId, ""));
-            return await sharedFiles.Select(e => e.FileName).ToListAsync();
-        }*/
 
 
         [HttpDelete]
@@ -112,9 +98,7 @@ namespace webFileSharingSystem.Web.Controllers
                 ShareId = share.Id,
                 SharedWithUserName = userName,
                 AccessMode = share.AccessMode,
-                ValidUntil = share.ValidUntil == DateTime.MaxValue 
-                    ? null 
-                    :  DateTime.SpecifyKind(share.ValidUntil, DateTimeKind.Utc)
+                ValidUntil = share.ValidUntil is not null ? DateTime.SpecifyKind(share.ValidUntil.Value, DateTimeKind.Utc) : null
             };
         }
     }

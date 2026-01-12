@@ -16,7 +16,8 @@ namespace webFileSharingSystem.Core.Entities
         
         public int? ShareId { get; set; }
         public ShareAccessMode AccessMode { get; set; }
-        public DateTime ValidUntil { get; set; }
+        public DateTime? ValidUntil { get; set; }
         public string SharedUserName { get; set; } = null!;
+        public bool IsInherited { get; set; }
     }
 }

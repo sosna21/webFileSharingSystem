@@ -241,9 +241,7 @@ namespace webFileSharingSystem.Web.Controllers
                 ShareId = sharedFile.ShareId,
                 SharedUserName = sharedFile.SharedUserName,
                 AccessMode = sharedFile.AccessMode,
-                ValidUntil = sharedFile.ValidUntil == DateTime.MaxValue 
-                    ? null 
-                    : DateTime.SpecifyKind(sharedFile.ValidUntil, DateTimeKind.Utc)
+                ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null
             };
         }
 
