@@ -4,8 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Specifications;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
 
@@ -15,29 +17,46 @@ namespace webFileSharingSystem.Web.Controllers
     {
         private readonly ICurrentUserService _currentUserService;
         private readonly IUploadService _uploadService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public UploadController(ICurrentUserService currentUserService, IUploadService uploadService)
+        public UploadController(ICurrentUserService currentUserService, IUploadService uploadService,
+            IUnitOfWork unitOfWork)
         {
             _currentUserService = currentUserService;
             _uploadService = uploadService;
+            _unitOfWork = unitOfWork;
         }
 
 
         [HttpPost]
         [Route("Start")]
-        public async Task<ActionResult<File>> StartFileUploadAsync([FromBody] UploadFileInfoRequest request)
+        public async Task<ActionResult<File>> StartFileUploadAsync([FromBody] UploadFileInfoRequest request,
+            CancellationToken cancellationToken = default)
         {
             var userId = _currentUserService.UserId;
 
-            var (result, file) = await _uploadService.CreateNewFileAsync(userId!.Value, request.ParentId,
-                request.FileName, request.MimeType,
-                request.Size);
+            var (result, isOwnFile, file) = await _uploadService.CreateNewFileAsync(userId!.Value, request.ParentId,
+                request.FileName, request.MimeType, request.Size, cancellationToken);
             if (!result.Succeeded) return BadRequest(result.Errors);
-            
-            var fileResponse = ToFileResponse(file!);
-            return Ok(fileResponse);
+
+            if (isOwnFile!.Value)
+            {
+                var fileResponse = ToFileResponse(file!);
+                return Ok(fileResponse);
+            }
+
+            var sharedFile = await _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value,
+                request.ParentId,
+                new GetSharedFilesSpec(request.ParentId, request.FileName)
+            ).FirstOrDefaultAsync(cancellationToken);
+
+            if (sharedFile == null)
+                return BadRequest("Something went wrong");
+
+            var sharedFileResponse = ToSharedFileResponse(sharedFile);
+            return Ok(sharedFileResponse);
         }
-        
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPut]
         [Route("{fileId:int}/Chunk/{chunkIndex:int}")]
@@ -110,7 +129,7 @@ namespace webFileSharingSystem.Web.Controllers
             var response = ToFileResponse(file!);
             return Ok(response);
         }
-        
+
         private FileResponse ToFileResponse(File file)
         {
             return new FileResponse
@@ -125,6 +144,38 @@ namespace webFileSharingSystem.Web.Controllers
                 ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
+                UploadProgress = 0
+            };
+        }
+
+        private static SharedFileResponse ToSharedFileResponse(SharedFileSqlRow sharedFile)
+        {
+            var partialFileInfo = sharedFile.PartialFileInfoId.HasValue
+                ? new PartialFileInfo
+                {
+                    FileId = sharedFile.Id,
+                    FileSize = sharedFile.UploadFileSize!.Value,
+                    ChunkSize = sharedFile.ChunkSize!.Value,
+                    PersistenceMap = sharedFile.PersistenceMap!,
+                }
+                : null;
+
+            return new SharedFileResponse
+            {
+                Id = sharedFile.Id,
+                UserId = sharedFile.UserId,
+                FileName = sharedFile.FileName,
+                MimeType = sharedFile.MimeType,
+                Size = sharedFile.Size,
+                IsDirectory = sharedFile.IsDirectory,
+                ShareId = sharedFile.ShareId,
+                SharedUserName = sharedFile.SharedUserName,
+                AccessMode = sharedFile.AccessMode,
+                ValidUntil = sharedFile.ValidUntil is not null
+                    ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc)
+                    : null,
+                FileStatus = sharedFile.FileStatus,
+                PartialFileInfo = partialFileInfo,
                 UploadProgress = 0
             };
         }

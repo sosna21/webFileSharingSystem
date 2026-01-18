@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,12 +33,13 @@ namespace webFileSharingSystem.Core.Services
             if (fileToGetPath is null) return (Result.Failure(OperationResult.BadRequest, "File not found"), null);
 
             if (!await _guard.UserCanPerform(userId, fileToGetPath, ShareAccessMode.ReadOnly, cancellationToken))
-                return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to get file path"), null);
+                return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to get file path for this file"), null);
 
-            var filePathParts =
-                await _unitOfWork.CustomQueriesRepository().FindPathToAllParents(fileId, cancellationToken);
-
-            return (Result.Success<OperationResult>(), filePathParts.Reverse());
+            var filePathParts = fileToGetPath.UserId == userId
+                ? await _unitOfWork.CustomQueriesRepository().FindPathToAllParentsForUserFile(fileId, cancellationToken)
+                : await _unitOfWork.CustomQueriesRepository().FindPathToAllParentForSharedFile(userId, fileId, cancellationToken);
+            
+            return (Result.Success<OperationResult>(), filePathParts);
         }
 
         public async Task<Result<OperationResult>> RenameFileAsync(int fileId, int userId, string newName,

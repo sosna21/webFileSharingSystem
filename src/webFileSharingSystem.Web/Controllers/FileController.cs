@@ -40,10 +40,13 @@ namespace webFileSharingSystem.Web.Controllers
                 await _fileService.GetPathToFileAsync(fileId, _currentUserService.UserId!.Value);
 
             if (operationResult.Succeeded)
-                return Ok(pathParts.Select(part => new FilePathPartResponse
+                return Ok(pathParts!.Select(part => new FilePathPartResponse
                 {
                     Id = part.Id,
-                    FileName = part.FileName
+                    FileName = part.FileName,
+                    Level = part.Level,
+                    AccessMode = part.AccessMode,
+                    ValidUntil = part.ValidUntil
                 }));
 
             return operationResult.ToActionResult(ErrorMessage);
@@ -133,11 +136,11 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
-            var sharedFiles =  await _unitOfWork.Repository<SharedFile>()
+            var sharedFiles =  await _unitOfWork.Repository<SharedFileSqlRow>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     ToSharedFileResponse,
                     _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
-                        new GetSharedFilesSpec<SharedFile>(request.ParentId, request.SearchedPhrase)));
+                        new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
             return sharedFiles;
         }
 
@@ -222,14 +225,22 @@ namespace webFileSharingSystem.Web.Controllers
                 IsDirectory = file.IsDirectory,
                 ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
                 FileStatus = file.FileStatus,
-                PartialFileInfo = file.PartialFileInfo,
+                PartialFileInfo =  _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
                     _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
             };
         }
         
-        private static SharedFileResponse ToSharedFileResponse(SharedFile sharedFile)
+        private static SharedFileResponse ToSharedFileResponse(SharedFileSqlRow sharedFile)
         {
+            var partialFileInfo = sharedFile.PartialFileInfoId.HasValue ? new PartialFileInfo
+            {
+                FileId = sharedFile.Id,
+                FileSize = sharedFile.UploadFileSize!.Value,
+                ChunkSize = sharedFile.ChunkSize!.Value,
+                PersistenceMap = sharedFile.PersistenceMap!,
+            } : null;
+            
             return new SharedFileResponse
             {
                 Id = sharedFile.Id,
@@ -241,7 +252,10 @@ namespace webFileSharingSystem.Web.Controllers
                 ShareId = sharedFile.ShareId,
                 SharedUserName = sharedFile.SharedUserName,
                 AccessMode = sharedFile.AccessMode,
-                ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null
+                ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null,
+                FileStatus = sharedFile.FileStatus,
+                PartialFileInfo = partialFileInfo,
+                UploadProgress = CalculateUploadProgress(partialFileInfo)
             };
         }
 

@@ -15,102 +15,107 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     RETURNS TABLE AS
                     RETURN
                         WITH ExplicitShares AS
-                                 (
-                                     SELECT
-                                         s.Id        AS ShareId,
-                                         s.FileId    AS SourceFileId,
-                                         s.AccessMode,
-                                         s.ValidUntil,
-                                         s.CreatedBy AS ShareCreatedBy
-                                     FROM [Share] s
-                                     WHERE
-                                         s.SharedWithUserId = @userId
-                                       AND (s.ValidUntil IS NULL OR s.ValidUntil > SYSUTCDATETIME())
-                                       AND s.RevokedAt IS NULL
-                                 ),
-                             InheritedTree AS
-                                 (
-                                     -- Explicit shares
-                                     SELECT
-                                         f.Id,
-                                         f.UserId,
-                                         f.FileName,
-                                         f.MimeType,
-                                         f.Size,
-                                         f.IsFavourite,
-                                         f.IsDirectory,
-                                         f.FileGuid,
-                                         f.ParentId,
-                                         f.FileStatus,
+                             (
+                                 SELECT
+                                     s.Id        AS ShareId,
+                                     s.FileId    AS SourceFileId,
+                                     s.AccessMode,
+                                     s.ValidUntil,
+                                     s.CreatedBy AS ShareCreatedBy
+                                 FROM [Share] s
+                                 WHERE
+                                     s.SharedWithUserId = @userId
+                                   AND (s.ValidUntil IS NULL OR s.ValidUntil > SYSUTCDATETIME())
+                                   AND s.RevokedAt IS NULL
+                             ),
+                         InheritedTree AS
+                             (
+                                 SELECT
+                                     f.Id,
+                                     f.UserId,
+                                     f.ParentId,
+                                     f.FileName,
+                                     f.MimeType,
+                                     f.Size,
+                                     f.IsDirectory,
+                                     f.FileGuid,
+                                     f.FileStatus,
+                                     f.CreatedBy,
 
-                                         es.AccessMode,
-                                         es.ValidUntil,
-                                         es.ShareId,
-                                         es.SourceFileId,
-                                         es.ShareCreatedBy,
+                                     es.ShareId,
+                                     es.AccessMode,
+                                     es.ValidUntil,
+                                     es.ShareCreatedBy,
+                                     0 AS Depth
+                                 FROM ExplicitShares es
+                                          INNER JOIN [File] f ON f.Id = es.SourceFileId
 
-                                         0 AS Depth
-                                     FROM ExplicitShares es
-                                              INNER JOIN [File] f ON f.Id = es.SourceFileId
 
-                                     UNION ALL
+                                 UNION ALL
 
-                                     -- Inherited permissions
-                                     SELECT
-                                         f.Id,
-                                         f.UserId,
-                                         f.FileName,
-                                         f.MimeType,
-                                         f.Size,
-                                         f.IsFavourite,
-                                         f.IsDirectory,
-                                         f.FileGuid,
-                                         f.ParentId,
-                                         f.FileStatus,
+                                 SELECT
+                                     f.Id,
+                                     f.UserId,
+                                     f.ParentId,
+                                     f.FileName,
+                                     f.MimeType,
+                                     f.Size,
+                                     f.IsDirectory,
+                                     f.FileGuid,
+                                     f.FileStatus,
+                                     f.CreatedBy,
 
-                                         it.AccessMode,
-                                         it.ValidUntil,
-                                         NULL AS ShareId,
-                                         it.SourceFileId,
-                                         it.ShareCreatedBy,
+                                     it.ShareId,
+                                     it.AccessMode,
+                                     it.ValidUntil,
+                                     it.ShareCreatedBy,
 
-                                         it.Depth + 1
-                                     FROM [File] f
-                                              INNER JOIN InheritedTree it ON f.ParentId = it.Id
-                                 ),
-                             RankedPermissions AS
-                                 (
-                                     SELECT
-                                         *,
-                                         ROW_NUMBER() OVER (PARTITION BY Id ORDER BY Depth) AS RN
-                                     FROM InheritedTree
-                                 )
-                        SELECT
-                            rp.Id,
-                            rp.UserId,
-                            rp.FileName,
-                            rp.MimeType,
-                            rp.Size,
-                            rp.IsFavourite,
-                            rp.IsDirectory,
-                            rp.FileGuid,
-                            rp.ParentId,
-                            rp.AccessMode,
-                            rp.ValidUntil,
-                            rp.ShareId,
-                            rp.ShareCreatedBy,
-                            u.UserName AS SharedUserName,
-                            CAST(IIF(rp.Depth = 0, 0, 1) AS BIT) AS IsInherited
-                        FROM RankedPermissions rp
-                                 INNER JOIN [ApplicationUsers] u ON u.Id = rp.ShareCreatedBy
-                        WHERE
-                            rp.RN = 1
-                          AND rp.FileStatus = 0
-                          AND (
-                            --Only explicit shares for root catalog
-                            (@parentId IS NULL AND rp.Depth = 0)
-                                OR rp.ParentId = @parentId
-                            );
+                                     it.Depth + 1
+                                 FROM [File] f
+                                          INNER JOIN InheritedTree it ON f.ParentId = it.Id
+
+                             ),
+                         RankedPermissions AS
+                             (
+                                 SELECT *,
+                                        ROW_NUMBER() OVER (PARTITION BY Id ORDER BY Depth) AS RN
+                                 FROM InheritedTree
+                             )
+                    SELECT
+                        rp.Id,
+                        rp.UserId,
+                        rp.ParentId,
+                        rp.FileName,
+                        rp.MimeType,
+                        rp.Size,
+                        rp.IsDirectory,
+                        rp.FileGuid,
+                        rp.CreatedBy        AS FileCreatedBy,
+                        rp.FileStatus,
+
+                        p.Id AS PartialFileInfoId,
+                        p.FileSize AS UploadFileSize,
+                        p.ChunkSize,
+                        p.PersistenceMap,
+
+                        rp.ShareId,
+                        rp.AccessMode,
+                        rp.ValidUntil,
+                        u.UserName          AS SharedUserName,
+                        CAST(IIF(rp.Depth = 0, 0, 1) AS bit) AS IsInherited
+                    FROM RankedPermissions rp
+                             INNER JOIN [ApplicationUsers] u ON u.Id = rp.ShareCreatedBy
+                             LEFT JOIN [PartialFileInfos] p  ON p.FileId = rp.Id
+                    WHERE
+                        rp.RN = 1
+                      AND (
+                        rp.FileStatus = 0 OR (rp.FileStatus = 1 AND rp.CreatedBy = @userId)
+                        )
+                      AND (
+                        (@parentId IS NULL AND rp.Depth = 0)
+                            OR rp.ParentId = @parentId
+                        );
+
                 go
                 ");
         }

@@ -13,6 +13,11 @@ namespace webFileSharingSystem.Core.Entities
         public ulong Size { get; set; }
         public bool IsDirectory { get; set; }
         public Guid? FileGuid { get; set; }
+        public int FileCreatedBy { get; set; }
+        
+        //Only for files that user uploads to shared folder
+        public FileStatus FileStatus { get; set; }
+        public PartialFileInfo? PartialFileInfo { get; set; }
         
         public int? ShareId { get; set; }
         public ShareAccessMode AccessMode { get; set; }

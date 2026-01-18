@@ -47,7 +47,7 @@ namespace webFileSharingSystem.Core.Services
                 SharedWithUserId = applicationUser.Id,
                 FileId = fileId,
                 AccessMode = accessMode,
-                ValidUntil = validUntil ?? DateTime.MaxValue,
+                ValidUntil = validUntil
             };
             _unitOfWork.Repository<Share>().Add(newShare);
 
@@ -59,13 +59,17 @@ namespace webFileSharingSystem.Core.Services
                 : (Result.Failure(OperationResult.Exception, "Problem with adding share"), null);
         }
 
-        public async Task<(Result<OperationResult>, Share? updatedShare)> UpdateShareAsync(int shareId, ShareAccessMode accessMode, DateTime? validUntil,
+        public async Task<(Result<OperationResult>, Share? updatedShare)> UpdateShareAsync(int shareId,
+            ShareAccessMode accessMode, DateTime? validUntil,
             int currentUserId, CancellationToken cancellationToken = default)
         {
-            if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40)) return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
+            if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40))
+                return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
             var share = await _unitOfWork.Repository<Share>().FindByIdAsync(shareId, cancellationToken);
-            if (share is null) return (Result.Failure(OperationResult.BadRequest, "Share doesn't exist or you do not have access"), null);
-
+            if (share is null || share.SharedByUserId != currentUserId)
+                return (Result.Failure(OperationResult.BadRequest, "Share doesn't exist or you do not have access"),
+                    null);
+            
             share.AccessMode = accessMode;
             share.ValidUntil = validUntil ?? DateTime.MaxValue;
 

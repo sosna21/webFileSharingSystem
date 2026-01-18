@@ -69,7 +69,8 @@ namespace webFileSharingSystem.Infrastructure.Data
             //Todo most likely some of the ef migration files are slightly broken that's why the 'FilePathPart' entity don't need the view
             builder.Entity<FilePathPart>().HasNoKey();//.ToView(null);
             builder.Entity<FileAccessMode>().HasNoKey();//.ToView(null);
-            builder.Entity<SharedFile>().HasNoKey();//.ToView(null);
+            //builder.Entity<SharedFile>().HasNoKey();//.ToView(null);
+            builder.Entity<SharedFileSqlRow>().HasNoKey();//.ToView(null);
 
             builder.Entity<RefreshToken>()
                 .HasOne<IdentityUser>()
@@ -118,6 +119,15 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             builder.Entity<Share>()
                 .HasOne(e => e.File);
+            
+            builder.Entity<Share>()
+                .HasIndex(s => new { s.FileId, s.SharedWithUserId })
+                .HasFilter("[RevokedAt] IS NULL")
+                .IsUnique();
+            
+            builder.Entity<Share>()
+                .HasIndex(s => s.SharedWithUserId)
+                .HasFilter("[RevokedAt] IS NULL");
         }
 
         //TODO Add dispatch events if needed or remove 
@@ -179,7 +189,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                             f.ParentId,
                             0 AS Depth
                         FROM [File] f
-                        WHERE f.Id = @fileId
+                        WHERE f.Id = {id}
 
                         UNION ALL
 
@@ -207,7 +217,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                     ORDER BY p.Depth DESC;
                 ");        
         
-        public IQueryable<FilePathPart> GetSharedFilePathParts(int fileId, int userId) =>
+        public IQueryable<FilePathPart> GetSharedFilePathParts(int userId, int fileId) =>
             Set<FilePathPart>().FromSqlInterpolated(
                 $@"
                     WITH PathCTE AS
@@ -218,7 +228,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                              f.ParentId,
                              0 AS Depth
                          FROM [File] f
-                         WHERE f.Id = @fileId
+                         WHERE f.Id = {fileId}
 
                          UNION ALL
 
@@ -243,7 +253,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                                  FROM PathCTE p
                                           LEFT JOIN [Share] s
                                                     ON s.FileId = p.Id
-                                                        AND s.SharedWithUserId = @userId
+                                                        AND s.SharedWithUserId = {userId}
                                                         AND (s.ValidUntil IS NULL OR s.ValidUntil > SYSUTCDATETIME())
                                                         AND s.RevokedAt IS NULL
                              ),
@@ -327,8 +337,8 @@ namespace webFileSharingSystem.Infrastructure.Data
                     SELECT * FROM GetListOfAllChildrenByParentTVF({parentId})
                 ");
         
-        public IQueryable<SharedFile> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
-            Set<SharedFile>().FromSqlInterpolated(
+        public IQueryable<SharedFileSqlRow> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
+            Set<SharedFileSqlRow>().FromSqlInterpolated(
                 $@"
                     SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})
                 ");

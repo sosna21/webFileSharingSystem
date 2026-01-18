@@ -17,5 +17,10 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public string SharedUserName { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
         public DateTime? ValidUntil { get; set; }
+        
+        //Only for files that user uploads to shared folder
+        public FileStatus FileStatus { get; set; }
+        public PartialFileInfo? PartialFileInfo { get; set; }
+        public double? UploadProgress { get; set; }
     }
 }

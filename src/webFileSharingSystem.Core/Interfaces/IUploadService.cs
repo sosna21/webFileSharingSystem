@@ -10,10 +10,9 @@ namespace webFileSharingSystem.Core.Interfaces
 {
     public interface IUploadService
     {
-        Task<(Result result, File? file)> CreateNewFileAsync(int userId,
-            int? parentId,
-            string fileName,
-            string? mimeType, long size);
+        Task<(Result result, bool? isOwnFile, File? file)> CreateNewFileAsync(int userId,
+            int? parentId, string fileName, string? mimeType, long size, 
+            CancellationToken cancellationToken);
 
         Task<Result> UploadFileChunk(int userId, int fileId, int chunkIndex, Stream chunkStream,
             CancellationToken cancellationToken = default);
@@ -25,9 +24,9 @@ namespace webFileSharingSystem.Core.Interfaces
             CancellationToken cancellationToken = default);
 
         Task<Result> UpdatePartialFileInfoAsync(int userId, int fileId);
-        
+
         void CancelFileUpload(int userId, int fileId);
-        
+
         PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId);
 
         Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders,
