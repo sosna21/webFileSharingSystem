@@ -23,8 +23,6 @@ import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
 import {
-  FileStatus,
-  ProgressStatus,
   AppFile,
 } from '../../core/models/app-file.model';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
@@ -41,6 +39,7 @@ import { SharedFilesContextMenuComponent } from './shared-files-context-menu/sha
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
 import { FileService } from '../../core/services/file.service';
+import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 
 @Component({
   selector: 'app-shared-files-table',

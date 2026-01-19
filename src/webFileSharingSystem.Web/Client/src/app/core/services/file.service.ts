@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
-import { AppFile, FileStatus, ProgressStatus } from '../models/app-file.model';
+import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
@@ -23,7 +23,7 @@ import {
 import { bulkAction } from '../utils/bulk-action-util';
 import { ModalService } from './modal.service';
 import { FileApiService } from './api/file-api.service';
-import { BaseFile } from '../models/base-file.model';
+import { BaseFile, FileStatus, ProgressStatus } from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 

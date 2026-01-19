@@ -4,9 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
 import {
   AppFile,
-  ProgressStatus,
-  FileStatus,
 } from '../../../core/models/app-file.model';
+import { ProgressStatus, FileStatus } from '../../../core/models/base-file.model';
 
 @Component({
   selector: 'app-user-files-context-menu',

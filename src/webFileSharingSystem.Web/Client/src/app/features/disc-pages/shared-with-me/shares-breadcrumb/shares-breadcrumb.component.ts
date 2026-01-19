@@ -5,10 +5,13 @@ import { FileDragDropService } from '../../../../core/services/file-drag-drop.se
 import { FileUploadDragDropService } from '../../../../core/services/file-upload-drag-drop.service';
 import { DragDropUtils } from '../../../../core/utils/drag-drop-utils';
 import { FileService } from '../../../../core/services/file.service';
+import { ShareAccessMode } from '../../../../core/models/share-access-mode.model';
+import { AccessModeIconComponent } from "../../../../shared/access-mode-icon/access-mode-icon.component";
+import { NgTemplateOutlet } from '@angular/common';
 
 @Component({
   selector: 'app-shares-breadcrumb',
-  imports: [RouterLink],
+  imports: [RouterLink, AccessModeIconComponent, NgTemplateOutlet],
   templateUrl: './shares-breadcrumb.component.html',
   styleUrl: './shares-breadcrumb.component.scss',
   host: {
@@ -17,6 +20,7 @@ import { FileService } from '../../../../core/services/file.service';
   },
 })
 export class SharesBreadcrumbComponent {
+  readonly ShareAccessMode = ShareAccessMode;
   private readonly dragDrop = inject(FileDragDropService);
   readonly uploadDragDrop = inject(FileUploadDragDropService);
   private readonly fileService = inject(FileService);
@@ -24,7 +28,10 @@ export class SharesBreadcrumbComponent {
   readonly breadCrumbs = linkedSignal<Breadcrumb[] | undefined, Breadcrumb[]>({
     source: () => this.breadCrumbsResource.value(),
     computation: (source, previous) => {
-      if (source) return [this.homeBreadcrumb, ...source];
+      if (source)
+        return [this.homeBreadcrumb, ...source].sort(
+          (a, b) => a.level - b.level,
+        );
       if (this.breadCrumbsResource.isLoading() && previous)
         return previous.value;
       return [this.homeBreadcrumb];
@@ -33,15 +40,18 @@ export class SharesBreadcrumbComponent {
 
   readonly homeBreadcrumb: Breadcrumb = {
     id: null,
-    fileName: 'Root',
+    fileName: 'Shared with me',
+    level: 0,
+    accessMode: ShareAccessMode.ReadOnly,
+    validUntil: null,
   };
 
   readonly dragOverBreadcrumbId = computed(() =>
     this.dragDrop.dragOverTarget()?.type === 'breadcrumb'
       ? this.dragDrop.dragOverTarget()?.id
       : this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb'
-      ? this.uploadDragDrop.hoveredTarget()?.target?.id
-      : -1
+        ? this.uploadDragDrop.hoveredTarget()?.target?.id
+        : -1,
   );
 
   selectFolder(folderId: number | null) {
@@ -75,7 +85,7 @@ export class SharesBreadcrumbComponent {
     if (this.uploadDragDrop.allowExternalFiles(event)) {
       this.uploadDragDrop.setHoverTarget(
         { type: 'breadcrumb', target: breadcrumb },
-        event
+        event,
       );
     } else if (this.dragDrop.allowAppFiles(event)) {
       this.dragDrop.setDragOverTarget('breadcrumb', breadcrumb.id);
@@ -88,7 +98,7 @@ export class SharesBreadcrumbComponent {
       event,
       //this.fileService.hasWritePermission(breadcrumb.id) && //TODO: Enable permission check
       this.dragDrop.allowAppFiles(event) ||
-        this.uploadDragDrop.allowExternalFiles(event)
+        this.uploadDragDrop.allowExternalFiles(event),
     );
   }
 
@@ -108,7 +118,7 @@ export class SharesBreadcrumbComponent {
       this.fileService.moveFilesWithFeedback(
         this.dragDrop.draggedFiles(),
         breadcrumb.id,
-        breadcrumb.fileName
+        breadcrumb.fileName,
       );
     }
   }

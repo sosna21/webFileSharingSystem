@@ -31,7 +31,10 @@ export class BreadcrumbComponent {
   readonly breadCrumbs = linkedSignal<Breadcrumb[] | undefined, Breadcrumb[]>({
     source: () => this.breadCrumbsResource.value(),
     computation: (source, previous) => {
-      if (source) return [this.homeBreadcrumb, ...source];
+      if (source)
+        return [this.homeBreadcrumb, ...source].sort(
+          (a, b) => a.level - b.level,
+        );
       if (this.breadCrumbsResource.isLoading() && previous)
         return previous.value;
       return [this.homeBreadcrumb];
@@ -41,14 +44,15 @@ export class BreadcrumbComponent {
   readonly homeBreadcrumb: Breadcrumb = {
     id: null,
     fileName: 'Home',
+    level: 0,
   };
 
   readonly dragOverBreadcrumbId = computed(() =>
     this.dragDrop.dragOverTarget()?.type === 'breadcrumb'
       ? this.dragDrop.dragOverTarget()?.id
       : this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb'
-      ? this.uploadDragDrop.hoveredTarget()?.target?.id
-      : -1
+        ? this.uploadDragDrop.hoveredTarget()?.target?.id
+        : -1,
   );
 
   selectFolder(folderId: number | null) {
@@ -82,7 +86,7 @@ export class BreadcrumbComponent {
     if (this.uploadDragDrop.allowExternalFiles(event)) {
       this.uploadDragDrop.setHoverTarget(
         { type: 'breadcrumb', target: breadcrumb },
-        event
+        event,
       );
     } else if (this.dragDrop.allowAppFiles(event)) {
       this.dragDrop.setDragOverTarget('breadcrumb', breadcrumb.id);
@@ -94,7 +98,7 @@ export class BreadcrumbComponent {
     this.dragDrop.setDropEffect(
       event,
       this.dragDrop.allowAppFiles(event) ||
-        this.uploadDragDrop.allowExternalFiles(event)
+        this.uploadDragDrop.allowExternalFiles(event),
     );
   }
 
@@ -113,7 +117,7 @@ export class BreadcrumbComponent {
       this.fileService.moveFilesWithFeedback(
         this.dragDrop.draggedFiles(),
         breadcrumb.id,
-        breadcrumb.fileName
+        breadcrumb.fileName,
       );
     }
   }

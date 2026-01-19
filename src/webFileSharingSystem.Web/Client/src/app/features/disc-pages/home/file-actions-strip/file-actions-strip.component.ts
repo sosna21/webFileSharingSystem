@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../../core/models/action-type.model';
-import { FileStatus } from '../../../../core/models/app-file.model';
 import { MessageSeverity } from '../../../../core/models/toast-info.model';
 import { FileService } from '../../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +9,7 @@ import { DownloadService } from '../../../../core/services/download.service';
 import { FileShareService } from '../../../../core/services/file-share.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SelectionService } from '../../../../core/services/selection.service';
-import { BaseFile } from '../../../../core/models/base-file.model';
+import { BaseFile, FileStatus } from '../../../../core/models/base-file.model';
 import { FileApiService } from '../../../../core/services/api/file-api.service';
 import { ShareAccessMode } from '../../../../core/models/share-access-mode.model';
 

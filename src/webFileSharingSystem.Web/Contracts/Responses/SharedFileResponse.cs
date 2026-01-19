@@ -8,7 +8,7 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public int Id { get; set; }
         public int UserId { get; set; }
         public int? ParentId { get; set; }
-        public string FileName { get; set; }
+        public string FileName { get; set; } = null!;
         public string? MimeType { get; set; }
         public ulong Size { get; set; }
         public bool IsDirectory { get; set; }

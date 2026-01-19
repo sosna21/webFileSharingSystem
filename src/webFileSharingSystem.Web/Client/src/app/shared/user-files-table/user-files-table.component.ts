@@ -23,8 +23,6 @@ import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
 import {
-  FileStatus,
-  ProgressStatus,
   AppFile,
 } from '../../core/models/app-file.model';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
@@ -38,6 +36,7 @@ import { SelectionService } from '../../core/services/selection.service';
 import { TableDragDropFacade } from '../../core/services/table-drag-drop-facade.service';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { UserFilesContextMenuComponent } from './user-files-context-menu/user-files-context-menu.component';
+import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 
 @Component({
   selector: 'app-user-files-table',

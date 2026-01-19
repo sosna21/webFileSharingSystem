@@ -164,6 +164,7 @@ namespace webFileSharingSystem.Web.Controllers
             {
                 Id = sharedFile.Id,
                 UserId = sharedFile.UserId,
+                ParentId = sharedFile.ParentId,
                 FileName = sharedFile.FileName,
                 MimeType = sharedFile.MimeType,
                 Size = sharedFile.Size,
