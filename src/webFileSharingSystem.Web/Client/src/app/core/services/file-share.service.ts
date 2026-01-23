@@ -80,7 +80,7 @@ export class FileShareService {
         );
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-      successMessage: (count) => `Cancelled ${count} share(s) successfully`,
+      successMessage: (count) => ({ title: 'Share Cancellation', message: `Cancelled ${count} share(s) successfully` }),
     });
     return true;
   }
@@ -163,9 +163,9 @@ export class FileShareService {
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: (count, updated) => {
         if (count === 1) {
-          return `Shared '${updated[0].file.fileName}' with ${updated[0].shareRequest.UserNameToShareWith}`;
+          return { title: 'File Share', message: `Shared '${updated[0].file.fileName}' with ${updated[0].shareRequest.UserNameToShareWith}` };
         }
-        return `Files shared successfully`;
+        return { title: 'File Share', message: `Files shared successfully` };
       },
     });
   }

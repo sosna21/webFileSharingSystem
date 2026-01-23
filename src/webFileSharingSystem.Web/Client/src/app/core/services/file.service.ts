@@ -69,8 +69,12 @@ export class FileService {
     | 'GetSharedWithMe'
   >('GetAll');
 
+  //TODO add parent folder signal
   public readonly searchedPhrase = signal<string>('');
   public readonly parentId = signal<number | null>(null);
+  public readonly parentBreadcrumb = computed(() => this.breadCrumbsResource.hasValue()
+      ? this.breadCrumbsResource.value().find((b) => b.id === this.parentId())
+      : undefined);
   public readonly parentName = computed(() =>
     this.breadCrumbsResource.hasValue()
       ? this.breadCrumbsResource.value().find((b) => b.id === this.parentId())
@@ -338,12 +342,12 @@ export class FileService {
       successMessage: (count, updated) => {
         if (count === 1) {
           return changeTo
-            ? `Added '${updated[0].fileName}' to favourites`
-            : `Removed '${updated[0].fileName}' from favourites`;
+            ? { title: 'Favourite Update', message: `Added '${updated[0].fileName}' to favourites` }
+            : { title: 'Favourite Update', message: `Removed '${updated[0].fileName}' from favourites` };
         }
         return changeTo
-          ? `Added ${count} files to favourites`
-          : `Removed ${count} files from favourites`;
+          ? { title: 'Favourite Update', message: `Added ${count} files to favourites` }
+          : { title: 'Favourite Update', message: `Removed ${count} files from favourites` };
       },
     });
   }
@@ -453,7 +457,13 @@ export class FileService {
         this.setLoading(file.id, false);
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
-      successMessage: (count) => `Deleted ${count} file(s) successfully`,
+      successMessage: (count) => {
+        if (count === 1) {
+          return { title: 'File Deletion', message: `Deleted '${filesToDelete[0].fileName}' successfully` };
+        } else {
+          return { title: 'File Deletion', message: `Deleted ${count} files successfully` };
+        }
+      },
     });
     return true;
   }
