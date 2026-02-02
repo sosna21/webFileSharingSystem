@@ -12,8 +12,6 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public string? MimeType { get; set; }
         public ulong Size { get; set; }
         public bool IsDirectory { get; set; }
-
-        public int? ShareId { get; set; }
         public string SharedUserName { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
         public DateTime? ValidUntil { get; set; }

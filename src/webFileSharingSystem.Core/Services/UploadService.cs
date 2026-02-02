@@ -38,34 +38,36 @@ namespace webFileSharingSystem.Core.Services
         }
 
 
-        public async Task<(Result result, bool? isOwnFile, File? file)> CreateNewFileAsync(int userId,
+        public async Task<(Result result, FileOperationContext? operationContext)> CreateNewFileAsync(int userId,
             int? parentId,
             string fileName,
             string? mimeType,
             long size,
             CancellationToken cancellationToken = default)
         {
+            var targetUserId = userId;
             var isOwnFile = true;
             if (parentId is not null)
             {
                 var parentDirectory = await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
-                if (parentDirectory is null) return (Result.Failure($"Target directory not found"), null, null);
-                if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadOnly,
+                if (parentDirectory is null) return (Result.Failure($"Target directory not found"), null);
+                if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite,
                         cancellationToken))
-                    return (Result.Failure("You are not authorized to get file path"), false, null);
-                userId = parentDirectory.UserId; //file belongs to directory owner, not to uploader
-                isOwnFile = false;
+                    return (Result.Failure("You are not authorized to upload to this directory"), null);
+                
+                isOwnFile = userId == parentDirectory.UserId;
+                targetUserId = parentDirectory.UserId; //file belongs to directory owner, not to uploader
             }
             
-            var releaser = await _userLocks.AcquireAsync(userId, cancellationToken);
+            var releaser = await _userLocks.AcquireAsync(targetUserId, cancellationToken);
             try
             {
-                var appUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken);
-                if (appUser is null)
-                    return (Result.Failure($"User not found, userId: {userId}"), isOwnFile, null);
+                var targetUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(targetUserId, cancellationToken);
+                if (targetUser is null)
+                    return (Result.Failure($"User not found, userId: {targetUserId}"), null);
 
-                if (appUser.UsedSpace + (ulong)size > appUser.Quota)
-                    return (Result.Failure($"{(isOwnFile ? "You" : "Folder owner")} do not have enough free space to upload \"{fileName}\""), isOwnFile, null);
+                if (targetUser.UsedSpace + (ulong)size > targetUser.Quota)
+                    return (Result.Failure($"{(isOwnFile ? "You" : "Folder owner")} do not have enough free space to upload \"{fileName}\""), null);
 
                 var preferredChunk = CalculatePreferredChunkSize(size);
                 PartialFileInfo? partialFileInfo = null;
@@ -81,7 +83,7 @@ namespace webFileSharingSystem.Core.Services
                 var file = new File
                 {
                     //file belongs to directory owner (in shared directories uploads)
-                    UserId = userId, 
+                    UserId = targetUserId, 
                     FileName = fileName,
                     MimeType = mimeType,
                     Size = (ulong)size,
@@ -95,21 +97,14 @@ namespace webFileSharingSystem.Core.Services
 
                 if (parentId is not null && size > 0)
                 {
-                    var filesToUpdateSize =
-                        await _unitOfWork.CustomQueriesRepository().GetListOfAllParentsAsFiles(parentId.Value, cancellationToken);
-
-                    foreach (var fileToUpdate in filesToUpdateSize)
-                    {
-                        fileToUpdate.Size += file.Size;
-                        _unitOfWork.Repository<File>().Update(fileToUpdate);
-                    }
+                    await UpdateParentFileSizes(parentId.Value, (long)file.Size, cancellationToken);
                 }
 
-                appUser.UsedSpace += file.Size;
-                _unitOfWork.Repository<ApplicationUser>().Update(appUser);
+                targetUser.UsedSpace += file.Size;
+                _unitOfWork.Repository<ApplicationUser>().Update(targetUser);
 
                 if (await _unitOfWork.Complete(cancellationToken) <= 0)
-                    return (Result.Failure("Problem during upload initialization"), isOwnFile, null);
+                    return (Result.Failure("Problem during upload initialization"), null);
 
                 try
                 {
@@ -117,12 +112,31 @@ namespace webFileSharingSystem.Core.Services
                     //TODO What if given key already exists in the cache? 
                     if (partialFileInfo is not null)
                         UserFileCache[(userId, file.Id)] = new PartialFileInfoCache(userId, fileGuidId, partialFileInfo);
-                    return (Result.Success(), isOwnFile, file);
+
+                    SharedFileSqlRow? sharedFile = null;
+                    if (!isOwnFile)
+                    {
+                        sharedFile = await _unitOfWork.CustomQueriesRepository().GetSharedFileById(userId, file.Id, cancellationToken);
+                    }
+
+                    var ctx = new FileOperationContext
+                    {
+                        IsOwnFile = isOwnFile,
+                        File = file,
+                        
+                        // only if shared
+                        AccessMode = sharedFile?.AccessMode,
+                        ValidUntil = sharedFile?.ValidUntil,
+                        SharedUserName = sharedFile?.SharedUserName,
+                        IsInherited = sharedFile?.IsInherited
+                    };
+                    
+                    return (Result.Success(), ctx);
                 }
                 catch
                 {
                     await _filePersistenceService.DeleteExistingFile(userId, fileGuidId);
-                    return (Result.Failure("Problem during upload initialization"), isOwnFile,  null);
+                    return (Result.Failure("Problem during upload initialization"),  null);
                 }
             }
             finally
@@ -313,6 +327,31 @@ namespace webFileSharingSystem.Core.Services
                 parentId = directoryFile.Id;
             }
             return (Result.Success(), directoryFile);
+        }
+        
+        private async Task UpdateParentFileSizes(int parentId, long sizeToAdd, CancellationToken cancellationToken)
+        {
+            var filesToUpdateSize = await _unitOfWork.CustomQueriesRepository()
+                .GetListOfAllParentsAsFiles(parentId, cancellationToken);
+            var castedSize = (ulong)Math.Abs(sizeToAdd);
+
+            foreach (var fileToUpdate in filesToUpdateSize)
+            {
+                switch (sizeToAdd)
+                {
+                    case < 0 when fileToUpdate.Size >= castedSize:
+                        fileToUpdate.Size -= castedSize;
+                        break;
+                    case >= 0:
+                        fileToUpdate.Size += castedSize;
+                        break;
+                    default:
+                        fileToUpdate.Size = 0; //TODO log error message
+                        break;
+                }
+                
+                _unitOfWork.Repository<File>().Update(fileToUpdate);
+            }
         }
 
         private async Task<(PartialFileInfoCache? PartialFileInfoCache, File? File)> GetFileAndPartialFileInfoCacheThreadSafeAsync(

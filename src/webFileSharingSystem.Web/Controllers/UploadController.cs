@@ -4,10 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using webFileSharingSystem.Core.Entities;
+using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
-using webFileSharingSystem.Core.Specifications;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
 
@@ -35,25 +34,17 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
 
-            var (result, isOwnFile, file) = await _uploadService.CreateNewFileAsync(userId!.Value, request.ParentId,
+            var (result, ctx) = await _uploadService.CreateNewFileAsync(userId!.Value, request.ParentId,
                 request.FileName, request.MimeType, request.Size, cancellationToken);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
-            if (isOwnFile!.Value)
+            if (ctx!.IsOwnFile)
             {
-                var fileResponse = ToFileResponse(file!);
+                var fileResponse = ToFileResponse(ctx.File);
                 return Ok(fileResponse);
             }
 
-            var sharedFile = await _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value,
-                request.ParentId,
-                new GetSharedFilesSpec(request.ParentId, request.FileName)
-            ).FirstOrDefaultAsync(cancellationToken);
-
-            if (sharedFile == null)
-                return BadRequest("Something went wrong");
-
-            var sharedFileResponse = ToSharedFileResponse(sharedFile);
+            var sharedFileResponse = ToSharedFileResponse(ctx);
             return Ok(sharedFileResponse);
         }
 
@@ -148,35 +139,25 @@ namespace webFileSharingSystem.Web.Controllers
             };
         }
 
-        private static SharedFileResponse ToSharedFileResponse(SharedFileSqlRow sharedFile)
+        private static SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
         {
-            var partialFileInfo = sharedFile.PartialFileInfoId.HasValue
-                ? new PartialFileInfo
-                {
-                    FileId = sharedFile.Id,
-                    FileSize = sharedFile.UploadFileSize!.Value,
-                    ChunkSize = sharedFile.ChunkSize!.Value,
-                    PersistenceMap = sharedFile.PersistenceMap!,
-                }
-                : null;
-
+            var file = ctx.File;
             return new SharedFileResponse
             {
-                Id = sharedFile.Id,
-                UserId = sharedFile.UserId,
-                ParentId = sharedFile.ParentId,
-                FileName = sharedFile.FileName,
-                MimeType = sharedFile.MimeType,
-                Size = sharedFile.Size,
-                IsDirectory = sharedFile.IsDirectory,
-                ShareId = sharedFile.ShareId,
-                SharedUserName = sharedFile.SharedUserName,
-                AccessMode = sharedFile.AccessMode,
-                ValidUntil = sharedFile.ValidUntil is not null
-                    ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc)
+                Id = file.Id,
+                UserId = file.UserId,
+                ParentId = file.ParentId,
+                FileName = file.FileName,
+                MimeType = file.MimeType,
+                Size = file.Size,
+                IsDirectory = file.IsDirectory,
+                SharedUserName = ctx.SharedUserName!,
+                AccessMode = ctx.AccessMode!.Value,
+                ValidUntil = ctx.ValidUntil is not null
+                    ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
                     : null,
-                FileStatus = sharedFile.FileStatus,
-                PartialFileInfo = partialFileInfo,
+                FileStatus = file.FileStatus,
+                PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0
             };
         }

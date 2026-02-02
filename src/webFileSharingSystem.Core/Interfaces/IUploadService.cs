@@ -10,7 +10,7 @@ namespace webFileSharingSystem.Core.Interfaces
 {
     public interface IUploadService
     {
-        Task<(Result result, bool? isOwnFile, File? file)> CreateNewFileAsync(int userId,
+        Task<(Result result, FileOperationContext? operationContext)> CreateNewFileAsync(int userId,
             int? parentId, string fileName, string? mimeType, long size, 
             CancellationToken cancellationToken);
 
