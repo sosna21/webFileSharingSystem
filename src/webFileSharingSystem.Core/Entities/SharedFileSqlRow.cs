@@ -15,8 +15,7 @@ public sealed class SharedFileSqlRow : BaseEntity, IFileBaseEntity
     public Guid? FileGuid { get; set; }
     public int FileCreatedBy { get; set; }
     public FileStatus FileStatus { get; set; }
-        
-    public int? ShareId { get; set; }
+    
     public ShareAccessMode AccessMode { get; set; }
     public DateTime? ValidUntil { get; set; }
     public string SharedUserName { get; set; } = null!;

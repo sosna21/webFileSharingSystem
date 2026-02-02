@@ -31,7 +31,7 @@ namespace webFileSharingSystem.Infrastructure.Common
         
         public async Task<FileAccessMode?> GetSharedFileAccessMode(int fileId, int userId, CancellationToken cancellationToken = default) 
         {
-            return (await _dbContext.GetSharedFileAccessMode(fileId,userId).ToListAsync(cancellationToken)).FirstOrDefault();
+            return (await _dbContext.GetSharedFileAccessMode(fileId, userId).ToListAsync(cancellationToken)).FirstOrDefault();
         }
 
         public async Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default)
@@ -64,5 +64,9 @@ namespace webFileSharingSystem.Infrastructure.Common
             return SpecificationEvaluator<SharedFileSqlRow, SharedFileSqlRow>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
         }
 
+        public async Task<SharedFileSqlRow?> GetSharedFileById(int userId, int fileId, CancellationToken cancellationToken = default)
+        {
+            return (await _dbContext.GetSharedFileById(fileId, userId).ToListAsync(cancellationToken)).FirstOrDefault();
+        }
     }
 }

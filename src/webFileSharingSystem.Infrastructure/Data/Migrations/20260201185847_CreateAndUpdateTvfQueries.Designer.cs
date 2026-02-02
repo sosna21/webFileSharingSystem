@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using webFileSharingSystem.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using webFileSharingSystem.Infrastructure.Data;
 namespace webFileSharingSystem.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260201185847_CreateAndUpdateTvfQueries")]
+    partial class CreateAndUpdateTvfQueries
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -252,7 +255,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("IdentityUserId")
                         .IsUnique();
 
-                    b.ToTable("ApplicationUsers", (string)null);
+                    b.ToTable("ApplicationUsers");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.File", b =>
@@ -314,7 +317,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("File", (string)null);
+                    b.ToTable("File");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.FileAccessMode", b =>
@@ -379,7 +382,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("FileId")
                         .IsUnique();
 
-                    b.ToTable("PartialFileInfos", (string)null);
+                    b.ToTable("PartialFileInfos");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.Share", b =>
@@ -429,7 +432,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasFilter("[RevokedAt] IS NULL");
 
-                    b.ToTable("Share", (string)null);
+                    b.ToTable("Share");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.SharedFile", b =>
@@ -607,7 +610,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("Token")
                         .IsUnique();
 
-                    b.ToTable("RefreshToken", (string)null);
+                    b.ToTable("RefreshToken");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

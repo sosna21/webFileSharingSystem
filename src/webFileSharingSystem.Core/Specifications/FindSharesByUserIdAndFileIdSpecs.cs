@@ -2,9 +2,9 @@
 
 namespace webFileSharingSystem.Core.Specifications
 {
-    public sealed class FindSharesByWithUserIdAndFileIdSpecs : BaseSpecification<Share>
+    public sealed class FindSharesByUserIdAndFileIdSpecs : BaseSpecification<Share>
     {
-        public FindSharesByWithUserIdAndFileIdSpecs(int userId, int fileId) : base(
+        public FindSharesByUserIdAndFileIdSpecs(int userId, int fileId) : base(
             share => share.SharedWithUserId == userId
                     && share.FileId == fileId)
         {

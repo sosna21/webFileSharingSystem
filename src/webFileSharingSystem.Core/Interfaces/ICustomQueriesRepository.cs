@@ -29,6 +29,8 @@ namespace webFileSharingSystem.Core.Interfaces
         IQueryable<File> GetListOfFilesSharedByUserIdQuery(int userId, ISpecification<File> spec);
 
         IQueryable<SharedFileSqlRow> GetListOfSharedFilesQuery(int userId, int? parentId,
-            ISpecification<SharedFileSqlRow> spec);
+            ISpecification<SharedFileSqlRow> spec); 
+            
+        Task<SharedFileSqlRow?> GetSharedFileById(int userId, int fileId, CancellationToken token = default);
     }
 }

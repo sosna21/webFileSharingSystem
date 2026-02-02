@@ -19,7 +19,6 @@ namespace webFileSharingSystem.Core.Entities
         public FileStatus FileStatus { get; set; }
         public PartialFileInfo? PartialFileInfo { get; set; }
         
-        public int? ShareId { get; set; }
         public ShareAccessMode AccessMode { get; set; }
         public DateTime? ValidUntil { get; set; }
         public string SharedUserName { get; set; } = null!;
