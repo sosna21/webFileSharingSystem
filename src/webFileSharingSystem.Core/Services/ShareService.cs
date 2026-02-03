@@ -36,7 +36,7 @@ namespace webFileSharingSystem.Core.Services
             if (fileToShare is null) return (Result.Failure(OperationResult.BadRequest, "File doesn't exist or you do not have access"), null);
 
             var existingShare = (await _unitOfWork.Repository<Share>()
-                    .FindAsync(new FindSharesByWithUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
+                    .FindAsync(new FindSharesByUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
                 .SingleOrDefault();
 
             if (existingShare is not null) return (Result.Failure(OperationResult.BadRequest, "This file is already shared with that user"), null);
@@ -83,7 +83,7 @@ namespace webFileSharingSystem.Core.Services
         public async Task<Result<OperationResult>> RemoveShareByFileIdAsync(int fileId, int userId, CancellationToken cancellationToken = default)
         {
             var shareToRemove = (await _unitOfWork.Repository<Share>()
-                .FindAsync(new FindSharesByWithUserIdAndFileIdSpecs(userId, fileId), cancellationToken)).FirstOrDefault();
+                .FindAsync(new FindSharesByUserIdAndFileIdSpecs(userId, fileId), cancellationToken)).FirstOrDefault();
 
             if (shareToRemove is null) return Result.Failure(OperationResult.BadRequest, "To delete this share you must delete whole shared folder.");
 

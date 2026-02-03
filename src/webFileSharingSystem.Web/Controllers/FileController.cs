@@ -193,9 +193,19 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("Move/{parentId:int}")]
         public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
         {
+            var userId = _currentUserService.UserId;
             var dbParentId = parentId == -1 ? (int?)null : parentId;
-            var result = await _fileService.MoveFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
-            return result.ToActionResult(string.Join(", ", result.Errors));
+            var (result, ctx) = await _fileService.MoveFilesAsync(dbParentId, ids, userId!.Value);
+            if (!result.Succeeded) return result.ToActionResult(string.Join(", ", result.Errors));
+
+            if (ctx!.First().IsOwnFile)
+            {
+                var response = ctx.Select(c => ToFileResponse(c.File, userId.Value));
+                return Ok(response);
+            }
+
+            var sharedFilesResponse = ctx.Select(ToSharedFileResponse);
+            return Ok(sharedFilesResponse);
         }
 
         [HttpPost]
@@ -204,11 +214,17 @@ namespace webFileSharingSystem.Web.Controllers
         {
             var userId = _currentUserService.UserId;
             var dbParentId = parentId == -1 ? (int?)null : parentId;
-            (var result, var files) =
-                await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
-            if (!result.Succeeded)
-                return result.ToActionResult("Problem with copying the files");
-            return Ok(files.Select(f => ToFileResponse(f, userId!.Value)));
+            var (result, ctx) = await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
+            if (!result.Succeeded) return result.ToActionResult(string.Join(", ", result.Errors));
+
+            if (ctx!.First().IsOwnFile)
+            {
+                var response = ctx.Select(c => ToFileResponse(c.File, userId.Value));
+                return Ok(response);
+            }
+
+            var sharedFilesResponse = ctx.Select(ToSharedFileResponse);
+            return Ok(sharedFilesResponse);
         }
 
         private FileResponse ToFileResponse(File file, int userId)
@@ -250,13 +266,35 @@ namespace webFileSharingSystem.Web.Controllers
                 MimeType = sharedFile.MimeType,
                 Size = sharedFile.Size,
                 IsDirectory = sharedFile.IsDirectory,
-                ShareId = sharedFile.ShareId,
                 SharedUserName = sharedFile.SharedUserName,
                 AccessMode = sharedFile.AccessMode,
                 ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null,
                 FileStatus = sharedFile.FileStatus,
                 PartialFileInfo = partialFileInfo,
                 UploadProgress = CalculateUploadProgress(partialFileInfo)
+            };
+        }
+        
+        private static SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
+        {
+            var file = ctx.File;
+            return new SharedFileResponse
+            {
+                Id = file.Id,
+                UserId = file.UserId,
+                ParentId = file.ParentId,
+                FileName = file.FileName,
+                MimeType = file.MimeType,
+                Size = file.Size,
+                IsDirectory = file.IsDirectory,
+                SharedUserName = ctx.SharedUserName!,
+                AccessMode = ctx.AccessMode!.Value,
+                ValidUntil = ctx.ValidUntil is not null
+                    ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
+                    : null,
+                FileStatus = file.FileStatus,
+                PartialFileInfo = file.PartialFileInfo,
+                UploadProgress = 0
             };
         }
 

@@ -14,19 +14,14 @@ namespace webFileSharingSystem.Core.Interfaces
         Task<Result<OperationResult>> RenameFileAsync(int fileId, int userId, string newName,
             CancellationToken cancellationToken = default);
 
-        Task<(Result<OperationResult>, File?)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+        Task<(Result<OperationResult> result, File? file)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+            CancellationToken cancellationToken = default);
+        
+        Task<(Result<OperationResult> result, IEnumerable<FileOperationContext>? operationContext)> MoveFilesAsync(int? targetParentId,
+            IEnumerable<int> fileIds, int userId,
             CancellationToken cancellationToken = default);
 
-        Task<Result<OperationResult>> DeleteFileAsync(int fileId, int userId,
-            CancellationToken cancellationToken = default);
-
-        Task<Result<OperationResult>> DeleteDirectoryAsync(int directoryFileId, int userId,
-            CancellationToken cancellationToken = default);
-
-        Task<Result<OperationResult>> MoveFilesAsync(int? newParentId, IEnumerable<int> fileIds, int userId,
-            CancellationToken cancellationToken = default);
-
-        Task<(Result<OperationResult>, IEnumerable<File>)> CopyFilesAsync(int? newParentId, IEnumerable<int> fileIds, int userId,
+        Task<(Result<OperationResult> result, IEnumerable<FileOperationContext>? operationContext)> CopyFilesAsync(int? targetParentId, IEnumerable<int> fileIds, int userId,
             CancellationToken cancellationToken = default);
         
         Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default);
