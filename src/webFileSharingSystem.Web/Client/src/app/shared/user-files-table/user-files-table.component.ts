@@ -6,7 +6,6 @@ import {
   computed,
   ElementRef,
   inject,
-  input,
   signal,
   TrackByFunction,
   viewChild,
@@ -22,9 +21,7 @@ import {
 import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
-import {
-  AppFile,
-} from '../../core/models/app-file.model';
+import { AppFile } from '../../core/models/app-file.model';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
 import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../core/services/download.service';
@@ -33,10 +30,11 @@ import { FileUploadService } from '../../core/services/file-upload.service';
 import { FileService } from '../../core/services/file.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
-import { TableDragDropFacade } from '../../core/services/table-drag-drop-facade.service';
+import { DragDropService } from '../../core/services/drag-drop.service';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { UserFilesContextMenuComponent } from './user-files-context-menu/user-files-context-menu.component';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
+import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 
 @Component({
   selector: 'app-user-files-table',
@@ -55,6 +53,7 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
     DragPreviewComponent,
     NgbProgressbarModule,
     CdkTableModule,
+    UploadOverlayComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -64,7 +63,6 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
     style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
   },
-  providers: [TableDragDropFacade],
 })
 export class UserFilesTableComponent {
   readonly FileStatus = FileStatus;
@@ -75,7 +73,7 @@ export class UserFilesTableComponent {
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly selection = inject(SelectionService<AppFile>);
-  private readonly dragFacade = inject(TableDragDropFacade<AppFile>);
+  private readonly dragFacade = inject(DragDropService<AppFile>);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
 
@@ -95,7 +93,8 @@ export class UserFilesTableComponent {
   filesMarkedForAction = this.fileService.awaitingActionState;
   areAllCheckboxesChecked = computed(
     () =>
-      this.files().length > 0 && this.selectedIds().size === this.files().length
+      this.files().length > 0 &&
+      this.selectedIds().size === this.files().length,
   );
 
   tooltips = viewChildren(NgbTooltip);
@@ -179,7 +178,7 @@ export class UserFilesTableComponent {
 
   async generateShareLink(files: AppFile[]) {
     await this.shareService.generateShareLinkWithFeedback(
-      files.map((f) => f.id)
+      files.map((f) => f.id),
     );
   }
 
@@ -238,13 +237,11 @@ export class UserFilesTableComponent {
     read: ElementRef,
   });
 
-  readonly dragOverFileId = this.dragFacade.dragOverFileId;
-  readonly fileUploadDragOverFileId = this.dragFacade.fileUploadDragOverFileId;
-  readonly fileUploadTarget = this.dragFacade.fileUploadTarget;
-  readonly fileUploadHoverTargetCorrect =
-    this.dragFacade.fileUploadHoverTargetCorrect;
-  readonly fileUploadFileNb = this.dragFacade.fileUploadFileNb;
-  readonly fileUploadTableTarget = this.dragFacade.fileUploadTableTarget;
+  readonly dragTarget = this.dragFacade.dragTarget;
+  readonly isInternalHover = this.dragFacade.isInternalHover;
+  readonly canWriteToDragTarget = this.dragFacade.hasMinWriteAccess;
+  readonly dragPayloadNb = this.dragFacade.filesNb;
+  readonly isHoverTargetATable = this.dragFacade.isHoverTargetATable;
 
   canBeTargetDirectory(file: AppFile) {
     return file.isDirectory && !this.isSelected(file.id);
@@ -256,9 +253,8 @@ export class UserFilesTableComponent {
     this.dragFacade.rowDragStart(
       event,
       file,
-      this.isSelected.bind(this),
       this.selectedFiles,
-      previewEl
+      previewEl,
     );
   }
 
@@ -275,14 +271,9 @@ export class UserFilesTableComponent {
   }
 
   async onRowDrop(event: DragEvent, targetFile: AppFile) {
-    await this.dragFacade.rowDrop(
-      event,
-      targetFile,
-      this.currentDirectoryId,
-      this.isSelected.bind(this),
-      (files, targetId, targetName) =>
-        this.fileService.moveFilesWithFeedback(files, targetId, targetName)
-    );
+    if (!this.canBeTargetDirectory(targetFile)) return;
+
+    await this.dragFacade.rowDrop(event);
   }
 
   onTableDragEnter(event: DragEvent) {
@@ -294,7 +285,7 @@ export class UserFilesTableComponent {
   }
 
   async onTableDrop(event: DragEvent) {
-    await this.dragFacade.tableDrop(event, this.currentDirectoryId());
+    await this.dragFacade.rowDrop(event);
   }
 
   onTableDragLeave(event: DragEvent) {
@@ -304,23 +295,23 @@ export class UserFilesTableComponent {
   // File upload controls
   stopFilesUpload(files: AppFile[]) {
     const uploadingFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Started
+      (file) => file.progressStatus === ProgressStatus.Started,
     );
     uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
   }
 
   continueFilesUpload(files: AppFile[]) {
     const stoppedFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Stopped
+      (file) => file.progressStatus === ProgressStatus.Stopped,
     );
     stoppedFiles.forEach((file) =>
-      this.uploadService.resume(file, this.currentDirectoryId())
+      this.uploadService.resume(file, this.currentDirectoryId()),
     );
   }
 
   async cancelFilesUpload(files: AppFile[]) {
     const incompleteFiles = files.filter(
-      (file) => file.fileStatus === FileStatus.Incomplete
+      (file) => file.fileStatus === FileStatus.Incomplete,
     );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));

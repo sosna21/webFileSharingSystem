@@ -1,0 +1,12 @@
+<i
+  class="bi"
+  [class]="{
+    'bi-eye': accessMode() === ShareAccessMode.ReadOnly,
+    'bi-pencil-fill': accessMode() === ShareAccessMode.ReadWrite,
+    'bi-unlock-fill': accessMode() === ShareAccessMode.FullAccess,
+    'text-body': accessMode() === ShareAccessMode.ReadOnly && withColor(),
+    'text-warning-emphasis':
+      accessMode() === ShareAccessMode.ReadWrite && withColor(),
+    'text-success': accessMode() === ShareAccessMode.FullAccess && withColor(),
+  }"
+></i>

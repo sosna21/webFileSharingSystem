@@ -19,7 +19,7 @@
 
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
-  [class.table-drop-hover]="fileUploadTableTarget()"
+  [class.table-drop-hover]="isHoverTargetATable()"
 >
   <div
     (dragleave)="onTableDragLeave($event)"
@@ -60,16 +60,16 @@
           class="d-table-cell align-middle text-center"
         >
           @if (file.fileStatus === FileStatus.Incomplete) {
-          <i
-            class="bi bi-x-octagon text-danger"
-            style="-webkit-text-stroke: 1px; font-size: large"
-            (click)="cancelFilesUpload([file])"
-            appClicableIcon
-            ngbTooltip="Cancel upload"
-            [openDelay]="300"
-          ></i>
+            <i
+              class="bi bi-x-octagon text-danger"
+              style="-webkit-text-stroke: 1px; font-size: large"
+              (click)="cancelFilesUpload([file])"
+              appClicableIcon
+              ngbTooltip="Cancel upload"
+              [openDelay]="300"
+            ></i>
           } @else if (isLoading(file.id)) {
-          <span class="spinner-border spinner-border-sm"></span>
+            <span class="spinner-border spinner-border-sm"></span>
           }
         </td>
       </ng-container>
@@ -81,89 +81,94 @@
         </th>
         <td cdk-cell *cdkCellDef="let file">
           @if (file.fileStatus === FileStatus.Completed) {
-          <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-          @if (editingId() === file.id) {
-          <input
-            appSelectFilename
-            type="text"
-            style="min-width: 85%"
-            [ngModel]="file.fileName"
-            [placeholder]="file.fileName"
-            (blur)="rename(file, $any($event.target).value)"
-            (keydown)="fileRenameKeyDown($event, file)"
-          />
+            <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
+            @if (editingId() === file.id) {
+              <input
+                appSelectFilename
+                type="text"
+                style="min-width: 85%"
+                [ngModel]="file.fileName"
+                [placeholder]="file.fileName"
+                (blur)="rename(file, $any($event.target).value)"
+                (keydown)="fileRenameKeyDown($event, file)"
+              />
+            } @else {
+              {{ file.fileName }}
+            }
           } @else {
-          {{ file.fileName }}
-          } }@else {
-          <div class="d-flex align-items-center gap-3">
-            <!-- File icon -->
-            <i class="bi fs-4" [ngClass]="file | fileToIcon"></i>
+            <div class="d-flex align-items-center gap-3">
+              <!-- File icon -->
+              <i class="bi fs-4" [ngClass]="file | fileToIcon"></i>
 
-            <!-- File details (name + progress bar) -->
-            <div class="flex-grow-1">
-              <div class="text-truncate">
-                {{ file.fileName }}
-                <span
-                  [class]="
-                    'small ' +
-                    (file.progressStatus === ProgressStatus.Started
-                      ? 'text-muted'
-                      : file.progressStatus === ProgressStatus.Stopping
-                      ? 'text-warning-emphasis'
-                      : 'text-danger-emphasis')
-                  "
-                  >({{
-                    file.progressStatus === ProgressStatus.Started
-                      ? "Uploading"
-                      : file.progressStatus === ProgressStatus.Stopping
-                      ? "Stopping"
-                      : "Stopped"
-                  }}:
-                  {{
-                    getFileSize(file.size | fileSize) * file.uploadProgress
-                      | number : "1.2-2"
-                  }}/{{ file.size | fileSize }})</span
-                >
-              </div>
-              <div class="d-flex">
-                <ngb-progressbar
-                  [value]="file.uploadProgress * 100"
-                  [showValue]="true"
-                  [type]="
-                    file.progressStatus === ProgressStatus.Started
-                      ? 'primary'
-                      : file.progressStatus === ProgressStatus.Stopping
-                      ? 'warning'
-                      : 'secondary'
-                  "
-                  [animated]="file.progressStatus === ProgressStatus.Stopping"
-                  [striped]="file.progressStatus !== ProgressStatus.Stopped"
-                  class="mt-1 w-50 border border-secondary"
-                ></ngb-progressbar>
-                <div
-                  class="d-flex ms-2 align-items-start"
-                  style="margin-top: -5px"
-                >
-                  <i
-                    appClicableIcon
-                    class="bi bi-pause-circle"
-                    [disabled]="file.progressStatus !== ProgressStatus.Started"
-                    (click)="stopFilesUpload([file])"
-                    ngbTooltip="Pause upload"
-                    [openDelay]="300"
-                  ></i>
-                  <i
-                    appClicableIcon
-                    class="bi bi-play-circle-fill"
-                    [disabled]="file.progressStatus === ProgressStatus.Started"
-                    (click)="continueFilesUpload([file])"
-                    ngbTooltip="Resume upload"
-                    [openDelay]="300"
-                  ></i>
+              <!-- File details (name + progress bar) -->
+              <div class="flex-grow-1">
+                <div class="text-truncate">
+                  {{ file.fileName }}
+                  <span
+                    [class]="
+                      'small ' +
+                      (file.progressStatus === ProgressStatus.Started
+                        ? 'text-muted'
+                        : file.progressStatus === ProgressStatus.Stopping
+                          ? 'text-warning-emphasis'
+                          : 'text-danger-emphasis')
+                    "
+                    >({{
+                      file.progressStatus === ProgressStatus.Started
+                        ? "Uploading"
+                        : file.progressStatus === ProgressStatus.Stopping
+                          ? "Stopping"
+                          : "Stopped"
+                    }}:
+                    {{
+                      getFileSize(file.size | fileSize) * file.uploadProgress
+                        | number: "1.2-2"
+                    }}/{{ file.size | fileSize }})</span
+                  >
+                </div>
+                <div class="d-flex">
+                  <ngb-progressbar
+                    [value]="file.uploadProgress * 100"
+                    [showValue]="true"
+                    [type]="
+                      file.progressStatus === ProgressStatus.Started
+                        ? 'primary'
+                        : file.progressStatus === ProgressStatus.Stopping
+                          ? 'warning'
+                          : 'secondary'
+                    "
+                    [animated]="file.progressStatus === ProgressStatus.Stopping"
+                    [striped]="file.progressStatus !== ProgressStatus.Stopped"
+                    class="mt-1 w-50 border border-secondary"
+                  ></ngb-progressbar>
+                  <div
+                    class="d-flex ms-2 align-items-start"
+                    style="margin-top: -5px"
+                  >
+                    <i
+                      appClicableIcon
+                      class="bi bi-pause-circle"
+                      [disabled]="
+                        file.progressStatus !== ProgressStatus.Started
+                      "
+                      (click)="stopFilesUpload([file])"
+                      ngbTooltip="Pause upload"
+                      [openDelay]="300"
+                    ></i>
+                    <i
+                      appClicableIcon
+                      class="bi bi-play-circle-fill"
+                      [disabled]="
+                        file.progressStatus === ProgressStatus.Started
+                      "
+                      (click)="continueFilesUpload([file])"
+                      ngbTooltip="Resume upload"
+                      [openDelay]="300"
+                    ></i>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           }
         </td>
       </ng-container>
@@ -199,8 +204,8 @@
               file.fileStatus === FileStatus.Incomplete
                 ? undefined
                 : file.isFavourite
-                ? 'Remove from favourites'
-                : 'Add to favourites'
+                  ? 'Remove from favourites'
+                  : 'Add to favourites'
             "
             [openDelay]="300"
           ></i>
@@ -236,8 +241,8 @@
               file.fileStatus === FileStatus.Incomplete
                 ? undefined
                 : file.isShared
-                ? 'Manage shares'
-                : 'Share file'
+                  ? 'Manage shares'
+                  : 'Share file'
             "
             [openDelay]="300"
           ></i>
@@ -288,7 +293,7 @@
           class="d-none d-sm-table-cell align-middle"
         >
           <div>
-            <span [ngbTooltip]="file.modificationDate | date : 'medium'">{{
+            <span [ngbTooltip]="file.modificationDate | date: 'medium'">{{
               file.modificationDate | timeago
             }}</span>
           </div>
@@ -305,6 +310,7 @@
         *cdkHeaderRowDef="columnsToDisplay()"
         class="table-primary sticky-top"
       ></tr>
+
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
@@ -331,31 +337,23 @@
           filesMarkedForAction()?.filesIds!.has(file.id)
         "
         [class.drop-folder-hover]="
-          (dragOverFileId() === file.id ||
-            fileUploadDragOverFileId() === file.id) &&
-          canBeTargetDirectory(file)
+          dragTarget()?.id === file.id && canBeTargetDirectory(file)
         "
       ></tr>
     </table>
 
     @if (files().length === 0) {
-    <div
-      class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
-    >
-      <i class="bi bi-upload" style="font-size: 5rem"></i>
-      <div class="fs-3">Drop files here to upload</div>
-    </div>
+      <div
+        class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
+      >
+        <i class="bi bi-upload" style="font-size: 5rem"></i>
+        <div class="fs-3">Drop files here to upload</div>
+      </div>
     }
   </div>
-  <!-- overlay lives OUTSIDE the scrollable container -->
-  @if (fileUploadTarget()) {
-  <div class="drop-overlay">
-    <div class="drop-overlay-text">
-      @if (fileUploadHoverTargetCorrect()) { Upload
-      {{ fileUploadFileNb() }} file(s) to “{{ fileUploadTarget()?.name }}” }
-      @else { Upload {{ fileUploadFileNb() }} file(s) here }
-    </div>
-  </div>
+
+  @if (dragTarget() && !isInternalHover()) {
+    <app-upload-overlay />
   }
 </div>
 

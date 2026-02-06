@@ -23,7 +23,11 @@ import {
 import { bulkAction } from '../utils/bulk-action-util';
 import { ModalService } from './modal.service';
 import { FileApiService } from './api/file-api.service';
-import { BaseFile, FileStatus, ProgressStatus } from '../models/base-file.model';
+import {
+  BaseFile,
+  FileStatus,
+  ProgressStatus,
+} from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 
@@ -42,12 +46,12 @@ export class FileService {
   >({
     source: () =>
       Object.fromEntries(
-        this.userFiles().map((item) => [item.id, item])
+        this.userFiles().map((item) => [item.id, item]),
       ) as Record<string, BaseFile>,
     computation: (source, previous) => {
       if (!previous || !previous.value?.files) return null;
       const resultFiles = [...previous.value.files].map(
-        (f) => source[f.id] ?? f
+        (f) => source[f.id] ?? f,
       );
 
       //Return updated files set
@@ -72,14 +76,16 @@ export class FileService {
   //TODO add parent folder signal
   public readonly searchedPhrase = signal<string>('');
   public readonly parentId = signal<number | null>(null);
-  public readonly parentBreadcrumb = computed(() => this.breadCrumbsResource.hasValue()
-      ? this.breadCrumbsResource.value().find((b) => b.id === this.parentId())
-      : undefined);
+  public readonly parentBreadcrumb = computed(() => this.breadCrumbs().at(-1));
   public readonly parentName = computed(() =>
     this.breadCrumbsResource.hasValue()
       ? this.breadCrumbsResource.value().find((b) => b.id === this.parentId())
           ?.fileName
-      : ''
+      : this.parentId() === null
+        ? this.mode() === 'GetSharedWithMe'
+          ? 'Shared With Me'
+          : 'Home'
+        : undefined,
   );
 
   public readonly currentPage = signal<number>(1);
@@ -90,9 +96,8 @@ export class FileService {
         ?.items.map((file) => ({
           ...file,
           progressStatus: ProgressStatus.Stopped,
-          accessMode: ShareAccessMode.FullAccess,
         }))
-        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
+        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? [],
   );
 
   public readonly sharedFiles = linkedSignal<SharedFile[]>(
@@ -103,7 +108,7 @@ export class FileService {
           progressStatus: ProgressStatus.Stopped,
           fileStatus: FileStatus.Completed,
         }))
-        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? []
+        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? [],
   );
 
   public readonly currentFiles = computed<(AppFile | SharedFile)[]>(() => {
@@ -123,23 +128,23 @@ export class FileService {
           totalItems: this._linkedFilesResponse()!.totalCount,
           totalPages: this._linkedFilesResponse()!.totalPages,
         }
-      : null
+      : null,
   );
 
   private readonly _debouncedSearchedPhrase = debouncedSignal(
     this.searchedPhrase,
     300,
-    ''
+    '',
   );
   private readonly _request = computed(
     () => `${
       this.fileUrl
     }/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
       ${this.parentId() ? '&ParentId=' + this.parentId() : ''}${
-      this._debouncedSearchedPhrase() !== ''
-        ? '&SearchedPhrase=' + this._debouncedSearchedPhrase()
-        : ''
-    }`
+        this._debouncedSearchedPhrase() !== ''
+          ? '&SearchedPhrase=' + this._debouncedSearchedPhrase()
+          : ''
+      }`,
   );
 
   private refreshActiveList() {
@@ -151,10 +156,10 @@ export class FileService {
   }
 
   readonly _fileResource = httpResource<FileResponse<AppFile>>(() =>
-    this.mode() !== 'GetSharedWithMe' ? this._request() : undefined
+    this.mode() !== 'GetSharedWithMe' ? this._request() : undefined,
   );
   readonly _sharedFilesResource = httpResource<FileResponse<SharedFile>>(() =>
-    this.mode() === 'GetSharedWithMe' ? this._request() : undefined
+    this.mode() === 'GetSharedWithMe' ? this._request() : undefined,
   );
 
   private readonly _linkedFilesResponse = linkedSignal<
@@ -190,14 +195,31 @@ export class FileService {
   private readonly _breadcrumbsQuery = computed(() =>
     this.parentId() !== null
       ? `${this.fileUrl}/GetFilePath/${this.parentId()}`
-      : undefined
+      : undefined,
   );
 
   private readonly _breadCrumbsResource = httpResource<Breadcrumb[]>(() =>
-    this._breadcrumbsQuery()
+    this._breadcrumbsQuery(),
   );
-
   public readonly breadCrumbsResource = this._breadCrumbsResource.asReadonly();
+
+  public readonly breadCrumbs = computed<Breadcrumb[]>(() => {
+    const breadcrumbs = this.breadCrumbsResource.hasValue()
+      ? this.breadCrumbsResource.value()
+      : [];
+
+    const homeCrumb: Breadcrumb = {
+      id: null,
+      fileName: this.mode() === 'GetSharedWithMe' ? 'Shared with me' : 'Home',
+      level: 0,
+      accessMode:
+        this.mode() === 'GetSharedWithMe'
+          ? ShareAccessMode.ReadOnly
+          : undefined,
+      validUntil: this.mode() === 'GetSharedWithMe' ? null : undefined,
+    };
+    return [homeCrumb, ...breadcrumbs].sort((a, b) => a.level - b.level);
+  });
 
   constructor() {
     const currentUrl = this.router.url; // e.g. "/disc/home/folder/123"
@@ -205,6 +227,10 @@ export class FileService {
     if (currentUrl.startsWith('/disc/home')) {
       // home context
       this.mode.set('GetAll');
+      const dirId = this.extractFolderId(currentUrl);
+      this.goToFolder(dirId);
+    } else if (currentUrl.startsWith('/disc/shared-with-me')) {
+      this.mode.set('GetSharedWithMe');
       const dirId = this.extractFolderId(currentUrl);
       this.goToFolder(dirId);
     }
@@ -232,7 +258,7 @@ export class FileService {
       | 'GetSharedByMe'
       | 'GetFavourites'
       | 'GetRecent'
-      | 'GetSharedWithMe'
+      | 'GetSharedWithMe',
   ) {
     switch (mode) {
       case 'GetAll':
@@ -254,11 +280,11 @@ export class FileService {
   updateFile(file: BaseFile, updates: Record<string, any>) {
     if (this.mode() === 'GetSharedWithMe') {
       this.sharedFiles.update((files) =>
-        files.map((f) => (f.id === file.id ? { ...f, ...updates } : f))
+        files.map((f) => (f.id === file.id ? { ...f, ...updates } : f)),
       );
     } else {
       this.userFiles.update((files) =>
-        files.map((f) => (f.id === file.id ? { ...f, ...updates } : f))
+        files.map((f) => (f.id === file.id ? { ...f, ...updates } : f)),
       );
     }
   }
@@ -270,7 +296,7 @@ export class FileService {
       this.toast.show(
         'File rename',
         'File name cannot be empty',
-        MessageSeverity.error
+        MessageSeverity.error,
       );
       return;
     }
@@ -284,7 +310,7 @@ export class FileService {
       this.toast.show(
         'File rename',
         'File with this name already exists',
-        MessageSeverity.error
+        MessageSeverity.error,
       );
       return;
     }
@@ -299,7 +325,7 @@ export class FileService {
           this.toast.show(
             'File rename',
             'File renamed successfully',
-            MessageSeverity.success
+            MessageSeverity.success,
           );
           this.updateFile(file, { fileName: newFileName });
         },
@@ -307,7 +333,7 @@ export class FileService {
           this.toast.show(
             'File rename',
             err.error || String(err),
-            MessageSeverity.error
+            MessageSeverity.error,
           );
         },
       })
@@ -318,7 +344,7 @@ export class FileService {
     const filesToUpdate = files.filter(
       (file) =>
         file.fileStatus === FileStatus.Completed &&
-        file.isFavourite !== changeTo
+        file.isFavourite !== changeTo,
     );
     if (filesToUpdate.length === 0) return;
 
@@ -334,7 +360,7 @@ export class FileService {
         this.toast.show(
           'Favourite update failed',
           err.error || String(err),
-          MessageSeverity.error
+          MessageSeverity.error,
         );
         this.setLoading(file.id, false);
       },
@@ -342,12 +368,24 @@ export class FileService {
       successMessage: (count, updated) => {
         if (count === 1) {
           return changeTo
-            ? { title: 'Favourite Update', message: `Added '${updated[0].fileName}' to favourites` }
-            : { title: 'Favourite Update', message: `Removed '${updated[0].fileName}' from favourites` };
+            ? {
+                title: 'Favourite Update',
+                message: `Added '${updated[0].fileName}' to favourites`,
+              }
+            : {
+                title: 'Favourite Update',
+                message: `Removed '${updated[0].fileName}' from favourites`,
+              };
         }
         return changeTo
-          ? { title: 'Favourite Update', message: `Added ${count} files to favourites` }
-          : { title: 'Favourite Update', message: `Removed ${count} files from favourites` };
+          ? {
+              title: 'Favourite Update',
+              message: `Added ${count} files to favourites`,
+            }
+          : {
+              title: 'Favourite Update',
+              message: `Removed ${count} files from favourites`,
+            };
       },
     });
   }
@@ -359,7 +397,7 @@ export class FileService {
       files.length === 1
         ? `Selected '${files[0].fileName}' for copying. Navigate to the target folder and paste the file there.`
         : `Selected ${files.length} files for copying. Navigate to the target folder and paste the files there.`,
-      MessageSeverity.info
+      MessageSeverity.info,
     );
   }
 
@@ -370,35 +408,35 @@ export class FileService {
       files.length === 1
         ? `Selected '${files[0].fileName}' for moving. Navigate to the target folder and paste the file there.`
         : `Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
-      MessageSeverity.info
+      MessageSeverity.info,
     );
   }
 
   moveFilesWithFeedback(
     filesToMove: BaseFile[],
     targetDirectoryId: number | null,
-    targetDirectoryName: string
+    targetDirectoryName: string,
   ) {
     this.executeFileOperationWithFeedback(
       filesToMove,
       targetDirectoryId,
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
-      'move'
+      'move',
     );
   }
 
   copyFilesWithFeedback(
     filesToCopy: BaseFile[],
     targetDirectoryId: number | null,
-    targetDirectoryName: string
+    targetDirectoryName: string,
   ) {
     this.executeFileOperationWithFeedback(
       filesToCopy,
       targetDirectoryId,
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
-      'copy'
+      'copy',
     );
   }
 
@@ -424,12 +462,12 @@ export class FileService {
         `...and ${remainingCount} more`,
       ];
       confirmText = `Are you sure you want to delete these files?\n${displayNames.join(
-        '\n'
+        '\n',
       )}`;
     } else {
       const displayNames = fileNamesList.map((name) => `• ${name}`);
       confirmText = `Are you sure you want to delete these files?\n${displayNames.join(
-        '\n'
+        '\n',
       )}`;
     }
 
@@ -452,16 +490,22 @@ export class FileService {
         this.toast.show(
           'File deletion',
           err instanceof Error ? err.message : String(err),
-          MessageSeverity.error
+          MessageSeverity.error,
         );
         this.setLoading(file.id, false);
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: (count) => {
         if (count === 1) {
-          return { title: 'File Deletion', message: `Deleted '${filesToDelete[0].fileName}' successfully` };
+          return {
+            title: 'File Deletion',
+            message: `Deleted '${filesToDelete[0].fileName}' successfully`,
+          };
         } else {
-          return { title: 'File Deletion', message: `Deleted ${count} files successfully` };
+          return {
+            title: 'File Deletion',
+            message: `Deleted ${count} files successfully`,
+          };
         }
       },
     });
@@ -473,7 +517,7 @@ export class FileService {
     targetDirectoryId: number | null,
     targetDirectoryName: string,
     operation: (fileIds: number[], targetId: number | null) => Observable<T>,
-    operationName: 'move' | 'copy'
+    operationName: 'move' | 'copy',
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
@@ -495,16 +539,17 @@ export class FileService {
             `File${
               isPlural ? 's' : ''
             } ${operationName}d to '${targetDirectoryName}'.`,
-            MessageSeverity.success
+            MessageSeverity.success,
           );
 
           this.clearActionContext();
         },
         error: (err) => {
           this.toast.show(
-            'Operation failed',
-            `Could not ${operationName} file${isPlural ? 's' : ''}.`,
-            MessageSeverity.error
+            `${operationName[0].toUpperCase() + operationName.slice(1)} failed`,
+            err?.error ??
+              `Could not ${operationName} file${isPlural ? 's' : ''}.`,
+            MessageSeverity.error,
           );
         },
       })
@@ -523,8 +568,8 @@ export class FileService {
       files.map((file) =>
         file.id === fileId
           ? { ...file, fileStatus: FileStatus.Completed }
-          : file
-      )
+          : file,
+      ),
     );
   }
 
@@ -558,8 +603,8 @@ export class FileService {
               uploadProgress: uploadProgressInfo.progress!,
               progressStatus: this.mapStatus(uploadProgressInfo.status),
             }
-          : file
-      )
+          : file,
+      ),
     );
   }
 

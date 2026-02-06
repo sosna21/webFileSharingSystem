@@ -8,9 +8,7 @@ import {
 import { FileService } from '../../../../core/services/file.service';
 import { RouterLink } from '@angular/router';
 import { Breadcrumb } from '../../../../core/models/breadcrumb.model';
-import { FileDragDropService } from '../../../../core/services/file-drag-drop.service';
-import { FileUploadDragDropService } from '../../../../core/services/file-upload-drag-drop.service';
-import { DragDropUtils } from '../../../../core/utils/drag-drop-utils';
+import { DragDropService } from '../../../../core/services/drag-drop.service';
 
 @Component({
   selector: 'app-breadcrumb',
@@ -24,35 +22,15 @@ import { DragDropUtils } from '../../../../core/utils/drag-drop-utils';
   },
 })
 export class BreadcrumbComponent {
-  private readonly dragDrop = inject(FileDragDropService);
-  readonly uploadDragDrop = inject(FileUploadDragDropService);
+  private readonly dragDropService = inject(DragDropService<Breadcrumb>);
   private readonly fileService = inject(FileService);
   readonly breadCrumbsResource = this.fileService.breadCrumbsResource;
-  readonly breadCrumbs = linkedSignal<Breadcrumb[] | undefined, Breadcrumb[]>({
-    source: () => this.breadCrumbsResource.value(),
-    computation: (source, previous) => {
-      if (source)
-        return [this.homeBreadcrumb, ...source].sort(
-          (a, b) => a.level - b.level,
-        );
-      if (this.breadCrumbsResource.isLoading() && previous)
-        return previous.value;
-      return [this.homeBreadcrumb];
-    },
-  });
-
-  readonly homeBreadcrumb: Breadcrumb = {
-    id: null,
-    fileName: 'Home',
-    level: 0,
-  };
+  readonly breadCrumbs = this.fileService.breadCrumbs;
 
   readonly dragOverBreadcrumbId = computed(() =>
-    this.dragDrop.dragOverTarget()?.type === 'breadcrumb'
-      ? this.dragDrop.dragOverTarget()?.id
-      : this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb'
-        ? this.uploadDragDrop.hoveredTarget()?.target?.id
-        : -1,
+    this.dragDropService.hoveredTarget()?.type === 'breadcrumb'
+      ? this.dragDropService.hoveredTarget()?.target?.id
+      : -1,
   );
 
   selectFolder(folderId: number | null) {
@@ -61,64 +39,18 @@ export class BreadcrumbComponent {
   }
 
   onDragLeave(event: DragEvent, breadcrumb: Breadcrumb) {
-    event.preventDefault();
-    if (!DragDropUtils.isTrueDragLeave(event)) return;
-
-    if (
-      this.uploadDragDrop.hoveredTarget()?.type === 'breadcrumb' &&
-      this.uploadDragDrop.hoveredTarget()?.target?.id === breadcrumb.id
-    ) {
-      this.uploadDragDrop.clearHover();
-    }
-
-    if (this.dragDrop.dragOverTarget()?.id === breadcrumb.id) {
-      this.dragDrop.clearDragOverTarget();
-    }
-  }
-
-  onDragEnd(event: DragEvent, breadcrumb: Breadcrumb) {
-    this.dragDrop.clearDragOverTarget();
+    this.dragDropService.rowDragLeave(event, breadcrumb);
   }
 
   onDragEnter(event: DragEvent, breadcrumb: Breadcrumb) {
-    event.preventDefault();
-
-    if (this.uploadDragDrop.allowExternalFiles(event)) {
-      this.uploadDragDrop.setHoverTarget(
-        { type: 'breadcrumb', target: breadcrumb },
-        event,
-      );
-    } else if (this.dragDrop.allowAppFiles(event)) {
-      this.dragDrop.setDragOverTarget('breadcrumb', breadcrumb.id);
-    }
+    this.dragDropService.breadcrumbDragEnter(event, breadcrumb);
   }
 
   onDragOver(event: DragEvent) {
-    event.preventDefault();
-    this.dragDrop.setDropEffect(
-      event,
-      this.dragDrop.allowAppFiles(event) ||
-        this.uploadDragDrop.allowExternalFiles(event),
-    );
+    this.dragDropService.tableDragOver(event);
   }
 
-  onDrop(event: DragEvent, breadcrumb: Breadcrumb) {
-    event.preventDefault();
-    this.dragDrop.clearDragOverTarget();
-
-    // External files
-    if (this.uploadDragDrop.allowExternalFiles(event)) {
-      this.uploadDragDrop.uploadDraggedFiles(event, breadcrumb.id);
-      return;
-    }
-
-    // Internal files
-    if (this.dragDrop.allowAppFiles(event)) {
-      this.fileService.moveFilesWithFeedback(
-        this.dragDrop.draggedFiles(),
-        breadcrumb.id,
-        breadcrumb.fileName,
-      );
-    }
+  async onDrop(event: DragEvent, breadcrumb: Breadcrumb) {
+    await this.dragDropService.rowDrop(event);
   }
 }

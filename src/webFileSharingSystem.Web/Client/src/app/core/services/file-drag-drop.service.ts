@@ -1,36 +1,20 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { AppFile } from '../models/app-file.model';
-import { MessageSeverity } from '../models/toast-info.model';
+import { BaseFile } from '../models/base-file.model';
 import { FileService } from './file.service';
-import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FileDragDropService {
-  private readonly fileService = inject(FileService);
-  private readonly toast = inject(ToastService);
-  private readonly baseFiles = this.fileService.userFiles;
+  readonly draggedFiles = signal<BaseFile[]>([]);
+  readonly fileService = inject(FileService);
 
-  readonly dragOverTarget = signal<{
-    type: 'file' | 'breadcrumb';
-    id: number | null;
-  } | null>(null);
-  readonly draggedFiles = signal<AppFile[]>([]);
-
-  startDrag(files: AppFile[]) {
+  startDrag(files: BaseFile[]) {
     this.draggedFiles.set(files);
   }
 
-  clearDrag() {
-    this.dragOverTarget.set(null);
+  clearDragedFiles() {
     this.draggedFiles.set([]);
-  }
-
-  private updateFile(file: AppFile, partialUpdate?: Partial<AppFile>) {
-    this.baseFiles.update((files) =>
-      files.map((f) => (f.id === file.id ? { ...f, ...partialUpdate } : f))
-    );
   }
 
   /**
@@ -48,17 +32,15 @@ export class FileDragDropService {
     event.dataTransfer.dropEffect = allowed ? 'move' : 'none';
   }
 
-  /**
-   * Mark the current drag over target
-   */
-  setDragOverTarget(type: 'file' | 'breadcrumb', id: number | null): void {
-    this.dragOverTarget.set({ type, id });
-  }
-
-  /**
-   * Reset drag over state
-   */
-  clearDragOverTarget(): void {
-    this.dragOverTarget.set(null);
+  async moveDraggedFiles(
+    event: DragEvent,
+    destinationId: number,
+    destinationName: string,
+  ) {
+    this.fileService.moveFilesWithFeedback(
+      this.draggedFiles(),
+      destinationId,
+      destinationName,
+    );
   }
 }

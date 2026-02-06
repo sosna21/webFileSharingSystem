@@ -20,21 +20,21 @@ export class SharedFilesContextMenuComponent {
 
   readonly showOpenFolder = computed(
     () =>
-      this.selectedFiles().length === 1 && this.selectedFiles()[0].isDirectory
+      this.selectedFiles().length === 1 && this.selectedFiles()[0].isDirectory,
   );
 
   readonly canRename = computed(
     () =>
       this.selectedFiles().length === 1 &&
-      this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite
+      this.selectedFiles()[0].accessMode! >= ShareAccessMode.ReadWrite,
   );
 
   readonly canDelete = computed(
     () =>
       this.selectedFiles().length > 0 &&
       this.selectedFiles().every(
-        (f) => f.accessMode === ShareAccessMode.FullAccess
-      )
+        (f) => f.accessMode === ShareAccessMode.FullAccess,
+      ),
   );
 
   readonly rename = output<SharedFile>();

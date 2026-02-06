@@ -10,7 +10,7 @@
 
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
-  [class.table-drop-hover]="fileUploadTableTarget()"
+  [class.table-drop-hover]="isHoverTargetATable()"
 >
   <div
     (dragleave)="onTableDragLeave($event)"
@@ -51,15 +51,15 @@
           class="d-table-cell align-middle text-center"
         >
           @if (file.fileStatus === FileStatus.Incomplete) {
-          <i
-            class="bi bi-x-octagon text-danger"
-            style="-webkit-text-stroke: 1px; font-size: large"
-            appClicableIcon
-            ngbTooltip="Cancel upload"
-            [openDelay]="300"
-          ></i>
+            <i
+              class="bi bi-x-octagon text-danger"
+              style="-webkit-text-stroke: 1px; font-size: large"
+              appClicableIcon
+              ngbTooltip="Cancel upload"
+              [openDelay]="300"
+            ></i>
           } @else if (isLoading(file.id)) {
-          <span class="spinner-border spinner-border-sm"></span>
+            <span class="spinner-border spinner-border-sm"></span>
           }
         </td>
       </ng-container>
@@ -72,17 +72,17 @@
         <td cdk-cell *cdkCellDef="let file">
           <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
           @if (editingId() === file.id) {
-          <input
-            appSelectFilename
-            type="text"
-            style="min-width: 85%"
-            [ngModel]="file.fileName"
-            [placeholder]="file.fileName"
-            (blur)="rename(file, $any($event.target).value)"
-            (keydown)="fileRenameKeyDown($event, file)"
-          />
+            <input
+              appSelectFilename
+              type="text"
+              style="min-width: 85%"
+              [ngModel]="file.fileName"
+              [placeholder]="file.fileName"
+              (blur)="rename(file, $any($event.target).value)"
+              (keydown)="fileRenameKeyDown($event, file)"
+            />
           } @else {
-          {{ file.fileName }}
+            {{ file.fileName }}
           }
         </td>
       </ng-container>
@@ -175,6 +175,7 @@
         *cdkHeaderRowDef="columnsToDisplay()"
         class="table-primary sticky-top"
       ></tr>
+
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
@@ -201,31 +202,26 @@
           filesMarkedForAction()?.filesIds!.has(file.id)
         "
         [class.drop-folder-hover]="
-          (dragOverFileId() === file.id ||
-            fileUploadDragOverFileId() === file.id) &&
-          canBeTargetDirectory(file)
+          dragTarget()?.id === file.id && canBeTargetDirectory(file)
+        "
+        [class.invalid-drop]="
+          dragTarget()?.id === file.id && !canWriteToDragTarget()
         "
       ></tr>
     </table>
 
     @if (files().length === 0) {
-    <div
-      class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
-    >
-      <i class="bi bi-upload" style="font-size: 5rem"></i>
-      <div class="fs-3">Drop files here to upload</div>
-    </div>
+      <div
+        class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
+      >
+        <i class="bi bi-upload" style="font-size: 5rem"></i>
+        <div class="fs-3">Drop files here to upload</div>
+      </div>
     }
   </div>
-  <!-- overlay lives OUTSIDE the scrollable container -->
-  @if (fileUploadTarget()) {
-  <div class="drop-overlay">
-    <div class="drop-overlay-text">
-      @if (fileUploadHoverTargetCorrect()) { Upload
-      {{ fileUploadFileNb() }} file(s) to “{{ fileUploadTarget()?.name }}” }
-      @else { Upload {{ fileUploadFileNb() }} file(s) here }
-    </div>
-  </div>
+
+  @if (dragTarget() && !isInternalHover()) {
+    <app-upload-overlay />
   }
 </div>
 

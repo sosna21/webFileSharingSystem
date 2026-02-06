@@ -196,7 +196,7 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure(OperationResult.BadRequest, "Target directory not found"), null);
 
                 if (!targetDirectory.IsDirectory)
-                    return (Result.Failure(OperationResult.BadRequest, "Parent file is not a directory"), null);
+                    return (Result.Failure(OperationResult.BadRequest, "Target destination is not a directory"), null);
 
                 if (!await _guard.UserCanPerform(userId, targetDirectory, ShareAccessMode.ReadWrite, cancellationToken))
                     return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to add files to this directory"), null);

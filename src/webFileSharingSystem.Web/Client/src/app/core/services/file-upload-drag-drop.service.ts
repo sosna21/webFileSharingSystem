@@ -1,40 +1,9 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { FileService } from './file.service';
-import { ToastService } from './toast.service';
-import { AppFile } from '../models/app-file.model';
-import { Breadcrumb } from '../models/breadcrumb.model';
+import { inject, Injectable } from '@angular/core';
 import { FileUploadService } from './file-upload.service';
-
-interface HoverTarget {
-  type: 'directory' | 'breadcrumb' | 'table';
-  target: AppFile | Breadcrumb | null;
-}
 
 @Injectable({ providedIn: 'root' })
 export class FileUploadDragDropService {
-  private readonly numberOfConcurrentFileUploads = 5;
-  private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
-  private readonly toast = inject(ToastService);
-
-  /** Currently hovered target for upload highlight */
-  readonly hoveredTarget = signal<HoverTarget | null>(null);
-  readonly filesNb = signal<number>(0);
-  //
-  readonly uploadTarget = computed<{ id: number | null, name: string } | null>(() => {
-    const target = this.hoveredTarget();
-    if (!target) return null;
-
-    if (target.type === 'directory' && target.target && (target.target as AppFile).isDirectory) {
-      return { id: target.target.id, name: target.target.fileName };
-    }
-
-    if (target.type === 'breadcrumb' && target.target) {
-      return { id: target.target.id, name: target.target.fileName };
-    }
-
-    return { id: this.fileService.parentId(), name: this.fileService.parentName() ?? 'Home' };
-  });
 
   /** Check if the drag event contains external OS files */
   allowExternalFiles(event: DragEvent): boolean {
@@ -51,48 +20,19 @@ export class FileUploadDragDropService {
     return dt?.items?.length ?? dt?.files?.length ?? 0;
   }
 
-  /** Mark hovered target for visual feedback */
-  setHoverTarget(hoverTarget?: HoverTarget, event?: DragEvent) {
-    if (event) {
-      const fileCount = this.getFileCount(event);
-      this.filesNb.set(fileCount);
-    }
-    this.hoveredTarget.set(hoverTarget ?? null);
-  }
-
-  /** Clear hover state */
-  clearHover() {
-    this.hoveredTarget.set(null);
-    this.filesNb.set(0);
-  }
-
-  /**
-   * Resolve destination folder ID
-   * - Drop on directory → that directory
-   * - Drop on file → current folder
-   * - Drop on breadcrumb → breadcrumb folder
-   */
-  getDestinationFolder(
-    target: AppFile | Breadcrumb | null,
-    currentFolderId: number | null
-  ): number | null {
-    if (!target) return currentFolderId;
-
-    if ('isDirectory' in target) {
-      return target.isDirectory ? target.id : currentFolderId;
-    }
-
-    return target.id; // breadcrumb
-  }
-
-  async uploadDraggedFiles(event: DragEvent, destinationFolderId: number | null) {
+  async uploadDraggedFiles(
+    event: DragEvent,
+    destinationFolderId: number | null,
+  ) {
     if (!event.dataTransfer || event.dataTransfer.items.length === 0) return;
-    this.clearHover();
-    const { directories, files } = await this.getAllFiles(event.dataTransfer.items);
+    const { directories, files } = await this.getAllFiles(
+      event.dataTransfer.items,
+    );
 
-    this.uploadService.uploadFiles(directories, files, destinationFolderId).subscribe();
+    this.uploadService
+      .uploadFiles(directories, files, destinationFolderId)
+      .subscribe();
   }
-
 
   async getAllFiles(items: DataTransferItemList): Promise<{
     directories: { path: string }[];
@@ -120,11 +60,11 @@ export class FileUploadDragDropService {
       entry: FileSystemEntry,
       path: string,
       dirs: { path: string }[],
-      fls: { file: File; path: string }[]
+      fls: { file: File; path: string }[],
     ) {
       if (entry.isFile) {
         const file: File = await new Promise((resolve) =>
-          (entry as FileSystemFileEntry).file(resolve)
+          (entry as FileSystemFileEntry).file(resolve),
         );
         fls.push({ file, path: path + file.name });
       } else if (entry.isDirectory) {
@@ -133,7 +73,7 @@ export class FileUploadDragDropService {
 
         const reader = (entry as FileSystemDirectoryEntry).createReader();
         const entries: FileSystemEntry[] = await new Promise((resolve) =>
-          reader.readEntries(resolve)
+          reader.readEntries(resolve),
         );
 
         for (const ent of entries) {

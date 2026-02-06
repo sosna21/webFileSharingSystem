@@ -22,9 +22,7 @@ import {
 import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
-import {
-  AppFile,
-} from '../../core/models/app-file.model';
+import { AppFile } from '../../core/models/app-file.model';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
 import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../core/services/download.service';
@@ -32,7 +30,7 @@ import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
-import { TableDragDropFacade } from '../../core/services/table-drag-drop-facade.service';
+import { DragDropService } from '../../core/services/drag-drop.service';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { SharedFile } from '../../core/models/shared-file.model';
 import { SharedFilesContextMenuComponent } from './shared-files-context-menu/shared-files-context-menu.component';
@@ -40,6 +38,7 @@ import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
 import { FileService } from '../../core/services/file.service';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
+import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -58,6 +57,7 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
     NgbProgressbarModule,
     CdkTableModule,
     RemainigTimePipe,
+    UploadOverlayComponent,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -67,7 +67,7 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
     style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
   },
-  providers: [TableDragDropFacade],
+  // providers: [TableDragDropFacade],
 })
 export class SharedFilesTableComponent {
   readonly FileStatus = FileStatus;
@@ -78,7 +78,7 @@ export class SharedFilesTableComponent {
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly selection = inject(SelectionService<SharedFile>);
-  private readonly dragFacade = inject(TableDragDropFacade<AppFile>);
+  private readonly dragFacade = inject(DragDropService<SharedFile>);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
 
@@ -98,7 +98,8 @@ export class SharedFilesTableComponent {
   filesMarkedForAction = this.fileService.awaitingActionState;
   areAllCheckboxesChecked = computed(
     () =>
-      this.files().length > 0 && this.selectedIds().size === this.files().length
+      this.files().length > 0 &&
+      this.selectedIds().size === this.files().length,
   );
 
   tooltips = viewChildren(NgbTooltip);
@@ -197,7 +198,6 @@ export class SharedFilesTableComponent {
       this.selectedIds.set(new Set([file.id]));
     }
 
-    console.log('Opening context menu at', position);
     this.openContextMenu(position);
   }
 
@@ -236,13 +236,11 @@ export class SharedFilesTableComponent {
     read: ElementRef,
   });
 
-  readonly dragOverFileId = this.dragFacade.dragOverFileId;
-  readonly fileUploadDragOverFileId = this.dragFacade.fileUploadDragOverFileId;
-  readonly fileUploadTarget = this.dragFacade.fileUploadTarget;
-  readonly fileUploadHoverTargetCorrect =
-    this.dragFacade.fileUploadHoverTargetCorrect;
-  readonly fileUploadFileNb = this.dragFacade.fileUploadFileNb;
-  readonly fileUploadTableTarget = this.dragFacade.fileUploadTableTarget;
+  readonly dragTarget = this.dragFacade.dragTarget;
+  readonly isInternalHover = this.dragFacade.isInternalHover;
+  readonly canWriteToDragTarget = this.dragFacade.hasMinWriteAccess;
+  readonly dragPayloadNb = this.dragFacade.filesNb;
+  readonly isHoverTargetATable = this.dragFacade.isHoverTargetATable;
 
   canBeTargetDirectory(file: SharedFile) {
     return file.isDirectory && !this.isSelected(file.id);
@@ -253,15 +251,14 @@ export class SharedFilesTableComponent {
       .firstElementChild as HTMLElement | null;
     this.dragFacade.rowDragStart(
       event,
-      file as unknown as AppFile,
-      this.isSelected.bind(this),
+      file,
       this.selectedFiles as unknown as Signal<AppFile[]>,
-      previewEl
+      previewEl,
     );
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {
-    this.dragFacade.rowDragEnter(event, row as unknown as AppFile);
+    this.dragFacade.rowDragEnter(event, row);
   }
 
   onRowDragOver(event: DragEvent) {
@@ -269,20 +266,14 @@ export class SharedFilesTableComponent {
   }
 
   onRowDragLeave(event: DragEvent, file: SharedFile) {
-    this.dragFacade.rowDragLeave(event, file as unknown as AppFile);
+    this.dragFacade.rowDragLeave(event, file);
   }
 
-  async onRowDrop(event: DragEvent, targetFile: AppFile) {
+  async onRowDrop(event: DragEvent, targetFile: SharedFile) {
     //this.fileService.canPasteToDirectory(targetFile.id); //TODO check if can drop
+    if (!this.canBeTargetDirectory(targetFile)) return;
 
-    await this.dragFacade.rowDrop(
-      event,
-      targetFile,
-      this.currentDirectoryId,
-      this.isSelected.bind(this),
-      (files, targetId, targetName) =>
-        this.fileService.moveFilesWithFeedback(files, targetId, targetName)
-    );
+    await this.dragFacade.rowDrop(event);
   }
 
   onTableDragEnter(event: DragEvent) {
@@ -294,7 +285,7 @@ export class SharedFilesTableComponent {
   }
 
   async onTableDrop(event: DragEvent) {
-    await this.dragFacade.tableDrop(event, this.currentDirectoryId());
+    await this.dragFacade.rowDrop(event);
   }
 
   onTableDragLeave(event: DragEvent) {
@@ -304,17 +295,17 @@ export class SharedFilesTableComponent {
   // File upload controls
   stopFilesUpload(files: AppFile[]) {
     const uploadingFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Started
+      (file) => file.progressStatus === ProgressStatus.Started,
     );
     uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
   }
 
   continueFilesUpload(files: AppFile[]) {
     const stoppedFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Stopped
+      (file) => file.progressStatus === ProgressStatus.Stopped,
     );
     stoppedFiles.forEach((file) =>
-      this.uploadService.resume(file, this.currentDirectoryId())
+      this.uploadService.resume(file, this.currentDirectoryId()),
     );
   }
 

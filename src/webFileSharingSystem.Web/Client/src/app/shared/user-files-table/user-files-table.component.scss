@@ -42,36 +42,6 @@ tr {
 
 .table-wrapper {
   background-color: rgba(var(--bs-secondary-rgb), 0.1);
-  .drop-overlay {
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    right: -5px;
-    bottom: -5px;
-    border-radius: 0.6rem;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 9999;
-    animation: show-in 0.1s;
-  }
-  &.table-drop-hover {
-    .drop-overlay {
-      border: 2px dashed #0d6efd;
-      background: rgba(0, 123, 255, 0.15);
-    }
-  }
-}
-
-.drop-overlay-text {
-  color: #fff; /* white text for contrast */
-  background: rgba(0, 0, 0, 0.7); /* semi-transparent dark background */
-  padding: 1.2rem 2.2rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  font-size: 1.3rem;
 }
 
 tr.drop-folder-hover > * {
