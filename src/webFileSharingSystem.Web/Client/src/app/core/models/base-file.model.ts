@@ -1,4 +1,5 @@
 import { PartialFileInfo } from './partial-file-info.model';
+import { ShareAccessMode } from './share-access-mode.model';
 
 export interface BaseFile {
   id: number;
@@ -13,8 +14,12 @@ export interface BaseFile {
   progressStatus: ProgressStatus | null;
   partialFileInfo: PartialFileInfo | null;
   uploadProgress: number | null;
-}
 
+  // UI only properties
+  // need them in app file model to avoid casting
+  accessMode?: ShareAccessMode;
+  validUntil?: string;
+}
 
 export enum FileStatus {
   Completed,
@@ -26,4 +31,3 @@ export enum ProgressStatus {
   Stopping,
   Stopped,
 }
-
