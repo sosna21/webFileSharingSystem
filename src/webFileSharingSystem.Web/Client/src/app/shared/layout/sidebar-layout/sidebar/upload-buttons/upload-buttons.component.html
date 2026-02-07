@@ -1,5 +1,11 @@
-<label class="btn btn-info px-0 py-3" tabindex="0" role="button">
+<label
+  class="btn btn-info px-0 py-3"
+  [class.disabled]="!canUpload()"
+  tabindex="0"
+  role="button"
+>
   <input
+    [disabled]="!canUpload()"
     type="file"
     class="d-none"
     multiple
@@ -7,8 +13,14 @@
   />
   Upload files
 </label>
-<label class="btn btn-info px-0 py-3" tabindex="0" role="button">
+<label
+  class="btn btn-info px-0 py-3"
+  [class.disabled]="!canUpload()"
+  tabindex="0"
+  role="button"
+>
   <input
+    [disabled]="!canUpload()"
     type="file"
     class="d-none"
     webkitdirectory

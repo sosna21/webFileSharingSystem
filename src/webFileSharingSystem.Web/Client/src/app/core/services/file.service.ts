@@ -87,6 +87,9 @@ export class FileService {
           : 'Home'
         : undefined,
   );
+  public readonly isParentMinWriteAccess = computed(
+    () => this.parentBreadcrumb()?.accessMode !== ShareAccessMode.ReadOnly,
+  );
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
@@ -213,9 +216,7 @@ export class FileService {
       fileName: this.mode() === 'GetSharedWithMe' ? 'Shared with me' : 'Home',
       level: 0,
       accessMode:
-        this.mode() === 'GetSharedWithMe'
-          ? ShareAccessMode.ReadOnly
-          : undefined,
+        this.mode() === 'GetAll' ? undefined : ShareAccessMode.ReadOnly,
       validUntil: this.mode() === 'GetSharedWithMe' ? null : undefined,
     };
     return [homeCrumb, ...breadcrumbs].sort((a, b) => a.level - b.level);
