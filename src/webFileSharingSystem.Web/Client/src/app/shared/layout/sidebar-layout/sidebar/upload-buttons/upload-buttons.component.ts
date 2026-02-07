@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FileUploadService } from '../../../../../core/services/file-upload.service';
 import { FileService } from '../../../../../core/services/file.service';
+import { debouncedSignal } from '../../../../../core/utils/signal-utils';
 
 @Component({
   selector: 'app-upload-buttons',
@@ -15,7 +16,11 @@ import { FileService } from '../../../../../core/services/file.service';
 export class UploadButtonsComponent {
   private readonly fileUploadService = inject(FileUploadService);
   private readonly fileService = inject(FileService);
-  readonly canUpload = this.fileService.isParentMinWriteAccess;
+  readonly canUpload = debouncedSignal(
+    this.fileService.isParentMinWriteAccess,
+    100,
+    true,
+  );
 
   uploadSelectedFiles($event: Event) {
     if (!$event.target) return;

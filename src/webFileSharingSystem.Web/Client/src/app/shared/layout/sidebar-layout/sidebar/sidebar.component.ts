@@ -4,6 +4,7 @@ import { NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
 import { SpaceUsageBarComponent } from './space-usage-bar/space-usage-bar.component';
 import { UploadButtonsComponent } from './upload-buttons/upload-buttons.component';
 import { FileService } from '../../../../core/services/file.service';
+import { debouncedSignal } from '../../../../core/utils/signal-utils';
 
 @Component({
   selector: 'app-sidebar',
@@ -18,6 +19,10 @@ import { FileService } from '../../../../core/services/file.service';
 })
 export class SidebarComponent {
   private readonly fileService = inject(FileService);
-  readonly canUpload = this.fileService.isParentMinWriteAccess;
+  readonly canUpload = debouncedSignal(
+    this.fileService.isParentMinWriteAccess,
+    100,
+    true,
+  );
   isCollapsed = model(true);
 }
