@@ -2,12 +2,11 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { SelectionService } from '../../../core/services/selection.service';
-import { AppFile } from '../../../core/models/app-file.model';
 import { SharedFilesTableComponent } from '../../../shared/shared-files-table/shared-files-table.component';
-import { SharesBreadcrumbComponent } from './shares-breadcrumb/shares-breadcrumb.component';
 import { FileActionsStripComponent } from '../home/file-actions-strip/file-actions-strip.component';
 import { FileService } from '../../../core/services/file.service';
 import { SharedFile } from '../../../core/models/shared-file.model';
+import { BreadcrumbComponent } from "../../../shared/breadcrumb/breadcrumb.component";
 
 @Component({
   selector: 'app-shared-with-me',
@@ -15,9 +14,9 @@ import { SharedFile } from '../../../core/models/shared-file.model';
     BaseDiscPageComponent,
     BaseDiscPageHeaderComponent,
     SharedFilesTableComponent,
-    SharesBreadcrumbComponent,
     FileActionsStripComponent,
-  ],
+    BreadcrumbComponent
+],
   providers: [SelectionService<SharedFile>],
   templateUrl: './shared-with-me.component.html',
   styleUrl: './shared-with-me.component.scss',

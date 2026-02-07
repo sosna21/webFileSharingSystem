@@ -3,16 +3,18 @@ import {
   Component,
   computed,
   inject,
-  linkedSignal,
 } from '@angular/core';
-import { FileService } from '../../../../core/services/file.service';
+import { FileService } from '../../core/services/file.service';
 import { RouterLink } from '@angular/router';
-import { Breadcrumb } from '../../../../core/models/breadcrumb.model';
-import { DragDropService } from '../../../../core/services/drag-drop.service';
+import { Breadcrumb } from '../../core/models/breadcrumb.model';
+import { DragDropService } from '../../core/services/drag-drop.service';
+import { ShareAccessMode } from '../../core/models/share-access-mode.model';
+import { AccessModeIconComponent } from '../access-mode-icon/access-mode-icon.component';
+import { NgTemplateOutlet } from '@angular/common';
 
 @Component({
   selector: 'app-breadcrumb',
-  imports: [RouterLink],
+  imports: [RouterLink, AccessModeIconComponent, NgTemplateOutlet],
   templateUrl: './breadcrumb.component.html',
   styleUrl: './breadcrumb.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -22,6 +24,7 @@ import { DragDropService } from '../../../../core/services/drag-drop.service';
   },
 })
 export class BreadcrumbComponent {
+  readonly ShareAccessMode = ShareAccessMode;
   private readonly dragDropService = inject(DragDropService<Breadcrumb>);
   private readonly fileService = inject(FileService);
   readonly breadCrumbsResource = this.fileService.breadCrumbsResource;
