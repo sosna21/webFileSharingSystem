@@ -57,15 +57,32 @@ export class FileActionsStripComponent {
       this.selectedFiles().some(
         (file) => file.fileStatus === FileStatus.Completed,
       ) &&
-      this.selectedFiles().every(
-        (file) => file.accessMode >= ShareAccessMode.ReadWrite,
+      (this.selectedFiles() as BaseFile[]).every(
+        (file) =>
+          file.accessMode === undefined ||
+          file.accessMode >= ShareAccessMode.ReadWrite,
       ),
   );
+
   readonly canRename = computed(
     () =>
       this.selectedFiles().length === 1 &&
       this.selectedFiles()[0].fileStatus === FileStatus.Completed &&
-      this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite,
+      (this.selectedFiles()[0].accessMode === undefined ||
+        this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite),
+  );
+
+  readonly canDelete = computed(
+    () =>
+      this.selectedFiles().length > 0 &&
+      this.selectedFiles().some(
+        (file) => file.fileStatus === FileStatus.Completed,
+      ) &&
+      (this.selectedFiles() as BaseFile[]).every(
+        (file) =>
+          file.accessMode === undefined ||
+          file.accessMode >= ShareAccessMode.FullAccess,
+      ),
   );
 
   findUniqueDirName(): string {
