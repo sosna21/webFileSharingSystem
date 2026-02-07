@@ -31,7 +31,7 @@ export class FileActionsStripComponent {
   private readonly toast = inject(ToastService);
   private readonly downloadService = inject(DownloadService);
   private readonly names = computed(() =>
-    this.fileService.userFiles().map((file) => file.fileName)
+    this.fileService.userFiles().map((file) => file.fileName),
   );
   readonly showDirCreate = signal(false);
   readonly newFolderName = signal('');
@@ -44,23 +44,28 @@ export class FileActionsStripComponent {
     () =>
       this.selectedFiles().length > 0 &&
       this.selectedFiles().some(
-        (file) => file.fileStatus === FileStatus.Completed
-      )
+        (file) => file.fileStatus === FileStatus.Completed,
+      ),
+  );
+  readonly viewingSharedFiles = computed(
+    () => this.fileService.mode() === 'GetSharedWithMe',
   );
 
   readonly canFileAction = computed(
     () =>
       this.selectedFiles().length > 0 &&
       this.selectedFiles().some(
-        (file) => file.fileStatus === FileStatus.Completed
+        (file) => file.fileStatus === FileStatus.Completed,
       ) &&
-      this.selectedFiles().every(file => file.accessMode >= ShareAccessMode.ReadWrite)
+      this.selectedFiles().every(
+        (file) => file.accessMode >= ShareAccessMode.ReadWrite,
+      ),
   );
   readonly canRename = computed(
     () =>
       this.selectedFiles().length === 1 &&
       this.selectedFiles()[0].fileStatus === FileStatus.Completed &&
-      this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite
+      this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite,
   );
 
   findUniqueDirName(): string {
@@ -86,14 +91,14 @@ export class FileActionsStripComponent {
           this.toast.show(
             'New directory created',
             `Directory "${response.fileName}" has been created`,
-            MessageSeverity.success
+            MessageSeverity.success,
           );
         },
         error: (error) => {
           this.toast.show(
             'Error creating directory',
             error?.error,
-            MessageSeverity.error
+            MessageSeverity.error,
           );
         },
       });
@@ -114,8 +119,8 @@ export class FileActionsStripComponent {
   onDownload() {
     this.downloadService.downloadFilesWithFeedback(
       this.selectedFiles().filter(
-        (file) => file.fileStatus === FileStatus.Completed
-      )
+        (file) => file.fileStatus === FileStatus.Completed,
+      ),
     );
   }
 
@@ -123,8 +128,8 @@ export class FileActionsStripComponent {
     if (!this.canFileAction()) return;
     this.fileService.markFilesToMoveWithFeedback(
       this.selectedFiles().filter(
-        (file) => file.fileStatus === FileStatus.Completed
-      )
+        (file) => file.fileStatus === FileStatus.Completed,
+      ),
     );
   }
 
@@ -132,8 +137,8 @@ export class FileActionsStripComponent {
     if (!this.canCopy()) return;
     this.fileService.markFilesToCopyWithFeedback(
       this.selectedFiles().filter(
-        (file) => file.fileStatus === FileStatus.Completed
-      )
+        (file) => file.fileStatus === FileStatus.Completed,
+      ),
     );
   }
 
@@ -145,13 +150,13 @@ export class FileActionsStripComponent {
       this.fileService.moveFilesWithFeedback(
         Array.from(action.files),
         this.fileService.parentId(),
-        this.fileService.parentName() ?? 'home directory'
+        this.fileService.parentName() ?? 'home directory',
       );
     } else if (action.type === ActionType.Copy) {
       this.fileService.copyFilesWithFeedback(
         Array.from(action.files),
         this.fileService.parentId(),
-        this.fileService.parentName() ?? 'home directory'
+        this.fileService.parentName() ?? 'home directory',
       );
     }
 
@@ -164,11 +169,11 @@ export class FileActionsStripComponent {
   }
 
   onShare() {
-    if (!this.canFileAction()) return;
+    if (!this.canFileAction() || this.viewingSharedFiles()) return;
     this.shareService.shareFilesWithFeedback(
       this.selectedFiles().filter(
-        (file) => file.fileStatus === FileStatus.Completed
-      )
+        (file) => file.fileStatus === FileStatus.Completed,
+      ),
     );
   }
 
@@ -176,8 +181,8 @@ export class FileActionsStripComponent {
     if (!this.canFileAction()) return;
     this.fileService.deleteFilesWithFeedback(
       this.selectedFiles().filter(
-        (file) => file.fileStatus === FileStatus.Completed
-      )
+        (file) => file.fileStatus === FileStatus.Completed,
+      ),
     );
   }
 }

@@ -6,16 +6,16 @@
     [openDelay]="300"
   ></i>
   @if (showDirCreate()) {
-  <input
-    appSelectFilename
-    type="text"
-    class="form-control"
-    placeholder="New folder"
-    [(ngModel)]="newFolderName"
-    (keyup.enter)="createDirectory()"
-    (blur)="cancelRename()"
-    (keyup.escape)="cancelRename()"
-  />
+    <input
+      appSelectFilename
+      type="text"
+      class="form-control"
+      placeholder="New folder"
+      [(ngModel)]="newFolderName"
+      (keyup.enter)="createDirectory()"
+      (blur)="cancelRename()"
+      (keyup.escape)="cancelRename()"
+    />
   }
 </div>
 <div class="vr h-75 mt-auto"></div>
@@ -56,13 +56,17 @@
     [openDelay]="300"
     (click)="onRename()"
   ></i>
-  <i
-    class="bi bi-share action-icon action-primary"
-    [class.disabled]="!canFileAction()"
-    ngbTooltip="Share"
-    [openDelay]="300"
-    (click)="onShare()"
-  ></i>
+
+  @if (!viewingSharedFiles()) {
+    <i
+      class="bi bi-share action-icon action-primary"
+      [class.disabled]="!canFileAction()"
+      ngbTooltip="Share"
+      [openDelay]="300"
+      (click)="onShare()"
+    ></i>
+  }
+
   <i
     class="bi bi-trash action-icon action-danger"
     [class.disabled]="!canFileAction()"
