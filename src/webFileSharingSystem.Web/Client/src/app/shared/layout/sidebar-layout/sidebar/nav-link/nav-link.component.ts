@@ -9,7 +9,7 @@ import { FileService } from '../../../../../core/services/file.service';
   styleUrl: './nav-link.component.scss',
   host: {
     class:
-      'nav-item border-bottom border-2 border-secondary-subtle rounded mb-1',
+      'nav-item border-bottom border-2 border-secondary-subtle rounded mb-1 user-select-none',
   },
 })
 export class NavLinkComponent {

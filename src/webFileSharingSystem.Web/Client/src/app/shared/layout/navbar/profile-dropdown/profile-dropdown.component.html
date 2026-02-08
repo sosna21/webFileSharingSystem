@@ -19,20 +19,32 @@
   </span>
   <ul ngbDropdownMenu class="dropdown-menu text-small">
     <li ngbDropdownItem>
-      <a class="dropdown-item" routerLink="/settings">
+      <a
+        class="dropdown-item user-select-none"
+        routerLink="/settings"
+        draggable="false"
+      >
         <i class="bi bi-gear"></i>
         Settings
       </a>
     </li>
     <li ngbDropdownItem>
-      <a class="dropdown-item" routerLink="/profile">
+      <a
+        class="dropdown-item user-select-none"
+        routerLink="/profile"
+        draggable="false"
+      >
         <i class="bi bi-person-lines-fill"></i>
         Profile
       </a>
     </li>
     <li><hr class="dropdown-divider" /></li>
     <li ngbDropdownItem>
-      <a class="dropdown-item" (click)="logout()">
+      <a
+        class="dropdown-item user-select-none"
+        (click)="logout()"
+        draggable="false"
+      >
         <i class="bi bi-power"></i>
         Sign out
       </a>
