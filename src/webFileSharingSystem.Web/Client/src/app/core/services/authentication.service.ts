@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { User } from '../models/user.model';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, finalize, map } from 'rxjs';
+import { catchError, finalize, map, throwError } from 'rxjs';
 import { JwtTokenService } from './jwt-token.service';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
@@ -73,7 +73,7 @@ export class AuthenticationService {
       }), catchError(error => {
         this.removeUser();
         this.router.navigate(['/login']);
-        return error(error);
+        return throwError(() => error);
       }));
   }
 

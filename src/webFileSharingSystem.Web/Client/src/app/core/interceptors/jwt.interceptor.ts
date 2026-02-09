@@ -39,13 +39,14 @@ const addToken = (request: HttpRequest<any>, token: string) => {
   });
 };
 
+let isRefreshing = false;
+const refreshTokenSubject = new BehaviorSubject<string | null>(null);
+
 const handle401Error = (
   request: HttpRequest<any>,
   next: HttpHandlerFn,
   authenticationService: AuthenticationService
 ): Observable<HttpEvent<any>> => {
-  const refreshTokenSubject = new BehaviorSubject<any>(null);
-  let isRefreshing = false;
 
   if (!isRefreshing) {
     isRefreshing = true;
@@ -56,13 +57,18 @@ const handle401Error = (
         isRefreshing = false;
         refreshTokenSubject.next(token);
         return next(addToken(request, token));
+      }),
+      catchError((error) => {
+        isRefreshing = false;
+        refreshTokenSubject.next(null);
+        return throwError(() => error);
       })
     );
   } else {
     return refreshTokenSubject.pipe(
       filter(token => token != null),
       take(1),
-      switchMap(jwt => next(addToken(request, jwt)))
+      switchMap(jwt => next(addToken(request, jwt!)))
     );
   }
 };
