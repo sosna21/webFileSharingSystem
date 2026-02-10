@@ -417,6 +417,7 @@ export class FileService {
     filesToMove: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
+    setSelection?: (value: Set<number>) => void,
   ) {
     this.executeFileOperationWithFeedback(
       filesToMove,
@@ -424,6 +425,7 @@ export class FileService {
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
       'move',
+      setSelection,
     );
   }
 
@@ -431,6 +433,7 @@ export class FileService {
     filesToCopy: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
+    setSelection?: (value: Set<number>) => void,
   ) {
     this.executeFileOperationWithFeedback(
       filesToCopy,
@@ -438,6 +441,7 @@ export class FileService {
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
       'copy',
+      setSelection,
     );
   }
 
@@ -519,6 +523,7 @@ export class FileService {
     targetDirectoryName: string,
     operation: (fileIds: number[], targetId: number | null) => Observable<T>,
     operationName: 'move' | 'copy',
+    setSelection?: (value: Set<number>) => void,
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
@@ -531,8 +536,6 @@ export class FileService {
     operation(fileIds, targetDirectoryId)
       .subscribe({
         next: (result) => {
-          // If you still want optimistic updates in SAME typed list, keep them,
-          // but the safe baseline is to refetch after any copy/move:
           this.refreshActiveList();
 
           this.toast.show(
@@ -544,6 +547,9 @@ export class FileService {
           );
 
           this.clearActionContext();
+          if (setSelection) {
+            setSelection(new Set((result as BaseFile[]).map((f) => f.id)));
+          }
         },
         error: (err) => {
           this.toast.show(

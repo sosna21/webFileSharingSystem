@@ -163,11 +163,13 @@ export class FileActionsStripComponent {
     if (!this.canPaste()) return;
     const action = this.activeAction();
     if (!action) return;
+
     if (action.type === ActionType.Move) {
       this.fileService.moveFilesWithFeedback(
         Array.from(action.files),
         this.fileService.parentId(),
         this.fileService.parentName() ?? 'home directory',
+        this.selectionService.selectedIds.set,
       );
     } else if (action.type === ActionType.Copy) {
       this.fileService.copyFilesWithFeedback(
