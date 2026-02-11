@@ -17,7 +17,6 @@ export class NavLinkComponent {
   link = input.required<string>();
 
   resetFileServices() {
-    this.fileService.parentId.set(null);
     this.fileService.searchedPhrase.set('');
   }
 }

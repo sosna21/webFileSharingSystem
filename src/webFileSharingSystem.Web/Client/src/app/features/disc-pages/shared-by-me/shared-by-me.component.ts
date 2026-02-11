@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { FileService } from '../../../core/services/file.service';
@@ -25,15 +20,11 @@ import { FileActionsStripComponent } from '../home/file-actions-strip/file-actio
   styleUrl: './shared-by-me.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SharedByMeComponent implements OnInit {
+export class SharedByMeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
 
   constructor() {
     this.selectionService.init(this.fileService.userFiles);
-  }
-
-  ngOnInit(): void {
-    this.fileService.mode.set('GetSharedByMe');
   }
 }

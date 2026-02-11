@@ -6,7 +6,7 @@ import { SharedFilesTableComponent } from '../../../shared/shared-files-table/sh
 import { FileActionsStripComponent } from '../home/file-actions-strip/file-actions-strip.component';
 import { FileService } from '../../../core/services/file.service';
 import { SharedFile } from '../../../core/models/shared-file.model';
-import { BreadcrumbComponent } from "../../../shared/breadcrumb/breadcrumb.component";
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb.component';
 
 @Component({
   selector: 'app-shared-with-me',
@@ -15,8 +15,8 @@ import { BreadcrumbComponent } from "../../../shared/breadcrumb/breadcrumb.compo
     BaseDiscPageHeaderComponent,
     SharedFilesTableComponent,
     FileActionsStripComponent,
-    BreadcrumbComponent
-],
+    BreadcrumbComponent,
+  ],
   providers: [SelectionService<SharedFile>],
   templateUrl: './shared-with-me.component.html',
   styleUrl: './shared-with-me.component.scss',
@@ -28,9 +28,5 @@ export class SharedWithMeComponent {
 
   constructor() {
     this.selectionService.init(this.fileService.sharedFiles);
-  }
-
-  ngOnInit(): void {
-    this.fileService.mode.set('GetSharedWithMe');
   }
 }

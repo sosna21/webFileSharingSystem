@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import {
   NgbCollapseModule,
   NgbPaginationModule,
@@ -33,15 +28,11 @@ import { UserFilesTableComponent } from '../../../shared/user-files-table/user-f
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
 
   constructor() {
     this.selectionService.init(this.fileService.userFiles);
-  }
-
-  ngOnInit(): void {
-    this.fileService.mode.set('GetAll');
   }
 }

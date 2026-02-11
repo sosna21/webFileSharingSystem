@@ -5,14 +5,15 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
-import { Observable } from 'rxjs';
+import { Observable, filter, map } from 'rxjs';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
@@ -65,17 +66,34 @@ export class FileService {
 
   readonly awaitingActionState = this.actionContext.asReadonly();
 
-  public readonly mode = signal<
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  public readonly mode = computed<
     | 'GetAll'
     | 'GetSharedByMe'
     | 'GetFavourites'
     | 'GetRecent'
     | 'GetSharedWithMe'
-  >('GetAll');
+  >(() => {
+    const url = this.currentUrl();
+    if (url.includes('/shared-with-me')) return 'GetSharedWithMe';
+    if (url.includes('/shared-by-me')) return 'GetSharedByMe';
+    if (url.includes('/favourite')) return 'GetFavourites';
+    if (url.includes('/recent')) return 'GetRecent';
+    return 'GetAll';
+  });
 
   //TODO add parent folder signal
   public readonly searchedPhrase = signal<string>('');
-  public readonly parentId = signal<number | null>(null);
+  public readonly parentId = computed<number | null>(() =>
+    this.extractFolderId(this.currentUrl()),
+  );
   public readonly parentBreadcrumb = computed(() => this.breadCrumbs().at(-1));
   public readonly parentName = computed(() =>
     this.breadCrumbsResource.hasValue()
@@ -222,24 +240,7 @@ export class FileService {
     return [homeCrumb, ...breadcrumbs].sort((a, b) => a.level - b.level);
   });
 
-  constructor() {
-    const currentUrl = this.router.url; // e.g. "/disc/home/folder/123"
-
-    if (currentUrl.startsWith('/disc/home')) {
-      // home context
-      this.mode.set('GetAll');
-      const dirId = this.extractFolderId(currentUrl);
-      this.goToFolder(dirId);
-    } else if (currentUrl.startsWith('/disc/shared-with-me')) {
-      this.mode.set('GetSharedWithMe');
-      const dirId = this.extractFolderId(currentUrl);
-      this.goToFolder(dirId);
-    }
-  }
-
   goToFolder(folderId: number | null) {
-    this.parentId.set(folderId);
-
     if (folderId === null)
       this.router.navigate(['/disc', this.mapModeToRoute(this.mode())]);
     else
