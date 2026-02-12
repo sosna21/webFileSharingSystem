@@ -491,7 +491,13 @@ export class FileService {
       action: (file) => this.fileApiService.deleteFile(file.id),
       beforeStart: (file) => this.setLoading(file.id, true),
       onSuccess: (file) =>
-        this.userFiles.update((list) => list.filter((f) => f.id !== file.id)),
+        this.mode() === 'GetSharedWithMe'
+          ? this.sharedFiles.update((list) =>
+              list.filter((f) => f.id !== file.id),
+            )
+          : this.userFiles.update((list) =>
+              list.filter((f) => f.id !== file.id),
+            ),
       onError: (file, err) => {
         this.toast.show(
           'File deletion',

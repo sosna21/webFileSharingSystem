@@ -29,6 +29,14 @@ export class SharedFilesContextMenuComponent {
       this.selectedFiles()[0].accessMode! >= ShareAccessMode.ReadWrite,
   );
 
+  readonly canCut = computed(
+    () =>
+      this.selectedFiles().length > 0 &&
+      this.selectedFiles().every(
+        (f) => f.accessMode! >= ShareAccessMode.ReadWrite,
+      ),
+  );
+
   readonly canDelete = computed(
     () =>
       this.selectedFiles().length > 0 &&
@@ -41,6 +49,7 @@ export class SharedFilesContextMenuComponent {
   readonly download = output<SharedFile[]>();
   readonly delete = output<SharedFile[]>();
   readonly copy = output<SharedFile[]>();
+  readonly move = output<SharedFile[]>();
   readonly openFolder = output<SharedFile>();
 
   open() {
@@ -55,6 +64,10 @@ export class SharedFilesContextMenuComponent {
 
   copyClicked() {
     this.copy.emit(this.selectedFiles());
+  }
+
+  moveClicked() {
+    this.move.emit(this.selectedFiles());
   }
 
   deleteClicked() {

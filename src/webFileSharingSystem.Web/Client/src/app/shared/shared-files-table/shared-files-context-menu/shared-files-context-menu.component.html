@@ -6,13 +6,14 @@
   ></div>
 
   <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
-    @let selectedFile = selectedFiles()[0]; @if (showOpenFolder()) {
-    <button
-      ngbDropdownItem
-      (click)="openFolder.emit(selectedFile); menu.close()"
-    >
-      <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
-    </button>
+    @let selectedFile = selectedFiles()[0];
+    @if (showOpenFolder()) {
+      <button
+        ngbDropdownItem
+        (click)="openFolder.emit(selectedFile); menu.close()"
+      >
+        <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
+      </button>
     }
 
     <button ngbDropdownItem (click)="downloadClicked(); menu.close()">
@@ -30,6 +31,18 @@
 
     <button ngbDropdownItem (click)="copyClicked(); menu.close()">
       <i class="bi bi-files me-1 text-warning-emphasis"></i> Copy
+    </button>
+
+    <button
+      ngbDropdownItem
+      [disabled]="!canCut()"
+      (click)="moveClicked(); menu.close()"
+    >
+      <i
+        class="bi bi-folder-symlink me-1"
+        [class.text-warning-emphasis]="canCut()"
+      ></i>
+      Move
     </button>
 
     <button

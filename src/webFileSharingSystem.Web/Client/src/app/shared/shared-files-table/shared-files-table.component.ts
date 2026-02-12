@@ -67,7 +67,6 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
     style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
   },
-  // providers: [TableDragDropFacade],
 })
 export class SharedFilesTableComponent {
   readonly FileStatus = FileStatus;
@@ -75,8 +74,6 @@ export class SharedFilesTableComponent {
   private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
   private readonly downloadService = inject(DownloadService);
-  private readonly shareService = inject(FileShareService);
-  private readonly modalService = inject(ModalService);
   private readonly selection = inject(SelectionService<SharedFile>);
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   readonly editingId = this.fileService.editingId;
@@ -146,7 +143,7 @@ export class SharedFilesTableComponent {
     this.selection.onRowMouseUp(row);
   }
 
-  isFileUploadCompleted(file: SharedFile) {
+  isFileUploadCompleted() {
     // Shared files are always completed for now as we don't upload to shared folders yet?
     // Or we check if it has status property. SharedFile doesn't have fileStatus.
     // Assuming true for SharedFile as they are existing files.
@@ -218,17 +215,15 @@ export class SharedFilesTableComponent {
   }
 
   deleteFiles(files: SharedFile[]) {
-    //TODO implement
-    //this.fileService.deleteFilesWithFeedback(files);
+    this.fileService.deleteFilesWithFeedback(files);
   }
 
-  // initFileMove(files: AppFile[]) {
-  //   this.fileService.markFilesToMoveWithFeedback(files);
-  // }
+  initFileMove(files: SharedFile[]) {
+    this.fileService.markFilesToMoveWithFeedback(files);
+  }
 
   initFileCopy(files: SharedFile[]) {
-    //ToDO: change to shared files copy when implemented
-    //this.shareService.markFilesToCopyWithFeedback(files);
+    this.fileService.markFilesToCopyWithFeedback(files);
   }
 
   // Drag and drop logic for moving and uploading files
