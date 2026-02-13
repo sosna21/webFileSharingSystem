@@ -1,6 +1,10 @@
-<div ngbDropdown class="nav-item dropdown text-white">
+<div
+  ngbDropdown
+  class="nav-item dropdown text-white rounded-pill p-1"
+  appHoverClass="bg-secondary"
+>
   <a role="button" class="dropdown-toggle nav-link" ngbDropdownToggle>
-    <i class="bi" [ngClass]="themeIcon()" appClicableIcon bgSize="2.3rem" bgClass="bg-secondary"></i>
+    <i class="bi" [ngClass]="themeIcon()"></i>
   </a>
   <div ngbDropdownMenu class="dropdown-menu-end">
     <button
