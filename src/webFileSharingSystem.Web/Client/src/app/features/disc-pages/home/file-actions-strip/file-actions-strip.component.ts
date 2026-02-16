@@ -104,6 +104,7 @@ export class FileActionsStripComponent {
       .subscribe({
         next: (response) => {
           this.fileService.userFiles.update((files) => [response, ...files]);
+          this.selectionService.selectedIds.set(new Set([response.id]));
           this.newFolderName.set(this.findUniqueDirName());
           this.toast.show(
             'New directory created',
@@ -176,6 +177,7 @@ export class FileActionsStripComponent {
         Array.from(action.files),
         this.fileService.parentId(),
         this.fileService.parentName() ?? 'home directory',
+        this.selectionService.selectedIds.set,
       );
     }
 
