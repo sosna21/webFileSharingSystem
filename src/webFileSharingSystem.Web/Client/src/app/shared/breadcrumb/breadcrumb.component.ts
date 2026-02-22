@@ -21,6 +21,7 @@ import { NgTemplateOutlet } from '@angular/common';
   host: {
     class:
       'd-flex justify-content-between align-items-center p-2 border border-2 rounded-4 mb-3',
+    style: 'min-height: 52px;',
   },
 })
 export class BreadcrumbComponent {

@@ -94,17 +94,16 @@ export class FileService {
   public readonly parentId = computed<number | null>(() =>
     this.extractFolderId(this.currentUrl()),
   );
-  public readonly parentBreadcrumb = computed(() => this.breadCrumbs().at(-1));
-  public readonly parentName = computed(() =>
-    this.breadCrumbsResource.hasValue()
-      ? this.breadCrumbsResource.value().find((b) => b.id === this.parentId())
-          ?.fileName
-      : this.parentId() === null
-        ? this.mode() === 'GetSharedWithMe'
-          ? 'Shared With Me'
-          : 'Home'
-        : undefined,
+
+  public readonly parentBreadcrumb = computed(() =>
+    this.breadCrumbsResource.isLoading()
+      ? undefined
+      : this.breadCrumbs().at(-1),
   );
+  public readonly parentName = computed(
+    () => this.parentBreadcrumb()?.fileName,
+  );
+
   public readonly isParentMinWriteAccess = computed(
     () => this.parentBreadcrumb()?.accessMode !== ShareAccessMode.ReadOnly,
   );
@@ -231,7 +230,7 @@ export class FileService {
 
     const homeCrumb: Breadcrumb = {
       id: null,
-      fileName: this.mode() === 'GetSharedWithMe' ? 'Shared with me' : 'Home',
+      fileName: this.mapModeToFolderName(this.mode()),
       level: 0,
       accessMode:
         this.mode() === 'GetAll' ? undefined : ShareAccessMode.ReadOnly,
@@ -273,6 +272,28 @@ export class FileService {
         return 'recent';
       case 'GetSharedWithMe':
         return 'shared-with-me';
+    }
+  }
+
+  private mapModeToFolderName(
+    mode:
+      | 'GetAll'
+      | 'GetSharedByMe'
+      | 'GetFavourites'
+      | 'GetRecent'
+      | 'GetSharedWithMe',
+  ) {
+    switch (mode) {
+      case 'GetAll':
+        return 'Home';
+      case 'GetSharedByMe':
+        return 'Shared By Me';
+      case 'GetFavourites':
+        return 'Favourites';
+      case 'GetRecent':
+        return 'Recent';
+      case 'GetSharedWithMe':
+        return 'Shared With Me';
     }
   }
 

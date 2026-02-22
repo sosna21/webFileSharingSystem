@@ -1,3 +1,8 @@
 <div class="me-3 me-md-4" role="search">
-  <input class="form-control" type="search" placeholder="Search" [(ngModel)]="searchedPhrase" />
+  <input
+    class="form-control"
+    type="search"
+    [placeholder]="`Search in ${currentFolderName()}`"
+    [(ngModel)]="searchedPhrase"
+  />
 </div>
