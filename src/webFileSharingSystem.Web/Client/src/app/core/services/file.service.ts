@@ -218,8 +218,18 @@ export class FileService {
       : undefined,
   );
 
-  private readonly _breadCrumbsResource = httpResource<Breadcrumb[]>(() =>
-    this._breadcrumbsQuery(),
+  private readonly _breadCrumbsResource = httpResource<Breadcrumb[]>(
+    () => this._breadcrumbsQuery(),
+    {
+      parse: (value: unknown) => {
+        return (value as Breadcrumb[]).map((crumb: Breadcrumb) => ({
+          ...crumb,
+          accessMode: crumb.accessMode ?? undefined,
+          validUntil:
+            crumb.validUntil ?? (crumb.accessMode === null ? undefined : null),
+        }));
+      },
+    },
   );
   public readonly breadCrumbsResource = this._breadCrumbsResource.asReadonly();
 
