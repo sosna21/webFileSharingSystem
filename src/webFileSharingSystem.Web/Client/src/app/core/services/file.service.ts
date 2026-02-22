@@ -32,9 +32,7 @@ import {
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly router = inject(Router);

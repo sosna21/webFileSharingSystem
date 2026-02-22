@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { FileUploadService } from './file-upload.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class FileUploadDragDropService {
   private readonly uploadService = inject(FileUploadService);
 

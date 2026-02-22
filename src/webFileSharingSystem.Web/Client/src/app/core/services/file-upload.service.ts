@@ -16,18 +16,21 @@ import {
   mergeMap,
   toArray,
   switchMap,
-  Observable
+  Observable,
 } from 'rxjs';
 import { PartialFileInfo } from '../models/partial-file-info.model';
 import { AuthenticationService } from './authentication.service';
 import { ToastService } from './toast.service';
-import { UploadProgressInfo, UploadStatus } from '../models/upload-progress-info.model';
+import {
+  UploadProgressInfo,
+  UploadStatus,
+} from '../models/upload-progress-info.model';
 import { MessageSeverity } from '../models/toast-info.model';
 import { UploadFileInfo } from '../models/upload-file-info.model';
 import { AppFile } from '../models/app-file.model';
 import { FileService } from './file.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class FileUploadService {
   private readonly numberOfConcurrentFileUploads = 4;
   private readonly numberOfConcurrentChunkUploads = 2;
@@ -36,21 +39,33 @@ export class FileUploadService {
   private readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);
 
-  private readonly uploadingFiles: Record<number, { sub: any; isStopped: boolean; chunkSubs?: any[] }> = {};
-  private readonly filesInfo: Record<number, { partial: PartialFileInfo; file: File }> = {};
-  public readonly uploadProgresses = signal<Record<number, UploadProgressInfo>>({});
-
-  public readonly activeUploads = computed(() =>
-    Object.values(this.uploadProgresses()).filter(p =>
-      p.status === UploadStatus.InProgress ||
-      p.status === UploadStatus.Resumed ||
-      p.status === UploadStatus.Started
-    )
+  private readonly uploadingFiles: Record<
+    number,
+    { sub: any; isStopped: boolean; chunkSubs?: any[] }
+  > = {};
+  private readonly filesInfo: Record<
+    number,
+    { partial: PartialFileInfo; file: File }
+  > = {};
+  public readonly uploadProgresses = signal<Record<number, UploadProgressInfo>>(
+    {},
   );
 
-  public readonly activeUploadsInCurrentFolder = computed(() => this.activeUploads().filter(pi => pi.parentId === this.fileService.parentId()));
-  public readonly isUploading = computed(() => this.activeUploads().length > 0);
+  public readonly activeUploads = computed(() =>
+    Object.values(this.uploadProgresses()).filter(
+      (p) =>
+        p.status === UploadStatus.InProgress ||
+        p.status === UploadStatus.Resumed ||
+        p.status === UploadStatus.Started,
+    ),
+  );
 
+  public readonly activeUploadsInCurrentFolder = computed(() =>
+    this.activeUploads().filter(
+      (pi) => pi.parentId === this.fileService.parentId(),
+    ),
+  );
+  public readonly isUploading = computed(() => this.activeUploads().length > 0);
 
   uploadFiles(
     directories: {
@@ -60,7 +75,7 @@ export class FileUploadService {
       file: File;
       path: string;
     }[],
-    destinationFolderId: number | null = null
+    destinationFolderId: number | null = null,
   ) {
     const dirMap = new Map<string, number>();
     const directoriesWithFiles = { directories, files };
@@ -71,10 +86,12 @@ export class FileUploadService {
         let failCount = 0;
 
         // Create directories sequentially first
-        return from(directories.sort((a, b) => a.path.length - b.path.length)).pipe(
-          concatMap(dir =>
+        return from(
+          directories.sort((a, b) => a.path.length - b.path.length),
+        ).pipe(
+          concatMap((dir) =>
             this.ensureDirectoryExists(dir.path, destinationFolderId).pipe(
-              tap(directoryFile => {
+              tap((directoryFile) => {
                 if (
                   destinationFolderId === this.fileService.parentId() &&
                   dir.path.split('/').length === 2
@@ -83,67 +100,73 @@ export class FileUploadService {
                 }
                 dirMap.set(dir.path, directoryFile!.id);
               }),
-              catchError(err => {
+              catchError((err) => {
                 this.toast.show(
                   'Upload error',
                   `Failed to create folder '${dir.path}'\nUpload cancelled`,
-                  MessageSeverity.error
+                  MessageSeverity.error,
                 );
                 return EMPTY;
-              })
-            )
+              }),
+            ),
           ),
           toArray(), // Wait until all directories created
-          switchMap(() => from(files).pipe(
-            mergeMap(({ file, path }) => {
-              const filePath = path.substring(0, path.lastIndexOf('/', path.length) + 1);
-              const parentId = dirMap.get(filePath) ?? destinationFolderId;
+          switchMap(() =>
+            from(files).pipe(
+              mergeMap(({ file, path }) => {
+                const filePath = path.substring(
+                  0,
+                  path.lastIndexOf('/', path.length) + 1,
+                );
+                const parentId = dirMap.get(filePath) ?? destinationFolderId;
 
-              return this.upload(file, parentId).pipe(
-                tap(() => successCount++),
-                catchError(err => {
-                  failCount++;
+                return this.upload(file, parentId).pipe(
+                  tap(() => successCount++),
+                  catchError((err) => {
+                    failCount++;
+                    this.toast.show(
+                      'Upload error',
+                      `Failed to upload file '${file.name}'`,
+                      MessageSeverity.error,
+                    );
+                    return EMPTY;
+                  }),
+                );
+              }, this.numberOfConcurrentFileUploads),
+              finalize(() => {
+                const totalFiles = files.length;
+
+                if (successCount > 0) {
+                  const successMsg =
+                    failCount > 0
+                      ? `${successCount} file(s) uploaded successfully, ${failCount} failed.`
+                      : `${successCount} file(s) uploaded successfully.`;
+
                   this.toast.show(
-                    'Upload error',
-                    `Failed to upload file '${file.name}'`,
-                    MessageSeverity.error
+                    'Upload complete',
+                    successMsg,
+                    failCount > 0
+                      ? MessageSeverity.info
+                      : MessageSeverity.success,
                   );
-                  return EMPTY;
-                })
-              );
-            }, this.numberOfConcurrentFileUploads),
-            finalize(() => {
-              const totalFiles = files.length;
-
-              if (successCount > 0) {
-                const successMsg =
-                  failCount > 0
-                    ? `${successCount} file(s) uploaded successfully, ${failCount} failed.`
-                    : `${successCount} file(s) uploaded successfully.`;
-
-                this.toast.show(
-                  'Upload complete',
-                  successMsg,
-                  failCount > 0 ? MessageSeverity.info : MessageSeverity.success
-                );
-              } else if (failCount > 0) {
-                this.toast.show(
-                  'Upload failed',
-                  `All ${totalFiles} file(s) failed to upload.`,
-                  MessageSeverity.error
-                );
-              }
-            })
-          ))
+                } else if (failCount > 0) {
+                  this.toast.show(
+                    'Upload failed',
+                    `All ${totalFiles} file(s) failed to upload.`,
+                    MessageSeverity.error,
+                  );
+                }
+              }),
+            ),
+          ),
         );
-      })
+      }),
     );
   }
 
-
   public upload(file: File, parentId: number | null) {
     return this.startFileUpload(file, parentId).pipe(
-      concatMap(appFile => {
+      concatMap((appFile) => {
         if (file.size === 0) return EMPTY;
         const partial = appFile.partialFileInfo!;
 
@@ -154,14 +177,14 @@ export class FileUploadService {
           status: UploadStatus.Started,
           parentId,
           fileId: partial.fileId,
-          progress: 0
+          progress: 0,
         });
 
         if (parentId === this.fileService.parentId()) {
           this.fileService.addFileIfNotExists(appFile);
         }
 
-        const upload$ = this.sendFile(file, partial, progress => {
+        const upload$ = this.sendFile(file, partial, (progress) => {
           progress.parentId = parentId;
           this.updateProgress(progress);
         }).pipe(
@@ -174,12 +197,12 @@ export class FileUploadService {
               status: UploadStatus.Completed,
               parentId,
               fileId: partial.fileId,
-              progress: 1
+              progress: 1,
             });
             delete this.filesInfo[partial.fileId];
             delete this.uploadingFiles[partial.fileId];
           }),
-          catchError(err => {
+          catchError((err) => {
             // handle user-initiated stop
             if (err?.message === 'UploadStopped') {
               // do not show failure toast
@@ -189,35 +212,43 @@ export class FileUploadService {
             this.toast.show(
               'Upload error',
               `"${file.name}" failed`,
-              MessageSeverity.error
+              MessageSeverity.error,
             );
             console.error(err);
             return throwError(() => err);
-          })
+          }),
         );
 
         const shared$ = upload$.pipe(
-          shareReplay({ bufferSize: 1, refCount: true })
+          shareReplay({ bufferSize: 1, refCount: true }),
         );
 
         // ensure an uploadingFiles entry exists BEFORE we subscribe so pause() can set isStopped immediately
         const existingEntry = this.uploadingFiles[partial.fileId];
-        this.uploadingFiles[partial.fileId] = { sub: null, isStopped: existingEntry?.isStopped ?? false, chunkSubs: existingEntry?.chunkSubs ?? [] };
+        this.uploadingFiles[partial.fileId] = {
+          sub: null,
+          isStopped: existingEntry?.isStopped ?? false,
+          chunkSubs: existingEntry?.chunkSubs ?? [],
+        };
 
         const sub = shared$.subscribe({
-          next: () => { /* leave empty; tap updates progress */ },
-          error: (e) => console.error('Upload observable error', e)
+          next: () => {
+            /* leave empty; tap updates progress */
+          },
+          error: (e) => console.error('Upload observable error', e),
         });
 
         this.uploadingFiles[partial.fileId].sub = sub;
 
         return shared$;
-      })
+      }),
     );
   }
 
   public pause(fileId: number) {
-    const entry = this.uploadingFiles[fileId] ?? (this.uploadingFiles[fileId] = { sub: null, isStopped: false });
+    const entry =
+      this.uploadingFiles[fileId] ??
+      (this.uploadingFiles[fileId] = { sub: null, isStopped: false });
     entry.isStopped = true;
 
     const prev = this.uploadProgresses()[fileId];
@@ -225,7 +256,7 @@ export class FileUploadService {
       status: UploadStatus.Stopping,
       parentId: prev?.parentId ?? null,
       fileId,
-      progress: prev?.progress ?? null
+      progress: prev?.progress ?? null,
     };
     this.updateProgress(progress);
     //Rest is handled by main upload pipeline
@@ -239,8 +270,12 @@ export class FileUploadService {
       uploadInfo.sub?.unsubscribe();
       // abort any in-flight chunk HTTP requests
       if (uploadInfo.chunkSubs?.length) {
-        uploadInfo.chunkSubs.forEach(s => {
-          try { s.unsubscribe(); } catch { /* ignore */ }
+        uploadInfo.chunkSubs.forEach((s) => {
+          try {
+            s.unsubscribe();
+          } catch {
+            /* ignore */
+          }
         });
       }
       delete this.uploadingFiles[fileId];
@@ -256,7 +291,11 @@ export class FileUploadService {
 
       input.onchange = () => {
         if (!input.files || input.files.length === 0) {
-          this.toast.show('Cancellation', 'No file selected for resuming upload', MessageSeverity.info);
+          this.toast.show(
+            'Cancellation',
+            'No file selected for resuming upload',
+            MessageSeverity.info,
+          );
           return;
         }
         resolve(input.files[0]);
@@ -264,7 +303,11 @@ export class FileUploadService {
       };
 
       input.oncancel = () => {
-        this.toast.show('Cancellation', 'File selection cancelled', MessageSeverity.info);
+        this.toast.show(
+          'Cancellation',
+          'File selection cancelled',
+          MessageSeverity.info,
+        );
         document.body.removeChild(input);
       };
 
@@ -282,7 +325,7 @@ export class FileUploadService {
 
         fileInfo = {
           partial: file.partialFileInfo!,
-          file: selectedFile
+          file: selectedFile,
         };
 
         if (
@@ -293,87 +336,115 @@ export class FileUploadService {
           this.toast.show(
             'File mismatch',
             'The selected file does not match the original file for resuming upload.',
-            MessageSeverity.error
+            MessageSeverity.error,
           );
           return;
         }
 
         this.filesInfo[fileId] = fileInfo;
       } catch (err) {
-        this.toast.show('Cancellation', 'File selection cancelled', MessageSeverity.info);
+        this.toast.show(
+          'Cancellation',
+          'File selection cancelled',
+          MessageSeverity.info,
+        );
         return;
       }
     }
 
     this.filesInfo[fileId] = fileInfo;
-    this.getMissingChunks(fileId).pipe(
-      concatMap(missing => {
-        this.updateProgress({
-          status: UploadStatus.Resumed,
-          parentId,
-          fileId,
-          progress: file.uploadProgress
-        });
+    this.getMissingChunks(fileId)
+      .pipe(
+        concatMap((missing) => {
+          this.updateProgress({
+            status: UploadStatus.Resumed,
+            parentId,
+            fileId,
+            progress: file.uploadProgress,
+          });
 
-        const chunks = new Map<number, number[]>();
-        missing.forEach(x => {
-          const start = fileInfo.partial.chunkSize * x;
-          const end = start + (x === fileInfo.partial.numberOfChunks - 1 ? fileInfo.partial.lastChunkSize : fileInfo.partial.chunkSize);
-          chunks.set(x, [start, end, 0]);
-        });
+          const chunks = new Map<number, number[]>();
+          missing.forEach((x) => {
+            const start = fileInfo.partial.chunkSize * x;
+            const end =
+              start +
+              (x === fileInfo.partial.numberOfChunks - 1
+                ? fileInfo.partial.lastChunkSize
+                : fileInfo.partial.chunkSize);
+            chunks.set(x, [start, end, 0]);
+          });
 
-        const upload$ = this.sendFileChunks(fileInfo.file, chunks, fileInfo.partial, progress => {
-          progress.parentId = parentId;
-          this.updateProgress(progress);
-        }).pipe(
-          last(),
-          concatMap(() => this.completeFileUpload(fileInfo.partial.fileId)),
-          tap(() => {
-            this.updateProgress({
-              status: UploadStatus.Completed,
-              parentId,
-              fileId,
-              progress: 1
-            });
-            delete this.filesInfo[fileId];
-            delete this.uploadingFiles[fileId];
-          }),
-          catchError(err => {
-            // handle stop
-            if (err?.message === 'UploadStopped') {
-              return EMPTY;
-            }
+          const upload$ = this.sendFileChunks(
+            fileInfo.file,
+            chunks,
+            fileInfo.partial,
+            (progress) => {
+              progress.parentId = parentId;
+              this.updateProgress(progress);
+            },
+          ).pipe(
+            last(),
+            concatMap(() => this.completeFileUpload(fileInfo.partial.fileId)),
+            tap(() => {
+              this.updateProgress({
+                status: UploadStatus.Completed,
+                parentId,
+                fileId,
+                progress: 1,
+              });
+              delete this.filesInfo[fileId];
+              delete this.uploadingFiles[fileId];
+            }),
+            catchError((err) => {
+              // handle stop
+              if (err?.message === 'UploadStopped') {
+                return EMPTY;
+              }
 
-            this.toast.show('Upload error', `"${fileInfo.file.name}" failed during resume`, MessageSeverity.error);
-            console.error(err);
-            return throwError(() => err);
-          })
-        );
+              this.toast.show(
+                'Upload error',
+                `"${fileInfo.file.name}" failed during resume`,
+                MessageSeverity.error,
+              );
+              console.error(err);
+              return throwError(() => err);
+            }),
+          );
 
-        const shared$ = upload$.pipe(shareReplay({ bufferSize: 1, refCount: true }));
-        // create entry before subscribing
-        // ensure isStopped is cleared so resume works
-        const existingResumeEntry = this.uploadingFiles[fileId];
-        this.uploadingFiles[fileId] = { sub: null, isStopped: false, chunkSubs: existingResumeEntry?.chunkSubs ?? [] };
+          const shared$ = upload$.pipe(
+            shareReplay({ bufferSize: 1, refCount: true }),
+          );
+          // create entry before subscribing
+          // ensure isStopped is cleared so resume works
+          const existingResumeEntry = this.uploadingFiles[fileId];
+          this.uploadingFiles[fileId] = {
+            sub: null,
+            isStopped: false,
+            chunkSubs: existingResumeEntry?.chunkSubs ?? [],
+          };
 
-        const sub = shared$.subscribe({
-          next: () => { },
-          error: (e) => console.error('Resume upload error', e)
-        });
+          const sub = shared$.subscribe({
+            next: () => {},
+            error: (e) => console.error('Resume upload error', e),
+          });
 
-        this.uploadingFiles[fileId].sub = sub;
-        return of(null);
-      })
-    ).subscribe();
+          this.uploadingFiles[fileId].sub = sub;
+          return of(null);
+        }),
+      )
+      .subscribe();
   }
 
   private updateProgress(p: UploadProgressInfo) {
-    this.uploadProgresses.update(prev => ({ ...prev, [p.fileId as number]: p }));
+    this.uploadProgresses.update((prev) => ({
+      ...prev,
+      [p.fileId as number]: p,
+    }));
     this.fileService.updateFileUploadProgress(p);
   }
 
   private removeProgress(fileId: number) {
-    this.uploadProgresses.update(prev => {
+    this.uploadProgresses.update((prev) => {
       const { [fileId]: _, ...rest } = prev;
       return rest;
     });
@@ -382,7 +453,9 @@ export class FileUploadService {
   // ---------------- internal helpers ----------------
 
   private getMissingChunks(fileId: number) {
-    return this.http.get<number[]>(`${environment.apiUrl}/Upload/${fileId}/MissingChunks`);
+    return this.http.get<number[]>(
+      `${environment.apiUrl}/Upload/${fileId}/MissingChunks`,
+    );
   }
 
   private startFileUpload(file: File, parentId: number | null) {
@@ -391,23 +464,26 @@ export class FileUploadService {
       size: file.size,
       lastModificationDate: new Date(file.lastModified),
       mimeType: file.type,
-      parentId
+      parentId,
     };
     return this.http.post<AppFile>(`${environment.apiUrl}/Upload/Start`, data);
   }
 
   private completeFileUpload(fileId: number) {
-    return this.http.put(`${environment.apiUrl}/Upload/${fileId}/Complete`, {})
-      .pipe(tap({
-        next: () => this.fileService.completeUploadFile(fileId)
-      }));
+    return this.http
+      .put(`${environment.apiUrl}/Upload/${fileId}/Complete`, {})
+      .pipe(
+        tap({
+          next: () => this.fileService.completeUploadFile(fileId),
+        }),
+      );
   }
 
   private sendFileChunks(
     file: File,
     chunks: Map<number, number[]>,
     partial: PartialFileInfo,
-    onProgress: (p: UploadProgressInfo) => void
+    onProgress: (p: UploadProgressInfo) => void,
   ) {
     const activeChunks = new Set<number>();
 
@@ -423,14 +499,21 @@ export class FileUploadService {
           break;
       }
 
-      const numberOfAlreadyUploadedChunks = partial.numberOfChunks - chunks.size;
-      const progress = ([...chunks.values()].reduce((a, b) => a + b[2], 0) + numberOfAlreadyUploadedChunks) / partial.numberOfChunks;
+      const numberOfAlreadyUploadedChunks =
+        partial.numberOfChunks - chunks.size;
+      const progress =
+        ([...chunks.values()].reduce((a, b) => a + b[2], 0) +
+          numberOfAlreadyUploadedChunks) /
+        partial.numberOfChunks;
 
       const uploadEntry = this.uploadingFiles[partial.fileId];
       let status: UploadStatus;
 
       if (uploadEntry?.isStopped) {
-        status = activeChunks.size === 0 ? UploadStatus.Stopped : UploadStatus.Stopping;
+        status =
+          activeChunks.size === 0
+            ? UploadStatus.Stopped
+            : UploadStatus.Stopping;
       } else {
         status = UploadStatus.InProgress;
       }
@@ -441,23 +524,23 @@ export class FileUploadService {
     const entries = Array.from(chunks.entries());
     const chunks$ = from(entries).pipe(
       mergeMap(([index, [start, end]]) => {
-        const detached$ = new Observable<HttpEvent<any>>(observer => {
+        const detached$ = new Observable<HttpEvent<any>>((observer) => {
           const uploadEntry = this.uploadingFiles[partial.fileId];
           if (uploadEntry?.isStopped) {
             observer.complete();
-            return () => { };
+            return () => {};
           }
 
           const chunk = file.slice(start, end);
           activeChunks.add(index);
           const inner$ = this.sendChunk(chunk, partial.fileId, index).pipe(
-            tap(e => update(e, index)),
-            retry(4)
+            tap((e) => update(e, index)),
+            retry(4),
           );
           const innerSub = inner$.subscribe({
-            next: v => observer.next(v),
-            error: err => observer.error(err),
-            complete: () => observer.complete()
+            next: (v) => observer.next(v),
+            error: (err) => observer.error(err),
+            complete: () => observer.complete(),
           });
 
           const uploadInfo = this.uploadingFiles[partial.fileId];
@@ -470,21 +553,24 @@ export class FileUploadService {
           const cleanup = () => {
             const uploadInfo = this.uploadingFiles[partial.fileId];
             if (uploadInfo?.chunkSubs) {
-              uploadInfo.chunkSubs = uploadInfo.chunkSubs.filter(s => s !== innerSub);
+              uploadInfo.chunkSubs = uploadInfo.chunkSubs.filter(
+                (s) => s !== innerSub,
+              );
             }
             activeChunks.delete(index);
           };
           innerSub.add(cleanup);
 
-          // Dont unsubscribe innerSub when outer unsubscribes 
+          // Dont unsubscribe innerSub when outer unsubscribes
           // this (keeps in-flight HTTP running)
-          return () => { /* only outer subscription teardown */ };
-        })
+          return () => {
+            /* only outer subscription teardown */
+          };
+        });
 
         return detached$;
-      }, this.numberOfConcurrentChunkUploads)
+      }, this.numberOfConcurrentChunkUploads),
     );
-
 
     return chunks$.pipe(
       switchMap(() => {
@@ -493,15 +579,23 @@ export class FileUploadService {
           return throwError(() => new Error('UploadStopped'));
         }
         return of(null);
-      })
+      }),
     );
   }
 
-  private sendFile(file: File, partial: PartialFileInfo, onProgress: (p: UploadProgressInfo) => void) {
+  private sendFile(
+    file: File,
+    partial: PartialFileInfo,
+    onProgress: (p: UploadProgressInfo) => void,
+  ) {
     const chunks = new Map<number, number[]>();
     for (let i = 0; i < partial.numberOfChunks; i++) {
       const start = partial.chunkSize * i;
-      const end = start + (i === partial.numberOfChunks - 1 ? partial.lastChunkSize : partial.chunkSize);
+      const end =
+        start +
+        (i === partial.numberOfChunks - 1
+          ? partial.lastChunkSize
+          : partial.chunkSize);
       chunks.set(i, [start, end, 0]);
     }
     return this.sendFileChunks(file, chunks, partial, onProgress);
@@ -510,16 +604,23 @@ export class FileUploadService {
   private sendChunk(chunk: Blob, fileId: number, index: number) {
     const form = new FormData();
     form.append('chunk', chunk);
-    return this.http.put(`${environment.apiUrl}/Upload/${fileId}/Chunk/${index}`, form, {
-      reportProgress: true,
-      observe: 'events'
-    });
+    return this.http.put(
+      `${environment.apiUrl}/Upload/${fileId}/Chunk/${index}`,
+      form,
+      {
+        reportProgress: true,
+        observe: 'events',
+      },
+    );
   }
 
   public ensureDirectoryExists(path: string, parentId: number | null) {
     if (path.startsWith('/')) path = path.slice(1);
     const folders = path.split('/').slice(0, -1);
     if (folders.length === 0) return of(null);
-    return this.http.post<AppFile | null>(`${environment.apiUrl}/Upload/EnsureDirectory`, { parentId, folders });
+    return this.http.post<AppFile | null>(
+      `${environment.apiUrl}/Upload/EnsureDirectory`,
+      { parentId, folders },
+    );
   }
 }

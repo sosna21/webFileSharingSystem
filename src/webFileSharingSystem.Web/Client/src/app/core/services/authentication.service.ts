@@ -8,7 +8,7 @@ import { Router } from '@angular/router';
 import { LocalStorageManagementService } from './local-storage-management.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthenticationService {
   private readonly authUrl = `${environment.apiUrl}/Auth`;
@@ -19,7 +19,6 @@ export class AuthenticationService {
   private _currentUser = signal<User | null>(null);
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => !!this._currentUser());
-
 
   constructor() {
     this.initializeCurrentUser();
@@ -32,22 +31,37 @@ export class AuthenticationService {
     this.jwtService.setToken(this.currentUser()!.token);
   }
 
-  register(registerRequest: { username: string, password: string, email: string | null }) {
+  register(registerRequest: {
+    username: string;
+    password: string;
+    email: string | null;
+  }) {
     if (registerRequest.email === '') registerRequest.email = null;
     return this.http.post<any>(`${this.authUrl}/Register`, registerRequest);
   }
 
   login(username: string, password: string) {
-    return this.http.post<any>(`${this.authUrl}/Login`, { username, password }, { withCredentials: true })
-      .pipe(map(response => this.handleLogInResponse(response)));
+    return this.http
+      .post<any>(
+        `${this.authUrl}/Login`,
+        { username, password },
+        { withCredentials: true },
+      )
+      .pipe(map((response) => this.handleLogInResponse(response)));
   }
 
   loginWithGoogle(credentials: string) {
     const header = new HttpHeaders().set('Content-type', 'application/json');
-    return this.http.post<any>(`${this.authUrl}/LoginWithGoogle`, JSON.stringify(credentials), {
-      headers: header,
-      withCredentials: true
-    }).pipe(map(response => this.handleLogInResponse(response)));
+    return this.http
+      .post<any>(
+        `${this.authUrl}/LoginWithGoogle`,
+        JSON.stringify(credentials),
+        {
+          headers: header,
+          withCredentials: true,
+        },
+      )
+      .pipe(map((response) => this.handleLogInResponse(response)));
   }
 
   private handleLogInResponse(response: any) {
@@ -63,24 +77,36 @@ export class AuthenticationService {
   refreshToken() {
     let user = this.currentUser()!;
 
-    return this.http.post<any>(`${this.authUrl}/Refresh`, { token: user.token }, { withCredentials: true })
-      .pipe(map(tokens => {
-        this.jwtService.setToken(tokens.token);
-        this.jwtService.updateUserInfo(user);
-        this.localStorageManager.saveUser(user);
-        this._currentUser.set(user);
-        return user.token;
-      }), catchError(error => {
-        this.removeUser();
-        this.router.navigate(['/login']);
-        return throwError(() => error);
-      }));
+    return this.http
+      .post<any>(
+        `${this.authUrl}/Refresh`,
+        { token: user.token },
+        { withCredentials: true },
+      )
+      .pipe(
+        map((tokens) => {
+          this.jwtService.setToken(tokens.token);
+          this.jwtService.updateUserInfo(user);
+          this.localStorageManager.saveUser(user);
+          this._currentUser.set(user);
+          return user.token;
+        }),
+        catchError((error) => {
+          this.removeUser();
+          this.router.navigate(['/login']);
+          return throwError(() => error);
+        }),
+      );
   }
 
   logout() {
-    return this.http.put<any>(`${environment.apiUrl}/Auth/Revoke`, {}, { withCredentials: true }).pipe(
-      finalize(() => this.removeUser())
-    );
+    return this.http
+      .put<any>(
+        `${environment.apiUrl}/Auth/Revoke`,
+        {},
+        { withCredentials: true },
+      )
+      .pipe(finalize(() => this.removeUser()));
   }
 
   private removeUser() {
@@ -90,7 +116,9 @@ export class AuthenticationService {
 
   updateCurrentUserUsedSpace(difference: number): void {
     if (!this._currentUser()) return;
-    this._currentUser.update(user => ({ ...user, usedSpace: user!.usedSpace + difference } as User));
+    this._currentUser.update(
+      (user) => ({ ...user, usedSpace: user!.usedSpace + difference }) as User,
+    );
     localStorage.setItem('currentUser', JSON.stringify(this._currentUser()));
   }
 }

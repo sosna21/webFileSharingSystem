@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { NavbarComponent } from "../navbar/navbar.component";
-import { SidebarComponent } from "./sidebar/sidebar.component";
+import { NavbarComponent } from '../navbar/navbar.component';
+import { SidebarComponent } from './sidebar/sidebar.component';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -8,8 +8,6 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet, NavbarComponent, SidebarComponent],
   templateUrl: './sidebar-layout.component.html',
   styleUrl: './sidebar-layout.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SidebarLayoutComponent {
-
-}
+export class SidebarLayoutComponent {}

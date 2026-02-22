@@ -2,9 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { BaseFile } from '../models/base-file.model';
 import { FileService } from './file.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class FileDragDropService {
   readonly draggedFiles = signal<BaseFile[]>([]);
   readonly fileService = inject(FileService);

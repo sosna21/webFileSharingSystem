@@ -13,9 +13,7 @@ interface HoverTarget {
   target: BaseFile | Breadcrumb | null;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class DragDropService<T extends BaseFile | Breadcrumb> {
   private readonly internal = inject(FileDragDropService);
   private readonly external = inject(FileUploadDragDropService);
