@@ -33,12 +33,19 @@ export class FileActionsStripComponent {
   private readonly names = computed(() =>
     this.fileService.userFiles().map((file) => file.fileName),
   );
-  readonly showDirCreate = signal(false);
+  readonly showDirCreateNameInput = signal(false);
   readonly newFolderName = signal('');
   readonly files = this.fileService.userFiles;
   readonly activeAction = this.fileService.awaitingActionState;
   readonly selectedFiles = this.selectionService.selectedItems;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
+  readonly canCreateDirectory = computed(
+    () =>
+      this.fileService.parentBreadcrumb() &&
+      (this.fileService.parentBreadcrumb()!.accessMode === undefined ||
+        this.fileService.parentBreadcrumb()!.accessMode! >=
+          ShareAccessMode.ReadWrite),
+  );
   readonly canPaste = computed(() => this.activeAction() !== null);
   readonly canCopy = computed(
     () =>
@@ -126,11 +133,11 @@ export class FileActionsStripComponent {
 
   cancelRename() {
     this.resetNewFolderName();
-    this.showDirCreate.set(false);
+    this.showDirCreateNameInput.set(false);
   }
 
   initDirCreation() {
-    if (!this.showDirCreate()) this.showDirCreate.set(true);
+    if (!this.showDirCreateNameInput()) this.showDirCreateNameInput.set(true);
     this.newFolderName.set(this.findUniqueDirName());
   }
 
