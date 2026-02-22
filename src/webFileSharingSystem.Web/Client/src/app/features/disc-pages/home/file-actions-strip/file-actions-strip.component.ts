@@ -1,16 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
 import { ActionType } from '../../../../core/models/action-type.model';
-import { MessageSeverity } from '../../../../core/models/toast-info.model';
 import { FileService } from '../../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { DownloadService } from '../../../../core/services/download.service';
 import { FileShareService } from '../../../../core/services/file-share.service';
-import { ToastService } from '../../../../core/services/toast.service';
 import { SelectionService } from '../../../../core/services/selection.service';
 import { BaseFile, FileStatus } from '../../../../core/models/base-file.model';
-import { FileApiService } from '../../../../core/services/api/file-api.service';
 import { ShareAccessMode } from '../../../../core/models/share-access-mode.model';
 
 @Component({
@@ -24,18 +21,16 @@ import { ShareAccessMode } from '../../../../core/models/share-access-mode.model
 })
 export class FileActionsStripComponent {
   private readonly fileService = inject(FileService);
-  private readonly fileApiService = inject(FileApiService);
   private readonly selectionService = inject(SelectionService<BaseFile>);
 
   private readonly shareService = inject(FileShareService);
-  private readonly toast = inject(ToastService);
   private readonly downloadService = inject(DownloadService);
   private readonly names = computed(() =>
-    this.fileService.userFiles().map((file) => file.fileName),
+    this.fileService.currentFiles().map((file) => file.fileName),
   );
   readonly showDirCreateNameInput = signal(false);
   readonly newFolderName = signal('');
-  readonly files = this.fileService.userFiles;
+
   readonly activeAction = this.fileService.awaitingActionState;
   readonly selectedFiles = this.selectionService.selectedItems;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
@@ -106,28 +101,12 @@ export class FileActionsStripComponent {
   }
 
   createDirectory() {
-    this.fileApiService
-      .createDirectory(this.newFolderName(), this.fileService.parentId())
-      .subscribe({
-        next: (response) => {
-          this.fileService.userFiles.update((files) => [response, ...files]);
-          this.selectionService.selectedIds.set(new Set([response.id]));
-          this.newFolderName.set(this.findUniqueDirName());
-          this.toast.show(
-            'New directory created',
-            `Directory "${response.fileName}" has been created`,
-            MessageSeverity.success,
-          );
-        },
-        error: (error) => {
-          this.toast.show(
-            'Error creating directory',
-            error?.error,
-            MessageSeverity.error,
-          );
-        },
-      });
+    this.fileService.createDirectoryWithFeedback(
+      this.newFolderName(),
+      this.selectionService.selectedIds.set,
+    );
 
+    this.newFolderName.set(this.findUniqueDirName());
     this.cancelRename();
   }
 

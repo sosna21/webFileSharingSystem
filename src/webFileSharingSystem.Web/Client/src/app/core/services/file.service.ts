@@ -423,6 +423,34 @@ export class FileService {
     });
   }
 
+  createDirectoryWithFeedback(
+    directoryName: string,
+    setSelection?: (value: Set<number>) => void,
+  ) {
+    this.fileApiService
+      .createDirectory(directoryName, this.parentId())
+      .subscribe({
+        next: (response) => {
+          this.refreshActiveList();
+          if (setSelection) {
+            setSelection(new Set([response.id]));
+          }
+          this.toast.show(
+            'New directory created',
+            `Directory "${response.fileName}" has been created`,
+            MessageSeverity.success,
+          );
+        },
+        error: (error) => {
+          this.toast.show(
+            'Error creating directory',
+            error?.error,
+            MessageSeverity.error,
+          );
+        },
+      });
+  }
+
   markFilesToCopyWithFeedback(files: BaseFile[]) {
     this.setFilesMarkedForAction(files, ActionType.Copy);
     this.toast.show(
