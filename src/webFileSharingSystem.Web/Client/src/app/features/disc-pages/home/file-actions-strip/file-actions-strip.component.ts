@@ -25,11 +25,14 @@ export class FileActionsStripComponent {
 
   private readonly shareService = inject(FileShareService);
   private readonly downloadService = inject(DownloadService);
-  private readonly names = computed(() =>
-    this.fileService.currentFiles().map((file) => file.fileName),
+  private readonly names = computed(
+    () => new Set(this.fileService.currentFiles().map((file) => file.fileName)),
   );
   readonly showDirCreateNameInput = signal(false);
   readonly newFolderName = signal('');
+  readonly isNameForbidden = computed(() =>
+    this.names().has(this.newFolderName()),
+  );
 
   readonly activeAction = this.fileService.awaitingActionState;
   readonly selectedFiles = this.selectionService.selectedItems;
@@ -90,7 +93,7 @@ export class FileActionsStripComponent {
   findUniqueDirName(): string {
     let dirName = 'New folder';
     let counter = 0;
-    while (this.names().includes(dirName)) {
+    while (this.names().has(dirName)) {
       dirName = `New folder (${++counter})`;
     }
     return dirName;
@@ -101,6 +104,7 @@ export class FileActionsStripComponent {
   }
 
   createDirectory() {
+    if (this.isNameForbidden()) return;
     this.fileService.createDirectoryWithFeedback(
       this.newFolderName(),
       this.selectionService.selectedIds.set,

@@ -7,16 +7,24 @@
     [openDelay]="300"
   ></i>
   @if (showDirCreateNameInput()) {
-    <input
-      appSelectFilename
-      type="text"
-      class="form-control"
-      placeholder="New folder"
-      [(ngModel)]="newFolderName"
-      (keyup.enter)="createDirectory()"
-      (blur)="cancelRename()"
-      (keyup.escape)="cancelRename()"
-    />
+    <div>
+      <input
+        appSelectFilename
+        type="text"
+        class="form-control"
+        placeholder="New folder"
+        required
+        [(ngModel)]="newFolderName"
+        (keyup.enter)="createDirectory()"
+        (blur)="cancelRename()"
+        (keyup.escape)="cancelRename()"
+      />
+      @if (isNameForbidden()) {
+        <div class="text-danger fw-lighter fs-6">
+          "{{ newFolderName() }}" already exists.
+        </div>
+      }
+    </div>
   }
 </div>
 <div class="vr h-75 mt-auto"></div>
