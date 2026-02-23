@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Injector } from '@angular/core';
 import { AppFile } from '../models/app-file.model';
 import { ModalService } from './modal.service';
 import { environment } from '../../../environments/environment.development';
@@ -21,6 +21,7 @@ export class FileShareService {
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private readonly downloadService = inject(DownloadService);
+  private readonly injector = inject(Injector);
 
   shareFile(file: AppFile, shareRequest: AddShareRequest) {
     const api = `${this.sharesUrl}/${file.id}`;
@@ -97,6 +98,7 @@ export class FileShareService {
         shareToModify: shareToEdit,
       },
       closeOtherModals,
+      this.injector,
     );
     if (!editedShareData) return;
 
@@ -136,6 +138,7 @@ export class FileShareService {
           filesToShare: files,
         },
         closeOtherModals,
+        this.injector,
       );
     if (!shareResults) return;
 

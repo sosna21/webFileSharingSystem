@@ -6,6 +6,7 @@ import {
   computed,
   ElementRef,
   inject,
+  Injector,
   signal,
   TrackByFunction,
   viewChild,
@@ -72,6 +73,7 @@ export class UserFilesTableComponent {
   private readonly downloadService = inject(DownloadService);
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
+  private readonly injector = inject(Injector);
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
   readonly editingId = this.fileService.editingId;
@@ -183,10 +185,13 @@ export class UserFilesTableComponent {
   }
 
   showShareManagementModal(sharedFile: AppFile) {
-    this.modalService.manageSharesModal({
-      sharedFile: sharedFile,
-      title: `Manage shares for file: '${sharedFile.fileName}'`,
-    });
+    this.modalService.manageSharesModal(
+      {
+        sharedFile: sharedFile,
+        title: `Manage shares for file: '${sharedFile.fileName}'`,
+      },
+      this.injector,
+    );
   }
 
   shareFile(files: AppFile[]) {
@@ -250,12 +255,7 @@ export class UserFilesTableComponent {
   onRowDragStart(event: DragEvent, file: AppFile) {
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
-    this.dragFacade.rowDragStart(
-      event,
-      file,
-      this.selectedFiles,
-      previewEl,
-    );
+    this.dragFacade.rowDragStart(event, file, this.selectedFiles, previewEl);
   }
 
   onRowDragEnter(event: DragEvent, row: AppFile) {

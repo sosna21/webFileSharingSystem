@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Injector } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ConfirmationModalComponent } from '../../features/modals/confirmation-modal/confirmation-modal.component';
 import { FileShareModalComponent } from '../../features/modals/file-share-modal/file-share-modal.component';
@@ -30,7 +30,7 @@ export class ModalService {
       cancelText?: string;
       showPermanentWarning?: boolean;
     },
-    closeOtherModals = true
+    closeOtherModals = true,
   ): Promise<boolean> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);
@@ -49,7 +49,7 @@ export class ModalService {
         componentInstance.cancelText.set(options.cancelText);
       if (options.showPermanentWarning)
         componentInstance.showPermanentWarning.set(
-          options.showPermanentWarning
+          options.showPermanentWarning,
         );
 
       const result = await modalRef.result;
@@ -60,12 +60,20 @@ export class ModalService {
     }
   }
 
-  manageSharesModal(options: { sharedFile: AppFile; title?: string }) {
+  manageSharesModal(
+    options: { sharedFile: AppFile; title?: string },
+    injector?: Injector,
+  ) {
     this.modalService.dismissAll(null);
     try {
       const modalRef = this.modalService.open(
         FileSharesManagementModalComponent,
-        { centered: true, size: 'lg', scrollable: true }
+        {
+          centered: true,
+          size: 'lg',
+          scrollable: true,
+          injector,
+        },
       );
       const componentInstance =
         modalRef.componentInstance as FileSharesManagementModalComponent;
@@ -84,7 +92,8 @@ export class ModalService {
       filesToShare: AppFile[];
       title?: string;
     },
-    closeOtherModals = true
+    closeOtherModals = true,
+    injector?: Injector,
   ): Promise<AddShareRequest[] | null> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);
@@ -92,6 +101,7 @@ export class ModalService {
     try {
       const modalRef = this.modalService.open(FileShareModalComponent, {
         centered: true,
+        injector,
       });
       const componentInstance =
         modalRef.componentInstance as FileShareModalComponent;
@@ -110,7 +120,8 @@ export class ModalService {
       shareToModify: Share;
       title?: string;
     },
-    closeOtherModals = true
+    closeOtherModals = true,
+    injector?: Injector,
   ): Promise<UpdateFileShareRequest | null> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);
@@ -118,6 +129,7 @@ export class ModalService {
     try {
       const modalRef = this.modalService.open(EditFileShareModalComponent, {
         centered: true,
+        injector,
       });
       const componentInstance =
         modalRef.componentInstance as EditFileShareModalComponent;
@@ -148,17 +160,17 @@ export class ModalService {
       componentInstance.date.set(
         options.initialDate
           ? DateUtils.dateToStruct(options.initialDate)
-          : DateUtils.dateToStruct(new Date())
+          : DateUtils.dateToStruct(new Date()),
       );
       componentInstance.minDate.set(
-        options.minDate ? DateUtils.dateToStruct(options.minDate) : null
+        options.minDate ? DateUtils.dateToStruct(options.minDate) : null,
       );
       componentInstance.maxDate.set(
-        options.maxDate ? DateUtils.dateToStruct(options.maxDate) : null
+        options.maxDate ? DateUtils.dateToStruct(options.maxDate) : null,
       );
       componentInstance.pickTime.set(options.pickTime ?? true);
       componentInstance.time.set(
-        options.initialTime ?? { hour: 12, minute: 0, second: 0 }
+        options.initialTime ?? { hour: 12, minute: 0, second: 0 },
       );
       if (options.title) componentInstance.title.set(options.title);
 
@@ -174,7 +186,7 @@ export class ModalService {
       title?: string;
       message?: string;
     },
-    closeOtherModals = true
+    closeOtherModals = true,
   ): Promise<boolean> {
     if (closeOtherModals) {
       this.modalService.dismissAll(null);

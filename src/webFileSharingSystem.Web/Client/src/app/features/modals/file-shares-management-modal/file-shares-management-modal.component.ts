@@ -1,4 +1,4 @@
-import { Component, computed, inject, model } from '@angular/core';
+import { Component, computed, inject, Injector, model } from '@angular/core';
 import { NgbActiveModal, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { AppFile } from '../../../core/models/app-file.model';
 import { FileShareService } from '../../../core/services/file-share.service';
@@ -15,7 +15,7 @@ import { ClicableIconDirective } from '../../../core/directives/clicable-icon.di
   selector: 'app-file-shares-management-modal',
   imports: [ClicableIconDirective, NgbTooltipModule],
   templateUrl: './file-shares-management-modal.component.html',
-  styleUrl: './file-shares-management-modal.component.scss'
+  styleUrl: './file-shares-management-modal.component.scss',
 })
 export class FileSharesManagementModalComponent {
   readonly activeModal = inject(NgbActiveModal);
@@ -25,64 +25,90 @@ export class FileSharesManagementModalComponent {
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly toast = inject(ToastService);
+  private readonly injector = inject(Injector);
 
-  private readonly url = computed(() => this.sharedFile() ? `${this.shareService.sharesUrl}/GetShares/${this.sharedFile()!.id}` : undefined);
+  private readonly url = computed(() =>
+    this.sharedFile()
+      ? `${this.shareService.sharesUrl}/GetShares/${this.sharedFile()!.id}`
+      : undefined,
+  );
   readonly sharesResource = httpResource<Share[]>(() => this.url());
-
 
   async openAddShareModal() {
     if (!this.sharedFile()) return;
     this.activeModal.update({ modalDialogClass: 'd-none' });
 
     const shareResults: AddShareRequest[] | null =
-      await this.modalService.addFileShareModal({
-        title: `Share '${this.sharedFile()!.fileName}'`,
-        filesToShare: [this.sharedFile()!],
-      }, false);
+      await this.modalService.addFileShareModal(
+        {
+          title: `Share '${this.sharedFile()!.fileName}'`,
+          filesToShare: [this.sharedFile()!],
+        },
+        false,
+        this.injector,
+      );
 
     this.activeModal.update({ modalDialogClass: '' });
     if (!shareResults) return;
 
-    shareResults.forEach(sr => {
+    shareResults.forEach((sr) => {
       this.shareService.shareFile(this.sharedFile()!, sr).subscribe({
-        next: share => {
-          this.sharesResource.value.update((shares) => shares ? [share, ...shares] : [share]);
+        next: (share) => {
+          this.sharesResource.value.update((shares) =>
+            shares ? [share, ...shares] : [share],
+          );
           this.toast.show(
             'File Shared',
             `File '${this.sharedFile()!.fileName}' shared successfully with user '${share.sharedWithUserName}'.`,
-            MessageSeverity.success
+            MessageSeverity.success,
           );
         },
-        error: err => {
+        error: (err) => {
           console.error(err);
           this.toast.show(
             'Failed to share file',
             err.error || String(err),
-            MessageSeverity.error
+            MessageSeverity.error,
           );
-        }
+        },
       });
     });
   }
 
   async openEditShareModal(shareToEdit: Share) {
     this.activeModal.update({ modalDialogClass: 'd-none' });
-    const editedShare = await this.shareService.editFileShareWithFeedback(shareToEdit, this.sharedFile()!, false);
+    const editedShare = await this.shareService.editFileShareWithFeedback(
+      shareToEdit,
+      this.sharedFile()!,
+      false,
+    );
     this.activeModal.update({ modalDialogClass: '' });
     if (!editedShare) return;
     this.updateShareIfExists(editedShare);
   }
 
   deleteShare(share: Share) {
-    this.shareService.deleteSharesWithFeedback([share], (share) => this.deleteFromShareDataIfExists(share), false);
+    this.shareService.deleteSharesWithFeedback(
+      [share],
+      (share) => this.deleteFromShareDataIfExists(share),
+      false,
+    );
   }
 
   private deleteFromShareDataIfExists(share: Share) {
-    this.sharesResource.value.update((shares) => shares ? shares.filter(s => s.shareId !== share.shareId) : []);
+    this.sharesResource.value.update((shares) =>
+      shares ? shares.filter((s) => s.shareId !== share.shareId) : [],
+    );
   }
 
   private updateShareIfExists(updatedShare: Share) {
-    this.sharesResource.value.update((shares) => shares ? shares.map(share => share.shareId === updatedShare.shareId ? updatedShare : share) : []);
+    this.sharesResource.value.update((shares) =>
+      shares
+        ? shares.map((share) =>
+            share.shareId === updatedShare.shareId ? updatedShare : share,
+          )
+        : [],
+    );
   }
 
   getLocalised(date: string | null) {

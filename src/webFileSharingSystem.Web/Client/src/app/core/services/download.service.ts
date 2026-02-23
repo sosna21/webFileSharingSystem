@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
 import { DownloadResponse } from '../models/download-response.model';
-import { AppFile } from '../models/app-file.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
 import { BaseFile } from '../models/base-file.model';
@@ -29,7 +28,7 @@ export class DownloadService {
         this.toast.show(
           'Download Initialized',
           'Your download will begin shortly.',
-          MessageSeverity.success
+          MessageSeverity.success,
         );
       },
       error: (err) => {
