@@ -1,7 +1,22 @@
-import { HttpErrorResponse, HttpEvent, HttpHandler, HttpHandlerFn, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpEvent,
+  HttpHandlerFn,
+  HttpInterceptorFn,
+  HttpRequest,
+} from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthenticationService } from '../services/authentication.service';
-import { BehaviorSubject, catchError, filter, Observable, switchMap, take, throwError } from 'rxjs';
+import {
+  BehaviorSubject,
+  catchError,
+  filter,
+  finalize,
+  Observable,
+  switchMap,
+  take,
+  throwError,
+} from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 import { JwtTokenService } from '../services/jwt-token.service';
@@ -20,22 +35,33 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   return next(req).pipe(
-    catchError(error => {
-      if (error instanceof HttpErrorResponse && error.status === 401 && jwtService.isTokenExpired()) {
-        return handle401Error(req, next, authenticationService);
-      } else {
-        router.navigate(['/login']);
-        return throwError(() => error);
+    catchError((error) => {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        if (jwtService.isTokenExpired()) {
+          return handle401Error(req, next, authenticationService, router);
+        } else {
+          authenticationService
+            .logout()
+            .pipe(
+              finalize(() => {
+                router.navigate(['/login']);
+              }),
+            )
+            .subscribe();
+          return throwError(() => error);
+        }
       }
-    })
+
+      return throwError(() => error);
+    }),
   );
 };
 
 const addToken = (request: HttpRequest<any>, token: string) => {
   return request.clone({
     setHeaders: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 };
 
@@ -45,9 +71,9 @@ const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 const handle401Error = (
   request: HttpRequest<any>,
   next: HttpHandlerFn,
-  authenticationService: AuthenticationService
+  authenticationService: AuthenticationService,
+  router: Router,
 ): Observable<HttpEvent<any>> => {
-
   if (!isRefreshing) {
     isRefreshing = true;
     refreshTokenSubject.next(null);
@@ -61,14 +87,15 @@ const handle401Error = (
       catchError((error) => {
         isRefreshing = false;
         refreshTokenSubject.next(null);
+        router.navigate(['/login']);
         return throwError(() => error);
-      })
+      }),
     );
   } else {
     return refreshTokenSubject.pipe(
-      filter(token => token != null),
+      filter((token) => token != null),
       take(1),
-      switchMap(jwt => next(addToken(request, jwt!)))
+      switchMap((jwt) => next(addToken(request, jwt!))),
     );
   }
 };
