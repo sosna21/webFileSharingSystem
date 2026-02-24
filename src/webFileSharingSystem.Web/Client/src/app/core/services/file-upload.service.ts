@@ -170,7 +170,10 @@ export class FileUploadService {
         if (file.size === 0) return EMPTY;
         const partial = appFile.partialFileInfo!;
 
-        this.auth.updateCurrentUserUsedSpace(file.size);
+        // Only update used space for new uploads, and not for "Shared with me" folder
+        if (this.fileService.mode() !== 'GetSharedWithMe')
+          this.auth.updateCurrentUserUsedSpace(file.size);
+
         this.filesInfo[partial.fileId] = { partial, file };
 
         this.updateProgress({

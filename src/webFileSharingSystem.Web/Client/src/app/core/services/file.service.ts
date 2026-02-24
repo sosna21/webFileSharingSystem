@@ -31,12 +31,14 @@ import {
 } from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
+import { AuthenticationService } from './authentication.service';
 
 @Injectable()
 export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly router = inject(Router);
   private readonly fileApiService = inject(FileApiService);
+  private readonly auth = inject(AuthenticationService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private readonly actionContext = linkedSignal<
@@ -547,14 +549,19 @@ export class FileService {
       items: filesToDelete,
       action: (file) => this.fileApiService.deleteFile(file.id),
       beforeStart: (file) => this.setLoading(file.id, true),
-      onSuccess: (file) =>
+      onSuccess: (file) => {
         this.mode() === 'GetSharedWithMe'
           ? this.sharedFiles.update((list) =>
               list.filter((f) => f.id !== file.id),
             )
           : this.userFiles.update((list) =>
               list.filter((f) => f.id !== file.id),
-            ),
+            );
+
+        if (this.mode() !== 'GetSharedWithMe') {
+          this.auth.updateCurrentUserUsedSpace(-file.size);
+        }
+      },
       onError: (file, err) => {
         this.toast.show(
           'File deletion',
@@ -613,6 +620,12 @@ export class FileService {
           this.clearActionContext();
           if (setSelection) {
             setSelection(new Set((result as BaseFile[]).map((f) => f.id)));
+          }
+
+          if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
+            this.auth.updateCurrentUserUsedSpace(
+              (result as BaseFile[]).reduce((acc, file) => acc + file.size, 0),
+            );
           }
         },
         error: (err) => {
