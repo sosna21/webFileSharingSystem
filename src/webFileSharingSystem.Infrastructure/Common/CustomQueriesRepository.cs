@@ -64,6 +64,11 @@ namespace webFileSharingSystem.Infrastructure.Common
             return SpecificationEvaluator<SharedFileSqlRow, SharedFileSqlRow>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
         }
 
+        public IQueryable<SharedFileSqlRow> GetListOfSharedFilesSubtreeQuery(int userId, int? parentId, ISpecification<SharedFileSqlRow> spec)
+        {
+            return SpecificationEvaluator<SharedFileSqlRow, SharedFileSqlRow>.GetQuery(_dbContext.GetListOfSharedFilesSubtreeForUserTvf(userId, parentId), spec);
+        }
+
         public async Task<SharedFileSqlRow?> GetSharedFileById(int userId, int fileId, CancellationToken cancellationToken = default)
         {
             return (await _dbContext.GetSharedFileById(fileId, userId).ToListAsync(cancellationToken)).FirstOrDefault();

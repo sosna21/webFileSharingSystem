@@ -183,6 +183,10 @@ namespace webFileSharingSystem.Infrastructure.Data
             Set<SharedFileSqlRow>().FromSqlInterpolated(
                 $@"SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})");
         
+        public IQueryable<SharedFileSqlRow> GetListOfSharedFilesSubtreeForUserTvf(int userId, int? parentId) =>
+            Set<SharedFileSqlRow>().FromSqlInterpolated(
+                $@"SELECT * FROM GetSharedFilesSubtreeForUserTVF({userId},{parentId})");
+        
         public IQueryable<File> GetListOfFilesSharedByUserId(int userId) =>
             Set<File>().FromSqlInterpolated(
                 $@"SELECT * FROM GetListOfFilesSharedByUserIdTVF({userId})");

@@ -130,18 +130,28 @@ namespace webFileSharingSystem.Web.Controllers
 
             return files;
         }
-        
+
         [HttpGet]
         [Route("GetSharedWithMe")]
         public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId;
-            var sharedFiles =  await _unitOfWork.Repository<SharedFileSqlRow>()
+            if (string.IsNullOrEmpty(request.SearchedPhrase))
+            {
+                var sharedFiles = await _unitOfWork.Repository<SharedFileSqlRow>()
+                    .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                        ToSharedFileResponse,
+                        _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
+                            new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
+                return sharedFiles;
+            }
+
+            var filteredFiles = await _unitOfWork.Repository<SharedFileSqlRow>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     ToSharedFileResponse,
-                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
+                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesSubtreeQuery(userId!.Value, request.ParentId,
                         new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
-            return sharedFiles;
+            return filteredFiles;
         }
 
         [HttpPut]

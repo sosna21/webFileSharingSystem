@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using webFileSharingSystem.Core.Entities;
+using webFileSharingSystem.Core.Specifications;
 
 namespace webFileSharingSystem.Core.Interfaces
 {
@@ -29,8 +30,11 @@ namespace webFileSharingSystem.Core.Interfaces
         IQueryable<File> GetListOfFilesSharedByUserIdQuery(int userId, ISpecification<File> spec);
 
         IQueryable<SharedFileSqlRow> GetListOfSharedFilesQuery(int userId, int? parentId,
-            ISpecification<SharedFileSqlRow> spec); 
-            
+            ISpecification<SharedFileSqlRow> spec);
+
+        IQueryable<SharedFileSqlRow> GetListOfSharedFilesSubtreeQuery(int userId, int? parentId,
+            ISpecification<SharedFileSqlRow> spec);
+
         Task<SharedFileSqlRow?> GetSharedFileById(int userId, int fileId, CancellationToken token = default);
     }
 }
