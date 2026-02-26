@@ -22,7 +22,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     () =>
       this.filesSig?.() &&
       this.filesSig().length > 0 &&
-      this.selectedIds().size === this.filesSig().length
+      this.selectedIds().size === this.filesSig().length,
   );
   readonly selectedItems = computed<T[]>(() => {
     const ids = this.selectedIds();
@@ -35,6 +35,10 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   private dragging = signal<DragKind>(null);
   private beforeDragIds = signal<Set<number>>(new Set());
 
+  constructor() {
+    window.addEventListener('mouseup', this.endDragSelection.bind(this));
+  }
+
   init(files: Signal<T[]>) {
     this.filesSig = files;
   }
@@ -46,19 +50,18 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
       event.preventDefault();
       const all = new Set(this.filesSig().map((f) => f.id));
       this.selectedIds.set(all);
-    }
-    else if (this.selectedIds().size > 0) {
+    } else if (this.selectedIds().size > 0) {
       if (event.key === 'Escape') {
         this.selectedIds.set(new Set());
       } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
         event.preventDefault();
         const files = this.filesSig();
         const selectedIds = this.selectedIds();
-        let anchorId = this.fileSelectionAnchorId();  
+        let anchorId = this.fileSelectionAnchorId();
         if (anchorId === null && selectedIds.size > 0) {
           anchorId = selectedIds.values().next().value!;
         }
-        const anchorIndex = files.findIndex(f => f.id === anchorId);
+        const anchorIndex = files.findIndex((f) => f.id === anchorId);
         let newIndex: number;
         if (event.key === 'ArrowUp') {
           newIndex = Math.max(0, anchorIndex - 1);
@@ -82,6 +85,11 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     else this.selectedIds.set(new Set());
   }
 
+  clear() {
+    console.log('Clearing selection');
+    this.selectedIds.set(new Set());
+  }
+
   selectRow(file: T, event: MouseEvent) {
     const isCtrl = event.ctrlKey || event.metaKey;
     const isShift = event.shiftKey;
@@ -97,7 +105,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     if (isShift && localAnchor != null) {
       const newIndex = this.filesSig().findIndex((f) => f.id === file.id);
       const anchorIndex = this.filesSig().findIndex(
-        (f) => f.id === localAnchor
+        (f) => f.id === localAnchor,
       );
       const startIndex = Math.min(newIndex, anchorIndex);
       const endIndex = Math.max(newIndex, anchorIndex);
@@ -127,7 +135,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     if (this.isSelected(row.id) && !(event.ctrlKey || event.shiftKey)) return;
     this.beforeDragIds.set(new Set(this.selectedIds()));
     this.dragging.set(
-      event.ctrlKey ? 'ctrl' : event.shiftKey ? 'shift' : 'standard'
+      event.ctrlKey ? 'ctrl' : event.shiftKey ? 'shift' : 'standard',
     );
     this.dragSelectionAnchorId.set(row.id);
   }
@@ -137,7 +145,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     this.dragSelectRows(row);
   }
 
-  onRowMouseUp(row: T) {
+  onRowMouseUp(row: T, event: MouseEvent) {
     if (!this.dragging() || !this.dragSelectionAnchorId()) return;
     if (this.dragSelectionAnchorId() === row.id) {
       this.endDragSelection();
@@ -149,7 +157,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
 
   private dragSelectRows(current: T) {
     const anchorIndex = this.filesSig().findIndex(
-      (f) => f.id === this.dragSelectionAnchorId()
+      (f) => f.id === this.dragSelectionAnchorId(),
     );
     const currentIndex = this.filesSig().findIndex((f) => f.id === current.id);
 
@@ -159,9 +167,9 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
           .filter(
             (_, i) =>
               i >= Math.min(anchorIndex, currentIndex) &&
-              i <= Math.max(anchorIndex, currentIndex)
+              i <= Math.max(anchorIndex, currentIndex),
           )
-          .map((f) => f.id)
+          .map((f) => f.id),
       );
       this.selectedIds.update((prev) => new Set([...prev, ...range]));
     } else if (this.dragging() === 'ctrl') {
@@ -170,12 +178,12 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         .filter(
           (_, i) =>
             i >= Math.min(anchorIndex, currentIndex) &&
-            i <= Math.max(anchorIndex, currentIndex)
+            i <= Math.max(anchorIndex, currentIndex),
         )
         .map((f) => f.id);
       const next = new Set(startSet);
       idsInRange.forEach((id) =>
-        next.has(id) ? next.delete(id) : next.add(id)
+        next.has(id) ? next.delete(id) : next.add(id),
       );
       this.selectedIds.set(next);
     } else {
@@ -183,7 +191,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         .filter(
           (_, i) =>
             i >= Math.min(anchorIndex, currentIndex) &&
-            i <= Math.max(anchorIndex, currentIndex)
+            i <= Math.max(anchorIndex, currentIndex),
         )
         .map((f) => f.id);
       this.selectedIds.set(new Set(rangeIds));

@@ -131,6 +131,15 @@ export class UserFilesTableComponent {
     this.selection.selectRow(file, event);
   }
 
+  resetFileSelection(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target.closest('tr')) {
+      return;
+    }
+
+    this.selection.clear();
+  }
+
   onRowMouseDown(row: AppFile, event: MouseEvent) {
     this.selection.onRowMouseDown(row, event);
   }
@@ -139,8 +148,8 @@ export class UserFilesTableComponent {
     this.selection.onRowMouseEnter(row);
   }
 
-  onRowMouseUp(row: AppFile) {
-    this.selection.onRowMouseUp(row);
+  onRowMouseUp(row: AppFile, event: MouseEvent) {
+    this.selection.onRowMouseUp(row, event);
   }
 
   isFileUploadCompleted(file: AppFile) {
@@ -198,11 +207,11 @@ export class UserFilesTableComponent {
     this.shareService.shareFilesWithFeedback(files);
   }
 
-  contextMenuClick(event: MouseEvent, file: AppFile) {
+  contextMenuClick(event: MouseEvent, file?: AppFile) {
     event.preventDefault();
     event.stopPropagation();
     const position = { x: event.clientX, y: event.clientY };
-    if (!this.selectedFiles().includes(file)) {
+    if (file && !this.selectedFiles().includes(file)) {
       this.selectedIds.set(new Set([file.id]));
     }
 

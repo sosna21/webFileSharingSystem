@@ -12,6 +12,7 @@
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
   [class.table-drop-hover]="isHoverTargetATable()"
+  (mouseup)="resetFileSelection($event)"
 >
   <div
     (dragleave)="onTableDragLeave($event)"
@@ -197,7 +198,7 @@
         (drop)="onRowDrop($event, file)"
         (mousedown)="onRowMouseDown(file, $event)"
         (mouseenter)="onRowMouseEnter(file)"
-        (mouseup)="onRowMouseUp(file)"
+        (mouseup)="onRowMouseUp(file, $event)"
         [class.opacity-50]="
           filesMarkedForAction()?.type === 1 &&
           filesMarkedForAction()?.filesIds!.has(file.id)

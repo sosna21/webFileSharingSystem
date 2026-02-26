@@ -131,6 +131,15 @@ export class SharedFilesTableComponent {
     this.selection.selectRow(file, event);
   }
 
+  resetFileSelection(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target.closest('tr')) {
+      return;
+    }
+
+    this.selection.clear();
+  }
+
   onRowMouseDown(row: SharedFile, event: MouseEvent) {
     this.selection.onRowMouseDown(row, event);
   }
@@ -139,8 +148,8 @@ export class SharedFilesTableComponent {
     this.selection.onRowMouseEnter(row);
   }
 
-  onRowMouseUp(row: SharedFile) {
-    this.selection.onRowMouseUp(row);
+  onRowMouseUp(row: SharedFile, event: MouseEvent) {
+    this.selection.onRowMouseUp(row, event);
   }
 
   isFileUploadCompleted() {
