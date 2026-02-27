@@ -11,6 +11,7 @@ import { EditFileShareModalComponent } from '../../features/modals/edit-file-sha
 import { Share } from '../models/share.model';
 import { UpdateFileShareRequest } from '../models/update-share-request.model';
 import { CopyToClipboardModalComponent } from '../../features/modals/copy-to-clipboard-modal/copy-to-clipboard-modal.component';
+import { DirectoryCreationModalComponent } from '../../features/modals/directory-creation-modal/directory-creation-modal.component';
 
 @Injectable({
   providedIn: 'root',
@@ -203,6 +204,26 @@ export class ModalService {
       return modalRef.result.catch(() => false);
     } catch {
       return new Promise(() => false);
+    }
+  }
+
+  getNewDirectoryName(options: {
+    startName?: string;
+    blacklistedNames?: Set<string>;
+  }): Promise<string | null> {
+    try {
+      const modalRef = this.modalService.open(DirectoryCreationModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as DirectoryCreationModalComponent;
+      if (options.startName)
+        componentInstance.startDirName.set(options.startName);
+      if (options.blacklistedNames)
+        componentInstance.blacklistedNames.set(options.blacklistedNames);
+      return modalRef.result.catch(() => null);
+    } catch {
+      return new Promise(() => null);
     }
   }
 }

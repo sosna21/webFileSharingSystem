@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
-import { ActionType } from '../../../../core/models/action-type.model';
 import { FileService } from '../../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -9,6 +8,7 @@ import { FileShareService } from '../../../../core/services/file-share.service';
 import { SelectionService } from '../../../../core/services/selection.service';
 import { BaseFile, FileStatus } from '../../../../core/models/base-file.model';
 import { ShareAccessMode } from '../../../../core/models/share-access-mode.model';
+import { generateUniqueDirName } from '../../../../core/utils/file-utils';
 
 @Component({
   selector: 'app-file-actions-strip',
@@ -25,9 +25,7 @@ export class FileActionsStripComponent {
 
   private readonly shareService = inject(FileShareService);
   private readonly downloadService = inject(DownloadService);
-  private readonly names = computed(
-    () => new Set(this.fileService.currentFiles().map((file) => file.fileName)),
-  );
+  private readonly names = this.fileService.names;
   readonly showDirCreateNameInput = signal(false);
   readonly newFolderName = signal('');
   readonly isNameForbidden = computed(() =>
@@ -90,17 +88,8 @@ export class FileActionsStripComponent {
       ),
   );
 
-  findUniqueDirName(): string {
-    let dirName = 'New folder';
-    let counter = 0;
-    while (this.names().has(dirName)) {
-      dirName = `New folder (${++counter})`;
-    }
-    return dirName;
-  }
-
   resetNewFolderName() {
-    this.newFolderName.set(this.findUniqueDirName());
+    this.newFolderName.set(generateUniqueDirName(this.names()));
   }
 
   createDirectory() {
@@ -110,7 +99,7 @@ export class FileActionsStripComponent {
       this.selectionService.selectedIds.set,
     );
 
-    this.newFolderName.set(this.findUniqueDirName());
+    this.newFolderName.set(generateUniqueDirName(this.names()));
     this.cancelRename();
   }
 
@@ -121,7 +110,7 @@ export class FileActionsStripComponent {
 
   initDirCreation() {
     if (!this.showDirCreateNameInput()) this.showDirCreateNameInput.set(true);
-    this.newFolderName.set(this.findUniqueDirName());
+    this.newFolderName.set(generateUniqueDirName(this.names()));
   }
 
   onDownload() {
@@ -152,26 +141,7 @@ export class FileActionsStripComponent {
 
   onPaste() {
     if (!this.canPaste()) return;
-    const action = this.activeAction();
-    if (!action) return;
-
-    if (action.type === ActionType.Move) {
-      this.fileService.moveFilesWithFeedback(
-        Array.from(action.files),
-        this.fileService.parentId(),
-        this.fileService.parentName() ?? 'home directory',
-        this.selectionService.selectedIds.set,
-      );
-    } else if (action.type === ActionType.Copy) {
-      this.fileService.copyFilesWithFeedback(
-        Array.from(action.files),
-        this.fileService.parentId(),
-        this.fileService.parentName() ?? 'home directory',
-        this.selectionService.selectedIds.set,
-      );
-    }
-
-    this.fileService.clearActionContext();
+    this.fileService.pasteFilesWithFeedback();
   }
 
   onRename() {

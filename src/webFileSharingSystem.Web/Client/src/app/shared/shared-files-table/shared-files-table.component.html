@@ -9,10 +9,22 @@
   (delete)="deleteFiles($event)"
 ></app-shared-files-context-menu>
 
+<app-table-context-menu
+  [position]="contextMenuPosition()"
+  [accessMode]="currentDirectoryAccessMode()"
+  [sortableColumns]="columnsToDisplay()"
+  [canPaste]="canPaste()"
+  (refresh)="refresh()"
+  (createFolder)="createFolder()"
+  (upload)="uploadFiles($event)"
+  (paste)="pasteFiles()"
+/>
+
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
   [class.table-drop-hover]="isHoverTargetATable()"
   (mouseup)="resetFileSelection($event)"
+  (contextmenu)="tableContextMenuClick($event)"
 >
   <div
     (dragleave)="onTableDragLeave($event)"
@@ -72,20 +84,22 @@
           FileName
         </th>
         <td cdk-cell *cdkCellDef="let file">
-          <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-          @if (editingId() === file.id) {
-            <input
-              appSelectFilename
-              type="text"
-              style="min-width: 85%"
-              [ngModel]="file.fileName"
-              [placeholder]="file.fileName"
-              (blur)="rename(file, $any($event.target).value)"
-              (keydown)="fileRenameKeyDown($event, file)"
-            />
-          } @else {
-            {{ file.fileName }}
-          }
+          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
+            <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
+            @if (editingId() === file.id) {
+              <input
+                appSelectFilename
+                type="text"
+                style="min-width: 85%"
+                [ngModel]="file.fileName"
+                [placeholder]="file.fileName"
+                (blur)="rename(file, $any($event.target).value)"
+                (keydown)="fileRenameKeyDown($event, file)"
+              />
+            } @else {
+              {{ file.fileName }}
+            }
+          </div>
         </td>
       </ng-container>
 
@@ -105,7 +119,9 @@
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          {{ file.sharedUserName }}
+          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
+            {{ file.sharedUserName }}
+          </div>
         </td>
       </ng-container>
 
@@ -125,8 +141,10 @@
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <i class="bi" [class]="getAccessModeIconClass(file.accessMode)"></i>
-          {{ getAccessModeName(file.accessMode) }}
+          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
+            <i class="bi" [class]="getAccessModeIconClass(file.accessMode)"></i>
+            {{ getAccessModeName(file.accessMode) }}
+          </div>
         </td>
       </ng-container>
 
@@ -136,14 +154,16 @@
           Actions
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <i
-            #icon
-            appClicableIcon
-            class="bi bi-three-dots fs-5"
-            (click)="actionIconClick($event, icon, file)"
-            ngbTooltip="Show more actions"
-            [openDelay]="300"
-          ></i>
+          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
+            <i
+              #icon
+              appClicableIcon
+              class="bi bi-three-dots fs-5"
+              (click)="actionIconClick($event, icon, file)"
+              ngbTooltip="Show more actions"
+              [openDelay]="300"
+            ></i>
+          </div>
         </td>
       </ng-container>
 
@@ -153,7 +173,9 @@
           Size
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          {{ file.size | fileSize }}
+          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
+            {{ file.size | fileSize }}
+          </div>
         </td>
       </ng-container>
 
@@ -163,7 +185,9 @@
           Valid Until
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          {{ file.validUntil | remainigTime }}
+          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
+            {{ file.validUntil | remainigTime }}
+          </div>
         </td>
       </ng-container>
 
@@ -181,7 +205,11 @@
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
-        (contextmenu)="contextMenuClick($event, file)"
+        (contextmenu)="
+          isSelected(file.id)
+            ? contextMenuClick($event, file)
+            : tableContextMenuClick($event)
+        "
         [class.selected-row]="selectedIds().has(file.id)"
         (click)="selectFile(file, $event)"
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"

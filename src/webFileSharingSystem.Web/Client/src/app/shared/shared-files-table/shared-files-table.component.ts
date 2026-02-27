@@ -39,6 +39,8 @@ import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
 import { FileService } from '../../core/services/file.service';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
+import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
+import { generateUniqueDirName } from '../../core/utils/file-utils';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -58,6 +60,7 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
     CdkTableModule,
     RemainigTimePipe,
     UploadOverlayComponent,
+    TableContextMenuComponent,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -69,6 +72,40 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
   },
 })
 export class SharedFilesTableComponent {
+  refresh() {
+    location.reload();
+  }
+
+  pasteFiles() {
+    this.fileService.pasteFilesWithFeedback();
+  }
+
+  uploadFiles($event: File[]) {
+    const filesWithPath: { file: File; path: string }[] = $event.map(
+      (file) => ({
+        file: file,
+        path: '',
+      }),
+    );
+    this.uploadService
+      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .subscribe();
+  }
+
+  async createFolder() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(
+      newDirName,
+      this.selection.selectedIds.set,
+    );
+  }
+
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
@@ -76,8 +113,11 @@ export class SharedFilesTableComponent {
   private readonly downloadService = inject(DownloadService);
   private readonly selection = inject(SelectionService<SharedFile>);
   private readonly dragFacade = inject(DragDropService<SharedFile>);
+  private readonly modalService = inject(ModalService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
+  readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
+  readonly currentDirectoryAccessMode = computed(() => this.fileService.parentBreadcrumb()?.accessMode);
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
     'id',
@@ -101,6 +141,7 @@ export class SharedFilesTableComponent {
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
+  tableContextMenu = viewChild(TableContextMenuComponent);
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
@@ -207,6 +248,15 @@ export class SharedFilesTableComponent {
     this.openContextMenu(position);
   }
 
+  tableContextMenuClick(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.selection.clear();
+    const position = { x: event.clientX, y: event.clientY };
+
+    this.openTableContextMenu(position);
+  }
+
   actionIconClick(event: MouseEvent, icon: HTMLElement, file: SharedFile) {
     event.stopPropagation();
 
@@ -219,8 +269,16 @@ export class SharedFilesTableComponent {
 
   private openContextMenu(position: { x: number; y: number }) {
     this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
     this.contextMenuPosition.set(position);
     this.contextMenu()?.open();
+  }
+
+  private openTableContextMenu(position: { x: number; y: number }) {
+    this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
+    this.contextMenuPosition.set(position);
+    this.tableContextMenu()?.open();
   }
 
   deleteFiles(files: SharedFile[]) {

@@ -36,6 +36,8 @@ import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { UserFilesContextMenuComponent } from './user-files-context-menu/user-files-context-menu.component';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
+import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
+import { generateUniqueDirName } from '../../core/utils/file-utils';
 
 @Component({
   selector: 'app-user-files-table',
@@ -55,6 +57,7 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
     NgbProgressbarModule,
     CdkTableModule,
     UploadOverlayComponent,
+    TableContextMenuComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -66,6 +69,40 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
   },
 })
 export class UserFilesTableComponent {
+  refresh() {
+    location.reload();
+  }
+
+  pasteFiles() {
+    this.fileService.pasteFilesWithFeedback();
+  }
+
+  uploadFiles($event: File[]) {
+    const filesWithPath: { file: File; path: string }[] = $event.map(
+      (file) => ({
+        file: file,
+        path: '',
+      }),
+    );
+    this.uploadService
+      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .subscribe();
+  }
+
+  async createFolder() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(
+      newDirName,
+      this.selection.selectedIds.set,
+    );
+  }
+
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
@@ -78,6 +115,7 @@ export class UserFilesTableComponent {
   private readonly dragFacade = inject(DragDropService<AppFile>);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
+  readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([
     'id',
@@ -101,6 +139,7 @@ export class UserFilesTableComponent {
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(UserFilesContextMenuComponent);
+  tableContextMenu = viewChild(TableContextMenuComponent);
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
@@ -207,7 +246,7 @@ export class UserFilesTableComponent {
     this.shareService.shareFilesWithFeedback(files);
   }
 
-  contextMenuClick(event: MouseEvent, file?: AppFile) {
+  contextMenuClick(event: MouseEvent, file: AppFile) {
     event.preventDefault();
     event.stopPropagation();
     const position = { x: event.clientX, y: event.clientY };
@@ -216,6 +255,15 @@ export class UserFilesTableComponent {
     }
 
     this.openContextMenu(position);
+  }
+
+  tableContextMenuClick(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.selection.clear();
+    const position = { x: event.clientX, y: event.clientY };
+
+    this.openTableContextMenu(position);
   }
 
   actionIconClick(event: MouseEvent, icon: HTMLElement, file: AppFile) {
@@ -230,8 +278,16 @@ export class UserFilesTableComponent {
 
   private openContextMenu(position: { x: number; y: number }) {
     this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
     this.contextMenuPosition.set(position);
     this.contextMenu()?.open();
+  }
+
+  private openTableContextMenu(position: { x: number; y: number }) {
+    this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
+    this.contextMenuPosition.set(position);
+    this.tableContextMenu()?.open();
   }
 
   deleteFiles(files: AppFile[]) {

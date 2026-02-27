@@ -52,3 +52,7 @@ tr.drop-folder-hover {
   outline: 2px dashed #0d6efd !important;
   outline-offset: -2px;
 }
+
+.table-transparent {
+  --bs-table-bg: transparent !important;
+}

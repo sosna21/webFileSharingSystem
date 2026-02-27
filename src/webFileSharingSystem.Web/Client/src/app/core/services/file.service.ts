@@ -137,6 +137,10 @@ export class FileService {
       : this.userFiles();
   });
 
+  readonly names = computed(
+    () => new Set(this.currentFiles().map((file) => file.fileName)),
+  );
+
   // UI state shared across components
   public readonly editingId = signal<number | null>(null);
   public readonly loadingIds = signal<Set<number>>(new Set());
@@ -471,6 +475,28 @@ export class FileService {
         : `Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
       MessageSeverity.info,
     );
+  }
+
+  pasteFilesWithFeedback(setSelection?: (value: Set<number>) => void) {
+    const action = this.awaitingActionState();
+    if (!action) return;
+    if (action.type === ActionType.Move) {
+      this.moveFilesWithFeedback(
+        Array.from(action.files),
+        this.parentId(),
+        this.parentName() ?? 'home directory',
+        setSelection,
+      );
+    } else if (action.type === ActionType.Copy) {
+      this.copyFilesWithFeedback(
+        Array.from(action.files),
+        this.parentId(),
+        this.parentName() ?? 'home directory',
+        setSelection,
+      );
+    }
+
+    this.clearActionContext();
   }
 
   moveFilesWithFeedback(
