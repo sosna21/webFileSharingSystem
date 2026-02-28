@@ -1,0 +1,30 @@
+<label
+  class="btn btn-info px-0 py-3"
+  [class.disabled]="!canUpload()"
+  tabindex="0"
+  role="button"
+>
+  <input
+    [disabled]="!canUpload()"
+    type="file"
+    class="d-none"
+    multiple
+    (change)="uploadSelectedFiles($event)"
+  />
+  Upload files
+</label>
+<label
+  class="btn btn-info px-0 py-3"
+  [class.disabled]="!canUpload()"
+  tabindex="0"
+  role="button"
+>
+  <input
+    [disabled]="!canUpload()"
+    type="file"
+    class="d-none"
+    webkitdirectory
+    (change)="uploadSelectedFolder($event)"
+  />
+  Upload folder
+</label>

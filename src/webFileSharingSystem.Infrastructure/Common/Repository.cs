@@ -40,10 +40,7 @@ namespace webFileSharingSystem.Infrastructure.Common
         
         public async Task<IEnumerable<TResult>> FindAsync<TResult>(ISpecification<TEntity, TResult> specification, CancellationToken cancellationToken = default)
         {
-            if (specification.GroupBy is null || specification.GroupByResult is null)
-                throw new InvalidOperationException("This method can be used only when grouping is applied");
-            
-            return await ApplySpecificationWithGroupBy(specification).ToListAsync(cancellationToken);
+            return await ApplySpecificationWithResult(specification).ToListAsync(cancellationToken);
         }
 
         public async Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, Func<TEntity, TResult> mapToResult, ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
@@ -58,6 +55,22 @@ namespace webFileSharingSystem.Infrastructure.Common
             var items = await customQuery.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
 
             return new PaginatedList<TResult>(items.Select(mapToResult), count, pageNumber, pageSize);
+        }
+
+        public async Task<PaginatedList<TResult>> PaginatedListFindAsync<TResult>(int pageNumber, int pageSize, ISpecification<TEntity, TResult> specification, CancellationToken cancellationToken = default)
+        {
+            var query = ApplySpecificationWithResult(specification);
+            var count = await query.CountAsync(cancellationToken);
+            var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+            return new PaginatedList<TResult>(items, count, pageNumber, pageSize);
+        }
+
+        public async Task<PaginatedList<TOut>> PaginatedListFindAsync<TSpecResult, TOut>(int pageNumber, int pageSize, Func<TSpecResult, TOut> mapToResult, ISpecification<TEntity, TSpecResult> specification, CancellationToken cancellationToken = default)
+        {
+            var query = ApplySpecificationWithResult(specification);
+            var count = await query.CountAsync(cancellationToken);
+            var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+            return new PaginatedList<TOut>(items.Select(mapToResult), count, pageNumber, pageSize);
         }
 
         public async Task<bool> ContainsAsync(ISpecification<TEntity>? specification = null, CancellationToken cancellationToken = default)
@@ -113,9 +126,9 @@ namespace webFileSharingSystem.Infrastructure.Common
             return SpecificationEvaluator<TEntity, TEntity>.GetQuery(_context.Set<TEntity>().AsQueryable(), spec);
         }
         
-        private IQueryable<TResult> ApplySpecificationWithGroupBy<TResult>(ISpecification<TEntity, TResult> spec)
+        private IQueryable<TResult> ApplySpecificationWithResult<TResult>(ISpecification<TEntity, TResult> spec)
         {
-            return SpecificationEvaluator<TEntity, TResult>.GetGroupedQuery(_context.Set<TEntity>().AsQueryable(), spec);
+            return SpecificationEvaluator<TEntity, TResult>.GetResultQuery(_context.Set<TEntity>().AsQueryable(), spec);
         }
     }
 }

@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using webFileSharingSystem.Infrastructure.Data;
 
+#nullable disable
+
 namespace webFileSharingSystem.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
@@ -15,9 +17,10 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("ProductVersion", "5.0.9")
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -43,15 +46,16 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
-                    b.ToTable("AspNetRoles");
+                    b.ToTable("AspNetRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
                         .HasColumnType("nvarchar(max)");
@@ -67,7 +71,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetRoleClaims");
+                    b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUser", b =>
@@ -132,15 +136,16 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
-                    b.ToTable("AspNetUsers");
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ClaimType")
                         .HasColumnType("nvarchar(max)");
@@ -156,7 +161,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserClaims");
+                    b.ToTable("AspNetUserClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
@@ -178,7 +183,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserLogins");
+                    b.ToTable("AspNetUserLogins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
@@ -193,7 +198,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles");
+                    b.ToTable("AspNetUserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -212,15 +217,16 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("AspNetUserTokens");
+                    b.ToTable("AspNetUserTokens", (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.ApplicationUser", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("EmailAddress")
                         .HasColumnType("nvarchar(max)");
@@ -253,8 +259,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
@@ -318,11 +325,16 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
-                    b.ToTable("FileAccessMode");
+                    b.ToTable((string)null);
+
+                    b.ToView(null, (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.FilePathPart", b =>
                 {
+                    b.Property<int?>("AccessMode")
+                        .HasColumnType("int");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -330,15 +342,24 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
-                    b.ToTable("FilePathPart");
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.ToTable((string)null);
+
+                    b.ToView(null, (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.PartialFileInfo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ChunkSize")
                         .HasColumnType("int");
@@ -365,8 +386,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("AccessMode")
                         .HasColumnType("int");
@@ -386,20 +408,26 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int?>("LastModifiedBy")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("SharedByUserId")
                         .HasColumnType("int");
 
                     b.Property<int>("SharedWithUserId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("ValidUntil")
+                    b.Property<DateTime?>("ValidUntil")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FileId");
+                    b.HasIndex("SharedWithUserId")
+                        .HasFilter("[RevokedAt] IS NULL");
 
-                    b.HasIndex("SharedWithUserId");
+                    b.HasIndex("FileId", "SharedWithUserId")
+                        .IsUnique()
+                        .HasFilter("[RevokedAt] IS NULL");
 
                     b.ToTable("Share");
                 });
@@ -409,6 +437,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int>("AccessMode")
                         .HasColumnType("int");
 
+                    b.Property<int>("FileCreatedBy")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("FileGuid")
                         .HasColumnType("uniqueidentifier");
 
@@ -416,10 +447,16 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("FileStatus")
+                        .HasColumnType("int");
+
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDirectory")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsInherited")
                         .HasColumnType("bit");
 
                     b.Property<string>("MimeType")
@@ -428,7 +465,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int?>("ParentId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ShareId")
+                    b.Property<int?>("PartialFileInfoId")
                         .HasColumnType("int");
 
                     b.Property<string>("SharedUserName")
@@ -441,18 +478,86 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("ValidUntil")
+                    b.Property<DateTime?>("ValidUntil")
                         .HasColumnType("datetime2");
 
-                    b.ToTable("SharedFile");
+                    b.HasIndex("PartialFileInfoId");
+
+                    b.ToTable((string)null);
+
+                    b.ToView(null, (string)null);
+                });
+
+            modelBuilder.Entity("webFileSharingSystem.Core.Entities.SharedFileSqlRow", b =>
+                {
+                    b.Property<int>("AccessMode")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ChunkSize")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FileCreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("FileGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FileStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDirectory")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsInherited")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MimeType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PartialFileInfoId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("PersistenceMap")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("SharedUserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Size")
+                        .HasColumnType("decimal(20,0)");
+
+                    b.Property<long?>("UploadFileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.ToTable((string)null);
+
+                    b.ToView(null, (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Infrastructure.Identity.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
@@ -561,8 +666,8 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.File", b =>
                 {
-                    b.HasOne("webFileSharingSystem.Core.Entities.File", null)
-                        .WithMany()
+                    b.HasOne("webFileSharingSystem.Core.Entities.File", "Parent")
+                        .WithMany("Children")
                         .HasForeignKey("ParentId");
 
                     b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", null)
@@ -570,6 +675,8 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.PartialFileInfo", b =>
@@ -598,6 +705,15 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Navigation("File");
                 });
 
+            modelBuilder.Entity("webFileSharingSystem.Core.Entities.SharedFile", b =>
+                {
+                    b.HasOne("webFileSharingSystem.Core.Entities.PartialFileInfo", "PartialFileInfo")
+                        .WithMany()
+                        .HasForeignKey("PartialFileInfoId");
+
+                    b.Navigation("PartialFileInfo");
+                });
+
             modelBuilder.Entity("webFileSharingSystem.Infrastructure.Identity.RefreshToken", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
@@ -616,6 +732,8 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.File", b =>
                 {
+                    b.Navigation("Children");
+
                     b.Navigation("PartialFileInfo");
                 });
 #pragma warning restore 612, 618

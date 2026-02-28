@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -39,10 +40,13 @@ namespace webFileSharingSystem.Web.Controllers
                 await _fileService.GetPathToFileAsync(fileId, _currentUserService.UserId!.Value);
 
             if (operationResult.Succeeded)
-                return Ok(pathParts.Select(part => new FilePathPartResponse
+                return Ok(pathParts!.Select(part => new FilePathPartResponse
                 {
                     Id = part.Id,
-                    FileName = part.FileName
+                    FileName = part.FileName,
+                    Level = part.Level,
+                    AccessMode = part.AccessMode,
+                    ValidUntil = part.ValidUntil
                 }));
 
             return operationResult.ToActionResult(ErrorMessage);
@@ -55,28 +59,33 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
 
             if (string.IsNullOrEmpty(request.SearchedPhrase))
-                return await _unitOfWork.Repository<File>()
+            {
+                var files = await _unitOfWork.Repository<File>()
                     .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                         file => ToFileResponse(file, userId!.Value),
                         new GetAllFilesSpecs(userId!.Value, request.ParentId));
-
+                return files;
+            }
+            
             if (request.ParentId is null)
                 return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value),
                     new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
-
-            return await _unitOfWork.Repository<File>()
+            
+            var filteredFiles = await _unitOfWork.Repository<File>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
                     file => ToFileResponse(file, userId!.Value),
                     _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
                         request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
+
+            return filteredFiles;
         }
 
         [HttpGet]
         [Route("GetNames/{parentId:int?}")]
         public async Task<IEnumerable<string>> GetAllFilenamesInFolder(int parentId = -1)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
             var userId = _currentUserService.UserId;
             var files = await _unitOfWork.Repository<File>()
                 .FindAsync(new GeFilesNamesSpecs(userId!.Value, dbParentId));
@@ -111,11 +120,38 @@ namespace webFileSharingSystem.Web.Controllers
         public async Task<PaginatedList<FileResponse>> GetFilesSharedByMe([FromQuery] FileRequest request)
         {
             var userId = _currentUserService.UserId!.Value;
-            return await _unitOfWork.Repository<File>()
-                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+            var files = await _unitOfWork.Repository<Share>()
+                .PaginatedListFindAsync<File, FileResponse>(
+                    request.PageNumber,
+                    request.PageSize,
                     file => ToFileResponse(file, userId),
-                    _unitOfWork.CustomQueriesRepository().GetListOfFilesSharedByUserIdQuery(userId,
-                        new GetSharedFilesSpec<File>(request.ParentId, request.SearchedPhrase)));
+                    new GetSharedByUserFilesSpec(userId, request.SearchedPhrase)
+                );
+
+            return files;
+        }
+
+        [HttpGet]
+        [Route("GetSharedWithMe")]
+        public async Task<PaginatedList<SharedFileResponse>> GetFilesSharedWithMe([FromQuery] FileRequest request)
+        {
+            var userId = _currentUserService.UserId;
+            if (string.IsNullOrEmpty(request.SearchedPhrase))
+            {
+                var sharedFiles = await _unitOfWork.Repository<SharedFileSqlRow>()
+                    .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                        ToSharedFileResponse,
+                        _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesQuery(userId!.Value, request.ParentId,
+                            new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
+                return sharedFiles;
+            }
+
+            var filteredFiles = await _unitOfWork.Repository<SharedFileSqlRow>()
+                .PaginatedListFindAsync(request.PageNumber, request.PageSize,
+                    ToSharedFileResponse,
+                    _unitOfWork.CustomQueriesRepository().GetListOfSharedFilesSubtreeQuery(userId!.Value, request.ParentId,
+                        new GetSharedFilesSpec(request.ParentId, request.SearchedPhrase)));
+            return filteredFiles;
         }
 
         [HttpPut]
@@ -148,43 +184,57 @@ namespace webFileSharingSystem.Web.Controllers
             var (actionResult, file) =
                 await _fileService.CreateDirectoryAsync(parentId, _currentUserService.UserId!.Value, name);
 
-            if (!actionResult.Succeeded) return actionResult.ToActionResult("Problem with creating a directory");
+            if (!actionResult.Succeeded)
+                return actionResult.ToActionResult(actionResult.Errors.Length > 0
+                ? actionResult.Errors[0]
+                : "Unknown problem with creating a directory");
             return Ok(ToFileResponse(file!, userId!.Value));
         }
 
         [HttpDelete]
         [Route("Delete/{id:int}")]
-        public async Task<ActionResult> DeleteFileAsync(int id)
+        public async Task<ActionResult> DeleteAsync(int id)
         {
-            return (await _fileService.DeleteFileAsync(id, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with deleting the file");
-        }
-
-        [HttpDelete]
-        [Route("DeleteDir/{parentId:int}")]
-        public async Task<ActionResult> DeleteFolderWithInsideFiles(int parentId)
-        {
-            return (await _fileService.DeleteDirectoryAsync(parentId, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with deleting the directory");
+            var result = await _fileService.DeleteAsync(id, _currentUserService.UserId!.Value);
+            return result.ToActionResult("Problem with deleting the item");
         }
 
         [HttpPut]
         [Route("Move/{parentId:int}")]
         public async Task<ActionResult> MoveFiles(int parentId, [FromBody] int[] ids)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
-            return (await _fileService.MoveFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with moving files");
+            var userId = _currentUserService.UserId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
+            var (result, ctx) = await _fileService.MoveFilesAsync(dbParentId, ids, userId!.Value);
+            if (!result.Succeeded) return result.ToActionResult(string.Join(", ", result.Errors));
+
+            if (ctx!.First().IsOwnFile)
+            {
+                var response = ctx.Select(c => ToFileResponse(c.File, userId.Value));
+                return Ok(response);
+            }
+
+            var sharedFilesResponse = ctx.Select(ToSharedFileResponse);
+            return Ok(sharedFilesResponse);
         }
 
         [HttpPost]
         [Route("Copy/{parentId:int}")]
         public async Task<ActionResult> CopyFiles(int parentId, [FromBody] int[] ids)
         {
-            var dbParentId = parentId == -1 ? (int?) null : parentId;
-            //TODO check if names of files to move are uniq in target directory
-            return (await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value))
-                .ToActionResult("Problem with coping files");
+            var userId = _currentUserService.UserId;
+            var dbParentId = parentId == -1 ? (int?)null : parentId;
+            var (result, ctx) = await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
+            if (!result.Succeeded) return result.ToActionResult(string.Join(", ", result.Errors));
+
+            if (ctx!.First().IsOwnFile)
+            {
+                var response = ctx.Select(c => ToFileResponse(c.File, userId.Value));
+                return Ok(response);
+            }
+
+            var sharedFilesResponse = ctx.Select(ToSharedFileResponse);
+            return Ok(sharedFilesResponse);
         }
 
         private FileResponse ToFileResponse(File file, int userId)
@@ -192,17 +242,69 @@ namespace webFileSharingSystem.Web.Controllers
             return new FileResponse
             {
                 Id = file.Id,
+                ParentId = file.ParentId,
                 FileName = file.FileName,
                 MimeType = file.MimeType,
                 Size = file.Size,
                 IsShared = file.IsShared,
                 IsFavourite = file.IsFavourite,
                 IsDirectory = file.IsDirectory,
-                ModificationDate = file.LastModified ?? file.Created,
+                ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
                 FileStatus = file.FileStatus,
-                PartialFileInfo = file.PartialFileInfo,
+                PartialFileInfo =  _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
                     _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+            };
+        }
+        
+        private static SharedFileResponse ToSharedFileResponse(SharedFileSqlRow sharedFile)
+        {
+            var partialFileInfo = sharedFile.PartialFileInfoId.HasValue ? new PartialFileInfo
+            {
+                FileId = sharedFile.Id,
+                FileSize = sharedFile.UploadFileSize!.Value,
+                ChunkSize = sharedFile.ChunkSize!.Value,
+                PersistenceMap = sharedFile.PersistenceMap!,
+            } : null;
+            
+            return new SharedFileResponse
+            {
+                Id = sharedFile.Id,
+                UserId = sharedFile.UserId,
+                ParentId = sharedFile.ParentId,
+                FileName = sharedFile.FileName,
+                MimeType = sharedFile.MimeType,
+                Size = sharedFile.Size,
+                IsDirectory = sharedFile.IsDirectory,
+                SharedUserName = sharedFile.SharedUserName,
+                AccessMode = sharedFile.AccessMode,
+                ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null,
+                FileStatus = sharedFile.FileStatus,
+                PartialFileInfo = partialFileInfo,
+                UploadProgress = CalculateUploadProgress(partialFileInfo)
+            };
+        }
+        
+        private static SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
+        {
+            var file = ctx.File;
+            return new SharedFileResponse
+            {
+                Id = file.Id,
+                UserId = file.UserId,
+                ParentId = file.ParentId,
+                FileName = file.FileName,
+                MimeType = file.MimeType,
+                Size = file.Size,
+                IsDirectory = file.IsDirectory,
+                SharedUserName = ctx.SharedUserName!,
+                AccessMode = ctx.AccessMode!.Value,
+                ValidUntil = ctx.ValidUntil is not null
+                    ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
+                    : null,
+                FileStatus = file.FileStatus,
+                PartialFileInfo = file.PartialFileInfo,
+                UploadProgress = 0
             };
         }
 
@@ -211,7 +313,7 @@ namespace webFileSharingSystem.Web.Controllers
             if (partialFileInfo is null) return null;
             var uploadedChunks = partialFileInfo.PersistenceMap
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
-            return (double) uploadedChunks / partialFileInfo.NumberOfChunks;
+            return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
         }
     }
 }

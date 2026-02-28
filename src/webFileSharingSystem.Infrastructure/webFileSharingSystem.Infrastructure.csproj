@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
-        <LangVersion>9</LangVersion>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -11,14 +11,14 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Azure.Storage.Blobs" Version="12.10.0" />
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="6.0.0" />
+      <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.2" />
       <PackageReference Include="HawkNet" Version="1.4.4" />
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.9" />
-      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.9" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="5.0.9" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.9" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="5.0.9">
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
+      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.2" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>

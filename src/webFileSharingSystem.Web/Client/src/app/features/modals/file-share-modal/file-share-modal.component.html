@@ -1,0 +1,141 @@
+<div class="modal-header bg-primary-subtle d-flex">
+  <h4 class="modal-title">{{ title() }}</h4>
+
+  <button
+    type="button"
+    class="btn-close position-relative top-0 end-0"
+    aria-label="Close"
+    (click)="activeModal.dismiss()"
+  ></button>
+</div>
+
+<div class="modal-body">
+  <div class="mb-2">
+    <label for="shareWith" class="form-label fs-5">Share with</label>
+    <div class="mx-2">
+      <input
+        id="shareWith"
+        type="text"
+        class="form-control"
+        placeholder="Enter username or email to share the file with"
+        [(ngModel)]="shareWith"
+      />
+      <div class="invalid-feedback">
+        Please enter a valid username or email.
+      </div>
+      <div class="form-text">
+        You can share the file with multiple users by separating their emails
+        with commas.
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-2">
+    <label class="form-label fs-5">Permission Level</label>
+    <div class="mx-2">
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="permission"
+          id="readOnly"
+          [checked]="selectedPermission() === ShareAccessMode.ReadOnly"
+          (change)="setPermission(ShareAccessMode.ReadOnly)"
+        />
+        <label class="form-check-label" for="readOnly">
+          <strong>Read Only</strong>
+          <div class="text-muted small">Can view and download the file</div>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="permission"
+          id="readWrite"
+          [checked]="selectedPermission() === ShareAccessMode.ReadWrite"
+          (change)="setPermission(ShareAccessMode.ReadWrite)"
+        />
+        <label class="form-check-label" for="readWrite">
+          <strong>Read and Write</strong>
+          <div class="text-muted small">
+            Can view, download, and modify the file
+          </div>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="permission"
+          id="fullControl"
+          [checked]="selectedPermission() === ShareAccessMode.FullAccess"
+          (change)="setPermission(ShareAccessMode.FullAccess)"
+        />
+        <label class="form-check-label" for="fullControl">
+          <strong>Full Control</strong>
+          <div class="text-muted small">
+            Can view, modify, delete, and share the file
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-2">
+    <label for="shareDuration" class="form-label fs-5">Share Duration</label>
+    <div class="mx-2">
+      <select
+        id="shareDuration"
+        class="form-select"
+        [(ngModel)]="shareDuration"
+        (change)="onDurationChange($event)"
+      >
+        <option [ngValue]="1">1 hour</option>
+        <option [ngValue]="24">24 hours</option>
+        <option [ngValue]="168">1 week</option>
+        <option [ngValue]="720">30 days</option>
+        <option [ngValue]="-1">Indefinite</option>
+        <option [ngValue]="0">
+          Custom{{
+            selectedCustomDurationString() &&
+              ": " + selectedCustomDurationString()
+          }}
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <!-- Style link generation -->
+  <button
+    type="button"
+    class="link-cta me-auto"
+    (click)="generateShareLink()"
+    aria-label="Generate share link"
+  >
+    <i class="bi bi-link-45deg" aria-hidden="true"></i>
+    <span
+      >Generate share
+      {{ sharingMultipleFiles() ? "links" : "link" }} instead</span
+    >
+    <i class="bi bi-chevron-right chevron" aria-hidden="true"></i>
+  </button>
+  <button
+    type="button"
+    class="btn btn-outline-secondary"
+    (click)="activeModal.dismiss()"
+  >
+    {{ cancelText() }}
+  </button>
+  <button
+    type="button"
+    class="btn btn-success w-25"
+    ngbAutofocus
+    [disabled]="!shareWith()"
+    (click)="confirm()"
+  >
+    {{ confirmText() }}
+  </button>
+</div>

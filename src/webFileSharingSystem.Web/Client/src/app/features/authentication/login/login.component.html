@@ -1,0 +1,36 @@
+@let controls = $any(loginForm.controls!);
+<app-base-auth-page [(loading)]="loading">
+  <img
+    src="/mascote.png"
+    alt="application mascote (cloude man)"
+    width="120em"
+    class="align-self-center"
+  />
+  <app-card-main-content [errorMsg]="error()">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <app-text-input
+        [formControl]="controls.username"
+        label="Username/Email"
+        (focusin)="resetError()"
+      ></app-text-input>
+      <app-text-input
+        [formControl]="controls.password"
+        label="Password"
+        (focusin)="resetError()"
+        type="password"
+      ></app-text-input>
+      <app-main-action-btn [loading]="loading()">Login</app-main-action-btn>
+    </form>
+  </app-card-main-content>
+  <app-card-secondary-content>
+    You don't have an account? <br />
+    Click Register to create one!
+    <button
+      class="btn btn-secondary"
+      [disabled]="loading()"
+      routerLink="/register"
+    >
+      Register
+    </button>
+  </app-card-secondary-content>
+</app-base-auth-page>

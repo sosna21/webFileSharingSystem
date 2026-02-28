@@ -33,6 +33,10 @@ namespace webFileSharingSystem.Core.Specifications
 
         public Expression<Func<object, IEnumerable<T>, TOut>>? GroupByResult { get; private set; }
 
+        public Expression<Func<T, TOut>>? Selector { get; private set; }
+
+        public bool IsDistinct { get; private set; }
+
         public int? Take { get; private set; }
         public int? Skip { get; private set; }
 
@@ -70,6 +74,16 @@ namespace webFileSharingSystem.Core.Specifications
         {
             GroupBy = groupByExpression;
             GroupByResult = groupByResult;
+        }
+
+        protected virtual void ApplySelector(Expression<Func<T, TOut>> selectorExpression)
+        {
+            Selector = selectorExpression;
+        }
+
+        protected virtual void ApplyDistinct()
+        {
+            IsDistinct = true;
         }
     }
 }

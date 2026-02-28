@@ -1,0 +1,19 @@
+.grid {
+  height: 100vh;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.navbar {
+  grid-column: 1/-1;
+  grid-row: 1;
+  padding: 0;
+}
+
+main {
+  grid-column: 1/-1;
+  grid-row: 2;
+  overflow-y: auto;
+}

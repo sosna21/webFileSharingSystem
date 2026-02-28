@@ -1,0 +1,46 @@
+<div class="modal-header bg-primary-subtle d-flex">
+  <h4 class="modal-title">Create New Directory</h4>
+
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss()"
+  ></button>
+</div>
+
+<div class="modal-body">
+  <div class="mb-3 py-2">
+    <input
+      appSelectFilename
+      type="text"
+      id="dirName"
+      class="form-control"
+      [(ngModel)]="newDirName"
+      [class.is-invalid]="!isNameValid()"
+    />
+    @if (!isNameValid()) {
+      <div class="invalid-feedback">
+        A directory with this name already exists.
+      </div>
+    }
+  </div>
+
+  <div class="modal-footer pb-0">
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="activeModal.dismiss()"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="btn btn-success w-25"
+      [disabled]="!isNameValid()"
+      (click)="confirm()"
+    >
+      Create
+    </button>
+  </div>
+</div>

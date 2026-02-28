@@ -1,0 +1,13 @@
+<header
+  class="d-flex align-items-center pb-1 mb-4 border-bottom rounded-bottom-2"
+>
+  <div class="d-flex align-items-baseline">
+    <div class="fs-1 me-2">
+      <ng-content select="i"></ng-content>
+    </div>
+    <span class="fs-2 fw-semibold"><ng-content>Page title</ng-content></span>
+  </div>
+  <div class="d-flex ms-5 fs-2">
+    <ng-content select="[secondaryContent]"></ng-content>
+  </div>
+</header>

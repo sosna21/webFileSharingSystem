@@ -1,0 +1,17 @@
+<ngb-toast
+  class="mb-2"
+  [class]="styling()"
+  [autohide]="true"
+  [delay]="toast().delay || 5000"
+  (hidden)="onHide()"
+  (click)="onClick()"
+>
+  <ng-template ngbToastHeader>
+    <div class="me-auto">
+      <ng-content></ng-content>
+      {{ toast().header }}
+    </div>
+  </ng-template>
+
+  {{ toast().body }}
+</ngb-toast>

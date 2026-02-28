@@ -1,0 +1,13 @@
+nav {
+  min-height: 100%;
+}
+
+li i {
+  font-size: 1.2rem;
+}
+
+nav {
+  :host-context([data-bs-theme="light"]) & {
+    background: #eef0f1ad !important;
+  }
+}

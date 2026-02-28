@@ -1,10 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 
 /* Importing Bootstrap SCSS file. */
-@import "~bootstrap/scss/bootstrap";
+$enable-negative-margins: true;
+@import "bootstrap/scss/bootstrap";
+@import "bootstrap-icons/font/bootstrap-icons.css";
 
-/* Importing Datepicker SCSS file. */
-@import "~ngx-bootstrap/datepicker/bs-datepicker";
-
-/* Importing Toastr SCSS file. */
-@import '~ngx-toastr/toastr-bs4-alert';
+.dropdown-menu {
+    z-index: 1054;
+}

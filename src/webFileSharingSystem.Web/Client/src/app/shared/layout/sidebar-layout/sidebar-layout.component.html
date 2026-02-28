@@ -1,0 +1,14 @@
+<div class="grid">
+    <app-navbar #navbar class="navbar" />
+    <app-sidebar
+      class="sidebar"
+      [class.hidden]="navbar.isSidebarCollapsed()"
+      [(isCollapsed)]="navbar.isSidebarCollapsed"
+    />
+    <main
+      [class.hidden]="!navbar.isSidebarCollapsed()"
+    >
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+  

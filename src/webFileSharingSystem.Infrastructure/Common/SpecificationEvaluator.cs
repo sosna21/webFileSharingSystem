@@ -31,31 +31,43 @@ namespace webFileSharingSystem.Infrastructure.Common
             return query;
         }
 
-        public static IQueryable<TEntityResult> GetGroupedQuery(
+        public static IQueryable<TEntityResult> GetResultQuery(
             IQueryable<TEntity> inputQuery,
             ISpecification<TEntity, TEntityResult> specification)
         {
-            if (specification.GroupBy is null) throw new InvalidOperationException($"{nameof(specification.GroupBy)} must be specified");
-            if (specification.GroupByResult is null) throw new InvalidOperationException($"{nameof(specification.GroupByResult)} must be specified");
-            
             var query = GetQueryInternal(inputQuery, specification);
 
-            
-            //Convert specification Group by expression return type to Func<TEntity, object>
-            // That's necessary for entity framework to parse the query correctly
-            
-            var groupByConverted = Expression.Convert(specification.GroupBy.Body, typeof(object));
-            var groupByExpression = Expression.Lambda<Func<TEntity, object>>(groupByConverted, specification.GroupBy.Parameters);
+            if (specification.GroupBy is not null && specification.GroupByResult is not null)
+            {
+                var groupByConverted = Expression.Convert(specification.GroupBy.Body, typeof(object));
+                var groupByExpression = Expression.Lambda<Func<TEntity, object>>(groupByConverted, specification.GroupBy.Parameters);
+                var groupedQuery = query.GroupBy(groupByExpression, specification.GroupByResult);
+                groupedQuery = ApplyRowsLimit(groupedQuery, specification);
+                return groupedQuery;
+            }
 
-            var groupedQuery = query.GroupBy(groupByExpression, specification.GroupByResult);
+            if (specification.Selector is not null)
+            {
+                var projectedQuery = query.Select(specification.Selector);
 
-            groupedQuery = ApplyRowsLimit(groupedQuery, specification);
+                if (specification.IsDistinct)
+                {
+                    projectedQuery = projectedQuery.Distinct();
+                }
 
-            return groupedQuery;
+                projectedQuery = ApplyRowsLimit(projectedQuery, specification);
+                return projectedQuery;
+            }
+
+            throw new InvalidOperationException("Specification must define either grouping (GroupBy + GroupByResult) or a Selector for projection.");
         }
         
         private static IQueryable<TEntity> GetQueryInternal(IQueryable<TEntity> query, ISpecification<TEntity, TEntityResult>? specification)
         {
+            if (specification is null)
+            {
+                return query;
+            }
 
             // modify the IQueryable using the specification's criteria expression
             if (specification.Criteria is not null)

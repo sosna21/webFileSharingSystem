@@ -1,0 +1,27 @@
+.drag-preview {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  font-size: 13px;
+  font-family: "Segoe UI", sans-serif;
+  max-width: 300px;
+  min-width: 180px;
+  pointer-events: none;
+}
+
+.more {
+  font-style: italic;
+  color: #555;
+}
+
+.file-names {
+  min-width: 0; // allows flex children to shrink
+}
+
+.file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}

@@ -1,0 +1,22 @@
+<div class="modal-header bg-primary-subtle">
+  <h4 class="modal-title">{{ title() }}</h4>
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss()"
+  ></button>
+</div>
+
+<div class="modal-body">
+  <div class="d-flex gap-2">
+    <input class="form-control" type="text" [value]="textToCopy()" readonly />
+    <button
+      class="btn btn-outline-primary"
+      (click)="copyToClipboard()"
+      ngbTooltip="Copy to clipboard"
+    >
+      <i class="bi bi-clipboard text-body"></i>
+    </button>
+  </div>
+</div>

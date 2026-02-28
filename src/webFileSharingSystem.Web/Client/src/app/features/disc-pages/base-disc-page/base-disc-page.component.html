@@ -1,0 +1,28 @@
+<div
+  class="container-fluid px-4 pt-2 pb-1 d-flex flex-column h-100"
+  [class.pb-3]="!showPagination()"
+>
+  <ng-content select="app-base-disc-page-header"></ng-content>
+  <ng-content></ng-content>
+
+  <div>
+    @if (loadingData()) { @defer(on timer(100ms)) {
+    <span>Loading...</span>
+    } }
+  </div>
+
+  <ng-content select="table, [data-view]">
+    No table provided.
+  </ng-content>
+
+  @if (showPagination()) {
+  <ngb-pagination
+    class="d-flex justify-content-center mt-3"
+    [collectionSize]="totalItems()"
+    [pageSize]="itemsPerPage()"
+    [(page)]="currentPage"
+    [boundaryLinks]="true"
+    [maxSize]="6"
+  />
+  }
+</div>

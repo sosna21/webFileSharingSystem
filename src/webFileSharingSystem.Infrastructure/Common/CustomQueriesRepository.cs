@@ -18,14 +18,20 @@ namespace webFileSharingSystem.Infrastructure.Common
             _dbContext = dbContext;
         }
 
-        public async Task<IEnumerable<FilePathPart>> FindPathToAllParents(int fileId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<FilePathPart>> FindPathToAllParentsForUserFile(int fileId, CancellationToken cancellationToken = default)
         {
             return await _dbContext.GetFilePathParts(fileId).ToListAsync(cancellationToken);
+        }
+
+        public async Task<IEnumerable<FilePathPart>> FindPathToAllParentForSharedFile(int userId, int fileId,
+            CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.GetSharedFilePathParts(userId, fileId).ToListAsync(cancellationToken);
         }
         
         public async Task<FileAccessMode?> GetSharedFileAccessMode(int fileId, int userId, CancellationToken cancellationToken = default) 
         {
-            return (await _dbContext.GetSharedFileAccessMode(fileId,userId).ToListAsync(cancellationToken)).FirstOrDefault();
+            return (await _dbContext.GetSharedFileAccessMode(fileId, userId).ToListAsync(cancellationToken)).FirstOrDefault();
         }
 
         public async Task<List<File>> GetListOfAllChildrenAsFiles(int parentId, CancellationToken cancellationToken = default)
@@ -53,10 +59,19 @@ namespace webFileSharingSystem.Infrastructure.Common
             return SpecificationEvaluator<File, File>.GetQuery(_dbContext.GetListOfFilesSharedByUserId(userId), spec);
         }
         
-        public IQueryable<SharedFile> GetListOfSharedFilesQuery(int userId, int? parentId, ISpecification<SharedFile> spec)
+        public IQueryable<SharedFileSqlRow> GetListOfSharedFilesQuery(int userId, int? parentId, ISpecification<SharedFileSqlRow> spec)
         {
-            return SpecificationEvaluator<SharedFile, SharedFile>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
+            return SpecificationEvaluator<SharedFileSqlRow, SharedFileSqlRow>.GetQuery(_dbContext.GetListOfAllSharedFilesForUserTvf(userId, parentId), spec);
         }
 
+        public IQueryable<SharedFileSqlRow> GetListOfSharedFilesSubtreeQuery(int userId, int? parentId, ISpecification<SharedFileSqlRow> spec)
+        {
+            return SpecificationEvaluator<SharedFileSqlRow, SharedFileSqlRow>.GetQuery(_dbContext.GetListOfSharedFilesSubtreeForUserTvf(userId, parentId), spec);
+        }
+
+        public async Task<SharedFileSqlRow?> GetSharedFileById(int userId, int fileId, CancellationToken cancellationToken = default)
+        {
+            return (await _dbContext.GetSharedFileById(fileId, userId).ToListAsync(cancellationToken)).FirstOrDefault();
+        }
     }
 }

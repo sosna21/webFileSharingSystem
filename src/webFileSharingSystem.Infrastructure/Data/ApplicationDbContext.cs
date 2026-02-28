@@ -27,14 +27,13 @@ namespace webFileSharingSystem.Infrastructure.Data
             //_domainEventService = domainEventService;
         }
 
-        public Microsoft.EntityFrameworkCore.DbSet<ApplicationUser> ApplicationUsers { get; set; }
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
 
-        public Microsoft.EntityFrameworkCore.DbSet<PartialFileInfo> PartialFileInfos { get; set; }
+        public DbSet<PartialFileInfo> PartialFileInfos { get; set; }
 
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new())
         {
-            // TODO Inject CurrentUserService
             foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
             {
                 switch (entry.State)
@@ -65,11 +64,11 @@ namespace webFileSharingSystem.Infrastructure.Data
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             base.OnModelCreating(builder);
-
-            //Todo most likely some of the ef migration files are slightly broken that's why the 'FilePathPart' entity don't need the view
-            builder.Entity<FilePathPart>().HasNoKey();//.ToView(null);
-            builder.Entity<FileAccessMode>().HasNoKey();//.ToView(null);
-            builder.Entity<SharedFile>().HasNoKey();//.ToView(null);
+            
+            builder.Entity<FilePathPart>().HasNoKey().ToView(null);
+            builder.Entity<FileAccessMode>().HasNoKey().ToView(null);
+            builder.Entity<SharedFile>().HasNoKey().ToView(null);
+            builder.Entity<SharedFileSqlRow>().HasNoKey().ToView(null);
 
             builder.Entity<RefreshToken>()
                 .HasOne<IdentityUser>()
@@ -95,8 +94,8 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .HasForeignKey(e => e.UserId);
 
             builder.Entity<File>()
-                .HasOne<File>()
-                .WithMany()
+                .HasOne(e => e.Parent)
+                .WithMany(e => e.Children)
                 .HasForeignKey(e => e.ParentId);
 
             builder.Entity<File>().HasIndex(t => t.FileGuid);
@@ -118,6 +117,15 @@ namespace webFileSharingSystem.Infrastructure.Data
 
             builder.Entity<Share>()
                 .HasOne(e => e.File);
+            
+            builder.Entity<Share>()
+                .HasIndex(s => new { s.FileId, s.SharedWithUserId })
+                .HasFilter("[RevokedAt] IS NULL")
+                .IsUnique();
+            
+            builder.Entity<Share>()
+                .HasIndex(s => s.SharedWithUserId)
+                .HasFilter("[RevokedAt] IS NULL");
         }
 
         //TODO Add dispatch events if needed or remove 
@@ -140,101 +148,48 @@ namespace webFileSharingSystem.Infrastructure.Data
         
         public IQueryable<RefreshToken> GetListOfAllDescendantActiveRefreshTokens(string refreshToken) =>
             Set<RefreshToken>().FromSqlInterpolated(
-                $@"
-                    WITH recursive_cte AS
-                    (
-                        SELECT *
-                        FROM [RefreshToken] WHERE [Token] = {refreshToken}
-                        UNION All
-                        SELECT [t].*
-                        FROM [RefreshToken] AS [t]
-                        INNER JOIN recursive_cte AS [cte] ON [t].[Token] = [cte].[ReplacedByToken] 
-                    )
-                    SELECT * FROM recursive_cte WHERE [Revoked] IS NULL
-                ");
-
+                $@"SELECT * FROM GetDescendantActiveRefreshTokens({refreshToken})");
+        
         public IQueryable<File> GetListOfAllParentsAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
-                $@"
-                    WITH recursive_cte AS
-                    (
-                        SELECT *
-                        FROM [File] WHERE Id={parentId}
-                        UNION ALL
-                        SELECT [f].*
-                        FROM [File] AS [f]
-                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
-                    )
-                    SELECT * FROM recursive_cte
-                ");
-
-        public IQueryable<FilePathPart> GetFilePathParts(int id) =>
-            Set<FilePathPart>().FromSqlInterpolated(
-                $@"
-                    WITH recursive_cte AS
-                    (
-                        SELECT [Id], [FileName], [ParentId]
-                        FROM [File] WHERE Id={id}
-                        UNION ALL
-                        SELECT [f].[Id], [f].[FileName], [f].[ParentId]
-                        FROM [File] AS [f]
-                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [f].[Id] 
-                    )
-                    SELECT [Id], [FileName] FROM recursive_cte
-                ");
-        
-        public IQueryable<FileAccessMode> GetSharedFileAccessMode(int fileId, int userId) =>
-            Set<FileAccessMode>().FromSqlInterpolated(
-                $@"
-                   WITH recursive_cte AS
-                    (
-                        SELECT [Id], [ParentId], 0 AS [level]
-                        FROM [File] WHERE Id = {fileId}
-                        UNION ALL
-                        SELECT [F].[Id], [F].[ParentId], [cte].[level] + 1
-                        FROM [File] AS [F]
-                        INNER JOIN recursive_cte AS [cte] ON [cte].[ParentId] = [F].[Id] 
-                    )
-                    SELECT TOP(1) [S].[Id], [S].[AccessMode] FROM recursive_cte AS [cte]
-					INNER JOIN [Share] AS [S]
-					ON [S].[FileId] = [cte].[Id]
-					WHERE [S].[ValidUntil] > SYSUTCDATETIME() AND [S].[SharedWithUserId] = {userId}
-					ORDER BY [cte].[level]
-                ");
+                $@"SELECT * FROM GetParentFiles({parentId})");
 
 
         public IQueryable<File> GetListOfAllChildrenAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
-                $@"
-                    WITH recursive_cte AS
-                    (
-                        SELECT *
-                        FROM [File] WHERE Id={parentId}
-                        UNION All
-                        SELECT [f].*
-                        FROM [File] AS [f]
-                        INNER JOIN recursive_cte AS [cte] ON [f].[ParentId] = [cte].[Id] 
-                    )
-                    SELECT * FROM recursive_cte
-                ");
+                $@"SELECT * FROM GetChildrenAsFiles({parentId})");
+        
+        public IQueryable<FileAccessMode> GetSharedFileAccessMode(int fileId, int userId) =>
+            Set<FileAccessMode>().FromSqlInterpolated(
+                $@"SELECT * FROM GetSharedFileAccessMode({userId}, {fileId})");
+            
+        public IQueryable<FilePathPart> GetFilePathParts(int id) =>
+            Set<FilePathPart>().FromSqlInterpolated(
+                $@"SELECT * FROM GetFilePathParts({id})");        
+        
+        public IQueryable<SharedFileSqlRow> GetSharedFileById(int fileId, int userId) =>
+            Set<SharedFileSqlRow>().FromSqlInterpolated(
+                $@"SELECT * FROM GetSharedFileTVF({userId},{fileId});");
+        
+        public IQueryable<FilePathPart> GetSharedFilePathParts(int userId, int fileId) =>
+            Set<FilePathPart>().FromSqlInterpolated(
+                $@"SELECT * FROM GetSharedFilePathParts({userId}, {fileId})");
 
         public IQueryable<File> GetListOfAllChildrenByParentTvfAsFiles(int parentId) =>
             Set<File>().FromSqlInterpolated(
-                $@"
-                    SELECT * FROM GetListOfAllChildrenByParentTVF({parentId})
-                ");
+                $@"SELECT * FROM GetListOfAllChildrenByParentTVF({parentId})");
         
-        public IQueryable<SharedFile> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
-            Set<SharedFile>().FromSqlInterpolated(
-                $@"
-                    SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})
-                ");
+        public IQueryable<SharedFileSqlRow> GetListOfAllSharedFilesForUserTvf(int userId, int? parentId) =>
+            Set<SharedFileSqlRow>().FromSqlInterpolated(
+                $@"SELECT * FROM GetListOfAllSharedFilesForUserTVF({userId},{parentId})");
+        
+        public IQueryable<SharedFileSqlRow> GetListOfSharedFilesSubtreeForUserTvf(int userId, int? parentId) =>
+            Set<SharedFileSqlRow>().FromSqlInterpolated(
+                $@"SELECT * FROM GetSharedFilesSubtreeForUserTVF({userId},{parentId})");
         
         public IQueryable<File> GetListOfFilesSharedByUserId(int userId) =>
             Set<File>().FromSqlInterpolated(
-                $@"
-                      SELECT * FROM GetListOfFilesSharedByUserIdTVF({userId})
-                ");
+                $@"SELECT * FROM GetListOfFilesSharedByUserIdTVF({userId})");
 
         public IQueryable<File> GetListOfAllFilesFromLocations(IList<int> fileIds)
         {

@@ -1,0 +1,6 @@
+{
+    "css.styleSheets": [
+        "src/webFileSharingSystem.Web/Client/node_modules/bootstrap/dist/css/bootstrap.css",
+        "src/webFileSharingSystem.Web/Client/src/**/*.scss"
+    ]
+}

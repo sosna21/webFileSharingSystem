@@ -1,0 +1,61 @@
+th {
+  font-weight: lighter;
+}
+
+tr {
+  cursor: default;
+}
+
+tr.selectable {
+  cursor: pointer;
+}
+
+table {
+  @media (max-width: 992px) {
+    font-size: 0.85rem;
+  }
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+}
+
+tr {
+  border-left: 4px solid transparent;
+}
+
+.selected-row {
+  border-left: 4px solid #007acc;
+  // --bs-table-hover-bg: none;
+  --bs-table-bg: #c2e7ff96;
+  :host-context([data-bs-theme="dark"]) & {
+    --bs-table-bg: #053b5f96;
+  }
+}
+
+.table-wrapper {
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
+}
+
+tr.drop-folder-hover {
+  outline: 2px dashed #0d6efd !important;
+  outline-offset: -2px;
+
+  & > * {
+    background-color: rgba(13, 110, 253, 0.12) !important;
+  }
+
+  &.invalid-drop {
+    outline-color: #dc3545 !important;
+    & > * {
+      background-color: rgba(220, 53, 69, 0.15) !important;
+    }
+  }
+}
+
+.table-transparent {
+  --bs-table-bg: transparent !important;
+}

@@ -1,0 +1,23 @@
+<nav class="navbar navbar-expand-md navbar-dark bg-dark w-100 px-1 px-md-3">
+  <div class="container-fluid">
+    <app-navbar-brand />
+    @if(!authenticated()) {
+    <app-theme-switch class="me-3" />
+    } @if (authenticated()) {
+    <button
+      class="navbar-toggler fs-6 me-3"
+      type="button"
+      (click)="toogleCollapse()"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="d-flex align-items-center w-100 mx-md-4">
+      <app-file-search   />
+      <div class="d-flex align-items-center">
+        <app-theme-switch class="me-3" />
+        <app-profile-dropdown class="ms-md-1" />
+      </div>
+    </div>
+    }
+  </div>
+</nav>

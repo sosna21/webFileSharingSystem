@@ -1,0 +1,19 @@
+<div
+  class="drop-overlay"
+  [class]="{
+    'invalid-drop': !canWriteToDragTarget(),
+    'table-drop-hover': isHoverTargetATable(),
+  }"
+>
+  <div class="drop-overlay-text">
+    @if (!canWriteToDragTarget() && isHoverTargetATable()) {
+      You can't upload files here 😕
+    } @else if (!canWriteToDragTarget()) {
+      You can't upload files to “{{ dragTarget()?.name }}” 😕
+    } @else if (isHoverTargetATable()) {
+      Upload {{ dragPayloadNb() }} file(s) here
+    } @else {
+      Upload {{ dragPayloadNb() }} file(s) to “{{ dragTarget()?.name }}”
+    }
+  </div>
+</div>

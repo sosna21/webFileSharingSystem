@@ -1,0 +1,63 @@
+<div class="modal-header bg-primary-subtle d-flex">
+  <h4 class="modal-title">{{ title() }}</h4>
+
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss()"
+  ></button>
+</div>
+
+<div class="modal-body">
+  <div class="mb-3 text-center">
+    <label class="text-start w-100">Selected date</label>
+    <input
+      class="form-control"
+      placeholder="dd/MM/yyyy"
+      name="dp"
+      ngbDatepicker
+      [(ngModel)]="linkedDate"
+      (ngModelChange)="c2.valid ? updateLinkedDate($event) : null"
+      #c2="ngModel"
+      [minDate]="minDate()!"
+      [maxDate]="maxDate()!"
+    />
+    @if (c2.invalid) { @if ("minDate" in c2.control.errors?.["ngbDate"]) {
+    <div class="text-danger small">The selected date is out of range</div>
+    } @else {
+    <div class="text-danger small">Invalid date format</div>
+    } }
+
+    <div class="d-flex justify-content-around align-items-center">
+      <ngb-datepicker
+        [startDate]="date()!"
+        [(ngModel)]="date"
+        class="mt-3"
+        [minDate]="minDate()!"
+        [maxDate]="maxDate()!"
+      />
+      @if(pickTime()) {
+      <ngb-timepicker [(ngModel)]="time" [spinners]="true"></ngb-timepicker>
+      }
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      (click)="activeModal.dismiss()"
+    >
+      {{ cancelText() }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-success w-25"
+      ngbAutofocus
+      (click)="confirm()"
+    >
+      {{ confirmText() }}
+    </button>
+  </div>
+</div>

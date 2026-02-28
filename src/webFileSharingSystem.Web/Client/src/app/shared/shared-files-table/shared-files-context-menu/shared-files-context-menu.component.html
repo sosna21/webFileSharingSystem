@@ -1,0 +1,56 @@
+<div ngbDropdown container="body" #menu="ngbDropdown" [autoClose]="'outside'">
+  <div
+    class="position-fixed"
+    ngbDropdownToggle
+    [ngStyle]="{ left: `${position().x}px`, top: `${position().y}px` }"
+  ></div>
+
+  <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
+    @let selectedFile = selectedFiles()[0];
+    @if (showOpenFolder()) {
+      <button
+        ngbDropdownItem
+        (click)="openFolder.emit(selectedFile); menu.close()"
+      >
+        <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
+      </button>
+    }
+
+    <button ngbDropdownItem (click)="downloadClicked(); menu.close()">
+      <i class="bi bi-download me-1 text-primary"></i> Download
+    </button>
+
+    <button
+      ngbDropdownItem
+      [disabled]="!canRename()"
+      (click)="rename.emit(selectedFile); menu.close()"
+    >
+      <i class="bi bi-pencil me-1" [class.text-info-emphasis]="canRename()"></i>
+      Rename
+    </button>
+
+    <button ngbDropdownItem (click)="copyClicked(); menu.close()">
+      <i class="bi bi-files me-1 text-warning-emphasis"></i> Copy
+    </button>
+
+    <button
+      ngbDropdownItem
+      [disabled]="!canCut()"
+      (click)="moveClicked(); menu.close()"
+    >
+      <i
+        class="bi bi-folder-symlink me-1"
+        [class.text-warning-emphasis]="canCut()"
+      ></i>
+      Move
+    </button>
+
+    <button
+      ngbDropdownItem
+      [disabled]="!canDelete()"
+      (click)="deleteClicked(); menu.close()"
+    >
+      <i class="bi bi-trash me-1" [class.text-danger]="canDelete()"></i> Delete
+    </button>
+  </div>
+</div>

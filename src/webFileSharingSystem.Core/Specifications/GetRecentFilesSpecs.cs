@@ -6,6 +6,7 @@ namespace webFileSharingSystem.Core.Specifications
     {
         public GetRecentFilesSpecs(int userId, string? searchPhrase) : base(
             file => file.UserId == userId
+                    && file.IsDirectory == false
                     && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
         {
             ApplyOrderByDescending(file => file.LastModified ?? file.Created);
