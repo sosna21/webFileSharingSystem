@@ -7,26 +7,19 @@ import {
   ElementRef,
   inject,
   signal,
-  Signal,
   TrackByFunction,
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
-  NgbProgressbarModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
-import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
-import { AppFile } from '../../core/models/app-file.model';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
-import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../core/services/download.service';
-import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
@@ -41,26 +34,24 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
+import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
 
 @Component({
   selector: 'app-shared-files-table',
   imports: [
     CommonModule,
-    FileToIconPipe,
     NgbTooltipModule,
     NgbDropdownModule,
     TimeagoModule,
     FileSizePipe,
     ClicableIconDirective,
-    FormsModule,
-    SelectFilenameDirective,
     SharedFilesContextMenuComponent,
     DragPreviewComponent,
-    NgbProgressbarModule,
     CdkTableModule,
     RemainigTimePipe,
     UploadOverlayComponent,
     TableContextMenuComponent,
+    FileNameCellComponent,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -117,7 +108,9 @@ export class SharedFilesTableComponent {
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
-  readonly currentDirectoryAccessMode = computed(() => this.fileService.parentBreadcrumb()?.accessMode);
+  readonly currentDirectoryAccessMode = computed(
+    () => this.fileService.parentBreadcrumb()?.accessMode,
+  );
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
     'id',
@@ -193,13 +186,6 @@ export class SharedFilesTableComponent {
     this.selection.onRowMouseUp(row, event);
   }
 
-  isFileUploadCompleted() {
-    // Shared files are always completed for now as we don't upload to shared folders yet?
-    // Or we check if it has status property. SharedFile doesn't have fileStatus.
-    // Assuming true for SharedFile as they are existing files.
-    return true;
-  }
-
   selectFolder(folderId: number) {
     this.fileService.goToFolder(folderId);
   }
@@ -225,17 +211,6 @@ export class SharedFilesTableComponent {
   downloadFiles(files: SharedFile[]) {
     this.downloadService.downloadFilesWithFeedback(files);
   }
-
-  // showShareManagementModal(sharedFile: AppFile) {
-  //   this.modalService.manageSharesModal({
-  //     sharedFile: sharedFile,
-  //     title: `Manage shares for file: '${sharedFile.fileName}'`,
-  //   });
-  // }
-
-  // shareFile(files: AppFile[]) {
-  //   this.shareService.shareFilesWithFeedback(files);
-  // }
 
   contextMenuClick(event: MouseEvent, file: SharedFile) {
     event.preventDefault();
@@ -314,7 +289,7 @@ export class SharedFilesTableComponent {
     this.dragFacade.rowDragStart(
       event,
       file,
-      this.selectedFiles as unknown as Signal<AppFile[]>,
+      this.selectedFiles,
       previewEl,
     );
   }
@@ -355,14 +330,14 @@ export class SharedFilesTableComponent {
   }
 
   // File upload controls
-  stopFilesUpload(files: AppFile[]) {
+  stopFilesUpload(files: SharedFile[]) {
     const uploadingFiles = files.filter(
       (file) => file.progressStatus === ProgressStatus.Started,
     );
     uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
   }
 
-  continueFilesUpload(files: AppFile[]) {
+  continueFilesUpload(files: SharedFile[]) {
     const stoppedFiles = files.filter(
       (file) => file.progressStatus === ProgressStatus.Stopped,
     );
@@ -371,13 +346,13 @@ export class SharedFilesTableComponent {
     );
   }
 
-  // async cancelFilesUpload(files: AppFile[]) {
-  //   const incompleteFiles = files.filter(
-  //     (file) => file.fileStatus === FileStatus.Incomplete
-  //   );
-  //   if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-  //     incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  // }
+  async cancelFilesUpload(files: SharedFile[]) {
+    const incompleteFiles = files.filter(
+      (file) => file.fileStatus === FileStatus.Incomplete
+    );
+    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
+      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
+  }
 
   getFileSize(fileSize: string) {
     return +fileSize.split(' ')[0];

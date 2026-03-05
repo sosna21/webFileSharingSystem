@@ -1,5 +1,5 @@
 import { CdkTableModule } from '@angular/cdk/table';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,19 +12,15 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
-  NgbProgressbarModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
-import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
 import { AppFile } from '../../core/models/app-file.model';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
-import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../core/services/download.service';
 import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
@@ -38,26 +34,23 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
+import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
 
 @Component({
   selector: 'app-user-files-table',
   imports: [
     CommonModule,
-    DecimalPipe,
-    FileToIconPipe,
     NgbTooltipModule,
     NgbDropdownModule,
     TimeagoModule,
     FileSizePipe,
     ClicableIconDirective,
-    FormsModule,
-    SelectFilenameDirective,
     UserFilesContextMenuComponent,
     DragPreviewComponent,
-    NgbProgressbarModule,
     CdkTableModule,
     UploadOverlayComponent,
     TableContextMenuComponent,
+    FileNameCellComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -189,10 +182,6 @@ export class UserFilesTableComponent {
 
   onRowMouseUp(row: AppFile, event: MouseEvent) {
     this.selection.onRowMouseUp(row, event);
-  }
-
-  isFileUploadCompleted(file: AppFile) {
-    return file.fileStatus === FileStatus.Completed;
   }
 
   selectFolder(folderId: number) {
