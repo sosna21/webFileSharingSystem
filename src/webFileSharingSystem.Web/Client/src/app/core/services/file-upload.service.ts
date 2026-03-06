@@ -29,6 +29,8 @@ import { MessageSeverity } from '../models/toast-info.model';
 import { UploadFileInfo } from '../models/upload-file-info.model';
 import { AppFile } from '../models/app-file.model';
 import { FileService } from './file.service';
+import { BaseFile } from '../models/base-file.model';
+import { SharedFile } from '../models/shared-file.model';
 
 @Injectable()
 export class FileUploadService {
@@ -319,7 +321,7 @@ export class FileUploadService {
     });
   }
 
-  public async resume(file: AppFile, parentId: number | null = null) {
+  public async resume(file: BaseFile, parentId: number | null = null) {
     const fileId = file.id;
     let fileInfo = this.filesInfo[fileId];
     if (!fileInfo) {
@@ -469,7 +471,10 @@ export class FileUploadService {
       mimeType: file.type,
       parentId,
     };
-    return this.http.post<AppFile>(`${environment.apiUrl}/Upload/Start`, data);
+    return this.http.post<AppFile | SharedFile>(
+      `${environment.apiUrl}/Upload/Start`,
+      data,
+    );
   }
 
   private completeFileUpload(fileId: number) {

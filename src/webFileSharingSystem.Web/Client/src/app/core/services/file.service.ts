@@ -126,7 +126,6 @@ export class FileService {
         ?.items.map((file) => ({
           ...file,
           progressStatus: ProgressStatus.Stopped,
-          fileStatus: FileStatus.Completed,
         }))
         .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? [],
   );
@@ -668,13 +667,23 @@ export class FileService {
       });
   }
 
-  addFileIfNotExists(file: AppFile) {
-    if (this.userFiles().find((f) => f.id === file.id)) return;
-    this.userFiles.update((files) => [...files, file]);
+  addFileIfNotExists(file: AppFile | SharedFile) {
+    if (this.mode() === 'GetSharedWithMe') {
+      const fileToAdd = file as SharedFile;
+      if (this.sharedFiles().find((f) => f.id === file.id)) return;
+      this.sharedFiles.update((files) => [...files, fileToAdd]);
+    } else {
+      const fileToAdd = file as AppFile;
+      if (this.userFiles().find((f) => f.id === file.id)) return;
+      this.userFiles.update((files) => [...files, fileToAdd]);
+    }
   }
 
   completeUploadFile(fileId: number): void {
-    this.userFiles.update((files) =>
+    const currentFilesSignal =
+      this.mode() === 'GetSharedWithMe' ? this.sharedFiles : this.userFiles;
+
+    currentFilesSignal.update((files: any[]) =>
       files.map((file) =>
         file.id === fileId
           ? { ...file, fileStatus: FileStatus.Completed }
@@ -705,7 +714,9 @@ export class FileService {
   }
 
   updateFileUploadProgress(uploadProgressInfo: UploadProgressInfo) {
-    this.userFiles.update((files) =>
+    const currentFilesSignal =
+      this.mode() === 'GetSharedWithMe' ? this.sharedFiles : this.userFiles;
+    currentFilesSignal.update((files: any[]) =>
       files.map((file) =>
         uploadProgressInfo.fileId === file.id
           ? {
