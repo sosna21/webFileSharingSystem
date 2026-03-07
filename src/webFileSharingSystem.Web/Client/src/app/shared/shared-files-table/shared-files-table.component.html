@@ -64,18 +64,11 @@
           *cdkCellDef="let file"
           class="d-table-cell align-middle text-center"
         >
-          @if (file.fileStatus === FileStatus.Incomplete) {
-            <i
-              class="bi bi-x-octagon text-danger"
-              style="-webkit-text-stroke: 1px; font-size: large"
-              (click)="cancelFilesUpload([file])"
-              appClicableIcon
-              ngbTooltip="Cancel upload"
-              [openDelay]="300"
-            ></i>
-          } @else if (isLoading(file.id)) {
-            <span class="spinner-border spinner-border-sm"></span>
-          }
+          <app-row-selector-cell
+            [file]="file"
+            [isLoading]="isLoading(file.id)"
+            (cancelFilesUpload)="cancelFilesUpload($event)"
+          />
         </td>
       </ng-container>
 
@@ -113,9 +106,10 @@
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.sharedUserName }}
-          </div>
+          <app-shared-user-name-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -135,10 +129,12 @@
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i class="bi" [class]="getAccessModeIconClass(file.accessMode)"></i>
-            {{ getAccessModeName(file.accessMode) }}
-          </div>
+          <app-access-mode-cell
+            [file]="file"
+            [accessModeName]="getAccessModeName(file.accessMode)"
+            [accessModeIconClass]="getAccessModeIconClass(file.accessMode)"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -148,16 +144,13 @@
           Actions
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i
-              #icon
-              appClicableIcon
-              class="bi bi-three-dots fs-5"
-              (click)="actionIconClick($event, icon, file)"
-              ngbTooltip="Show more actions"
-              [openDelay]="300"
-            ></i>
-          </div>
+          <app-actions-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (actionIconClick)="
+              actionIconClick($event.event, $event.icon, $event.file)
+            "
+          />
         </td>
       </ng-container>
 
@@ -167,9 +160,10 @@
           Size
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.size | fileSize }}
-          </div>
+          <app-size-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -179,9 +173,10 @@
           Valid Until
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.validUntil | remainigTime }}
-          </div>
+          <app-valid-until-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 

@@ -1,0 +1,17 @@
+<i
+  appClicableIcon
+  (click)="
+    file().isShared ? onShowShareManagementModal(file()) : onShareFile(file())
+  "
+  [disabled]="file().fileStatus === FileStatus.Incomplete"
+  class="bi bi-share-fill fs-5"
+  [class]="file().isShared ? 'text-primary' : 'text-secondary'"
+  [ngbTooltip]="
+    file().fileStatus === FileStatus.Incomplete
+      ? undefined
+      : file().isShared
+        ? 'Manage shares'
+        : 'Share file'
+  "
+  [openDelay]="300"
+></i>

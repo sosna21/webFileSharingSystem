@@ -1,12 +1,25 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  input,
+  output,
+} from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgbTooltipModule, NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
+import {
+  NgbTooltipModule,
+  NgbProgressbarModule,
+} from '@ng-bootstrap/ng-bootstrap';
 import { FileToIconPipe } from '../../../core/pipes/file-to-icon.pipe';
 import { FileSizePipe } from '../../../core/pipes/file-size.pipe';
-import { BaseFile, FileStatus, ProgressStatus } from '../../../core/models/base-file.model';
+import {
+  BaseFile,
+  FileStatus,
+  ProgressStatus,
+} from '../../../core/models/base-file.model';
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
+import { BaseCellDirective } from '../base-cell.directive';
 
 @Component({
   selector: 'app-file-name-cell',
@@ -19,18 +32,18 @@ import { SelectFilenameDirective } from '../../../core/directives/select-filenam
     FileToIconPipe,
     FileSizePipe,
     ClicableIconDirective,
-    SelectFilenameDirective
+    SelectFilenameDirective,
   ],
   templateUrl: './file-name-cell.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FileNameCellComponent<T extends BaseFile = BaseFile> {
-  file = input.required<T>();
+export class FileNameCellComponent<
+  T extends BaseFile,
+> extends BaseCellDirective<T> {
   editingId = input<number | null>(null);
 
-  contextMenuClick = output<{ event: MouseEvent, file: T }>();
-  rename = output<{ file: T, newName: string }>();
-  fileRenameKeyDown = output<{ event: KeyboardEvent, file: T }>();
+  rename = output<{ file: T; newName: string }>();
+  fileRenameKeyDown = output<{ event: KeyboardEvent; file: T }>();
   stopFilesUpload = output<T[]>();
   continueFilesUpload = output<T[]>();
 
@@ -39,10 +52,6 @@ export class FileNameCellComponent<T extends BaseFile = BaseFile> {
 
   getFileSize(sizeStr: string): number {
     return +(sizeStr.split(' ')[0] ?? 0);
-  }
-
-  onContextMenuClick(event: MouseEvent, file: T): void {
-    this.contextMenuClick.emit({ event, file });
   }
 
   onRename(file: T, newName: string): void {

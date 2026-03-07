@@ -1,0 +1,18 @@
+<i
+  #favIcon
+  appClicableIcon
+  [disabled]="file().fileStatus === FileStatus.Incomplete"
+  class="bi fs-5"
+  [class]="
+    file().isFavourite ? 'bi-star-fill text-warning' : 'bi-star text-secondary'
+  "
+  (click)="onChangeFavourite(file(), !file().isFavourite)"
+  [ngbTooltip]="
+    file().fileStatus === FileStatus.Incomplete
+      ? undefined
+      : file().isFavourite
+        ? 'Remove from favourites'
+        : 'Add to favourites'
+  "
+  [openDelay]="300"
+></i>

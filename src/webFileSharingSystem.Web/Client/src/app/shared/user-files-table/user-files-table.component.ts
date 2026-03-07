@@ -18,9 +18,7 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
-import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
 import { AppFile } from '../../core/models/app-file.model';
-import { FileSizePipe } from '../../core/pipes/file-size.pipe';
 import { DownloadService } from '../../core/services/download.service';
 import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
@@ -35,6 +33,12 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
 import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
+import { RowSelectorCellComponent } from '../table-cells/row-selector-cell/row-selector-cell.component';
+import { ActionsCellComponent } from '../table-cells/actions-cell/actions-cell.component';
+import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component';
+import { FavouriteCellComponent } from '../table-cells/favourite-cell/favourite-cell.component';
+import { LastModificationCellComponent } from '../table-cells/last-modification-cell/last-modification-cell.component';
+import { ShareCellComponent } from '../table-cells/share-cell/share-cell.component';
 
 @Component({
   selector: 'app-user-files-table',
@@ -43,14 +47,18 @@ import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-c
     NgbTooltipModule,
     NgbDropdownModule,
     TimeagoModule,
-    FileSizePipe,
-    ClicableIconDirective,
     UserFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,
     UploadOverlayComponent,
     TableContextMenuComponent,
     FileNameCellComponent,
+    RowSelectorCellComponent,
+    ActionsCellComponent,
+    SizeCellComponent,
+    FavouriteCellComponent,
+    ShareCellComponent,
+    LastModificationCellComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',

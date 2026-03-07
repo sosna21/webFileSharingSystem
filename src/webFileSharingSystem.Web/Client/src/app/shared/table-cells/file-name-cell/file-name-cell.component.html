@@ -1,85 +1,83 @@
-<div class="d-inline" (contextmenu)="onContextMenuClick($event, file())">
-  @if (file().fileStatus === FileStatus.Completed) {
-    <i class="bi fs-4 me-1" [class]="file() | fileToIcon"></i>
-    @if (editingId() === file().id) {
-      <input
-        appSelectFilename
-        type="text"
-        style="min-width: 85%"
-        [ngModel]="file().fileName"
-        [placeholder]="file().fileName"
-        (blur)="onRename(file(), $any($event.target).value)"
-        (keydown)="onFileRenameKeyDown($event, file())"
-      />
-    } @else {
-      {{ file().fileName }}
-    }
+@if (file().fileStatus === FileStatus.Completed) {
+  <i class="bi fs-4 me-1" [class]="file() | fileToIcon"></i>
+  @if (editingId() === file().id) {
+    <input
+      appSelectFilename
+      type="text"
+      style="min-width: 85%"
+      [ngModel]="file().fileName"
+      [placeholder]="file().fileName"
+      (blur)="onRename(file(), $any($event.target).value)"
+      (keydown)="onFileRenameKeyDown($event, file())"
+    />
   } @else {
-    <div class="d-flex align-items-center gap-3">
-      <!-- File icon -->
-      <i class="bi fs-4" [class]="file() | fileToIcon"></i>
+    {{ file().fileName }}
+  }
+} @else {
+  <div class="d-flex align-items-center gap-3">
+    <!-- File icon -->
+    <i class="bi fs-4" [class]="file() | fileToIcon"></i>
 
-      <!-- File details (name + progress bar) -->
-      <div class="flex-grow-1">
-        <div class="text-truncate">
-          {{ file().fileName }}
-          <span
-            [class]="
-              'small ' +
-              (file().progressStatus === ProgressStatus.Started
-                ? 'text-muted'
-                : file().progressStatus === ProgressStatus.Stopping
-                  ? 'text-warning-emphasis'
-                  : 'text-danger-emphasis')
-            "
-            >({{
-              file().progressStatus === ProgressStatus.Started
-                ? "Uploading"
-                : file().progressStatus === ProgressStatus.Stopping
-                  ? "Stopping"
-                  : "Stopped"
-            }}:
-            {{
-              getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
-                | number: "1.2-2"
-            }}/{{ file().size | fileSize }})</span
-          >
-        </div>
-        <div class="d-flex">
-          <ngb-progressbar
-            [value]="(file().uploadProgress ?? 0) * 100"
-            [showValue]="true"
-            [type]="
-              file().progressStatus === ProgressStatus.Started
-                ? 'primary'
-                : file().progressStatus === ProgressStatus.Stopping
-                  ? 'warning'
-                  : 'secondary'
-            "
-            [animated]="file().progressStatus === ProgressStatus.Stopping"
-            [striped]="file().progressStatus !== ProgressStatus.Stopped"
-            class="mt-1 w-50 border border-secondary"
-          ></ngb-progressbar>
-          <div class="d-flex ms-2 align-items-start" style="margin-top: -5px">
-            <i
-              appClicableIcon
-              class="bi bi-pause-circle"
-              [disabled]="file().progressStatus !== ProgressStatus.Started"
-              (click)="onStopFilesUpload([file()])"
-              ngbTooltip="Pause upload"
-              [openDelay]="300"
-            ></i>
-            <i
-              appClicableIcon
-              class="bi bi-play-circle-fill"
-              [disabled]="file().progressStatus === ProgressStatus.Started"
-              (click)="onContinueFilesUpload([file()])"
-              ngbTooltip="Resume upload"
-              [openDelay]="300"
-            ></i>
-          </div>
+    <!-- File details (name + progress bar) -->
+    <div class="flex-grow-1">
+      <div class="text-truncate">
+        {{ file().fileName }}
+        <span
+          [class]="
+            'small ' +
+            (file().progressStatus === ProgressStatus.Started
+              ? 'text-muted'
+              : file().progressStatus === ProgressStatus.Stopping
+                ? 'text-warning-emphasis'
+                : 'text-danger-emphasis')
+          "
+          >({{
+            file().progressStatus === ProgressStatus.Started
+              ? "Uploading"
+              : file().progressStatus === ProgressStatus.Stopping
+                ? "Stopping"
+                : "Stopped"
+          }}:
+          {{
+            getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
+              | number: "1.2-2"
+          }}/{{ file().size | fileSize }})</span
+        >
+      </div>
+      <div class="d-flex">
+        <ngb-progressbar
+          [value]="(file().uploadProgress ?? 0) * 100"
+          [showValue]="true"
+          [type]="
+            file().progressStatus === ProgressStatus.Started
+              ? 'primary'
+              : file().progressStatus === ProgressStatus.Stopping
+                ? 'warning'
+                : 'secondary'
+          "
+          [animated]="file().progressStatus === ProgressStatus.Stopping"
+          [striped]="file().progressStatus !== ProgressStatus.Stopped"
+          class="mt-1 w-50 border border-secondary"
+        ></ngb-progressbar>
+        <div class="d-flex ms-2 align-items-start" style="margin-top: -5px">
+          <i
+            appClicableIcon
+            class="bi bi-pause-circle"
+            [disabled]="file().progressStatus !== ProgressStatus.Started"
+            (click)="onStopFilesUpload([file()])"
+            ngbTooltip="Pause upload"
+            [openDelay]="300"
+          ></i>
+          <i
+            appClicableIcon
+            class="bi bi-play-circle-fill"
+            [disabled]="file().progressStatus === ProgressStatus.Started"
+            (click)="onContinueFilesUpload([file()])"
+            ngbTooltip="Resume upload"
+            [openDelay]="300"
+          ></i>
         </div>
       </div>
     </div>
-  }
-</div>
+  </div>
+}

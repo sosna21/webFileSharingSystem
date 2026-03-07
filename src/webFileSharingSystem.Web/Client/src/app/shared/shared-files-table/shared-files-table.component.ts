@@ -17,8 +17,6 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
-import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
-import { FileSizePipe } from '../../core/pipes/file-size.pipe';
 import { DownloadService } from '../../core/services/download.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
@@ -28,13 +26,18 @@ import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { SharedFile } from '../../core/models/shared-file.model';
 import { SharedFilesContextMenuComponent } from './shared-files-context-menu/shared-files-context-menu.component';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
-import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
 import { FileService } from '../../core/services/file.service';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
+import { RowSelectorCellComponent } from '../table-cells/row-selector-cell/row-selector-cell.component';
+import { ActionsCellComponent } from '../table-cells/actions-cell/actions-cell.component';
+import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component';
+import { ValidUntilCellComponent } from '../table-cells/valid-until-cell/valid-until-cell.component';
+import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cell/shared-user-name-cell.component';
+import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -43,15 +46,18 @@ import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-c
     NgbTooltipModule,
     NgbDropdownModule,
     TimeagoModule,
-    FileSizePipe,
-    ClicableIconDirective,
     SharedFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,
-    RemainigTimePipe,
     UploadOverlayComponent,
     TableContextMenuComponent,
     FileNameCellComponent,
+    RowSelectorCellComponent,
+    ActionsCellComponent,
+    SizeCellComponent,
+    ValidUntilCellComponent,
+    SharedUserNameCellComponent,
+    AccessModeCellComponent,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -286,12 +292,7 @@ export class SharedFilesTableComponent {
   onRowDragStart(event: DragEvent, file: SharedFile) {
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
-    this.dragFacade.rowDragStart(
-      event,
-      file,
-      this.selectedFiles,
-      previewEl,
-    );
+    this.dragFacade.rowDragStart(event, file, this.selectedFiles, previewEl);
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {
@@ -348,7 +349,7 @@ export class SharedFilesTableComponent {
 
   async cancelFilesUpload(files: SharedFile[]) {
     const incompleteFiles = files.filter(
-      (file) => file.fileStatus === FileStatus.Incomplete
+      (file) => file.fileStatus === FileStatus.Incomplete,
     );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
