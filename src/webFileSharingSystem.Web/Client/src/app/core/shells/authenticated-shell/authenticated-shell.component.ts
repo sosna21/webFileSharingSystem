@@ -6,6 +6,7 @@ import { DragDropService } from '../../services/drag-drop.service';
 import { FileDragDropService } from '../../services/file-drag-drop.service';
 import { FileShareService } from '../../services/file-share.service';
 import { FileService } from '../../services/file.service';
+import { StorageService } from '../../services/storage.service';
 
 @Component({
   selector: 'app-authenticated-shell',
@@ -17,6 +18,7 @@ import { FileService } from '../../services/file.service';
     FileShareService,
     FileUploadService,
     FileUploadDragDropService,
+    StorageService,
   ],
   template: `<router-outlet />`,
   styles: ``,

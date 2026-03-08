@@ -31,14 +31,14 @@ import {
 } from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
-import { AuthenticationService } from './authentication.service';
+import { StorageService } from './storage.service';
 
 @Injectable()
 export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly router = inject(Router);
   private readonly fileApiService = inject(FileApiService);
-  private readonly auth = inject(AuthenticationService);
+  private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private readonly actionContext = linkedSignal<
@@ -584,7 +584,7 @@ export class FileService {
             );
 
         if (this.mode() !== 'GetSharedWithMe') {
-          this.auth.updateCurrentUserUsedSpace(-file.size);
+          this.storage.updateCurrentUserUsedSpace(-file.size);
         }
       },
       onError: (file, err) => {
@@ -648,7 +648,7 @@ export class FileService {
           }
 
           if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
-            this.auth.updateCurrentUserUsedSpace(
+            this.storage.updateCurrentUserUsedSpace(
               (result as BaseFile[]).reduce((acc, file) => acc + file.size, 0),
             );
           }

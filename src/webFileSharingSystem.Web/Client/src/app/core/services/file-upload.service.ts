@@ -31,6 +31,7 @@ import { AppFile } from '../models/app-file.model';
 import { FileService } from './file.service';
 import { BaseFile } from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
+import { StorageService } from './storage.service';
 
 @Injectable()
 export class FileUploadService {
@@ -38,6 +39,7 @@ export class FileUploadService {
   private readonly numberOfConcurrentChunkUploads = 2;
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthenticationService);
+  private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);
 
@@ -174,7 +176,7 @@ export class FileUploadService {
 
         // Only update used space for new uploads, and not for "Shared with me" folder
         if (this.fileService.mode() !== 'GetSharedWithMe')
-          this.auth.updateCurrentUserUsedSpace(file.size);
+          this.storage.updateCurrentUserUsedSpace(file.size);
 
         this.filesInfo[partial.fileId] = { partial, file };
 
