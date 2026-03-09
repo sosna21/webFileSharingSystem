@@ -253,6 +253,7 @@ export class FileService {
   });
 
   goToFolder(folderId: number | null) {
+    this.searchedPhrase.set('');
     if (folderId === null)
       this.router.navigate(['/disc', this.mapModeToRoute(this.mode())]);
     else
