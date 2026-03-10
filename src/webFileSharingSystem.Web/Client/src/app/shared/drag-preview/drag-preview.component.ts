@@ -4,8 +4,8 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { AppFile } from '../../core/models/app-file.model';
 import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
+import { BaseFile } from '../../core/models/base-file.model';
 
 @Component({
   selector: 'app-drag-preview',
@@ -15,8 +15,7 @@ import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DragPreviewComponent {
-  files = input.required<AppFile[]>();
-  // targetDirectory = input.required<AppFile | null>();
+  files = input.required<BaseFile[]>();
 
   fileNames = computed(() => this.files().map((file) => file.fileName));
   areSameMimeType = computed(() => {

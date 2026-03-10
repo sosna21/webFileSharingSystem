@@ -38,6 +38,8 @@ import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component'
 import { ValidUntilCellComponent } from '../table-cells/valid-until-cell/valid-until-cell.component';
 import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cell/shared-user-name-cell.component';
 import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
+import { ToastService } from '../../core/services/toast.service';
+import { MessageSeverity } from '../../core/models/toast-info.model';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -69,40 +71,6 @@ import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-
   },
 })
 export class SharedFilesTableComponent {
-  refresh() {
-    location.reload();
-  }
-
-  pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
-  }
-
-  uploadFiles($event: File[]) {
-    const filesWithPath: { file: File; path: string }[] = $event.map(
-      (file) => ({
-        file: file,
-        path: '',
-      }),
-    );
-    this.uploadService
-      .uploadFiles([], filesWithPath, this.fileService.parentId())
-      .subscribe();
-  }
-
-  async createFolder() {
-    const newDirName = await this.modalService.getNewDirectoryName({
-      startName: generateUniqueDirName(this.fileService.names()),
-      blacklistedNames: this.fileService.names(),
-    });
-
-    if (!newDirName) return;
-
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
-  }
-
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
@@ -111,6 +79,7 @@ export class SharedFilesTableComponent {
   private readonly selection = inject(SelectionService<SharedFile>);
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly modalService = inject(ModalService);
+  private readonly toast = inject(ToastService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -137,6 +106,10 @@ export class SharedFilesTableComponent {
       this.files().length > 0 &&
       this.selectedIds().size === this.files().length,
   );
+  movableSelectedFiles = computed(() =>
+    (this.selectedFiles() as SharedFile[]).filter((file) => this.canMove(file)),
+  );
+  canMoveSelected = computed(() => this.movableSelectedFiles().length > 0);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
@@ -248,6 +221,40 @@ export class SharedFilesTableComponent {
     this.openContextMenu(position);
   }
 
+  refresh() {
+    location.reload();
+  }
+
+  pasteFiles() {
+    this.fileService.pasteFilesWithFeedback();
+  }
+
+  uploadFiles($event: File[]) {
+    const filesWithPath: { file: File; path: string }[] = $event.map(
+      (file) => ({
+        file: file,
+        path: '',
+      }),
+    );
+    this.uploadService
+      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .subscribe();
+  }
+
+  async createFolder() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(
+      newDirName,
+      this.selection.selectedIds.set,
+    );
+  }
+
   private openContextMenu(position: { x: number; y: number }) {
     this.contextMenu()?.close();
     this.tableContextMenu()?.close();
@@ -292,7 +299,21 @@ export class SharedFilesTableComponent {
   onRowDragStart(event: DragEvent, file: SharedFile) {
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
-    this.dragFacade.rowDragStart(event, file, this.selectedFiles, previewEl);
+
+    this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
+
+    // Unselect files that cannot be moved to avoid confusion during drag
+    if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
+      this.toast.show(
+        'File move',
+        'Unsellected files that cannot be moved',
+        MessageSeverity.info,
+      );
+
+      this.selectedIds.set(
+        new Set(this.movableSelectedFiles().map((f) => f.id)),
+      );
+    }
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {
@@ -308,7 +329,6 @@ export class SharedFilesTableComponent {
   }
 
   async onRowDrop(event: DragEvent, targetFile: SharedFile) {
-    //this.fileService.canPasteToDirectory(targetFile.id); //TODO check if can drop
     if (!this.canBeTargetDirectory(targetFile)) return;
 
     await this.dragFacade.rowDrop(event);
@@ -383,5 +403,12 @@ export class SharedFilesTableComponent {
       default:
         return 'bi-eye';
     }
+  }
+
+  canMove(file: SharedFile): boolean {
+    return (
+      file.fileStatus === FileStatus.Completed &&
+      file.accessMode! >= ShareAccessMode.ReadWrite
+    );
   }
 }

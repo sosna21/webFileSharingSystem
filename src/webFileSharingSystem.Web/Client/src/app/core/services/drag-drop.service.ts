@@ -1,4 +1,4 @@
-import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { FileDragDropService } from './file-drag-drop.service';
 import { FileUploadDragDropService } from './file-upload-drag-drop.service';
 import { DragDropUtils } from '../utils/drag-drop-utils';
@@ -84,20 +84,29 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
   rowDragStart(
     event: DragEvent,
     file: BaseFile,
-    selectedFiles: Signal<BaseFile[]>,
+    selectedFiles: BaseFile[],
     previewEl: HTMLElement | null,
   ) {
     if (
-      !selectedFiles().find((f) => f.id === file.id) ||
+      !selectedFiles.find((f) => f.id === file.id) ||
       event.ctrlKey ||
       event.shiftKey
     ) {
       event.preventDefault();
       return;
     }
-    const dragged = selectedFiles();
-    this.internal.startDrag(dragged);
-    event.dataTransfer?.setData('application/json', JSON.stringify(dragged));
+
+    const filesToMove = selectedFiles.filter(
+      (f) =>
+        f.accessMode === undefined || f.accessMode >= ShareAccessMode.ReadWrite,
+    );
+
+    if (filesToMove.length === 0) return;
+    this.internal.startDrag(filesToMove);
+    event.dataTransfer?.setData(
+      'application/json',
+      JSON.stringify(filesToMove),
+    );
     event.dataTransfer && (event.dataTransfer.effectAllowed = 'move');
     if (previewEl) {
       event.dataTransfer?.setDragImage(previewEl, 0, 0);
@@ -188,6 +197,8 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
 
       // Internal move
       if (this.internal.allowAppFiles(event)) {
+        if (this.internal.draggedFiles().some((f) => f.id === destinationId))
+          return; // Prevent moving into itself
         await this.internal.moveDraggedFiles(
           event,
           destinationId ?? -1,

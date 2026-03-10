@@ -204,9 +204,7 @@
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
         [class.selectable]="file.isDirectory"
         [draggable]="
-          file.fileStatus === FileStatus.Completed &&
-          !isLoading(file.id) &&
-          !isEditing(file.id)
+          canMoveSelected() && !isLoading(file.id) && !isEditing(file.id)
         "
         (dragstart)="onRowDragStart($event, file)"
         (dragleave)="onRowDragLeave($event, file)"
@@ -247,5 +245,5 @@
 <!-- Do not remove this -->
 <!-- Invisible drag preview component, necessary for drag preview view snapshot -->
 <div style="position: absolute; top: -9999px; left: -9999px">
-  <app-drag-preview [files]="selectedFiles()" />
+  <app-drag-preview [files]="movableSelectedFiles()" />
 </div>

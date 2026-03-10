@@ -70,40 +70,6 @@ import { ShareCellComponent } from '../table-cells/share-cell/share-cell.compone
   },
 })
 export class UserFilesTableComponent {
-  refresh() {
-    location.reload();
-  }
-
-  pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
-  }
-
-  uploadFiles($event: File[]) {
-    const filesWithPath: { file: File; path: string }[] = $event.map(
-      (file) => ({
-        file: file,
-        path: '',
-      }),
-    );
-    this.uploadService
-      .uploadFiles([], filesWithPath, this.fileService.parentId())
-      .subscribe();
-  }
-
-  async createFolder() {
-    const newDirName = await this.modalService.getNewDirectoryName({
-      startName: generateUniqueDirName(this.fileService.names()),
-      blacklistedNames: this.fileService.names(),
-    });
-
-    if (!newDirName) return;
-
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
-  }
-
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
@@ -273,6 +239,40 @@ export class UserFilesTableComponent {
     this.openContextMenu(position);
   }
 
+  refresh() {
+    location.reload();
+  }
+
+  pasteFiles() {
+    this.fileService.pasteFilesWithFeedback();
+  }
+
+  uploadFiles($event: File[]) {
+    const filesWithPath: { file: File; path: string }[] = $event.map(
+      (file) => ({
+        file: file,
+        path: '',
+      }),
+    );
+    this.uploadService
+      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .subscribe();
+  }
+
+  async createFolder() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(
+      newDirName,
+      this.selection.selectedIds.set,
+    );
+  }
+
   private openContextMenu(position: { x: number; y: number }) {
     this.contextMenu()?.close();
     this.tableContextMenu()?.close();
@@ -317,7 +317,7 @@ export class UserFilesTableComponent {
   onRowDragStart(event: DragEvent, file: AppFile) {
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
-    this.dragFacade.rowDragStart(event, file, this.selectedFiles, previewEl);
+    this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
   }
 
   onRowDragEnter(event: DragEvent, row: AppFile) {
