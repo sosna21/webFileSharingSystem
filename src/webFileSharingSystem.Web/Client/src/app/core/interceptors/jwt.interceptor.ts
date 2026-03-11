@@ -11,7 +11,6 @@ import {
   BehaviorSubject,
   catchError,
   filter,
-  finalize,
   Observable,
   switchMap,
   take,
@@ -39,16 +38,6 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
         if (jwtService.isTokenExpired()) {
           return handle401Error(req, next, authenticationService, router);
-        } else {
-          authenticationService
-            .logout()
-            .pipe(
-              finalize(() => {
-                router.navigate(['/login']);
-              }),
-            )
-            .subscribe();
-          return throwError(() => error);
         }
       }
 
