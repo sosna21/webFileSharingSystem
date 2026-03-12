@@ -8,6 +8,7 @@ namespace webFileSharingSystem.Core.Entities
     public class File : AuditableEntity, IFileBaseEntity
     {
         public int UserId { get; set; }
+        public virtual ApplicationUser User { get; set; } = null!;
         public int? ParentId { get; set; }
         public virtual File? Parent { get; set; }
         public virtual ICollection<File> Children { get; set; } = new List<File>();
@@ -20,5 +21,6 @@ namespace webFileSharingSystem.Core.Entities
         public Guid? FileGuid { get; set; }
         public FileStatus FileStatus { get; set; }
         public PartialFileInfo? PartialFileInfo { get; set; }
+        public virtual ApplicationUser Creator { get; set; } = null!;
     }
 }

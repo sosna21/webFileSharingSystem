@@ -14,6 +14,8 @@ public sealed class SharedFileSqlRow : BaseEntity, IFileBaseEntity
     public bool IsDirectory { get; set; }
     public Guid? FileGuid { get; set; }
     public int FileCreatedBy { get; set; }
+    public string? FileCreatedByUserName { get; set; }
+    public string? FileCreatedByEmail { get; set; }
     public FileStatus FileStatus { get; set; }
     
     public ShareAccessMode AccessMode { get; set; }

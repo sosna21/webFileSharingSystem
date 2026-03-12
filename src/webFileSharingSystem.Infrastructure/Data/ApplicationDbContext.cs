@@ -87,18 +87,26 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .HasOne<IdentityUser>()
                 .WithOne()
                 .HasForeignKey<ApplicationUser>(e => e.IdentityUserId);
+            
+            builder.Entity<File>()
+                .HasOne(f => f.User)
+                .WithMany(u => u.Files)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<File>()
-                .HasOne<ApplicationUser>()
-                .WithMany(e => e.Files)
-                .HasForeignKey(e => e.UserId);
+                .HasOne(f => f.Creator)
+                .WithMany()
+                .HasForeignKey(f => f.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            builder.Entity<File>()
+                .HasOne(f => f.Parent)
+                .WithMany(f => f.Children)
+                .HasForeignKey(f => f.ParentId);
 
             builder.Entity<File>()
-                .HasOne(e => e.Parent)
-                .WithMany(e => e.Children)
-                .HasForeignKey(e => e.ParentId);
-
-            builder.Entity<File>().HasIndex(t => t.FileGuid);
+                .HasIndex(f => f.FileGuid);
 
             builder.Entity<PartialFileInfo>()
                 .HasOne<File>()
