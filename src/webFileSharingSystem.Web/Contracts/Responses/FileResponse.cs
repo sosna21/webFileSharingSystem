@@ -7,7 +7,7 @@ namespace webFileSharingSystem.Web.Contracts.Responses
     {
         public int Id { get; set; }
         public int? ParentId { get; set; }
-        public string FileName { get; set; } = null!;
+        public required string FileName { get; set; }
         public string? MimeType { get; set; }
         public ulong Size { get; set; } 
         public bool IsFavourite { get; set;}
@@ -17,5 +17,7 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public FileStatus FileStatus { get; set; }
         public PartialFileInfo? PartialFileInfo { get; set; }
         public double? UploadProgress { get; set; }
+        public int CreatedBy { get; set; }
+        public required string CreatedByUserName { get; set; }
     }
 }

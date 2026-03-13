@@ -39,6 +39,7 @@ import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component'
 import { FavouriteCellComponent } from '../table-cells/favourite-cell/favourite-cell.component';
 import { LastModificationCellComponent } from '../table-cells/last-modification-cell/last-modification-cell.component';
 import { ShareCellComponent } from '../table-cells/share-cell/share-cell.component';
+import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
 
 @Component({
   selector: 'app-user-files-table',
@@ -59,6 +60,7 @@ import { ShareCellComponent } from '../table-cells/share-cell/share-cell.compone
     FavouriteCellComponent,
     ShareCellComponent,
     LastModificationCellComponent,
+    CreatedByCellComponentt,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -85,13 +87,13 @@ export class UserFilesTableComponent {
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([
-    'id',
     'rowSelector',
     'fileName',
     'favourite',
     'share',
     'actions',
     'size',
+    'createdByUserName',
     'lastModification',
   ]);
   files = this.fileService.userFiles;

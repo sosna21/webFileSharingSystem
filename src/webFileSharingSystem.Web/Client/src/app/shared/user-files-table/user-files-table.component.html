@@ -167,11 +167,34 @@
 
       <!-- Size  Definition -->
       <ng-container cdkColumnDef="size">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 6%">
+        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 5%">
           Size
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
           <app-size-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
+        </td>
+      </ng-container>
+
+      <!-- Created By Definition -->
+      <ng-container cdkColumnDef="createdByUserName">
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          class="d-none d-sm-table-cell"
+          style="width: 9%"
+        >
+          Created By
+        </th>
+        <td
+          cdk-cell
+          *cdkCellDef="let file"
+          class="d-none d-sm-table-cell align-middle"
+        >
+          <app-created-by-cell
             [file]="file"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
           />

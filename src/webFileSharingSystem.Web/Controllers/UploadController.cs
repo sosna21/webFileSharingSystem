@@ -135,7 +135,9 @@ namespace webFileSharingSystem.Web.Controllers
                 ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
-                UploadProgress = 0
+                UploadProgress = 0,
+                CreatedBy = file.CreatedBy,
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!
             };
         }
 
@@ -156,6 +158,8 @@ namespace webFileSharingSystem.Web.Controllers
                 ValidUntil = ctx.ValidUntil is not null
                     ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
                     : null,
+                CreatedBy = file.CreatedBy,
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0

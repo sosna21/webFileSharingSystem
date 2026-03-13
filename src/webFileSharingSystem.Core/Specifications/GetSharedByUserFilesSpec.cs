@@ -11,6 +11,7 @@ public class GetSharedByUserFilesSpec : BaseSpecification<Share, File>
             (string.IsNullOrEmpty(search) || s.File.FileName.Contains(search)))
     {
         AddInclude(s => s.File);
+        AddInclude(s => s.File.Creator);
         ApplySelector(s => s.File);
         ApplyDistinct();
         ApplyOrderByDescending(s => s.File.Id);

@@ -8,5 +8,8 @@ import { BaseCellDirective } from '../base-cell.directive';
   imports: [CommonModule],
   templateUrl: './shared-user-name-cell.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'text-nowrap',
+  },
 })
 export class SharedUserNameCellComponent extends BaseCellDirective<SharedFile> {}

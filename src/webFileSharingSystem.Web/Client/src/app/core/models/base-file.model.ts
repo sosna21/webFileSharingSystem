@@ -19,6 +19,9 @@ export interface BaseFile {
   // need them in app file model to avoid casting
   accessMode?: ShareAccessMode;
   validUntil?: string;
+
+  createdBy: number;
+  createdByUserName: string;
 }
 
 export enum FileStatus {

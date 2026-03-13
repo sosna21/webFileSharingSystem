@@ -253,7 +253,9 @@ namespace webFileSharingSystem.Web.Controllers
                 FileStatus = file.FileStatus,
                 PartialFileInfo =  _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
-                    _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+                    _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo),
+                CreatedBy = file.CreatedBy,
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!
             };
         }
         
@@ -280,6 +282,8 @@ namespace webFileSharingSystem.Web.Controllers
                 AccessMode = sharedFile.AccessMode,
                 ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null,
                 FileStatus = sharedFile.FileStatus,
+                CreatedBy = sharedFile.FileCreatedBy,
+                CreatedByUserName = sharedFile.FileCreatedByUserName ?? sharedFile.FileCreatedByEmail!,
                 PartialFileInfo = partialFileInfo,
                 UploadProgress = CalculateUploadProgress(partialFileInfo)
             };
@@ -302,6 +306,8 @@ namespace webFileSharingSystem.Web.Controllers
                 ValidUntil = ctx.ValidUntil is not null
                     ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
                     : null,
+                CreatedBy = file.CreatedBy,
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0

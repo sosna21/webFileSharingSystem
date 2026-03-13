@@ -90,8 +90,8 @@
         </td>
       </ng-container>
 
-      <!-- Shared User Name Definition -->
-      <ng-container cdkColumnDef="sharedUserName">
+      <!-- Shared User Name / Created By Definition -->
+      <ng-container cdkColumnDef="sharedBy/createdBy">
         <th
           cdk-header-cell
           *cdkHeaderCellDef
@@ -99,17 +99,24 @@
           class="d-none d-md-table-cell"
           style="width: 12%"
         >
-          Shared By
+          {{ currentDirectoryId() ? "Created By" : "Shared By" }}
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <app-shared-user-name-cell
-            [file]="file"
-            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
-          />
+          @if (currentDirectoryId()) {
+            <app-created-by-cell
+              [file]="file"
+              (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            />
+          } @else {
+            <app-shared-user-name-cell
+              [file]="file"
+              (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            />
+          }
         </td>
       </ng-container>
 

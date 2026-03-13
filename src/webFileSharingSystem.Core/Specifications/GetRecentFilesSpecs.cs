@@ -9,6 +9,7 @@ namespace webFileSharingSystem.Core.Specifications
                     && file.IsDirectory == false
                     && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
         {
+            AddInclude(file => file.Creator);
             ApplyOrderByDescending(file => file.LastModified ?? file.Created);
             ApplyTake(30);
         }

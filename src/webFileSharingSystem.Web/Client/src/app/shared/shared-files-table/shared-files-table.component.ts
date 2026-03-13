@@ -40,6 +40,7 @@ import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cel
 import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
 import { ToastService } from '../../core/services/toast.service';
 import { MessageSeverity } from '../../core/models/toast-info.model';
+import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -60,6 +61,7 @@ import { MessageSeverity } from '../../core/models/toast-info.model';
     ValidUntilCellComponent,
     SharedUserNameCellComponent,
     AccessModeCellComponent,
+    CreatedByCellComponentt,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -91,7 +93,7 @@ export class SharedFilesTableComponent {
     'id',
     'rowSelector',
     'fileName',
-    'sharedUserName',
+    'sharedBy/createdBy',
     'accessMode',
     'actions',
     'size',

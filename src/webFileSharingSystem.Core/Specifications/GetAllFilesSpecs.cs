@@ -9,6 +9,7 @@ namespace webFileSharingSystem.Core.Specifications
                && e.ParentId == parentId)
         {
             AddInclude(file => file.PartialFileInfo!);
+            AddInclude(file => file.Creator);
             ApplyOrderBy(file => file.Id);
         }
     }
