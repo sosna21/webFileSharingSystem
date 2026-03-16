@@ -59,24 +59,26 @@
           [striped]="file().progressStatus !== ProgressStatus.Stopped"
           class="mt-1 w-50 border border-secondary"
         ></ngb-progressbar>
-        <div class="d-flex ms-2 align-items-start" style="margin-top: -5px">
-          <i
-            appClicableIcon
-            class="bi bi-pause-circle"
-            [disabled]="file().progressStatus !== ProgressStatus.Started"
-            (click)="onStopFilesUpload([file()])"
-            ngbTooltip="Pause upload"
-            [openDelay]="300"
-          ></i>
-          <i
-            appClicableIcon
-            class="bi bi-play-circle-fill"
-            [disabled]="file().progressStatus === ProgressStatus.Started"
-            (click)="onContinueFilesUpload([file()])"
-            ngbTooltip="Resume upload"
-            [openDelay]="300"
-          ></i>
-        </div>
+        @if (isUserCreatedFile()) {
+          <div class="d-flex ms-2 align-items-start" style="margin-top: -5px">
+            <i
+              appClicableIcon
+              class="bi bi-pause-circle"
+              [disabled]="file().progressStatus !== ProgressStatus.Started"
+              (click)="onStopFilesUpload([file()])"
+              ngbTooltip="Pause upload"
+              [openDelay]="300"
+            ></i>
+            <i
+              appClicableIcon
+              class="bi bi-play-circle-fill"
+              [disabled]="file().progressStatus === ProgressStatus.Started"
+              (click)="onContinueFilesUpload([file()])"
+              ngbTooltip="Resume upload"
+              [openDelay]="300"
+            ></i>
+          </div>
+        }
       </div>
     </div>
   </div>

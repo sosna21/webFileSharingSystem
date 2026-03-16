@@ -32,12 +32,14 @@ import {
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 import { StorageService } from './storage.service';
+import { AuthenticationService } from './authentication.service';
 
 @Injectable()
 export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly router = inject(Router);
   private readonly fileApiService = inject(FileApiService);
+  private readonly authService = inject(AuthenticationService);
   private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
@@ -117,7 +119,21 @@ export class FileService {
           ...file,
           progressStatus: ProgressStatus.Stopped,
         }))
-        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? [],
+        .sort((a, b) => {
+          const currentUserId = this.authService.currentUser()?.id;
+          const aIsOther =
+            a.createdBy !== currentUserId &&
+            a.fileStatus === FileStatus.Incomplete;
+          const bIsOther =
+            b.createdBy !== currentUserId &&
+            b.fileStatus === FileStatus.Incomplete;
+          if (aIsOther !== bIsOther) {
+            // Still uploading files, not created by user go first
+            return aIsOther ? -1 : 1;
+          }
+          // Otherwise, sort by fileName
+          return a.fileName.localeCompare(b.fileName);
+        }) ?? [],
   );
 
   public readonly sharedFiles = linkedSignal<SharedFile[]>(

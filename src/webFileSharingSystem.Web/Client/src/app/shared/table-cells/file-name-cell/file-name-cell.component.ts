@@ -3,6 +3,8 @@ import {
   ChangeDetectionStrategy,
   input,
   output,
+  computed,
+  inject,
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +22,7 @@ import {
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { SelectFilenameDirective } from '../../../core/directives/select-filename.directive';
 import { BaseCellDirective } from '../base-cell.directive';
+import { AuthenticationService } from '../../../core/services/authentication.service';
 
 @Component({
   selector: 'app-file-name-cell',
@@ -40,6 +43,7 @@ import { BaseCellDirective } from '../base-cell.directive';
 export class FileNameCellComponent<
   T extends BaseFile,
 > extends BaseCellDirective<T> {
+  private readonly authService = inject(AuthenticationService);
   editingId = input<number | null>(null);
 
   rename = output<{ file: T; newName: string }>();
@@ -49,6 +53,9 @@ export class FileNameCellComponent<
 
   FileStatus = FileStatus;
   ProgressStatus = ProgressStatus;
+  isUserCreatedFile = computed(
+    () => this.file().createdBy == this.authService.currentUser()?.id,
+  );
 
   getFileSize(sizeStr: string): number {
     return +(sizeStr.split(' ')[0] ?? 0);
