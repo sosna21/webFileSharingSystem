@@ -83,14 +83,16 @@ namespace webFileSharingSystem.Core.Services
                 var file = new File
                 {
                     //file belongs to directory owner (in shared directories uploads)
-                    UserId = targetUserId, 
+                    UserId = targetUserId,
                     FileName = fileName,
                     MimeType = mimeType,
                     Size = (ulong)size,
                     FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,
                     FileGuid = fileGuidId,
                     ParentId = parentId,
-                    PartialFileInfo = partialFileInfo
+                    Creator = isOwnFile
+                        ? targetUser
+                        : (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken))!
                 };
 
                 _unitOfWork.Repository<File>().Add(file);
