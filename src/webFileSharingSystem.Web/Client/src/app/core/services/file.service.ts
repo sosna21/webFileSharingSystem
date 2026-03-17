@@ -547,7 +547,7 @@ export class FileService {
     );
   }
 
-  async deleteFilesWithFeedback(filesToDelete: BaseFile[]): Promise<boolean> {
+    async deleteFilesWithFeedback(filesToDelete: BaseFile[]): Promise<boolean> {
     if (filesToDelete.length === 0) {
       return false;
     }
@@ -556,30 +556,40 @@ export class FileService {
     const totalFiles = filesToDelete.length;
     const fileNamesList = filesToDelete.map((f) => f.fileName);
 
+    const areFilesUploaded = filesToDelete.every(
+      (file) => file.fileStatus === FileStatus.Completed,
+    );
     let confirmText = '';
 
     if (totalFiles === 1) {
-      confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
-    } else if (totalFiles > maxLines) {
-      const shownCount = Math.max(1, maxLines - 1);
-      const shown = fileNamesList.slice(0, shownCount);
-      const remainingCount = totalFiles - shownCount;
-      const displayNames = [
-        ...shown.map((name) => `• ${name}`),
-        `...and ${remainingCount} more`,
-      ];
-      confirmText = `Are you sure you want to delete these files?\n${displayNames.join(
-        '\n',
-      )}`;
+      confirmText = areFilesUploaded
+        ? `Are you sure you want to delete '${fileNamesList[0]}' file?`
+        : `Are you sure you want to cancel upload for '${fileNamesList[0]}' file?`;
     } else {
-      const displayNames = fileNamesList.map((name) => `• ${name}`);
-      confirmText = `Are you sure you want to delete these files?\n${displayNames.join(
-        '\n',
-      )}`;
+      let displayNames: string[] = [];
+      if (totalFiles > maxLines) {
+        const shownCount = Math.max(1, maxLines - 1);
+        const shown = fileNamesList.slice(0, shownCount);
+        const remainingCount = totalFiles - shownCount;
+        displayNames = [
+          ...shown.map((name) => `• ${name}`),
+          `...and ${remainingCount} more`,
+        ];
+      } else {
+        displayNames = fileNamesList.map((name) => `• ${name}`);
+      }
+
+      confirmText =
+        (areFilesUploaded
+          ? 'Are you sure you want to delete these files?'
+          : `Are you sure you want to cancel upload for these files?`) +
+        `\n${displayNames.join('\n')}`;
     }
 
     const confirmationResult = await this.modalService.confirmChoice({
-      title: 'Confirm File Deletion',
+      title: areFilesUploaded
+        ? 'Confirm File Deletion'
+        : 'Confirm Upload Cancellation',
       message: confirmText,
       confirmText: 'Delete',
       cancelText: 'Cancel',
@@ -616,13 +626,17 @@ export class FileService {
       successMessage: (count) => {
         if (count === 1) {
           return {
-            title: 'File Deletion',
-            message: `Deleted '${filesToDelete[0].fileName}' successfully`,
+            title: areFilesUploaded ? 'File Deletion' : 'Upload Cancellation',
+            message: areFilesUploaded
+              ? `Deleted '${filesToDelete[0].fileName}' successfully`
+              : `Cancelled upload for '${filesToDelete[0].fileName}' successfully`,
           };
         } else {
           return {
-            title: 'File Deletion',
-            message: `Deleted ${count} files successfully`,
+            title: areFilesUploaded ? 'File Deletion' : 'Upload Cancellation',
+            message: areFilesUploaded
+              ? `Deleted ${count} files successfully`
+              : `Cancelled upload for ${count} files successfully`,
           };
         }
       },
