@@ -94,11 +94,12 @@ namespace webFileSharingSystem.Core.Services
 
         public async Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default)
         {
-            var releaser = await _userLocks.AcquireAsync(userId, cancellationToken);
+            var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
+            if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
+            
+            var releaser = await _userLocks.AcquireAsync(fileToDelete.UserId, cancellationToken);
             try
             {
-                var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
-                if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
                 if (!await _guard.UserCanPerform(userId, fileToDelete, ShareAccessMode.FullAccess, cancellationToken))
                     return Result.Failure(OperationResult.Unauthorized, "You are not authorized to remove that file");
 
@@ -115,7 +116,7 @@ namespace webFileSharingSystem.Core.Services
         private async Task<Result<OperationResult>> DeleteFileAsync(File fileToDelete, int userId,
             CancellationToken cancellationToken = default)
         {
-            _uploadService.CancelFileUpload(userId, fileToDelete.Id);
+            _uploadService.CancelFileUpload(fileToDelete.CreatedBy, fileToDelete.Id);
 
             _unitOfWork.Repository<File>().Remove(fileToDelete);
 
@@ -147,6 +148,9 @@ namespace webFileSharingSystem.Core.Services
         {
             var filesToRemove = await _unitOfWork.CustomQueriesRepository()
                 .GetListOfAllChildrenAsFiles(directoryToDelete.Id, cancellationToken);
+
+            foreach (var file in filesToRemove)
+                _uploadService.CancelFileUpload(file.CreatedBy, file.Id);
 
             _unitOfWork.Repository<File>().RemoveRange(filesToRemove);
 

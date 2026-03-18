@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
+using webFileSharingSystem.Core.Specifications;
+using webFileSharingSystem.Core.Storage;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
 
@@ -58,7 +61,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             var result = await _uploadService.UploadFileChunk(userId!.Value, fileId, chunkIndex, chunk.OpenReadStream(),
                 cancellationToken);
-
+            await Task.Delay(2000);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok();
@@ -121,7 +124,32 @@ namespace webFileSharingSystem.Web.Controllers
             return Ok(response);
         }
 
-        private FileResponse ToFileResponse(File file)
+        [HttpGet]
+        [Route("Active")]
+        public async Task<ActionResult<UploadStateResponse>> GetNonUserFilesStatus(int directoryId,
+            CancellationToken cancellationToken = default)
+        {
+            var userId = _currentUserService.UserId;
+
+            var files = await _unitOfWork.Repository<File>()
+                .FindAsync(new GetActiveNonUserUploadsSpecs(userId!.Value, directoryId), cancellationToken);
+
+            var response = files.Select(file =>
+            {
+                var partialFileInfo = _uploadService.GetCachedPartialFileInfo(file.CreatedBy, file.Id) ?? file.PartialFileInfo;
+                return new UploadStateResponse()
+                {
+                    FileId = file.Id,
+                    PersistenceMap = partialFileInfo?.PersistenceMap,
+                    UploadProgress = CalculateUploadProgress(partialFileInfo),
+                    Status = file.FileStatus
+                };
+            }).ToList();
+
+            return Ok(response);
+        }
+
+        private static FileResponse ToFileResponse(File file)
         {
             return new FileResponse
             {
@@ -164,6 +192,14 @@ namespace webFileSharingSystem.Web.Controllers
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0
             };
+        }
+        
+        private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
+        {
+            if (partialFileInfo is null) return null;
+            var uploadedChunks = partialFileInfo.PersistenceMap
+                .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
+            return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
         }
     }
 }

@@ -40,6 +40,7 @@ import { FavouriteCellComponent } from '../table-cells/favourite-cell/favourite-
 import { LastModificationCellComponent } from '../table-cells/last-modification-cell/last-modification-cell.component';
 import { ShareCellComponent } from '../table-cells/share-cell/share-cell.component';
 import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
+import { AuthenticationService } from '../../core/services/authentication.service';
 
 @Component({
   selector: 'app-user-files-table',
@@ -77,6 +78,7 @@ export class UserFilesTableComponent {
   private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
   private readonly downloadService = inject(DownloadService);
+  private readonly authService = inject(AuthenticationService);
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly injector = inject(Injector);
@@ -105,6 +107,7 @@ export class UserFilesTableComponent {
       this.files().length > 0 &&
       this.selectedIds().size === this.files().length,
   );
+  currentUserId = computed(() => this.authService.currentUser()?.id);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(UserFilesContextMenuComponent);

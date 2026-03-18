@@ -128,9 +128,14 @@ export class FileUploadService {
                   tap(() => successCount++),
                   catchError((err) => {
                     failCount++;
+                    var errorMessage =
+                      err.error[0] ===
+                      'File does not exist or you do not have access'
+                        ? 'Upload was cancelled by directory owner'
+                        : '';
                     this.toast.show(
                       'Upload error',
-                      `Failed to upload file '${file.name}'`,
+                      `Failed to upload file '${file.name}'${errorMessage ? `. ${errorMessage}` : ''}`,
                       MessageSeverity.error,
                     );
                     return EMPTY;

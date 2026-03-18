@@ -22,27 +22,36 @@
     <div class="flex-grow-1">
       <div class="text-truncate">
         {{ file().fileName }}
-        <span
-          [class]="
-            'small ' +
-            (file().progressStatus === ProgressStatus.Started
-              ? 'text-muted'
-              : file().progressStatus === ProgressStatus.Stopping
-                ? 'text-warning-emphasis'
-                : 'text-danger-emphasis')
-          "
-          >({{
-            file().progressStatus === ProgressStatus.Started
-              ? "Uploading"
-              : file().progressStatus === ProgressStatus.Stopping
-                ? "Stopping"
-                : "Stopped"
-          }}:
-          {{
-            getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
-              | number: "1.2-2"
-          }}/{{ file().size | fileSize }})</span
-        >
+        @if (isUserCreatedFile()) {
+          <span
+            [class]="
+              'small ' +
+              (file().progressStatus === ProgressStatus.Started
+                ? 'text-muted'
+                : file().progressStatus === ProgressStatus.Stopping
+                  ? 'text-warning-emphasis'
+                  : 'text-danger-emphasis')
+            "
+            >({{
+              file().progressStatus === ProgressStatus.Started
+                ? "Uploading"
+                : file().progressStatus === ProgressStatus.Stopping
+                  ? "Stopping"
+                  : "Stopped"
+            }}:
+            {{
+              getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
+                | number: "1.2-2"
+            }}/{{ file().size | fileSize }})</span
+          >
+        } @else {
+          <span class="small text-muted"
+            >({{
+              getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
+                | number: "1.2-2"
+            }}/{{ file().size | fileSize }})</span
+          >
+        }
       </div>
       <div class="d-flex">
         <ngb-progressbar

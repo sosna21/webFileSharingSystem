@@ -90,6 +90,7 @@ namespace webFileSharingSystem.Core.Services
                     FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,
                     FileGuid = fileGuidId,
                     ParentId = parentId,
+                    PartialFileInfo = partialFileInfo,
                     Creator = isOwnFile
                         ? targetUser
                         : (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken))!
@@ -484,7 +485,7 @@ namespace webFileSharingSystem.Core.Services
                 _cacheDictionary.TryGetValue(key, out var cacheValueLazy);
                 var cacheValue = cacheValueLazy?.IsValueCreated ?? false ? cacheValueLazy.Value.Result : null;
 
-                if (cacheValue is not null)
+                if (cacheValue is not null && !cacheValue.IsJunk)
                 {
                     value = cacheValue;
                     return true;
