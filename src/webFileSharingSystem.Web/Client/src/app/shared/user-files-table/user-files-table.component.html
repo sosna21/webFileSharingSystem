@@ -20,12 +20,14 @@
 <app-table-context-menu
   [position]="contextMenuPosition()"
   [accessMode]="undefined"
-  [sortableColumns]="columnsToDisplay()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
   [canPaste]="canPaste()"
   (refresh)="refresh()"
   (createFolder)="createFolder()"
   (upload)="uploadFiles($event)"
   (paste)="pasteFiles()"
+  (sortByColumn)="toggleSort($event)"
 />
 
 <div
@@ -82,8 +84,15 @@
 
       <!-- File name Definition -->
       <ng-container cdkColumnDef="fileName">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" class="text-left">
-          FileName
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          (click)="toggleSort('fileName')"
+        >
+          <app-sortable-header column="fileName" [sortOption]="sortOption()"
+            >File Name</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file">
           <app-file-name-cell
@@ -106,8 +115,15 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 5%"
+          (click)="toggleSort('favourite')"
         >
-          Favourite
+          <app-sortable-header
+            column="favourite"
+            [sortOption]="sortOption()"
+            justify="justify-content-center"
+          >
+            Favourite
+          </app-sortable-header>
         </th>
         <td
           cdk-cell
@@ -132,8 +148,11 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 5%"
+          (click)="toggleSort('share')"
         >
-          Share
+          <app-sortable-header column="share" [sortOption]="sortOption()"
+            >Share</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
@@ -167,8 +186,16 @@
 
       <!-- Size  Definition -->
       <ng-container cdkColumnDef="size">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 5%">
-          Size
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          style="width: 5%"
+          (click)="toggleSort('size')"
+        >
+          <app-sortable-header column="size" [sortOption]="sortOption()"
+            >Size</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
           <app-size-cell
@@ -186,8 +213,13 @@
           scope="col"
           class="d-none d-sm-table-cell"
           style="width: 9%"
+          (click)="toggleSort('createdByUserName')"
         >
-          Created By
+          <app-sortable-header
+            column="createdByUserName"
+            [sortOption]="sortOption()"
+            >Created By</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
@@ -209,8 +241,13 @@
           scope="col"
           class="d-none d-sm-table-cell"
           style="width: 12%"
+          (click)="toggleSort('lastModification')"
         >
-          Last Modification
+          <app-sortable-header
+            column="lastModification"
+            [sortOption]="sortOption()"
+            >Last Modification</app-sortable-header
+          >
         </th>
         <td
           cdk-cell

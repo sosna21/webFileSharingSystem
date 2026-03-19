@@ -41,6 +41,7 @@ import { LastModificationCellComponent } from '../table-cells/last-modification-
 import { ShareCellComponent } from '../table-cells/share-cell/share-cell.component';
 import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
 import { AuthenticationService } from '../../core/services/authentication.service';
+import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 
 @Component({
   selector: 'app-user-files-table',
@@ -62,6 +63,7 @@ import { AuthenticationService } from '../../core/services/authentication.servic
     ShareCellComponent,
     LastModificationCellComponent,
     CreatedByCellComponentt,
+    SortableHeaderComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -87,6 +89,11 @@ export class UserFilesTableComponent {
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
+  readonly sortOption = this.fileService.sortOption;
+
+  toggleSort(column: string) {
+    this.fileService.toggleSort(column);
+  }
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([
     'rowSelector',
@@ -98,6 +105,16 @@ export class UserFilesTableComponent {
     'createdByUserName',
     'lastModification',
   ]);
+
+  sortableColumns = computed(() => [
+    { column: 'fileName', displayName: 'File name' },
+    { column: 'favourite', displayName: 'Favourite' },
+    { column: 'share', displayName: 'Share' },
+    { column: 'size', displayName: 'Size' },
+    { column: 'createdByUserName', displayName: 'Created By' },
+    { column: 'lastModification', displayName: 'Last Modification' },
+  ]);
+
   files = this.fileService.userFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;

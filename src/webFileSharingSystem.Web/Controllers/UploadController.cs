@@ -61,7 +61,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             var result = await _uploadService.UploadFileChunk(userId!.Value, fileId, chunkIndex, chunk.OpenReadStream(),
                 cancellationToken);
-            await Task.Delay(2000);
+            
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok();

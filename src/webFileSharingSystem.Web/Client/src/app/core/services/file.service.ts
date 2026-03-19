@@ -145,21 +145,121 @@ export class FileService {
     },
   });
 
-  public readonly userFiles = computed(() =>
-    this._userFiles().sort((a, b) => {
-      const currentUserId = this.authService.currentUser()?.id;
-      const aIsOther =
-        a.createdBy !== currentUserId && a.fileStatus === FileStatus.Incomplete;
-      const bIsOther =
-        b.createdBy !== currentUserId && b.fileStatus === FileStatus.Incomplete;
-      if (aIsOther !== bIsOther) {
-        // Uploading files, not created by user go first
-        return aIsOther ? -1 : 1;
+  public readonly sortOption = signal<{
+    column: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  public toggleSort(column: string) {
+    this.sortOption.update((current) => {
+      if (current?.column === column) {
+        if (current.direction === 'asc') {
+          return { column, direction: 'desc' };
+        } else {
+          return null;
+        }
       }
-      // Otherwise, sort by fileName
+      return { column, direction: 'asc' };
+    });
+  }
+
+  private sortFiles<T extends BaseFile>(
+    files: T[],
+    sort: { column: string; direction: 'asc' | 'desc' } | null,
+    isUserFiles: boolean,
+  ): T[] {
+    return files.sort((a, b) => {
+      if (isUserFiles) {
+        const currentUserId = this.authService.currentUser()?.id;
+        const aIsOther =
+          a.createdBy !== currentUserId &&
+          a.fileStatus === FileStatus.Incomplete;
+        const bIsOther =
+          b.createdBy !== currentUserId &&
+          b.fileStatus === FileStatus.Incomplete;
+        if (aIsOther !== bIsOther) {
+          // Uploading files, not created by user go first
+          return aIsOther ? -1 : 1;
+        }
+      }
+
+      if (sort) {
+        let valA: any;
+        let valB: any;
+
+        switch (sort.column) {
+          case 'fileName':
+            valA = a.fileName;
+            valB = b.fileName;
+            break;
+          case 'size':
+            valA = a.size;
+            valB = b.size;
+            break;
+          case 'lastModification':
+            valA = (a as any).modificationDate;
+            valB = (b as any).modificationDate;
+            break;
+          case 'createdByUserName':
+            valA = a.createdByUserName;
+            valB = b.createdByUserName;
+            break;
+          case 'favourite':
+            valA = !!(a as any).isFavourite;
+            valB = !!(b as any).isFavourite;
+            break;
+          case 'share':
+            valA = !!(a as any).isShared;
+            valB = !!(b as any).isShared;
+            break;
+          case 'validUntil':
+            valA = a.validUntil;
+            valB = b.validUntil;
+            break;
+          case 'accessMode':
+            valA = a.accessMode;
+            valB = b.accessMode;
+            break;
+          case 'sharedBy/createdBy':
+            valA = this.parentId()
+              ? a.createdByUserName
+              : (a as any).sharedUserName;
+            valB = this.parentId()
+              ? b.createdByUserName
+              : (b as any).sharedUserName;
+            break;
+          default:
+            valA = (a as any)[sort.column];
+            valB = (b as any)[sort.column];
+        }
+
+        let comparison = 0;
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          comparison = valA.localeCompare(valB);
+        } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+          comparison = valA === valB ? 0 : valA ? 1 : -1;
+        } else if (valA != null && valB != null) {
+          comparison = valA < valB ? -1 : valA > valB ? 1 : 0;
+        } else if (valA != null) {
+          comparison = 1;
+        } else if (valB != null) {
+          comparison = -1;
+        }
+
+        if (comparison !== 0) {
+          return sort.direction === 'asc' ? comparison : -comparison;
+        }
+      }
+
+      // Default sorting by fileName
       return a.fileName.localeCompare(b.fileName);
-    }),
-  );
+    });
+  }
+
+  public readonly userFiles = computed(() => {
+    const files = [...this._userFiles()];
+    return this.sortFiles(files, this.sortOption(), true);
+  });
 
   private readonly _sharedFiles = linkedSignal<
     FileResponse<SharedFile> | undefined,
@@ -180,9 +280,10 @@ export class FileService {
     },
   });
 
-  public readonly sharedFiles = computed(() =>
-    this._sharedFiles().sort((a, b) => a.fileName.localeCompare(b.fileName)),
-  );
+  public readonly sharedFiles = computed(() => {
+    const files = [...this._sharedFiles()];
+    return this.sortFiles(files, this.sortOption(), false);
+  });
 
   public readonly currentFiles = computed<(AppFile | SharedFile)[]>(() => {
     return this.mode() === 'GetSharedWithMe'

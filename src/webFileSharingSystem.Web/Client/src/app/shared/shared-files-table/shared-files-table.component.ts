@@ -41,6 +41,7 @@ import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-
 import { ToastService } from '../../core/services/toast.service';
 import { MessageSeverity } from '../../core/models/toast-info.model';
 import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
+import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -62,6 +63,7 @@ import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-
     SharedUserNameCellComponent,
     AccessModeCellComponent,
     CreatedByCellComponentt,
+    SortableHeaderComponent,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -88,9 +90,13 @@ export class SharedFilesTableComponent {
   readonly currentDirectoryAccessMode = computed(
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
+  readonly sortOption = this.fileService.sortOption;
+
+  toggleSort(column: string) {
+    this.fileService.toggleSort(column);
+  }
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
-    'id',
     'rowSelector',
     'fileName',
     'sharedBy/createdBy',
@@ -99,6 +105,18 @@ export class SharedFilesTableComponent {
     'size',
     'validUntil',
   ]);
+
+  sortableColumns = computed(() => [
+    { column: 'fileName', displayName: 'File name' },
+    {
+      column: 'sharedBy/createdBy',
+      displayName: this.currentDirectoryId() ? 'Created By' : 'Shared By',
+    },
+    { column: 'accessMode', displayName: 'Access Mode' },
+    { column: 'size', displayName: 'Size' },
+    { column: 'validUntil', displayName: 'Valid Until' },
+  ]);
+
   files = this.fileService.sharedFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;

@@ -1,0 +1,8 @@
+<ng-content></ng-content>
+@if (sortOption()?.column === column()) {
+  <i
+    class="bi"
+    [class.bi-caret-up-fill]="sortOption()?.direction === 'asc'"
+    [class.bi-caret-down-fill]="sortOption()?.direction === 'desc'"
+  ></i>
+}

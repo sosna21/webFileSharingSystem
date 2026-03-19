@@ -12,12 +12,14 @@
 <app-table-context-menu
   [position]="contextMenuPosition()"
   [accessMode]="currentDirectoryAccessMode()"
-  [sortableColumns]="columnsToDisplay()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
   [canPaste]="canPaste()"
   (refresh)="refresh()"
   (createFolder)="createFolder()"
   (upload)="uploadFiles($event)"
   (paste)="pasteFiles()"
+  (sortByColumn)="toggleSort($event)"
 />
 
 <div
@@ -40,14 +42,6 @@
       recycleRows
       class="table table-hover table-sm no-select my-0"
     >
-      <!-- File id Definition -->
-      <ng-container cdkColumnDef="id">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
-          Id
-        </th>
-        <td cdk-cell *cdkCellDef="let file">{{ file.id }}</td>
-      </ng-container>
-
       <!-- Row Selector Definition -->
       <ng-container cdkColumnDef="rowSelector">
         <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
@@ -74,8 +68,15 @@
 
       <!-- File name Definition -->
       <ng-container cdkColumnDef="fileName">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" class="text-left">
-          FileName
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          (click)="toggleSort('fileName')"
+        >
+          <app-sortable-header column="fileName" [sortOption]="sortOption()"
+            >File Name</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file">
           <app-file-name-cell
@@ -98,8 +99,15 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 12%"
+          (click)="toggleSort('sharedBy/createdBy')"
         >
-          {{ currentDirectoryId() ? "Created By" : "Shared By" }}
+          <app-sortable-header
+            column="sharedBy/createdBy"
+            [sortOption]="sortOption()"
+            >{{
+              currentDirectoryId() ? "Created By" : "Shared By"
+            }}</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
@@ -128,8 +136,11 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 10%"
+          (click)="toggleSort('accessMode')"
         >
-          Access Mode
+          <app-sortable-header column="accessMode" [sortOption]="sortOption()"
+            >Access Mode</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
@@ -163,8 +174,16 @@
 
       <!-- Size  Definition -->
       <ng-container cdkColumnDef="size">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 6%">
-          Size
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          style="width: 6%"
+          (click)="toggleSort('size')"
+        >
+          <app-sortable-header column="size" [sortOption]="sortOption()"
+            >Size</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
           <app-size-cell
@@ -176,8 +195,16 @@
 
       <!-- Valid Until Definition -->
       <ng-container cdkColumnDef="validUntil">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 10%">
-          Valid Until
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          style="width: 10%"
+          (click)="toggleSort('validUntil')"
+        >
+          <app-sortable-header column="validUntil" [sortOption]="sortOption()"
+            >Valid Until</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
           <app-valid-until-cell
