@@ -40,7 +40,7 @@ import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cel
 import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
 import { ToastService } from '../../core/services/toast.service';
 import { MessageSeverity } from '../../core/models/toast-info.model';
-import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
+import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 
 @Component({
@@ -62,7 +62,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
     ValidUntilCellComponent,
     SharedUserNameCellComponent,
     AccessModeCellComponent,
-    CreatedByCellComponentt,
+    CreatedByCellComponent,
     SortableHeaderComponent,
   ],
   templateUrl: './shared-files-table.component.html',

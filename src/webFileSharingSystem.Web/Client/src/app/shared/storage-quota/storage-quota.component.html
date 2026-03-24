@@ -1,0 +1,28 @@
+@if (storageInfo()) {
+  <div class="bg-body-tertiary border rounded-3 p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0 fw-semibold">Storage Quota</h6>
+      <span class="small text-secondary"
+        >{{ storageInfo()!.usedSpace | fileSize }} /
+        {{ storageInfo()!.quota | fileSize }}</span
+      >
+    </div>
+    <div class="progress" style="height: 8px">
+      <div
+        class="progress-bar transition-all"
+        [class.bg-danger]="storageUsagePercent() >= 90"
+        [class.bg-warning]="
+          storageUsagePercent() >= 75 && storageUsagePercent() < 90
+        "
+        role="progressbar"
+        [style.width.%]="storageUsagePercent()"
+        [attr.aria-valuenow]="storageUsagePercent()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      ></div>
+    </div>
+    <div class="text-end mt-1">
+      <small class="text-secondary">{{ storageUsagePercent() }}% used</small>
+    </div>
+  </div>
+}

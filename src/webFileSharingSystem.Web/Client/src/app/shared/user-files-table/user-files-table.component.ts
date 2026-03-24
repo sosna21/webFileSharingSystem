@@ -39,7 +39,7 @@ import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component'
 import { FavouriteCellComponent } from '../table-cells/favourite-cell/favourite-cell.component';
 import { LastModificationCellComponent } from '../table-cells/last-modification-cell/last-modification-cell.component';
 import { ShareCellComponent } from '../table-cells/share-cell/share-cell.component';
-import { CreatedByCellComponentt } from '../table-cells/created-by-cell/created-by-cell.component';
+import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 
@@ -62,7 +62,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
     FavouriteCellComponent,
     ShareCellComponent,
     LastModificationCellComponent,
-    CreatedByCellComponentt,
+    CreatedByCellComponent,
     SortableHeaderComponent,
   ],
   templateUrl: './user-files-table.component.html',

@@ -1,4 +1,43 @@
-<div class="container-lg">
-  <p>profile works!</p>
-  <button class="btn btn-info" (click)="backClicked()">Back</button>
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+      <div class="mb-3">
+        <app-back-button text="Back to File Explorer"></app-back-button>
+      </div>
+
+      <section class="card shadow border border-secondary-subtle">
+        <div class="card-header border-0 pt-4 pb-2 px-4">
+          <h1>Profile Settings</h1>
+        </div>
+
+        <div class="card-body p-4">
+          @if (selectedPhoto()) {
+            <!-- Editing State: Image Cropper -->
+            <app-profile-image-cropper
+              [selectedPhoto]="selectedPhoto()!"
+              (cancel)="clearSelection()"
+              (savePhoto)="uploadPhoto($event)"
+            />
+          } @else {
+            <!-- Default State: View & Dropzone -->
+            <app-profile-view
+              [profile]="profile()"
+              [displayedPhotoUrl]="loadedPhotoUrl()"
+            />
+
+            <hr class="my-4 text-secondary opacity-25" />
+
+            <div class="mb-4">
+              <h5 class="fw-semibold">Change Profile Photo</h5>
+              <p class="text-secondary small mb-0">
+                Upload a new photo to update your avatar across the application.
+              </p>
+            </div>
+
+            <app-profile-photo-dropzone (photoSelected)="handleFile($event)" />
+          }
+        </div>
+      </section>
+    </div>
+  </div>
 </div>

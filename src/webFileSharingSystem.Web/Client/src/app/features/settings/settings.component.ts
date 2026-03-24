@@ -1,17 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import {Location} from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { BackButtonComponent } from '../../shared/back-button/back-button.component';
 
 @Component({
   selector: 'app-settings',
-  imports: [],
+  imports: [BackButtonComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SettingsComponent {
- private location = inject(Location);
-
-  backClicked() {
-    this.location.back();
-  }
-}
+export class SettingsComponent {}

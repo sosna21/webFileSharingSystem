@@ -1,0 +1,21 @@
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+.drop-zone {
+  border: 2px dashed var(--bs-secondary-bg);
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--bs-primary-border-subtle) !important;
+  background-color: var(--bs-secondary-bg) !important;
+}
+
+[data-bs-theme="dark"] .drop-zone {
+  border-color: var(--bs-border-color);
+}

@@ -1,9 +1,9 @@
-export interface User {
+export interface AppUserResponse {
   id: number;
-  userName: string;
-  email: string;
-  token: string;
-  roles: string[];
+  userName: string | null;
+  emailAddress: string | null;
+  usedSpace: number;
+  quota: number;
   photoUrl: string | null;
   photoMimeType: string | null;
   photoSize: number | null;

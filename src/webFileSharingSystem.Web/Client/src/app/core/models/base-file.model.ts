@@ -22,6 +22,7 @@ export interface BaseFile {
 
   createdBy: number;
   createdByUserName: string;
+  createdByPhotoUrl?: string | null;
 }
 
 export enum FileStatus {
