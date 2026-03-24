@@ -131,6 +131,7 @@ namespace webFileSharingSystem.Core.Services
                         AccessMode = sharedFile?.AccessMode,
                         ValidUntil = sharedFile?.ValidUntil,
                         SharedUserName = sharedFile?.SharedUserName,
+                        SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
                         IsInherited = sharedFile?.IsInherited
                     };
                     

@@ -19,5 +19,6 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public double? UploadProgress { get; set; }
         public int CreatedBy { get; set; }
         public required string CreatedByUserName { get; set; }
+        public string? CreatedByPhotoUrl { get; set; }
     }
 }

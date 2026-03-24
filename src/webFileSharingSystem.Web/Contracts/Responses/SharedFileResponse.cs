@@ -13,10 +13,12 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public ulong Size { get; set; }
         public bool IsDirectory { get; set; }
         public string SharedUserName { get; set; } = null!;
+        public string? SharedUserPhotoUrl { get; set; }
         public ShareAccessMode AccessMode { get; set; }
         public DateTime? ValidUntil { get; set; }
         public int CreatedBy { get; set; }
         public required string CreatedByUserName { get; set; }
+        public string? CreatedByPhotoUrl { get; set; }
         
         //Only for files that user uploads to shared folder
         public FileStatus FileStatus { get; set; }

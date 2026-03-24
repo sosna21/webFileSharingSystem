@@ -87,6 +87,18 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .HasOne<IdentityUser>()
                 .WithOne()
                 .HasForeignKey<ApplicationUser>(e => e.IdentityUserId);
+
+            builder.Entity<ApplicationUser>()
+                .Property(e => e.PhotoMimeType)
+                .HasMaxLength(128);
+
+            builder.Entity<ApplicationUser>()
+                .HasIndex(e => e.PhotoFileGuid);
+
+            builder.Entity<ApplicationUser>()
+                .HasIndex(e => e.PhotoAccessId)
+                .HasFilter("[PhotoAccessId] IS NOT NULL")
+                .IsUnique();
             
             builder.Entity<File>()
                 .HasOne(f => f.User)

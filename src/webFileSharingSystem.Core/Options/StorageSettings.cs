@@ -6,6 +6,10 @@
 
         public string OnPremiseFileLocation { get; set; } = null!;
 
+        public string ProfilePhotoSubdirectory { get; set; } = "photos";
+
+        public long ProfilePhotoMaxSizeBytes { get; set; }
+
         public ChunkSizeConstraints ChunkSizeConstraints { get; set; } = null!;
     }
 }

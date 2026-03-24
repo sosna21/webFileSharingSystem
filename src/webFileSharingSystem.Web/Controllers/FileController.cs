@@ -255,7 +255,8 @@ namespace webFileSharingSystem.Web.Controllers
                 UploadProgress = CalculateUploadProgress(
                     _uploadService.GetCachedPartialFileInfo(file.CreatedBy, file.Id) ?? file.PartialFileInfo),
                 CreatedBy = file.CreatedBy,
-                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
+                CreatedByPhotoUrl = GetPhotoUrl(file.Creator.PhotoAccessId)
             };
         }
 
@@ -282,17 +283,19 @@ namespace webFileSharingSystem.Web.Controllers
                 Size = sharedFile.Size,
                 IsDirectory = sharedFile.IsDirectory,
                 SharedUserName = sharedFile.SharedUserName,
+                SharedUserPhotoUrl = GetPhotoUrl(sharedFile.SharedUserPhotoAccessId),
                 AccessMode = sharedFile.AccessMode,
                 ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null,
                 FileStatus = sharedFile.FileStatus,
                 CreatedBy = sharedFile.FileCreatedBy,
                 CreatedByUserName = sharedFile.FileCreatedByUserName ?? sharedFile.FileCreatedByEmail!,
+                CreatedByPhotoUrl = GetPhotoUrl(sharedFile.CreatedByPhotoAccessId), 
                 PartialFileInfo = partialFileInfo,
                 UploadProgress = CalculateUploadProgress(partialFileInfo)
             };
         }
 
-        private static SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
+        private SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
         {
             var file = ctx.File;
             return new SharedFileResponse
@@ -311,6 +314,8 @@ namespace webFileSharingSystem.Web.Controllers
                     : null,
                 CreatedBy = file.CreatedBy,
                 CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
+                CreatedByPhotoUrl = GetPhotoUrl(file.Creator.PhotoAccessId),
+                SharedUserPhotoUrl = null,
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0
@@ -323,6 +328,14 @@ namespace webFileSharingSystem.Web.Controllers
             var uploadedChunks = partialFileInfo.PersistenceMap
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
             return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
+        }
+        
+        private string? GetPhotoUrl(Guid? photoAccessId)
+        {
+            if (!photoAccessId.HasValue)
+                return null;
+
+            return Url.ActionLink("GetPhotoById", "User", new { photoId = photoAccessId.Value });
         }
     }
 }

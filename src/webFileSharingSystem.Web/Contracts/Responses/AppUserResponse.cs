@@ -1,4 +1,6 @@
-﻿namespace webFileSharingSystem.Web.Contracts.Responses
+﻿using System;
+
+namespace webFileSharingSystem.Web.Contracts.Responses
 {
     public class AppUserResponse
     {
@@ -11,5 +13,13 @@
         public ulong UsedSpace { get; set; }
         
         public ulong Quota { get; set; }
+
+        public string? PhotoUrl { get; set; }
+
+        public string? PhotoMimeType { get; set; }
+
+        public ulong? PhotoSize { get; set; }
+
+        public DateTime? PhotoUpdatedAt { get; set; }
     }
 }

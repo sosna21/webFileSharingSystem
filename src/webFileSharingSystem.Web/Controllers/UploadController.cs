@@ -149,7 +149,7 @@ namespace webFileSharingSystem.Web.Controllers
             return Ok(response);
         }
 
-        private static FileResponse ToFileResponse(File file)
+        private FileResponse ToFileResponse(File file)
         {
             return new FileResponse
             {
@@ -165,11 +165,12 @@ namespace webFileSharingSystem.Web.Controllers
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0,
                 CreatedBy = file.CreatedBy,
-                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
+                CreatedByPhotoUrl = GetPhotoUrl(file.Creator.PhotoAccessId)
             };
         }
 
-        private static SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
+        private SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
         {
             var file = ctx.File;
             return new SharedFileResponse
@@ -182,12 +183,14 @@ namespace webFileSharingSystem.Web.Controllers
                 Size = file.Size,
                 IsDirectory = file.IsDirectory,
                 SharedUserName = ctx.SharedUserName!,
+                SharedUserPhotoUrl = GetPhotoUrl(ctx.SharedUserPhotoAccessId),
                 AccessMode = ctx.AccessMode!.Value,
                 ValidUntil = ctx.ValidUntil is not null
                     ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
                     : null,
                 CreatedBy = file.CreatedBy,
                 CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
+                CreatedByPhotoUrl = GetPhotoUrl(file.Creator.PhotoAccessId),
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0
@@ -200,6 +203,14 @@ namespace webFileSharingSystem.Web.Controllers
             var uploadedChunks = partialFileInfo.PersistenceMap
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
             return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
+        }
+        
+        private string? GetPhotoUrl(Guid? photoAccessId)
+        {
+            if (!photoAccessId.HasValue)
+                return null;
+
+            return Url.ActionLink("GetPhotoById", "User", new { photoId = photoAccessId.Value });
         }
     }
 }
