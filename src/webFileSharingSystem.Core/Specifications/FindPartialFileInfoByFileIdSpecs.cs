@@ -2,7 +2,7 @@
 
 namespace webFileSharingSystem.Core.Specifications
 {
-    public class FindPartialFileInfoByFileIdSpecs : BaseSpecification<PartialFileInfo>
+    public sealed class FindPartialFileInfoByFileIdSpecs : BaseSpecification<PartialFileInfo>
     {
         public FindPartialFileInfoByFileIdSpecs(int fileId)
             : base(fileInfo => fileInfo.FileId == fileId)

@@ -130,13 +130,16 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .HasForeignKey(e => e.SharedByUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<Share>().HasOne<ApplicationUser>()
-                .WithMany(e => e.Shares)
+            builder.Entity<Share>()
+                .HasOne(e => e.SharedWithUser)
+                .WithMany()
                 .HasForeignKey(e => e.SharedWithUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             builder.Entity<Share>()
-                .HasOne(e => e.File);
+                .HasOne(e => e.File)
+                .WithMany(e => e.Shares)
+                .HasForeignKey(e => e.FileId);
             
             builder.Entity<Share>()
                 .HasIndex(s => new { s.FileId, s.SharedWithUserId })

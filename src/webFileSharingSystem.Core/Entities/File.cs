@@ -21,6 +21,7 @@ namespace webFileSharingSystem.Core.Entities
         public Guid? FileGuid { get; set; }
         public FileStatus FileStatus { get; set; }
         public PartialFileInfo? PartialFileInfo { get; set; }
+        public virtual ICollection<Share> Shares { get; set; } = new List<Share>();
         public virtual ApplicationUser Creator { get; set; } = null!;
     }
 }

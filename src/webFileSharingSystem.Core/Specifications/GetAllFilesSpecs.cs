@@ -10,6 +10,7 @@ namespace webFileSharingSystem.Core.Specifications
         {
             AddInclude(file => file.PartialFileInfo!);
             AddInclude(file => file.Creator);
+            AddInclude(file => file.Shares);
             ApplyOrderBy(file => file.Id);
         }
     }

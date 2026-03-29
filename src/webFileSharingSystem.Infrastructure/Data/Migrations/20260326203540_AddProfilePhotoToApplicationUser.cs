@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -12,13 +12,13 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<Guid>(
-                name: "PhotoFileGuid",
+                name: "PhotoAccessId",
                 table: "ApplicationUsers",
                 type: "uniqueidentifier",
                 nullable: true);
 
             migrationBuilder.AddColumn<Guid>(
-                name: "PhotoAccessId",
+                name: "PhotoFileGuid",
                 table: "ApplicationUsers",
                 type: "uniqueidentifier",
                 nullable: true);
@@ -43,17 +43,17 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                 nullable: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApplicationUsers_PhotoFileGuid",
-                table: "ApplicationUsers",
-                column: "PhotoFileGuid");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ApplicationUsers_PhotoAccessId",
                 table: "ApplicationUsers",
                 column: "PhotoAccessId",
                 unique: true,
                 filter: "[PhotoAccessId] IS NOT NULL");
 
+            migrationBuilder.CreateIndex(
+                name: "IX_ApplicationUsers_PhotoFileGuid",
+                table: "ApplicationUsers",
+                column: "PhotoFileGuid");
+            
             migrationBuilder.Sql(
                 @"CREATE OR ALTER FUNCTION GetListOfAllSharedFilesForUserTVF (@userId INT, @parentId INT)
 RETURNS TABLE AS
@@ -397,6 +397,34 @@ RETURNS TABLE AS
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "IX_ApplicationUsers_PhotoAccessId",
+                table: "ApplicationUsers");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ApplicationUsers_PhotoFileGuid",
+                table: "ApplicationUsers");
+
+            migrationBuilder.DropColumn(
+                name: "PhotoAccessId",
+                table: "ApplicationUsers");
+
+            migrationBuilder.DropColumn(
+                name: "PhotoFileGuid",
+                table: "ApplicationUsers");
+
+            migrationBuilder.DropColumn(
+                name: "PhotoMimeType",
+                table: "ApplicationUsers");
+
+            migrationBuilder.DropColumn(
+                name: "PhotoSize",
+                table: "ApplicationUsers");
+
+            migrationBuilder.DropColumn(
+                name: "PhotoUpdatedAt",
+                table: "ApplicationUsers");
+            
             migrationBuilder.Sql(
                 @"CREATE OR ALTER FUNCTION GetListOfAllSharedFilesForUserTVF (@userId INT, @parentId INT)
 RETURNS TABLE AS
@@ -729,34 +757,6 @@ RETURNS TABLE AS
                     AND rp.Id <> @parentId
                 )
             );");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ApplicationUsers_PhotoAccessId",
-                table: "ApplicationUsers");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ApplicationUsers_PhotoFileGuid",
-                table: "ApplicationUsers");
-
-            migrationBuilder.DropColumn(
-                name: "PhotoAccessId",
-                table: "ApplicationUsers");
-
-            migrationBuilder.DropColumn(
-                name: "PhotoFileGuid",
-                table: "ApplicationUsers");
-
-            migrationBuilder.DropColumn(
-                name: "PhotoMimeType",
-                table: "ApplicationUsers");
-
-            migrationBuilder.DropColumn(
-                name: "PhotoSize",
-                table: "ApplicationUsers");
-
-            migrationBuilder.DropColumn(
-                name: "PhotoUpdatedAt",
-                table: "ApplicationUsers");
         }
     }
 }

@@ -12,7 +12,7 @@ using webFileSharingSystem.Infrastructure.Data;
 namespace webFileSharingSystem.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260319182243_AddProfilePhotoToApplicationUser")]
+    [Migration("20260326203540_AddProfilePhotoToApplicationUser")]
     partial class AddProfilePhotoToApplicationUser
     {
         /// <inheritdoc />
@@ -241,6 +241,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<bool>("IsBlocked")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("PhotoAccessId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("PhotoFileGuid")
                         .HasColumnType("uniqueidentifier");
 
@@ -267,6 +270,10 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasIndex("IdentityUserId")
                         .IsUnique();
+
+                    b.HasIndex("PhotoAccessId")
+                        .IsUnique()
+                        .HasFilter("[PhotoAccessId] IS NOT NULL");
 
                     b.HasIndex("PhotoFileGuid");
 
@@ -516,6 +523,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int?>("ChunkSize")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("CreatedByPhotoAccessId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("FileCreatedBy")
                         .HasColumnType("int");
 
@@ -559,6 +569,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<string>("SharedUserName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SharedUserPhotoAccessId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Size")
                         .HasColumnType("decimal(20,0)");

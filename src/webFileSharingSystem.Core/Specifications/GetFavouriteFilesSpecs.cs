@@ -10,6 +10,7 @@ namespace webFileSharingSystem.Core.Specifications
                     && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
         {
             AddInclude(file => file.Creator);
+            AddInclude(file => file.Shares);
             ApplyOrderBy(file => file.Id);
         }
     }

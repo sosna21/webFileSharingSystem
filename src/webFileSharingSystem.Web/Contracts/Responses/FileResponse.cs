@@ -12,6 +12,7 @@ namespace webFileSharingSystem.Web.Contracts.Responses
         public ulong Size { get; set; } 
         public bool IsFavourite { get; set;}
         public bool IsShared { get; set;}
+        public DateTime? SharedUntil { get; set; }
         public bool IsDirectory { get; set; }
         public DateTime ModificationDate { get; set; }
         public FileStatus FileStatus { get; set; }

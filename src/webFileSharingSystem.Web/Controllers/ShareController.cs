@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -35,8 +36,8 @@ namespace webFileSharingSystem.Web.Controllers
                 request.AccessMode, request.ShareValidTo, userId!.Value, cancellationToken);
 
             if (!result.Succeeded) return result.ToActionResult(result.Errors.Length > 0 ? result.Errors[0] : "Problem with adding share");
-            var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(share!.SharedWithUserId, cancellationToken))!.UserName;
-            var response = ToShareResponse(share, userName!);
+            
+            var response = ToShareResponse(share!);
             return Ok(response);
         }
 
@@ -48,8 +49,8 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
             (Result<OperationResult> result, Share? updatedShare) = await _shareService.UpdateShareAsync(shareId, request.AccessMode, request.ShareValidTo, userId!.Value, cancellationToken);
             if (!result.Succeeded) return result.ToActionResult(result.Errors.Length > 0 ? result.Errors[0] : "Problem with updating share");
-            var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(updatedShare!.SharedWithUserId, cancellationToken))!.UserName;
-            var response = ToShareResponse(updatedShare, userName!);
+           
+            var response = ToShareResponse(updatedShare);
             return Ok(response);
         }
 
@@ -80,23 +81,16 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
 
             (_, IEnumerable<Share> shares) = await _shareService.GetSharesForFileAsync(fileId, userId!.Value);
-
-            var shareResponses = new List<ShareResponse>();
-            foreach (var share in shares)
-            {
-                var userName = (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(share.SharedWithUserId))!.UserName;
-                shareResponses.Add(ToShareResponse(share, userName!));
-            }
-
+            var shareResponses = shares.Select(ToShareResponse).ToList(); 
             return shareResponses;
         }
 
-        private static ShareResponse ToShareResponse(Share share, string userName)
+        private static ShareResponse ToShareResponse(Share share)
         {
             return new ShareResponse
             {
                 ShareId = share.Id,
-                SharedWithUserName = userName,
+                SharedWithUserName = share.SharedWithUser.UserName ?? share.SharedWithUser.EmailAddress ?? "Unknown user",
                 AccessMode = share.AccessMode,
                 ValidUntil = share.ValidUntil is not null ? DateTime.SpecifyKind(share.ValidUntil.Value, DateTimeKind.Utc) : null
             };

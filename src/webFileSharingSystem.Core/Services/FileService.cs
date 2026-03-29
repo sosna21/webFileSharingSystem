@@ -298,7 +298,7 @@ namespace webFileSharingSystem.Core.Services
                     var isShareExplicit =
                         !isMovingToAnotherUser &&
                         (await _unitOfWork.Repository<Share>()
-                            .FindAsync(new FindSharesByUserIdAndFileIdSpecs(userId, fileToMove.Id), cancellationToken))
+                            .FindAsync(new FindActiveSharesBySharedWithUserIdAndFileIdSpecs(userId, fileToMove.Id), cancellationToken))
                         .Any();
 
                     resultFileCtxList.Add(new FileOperationContext

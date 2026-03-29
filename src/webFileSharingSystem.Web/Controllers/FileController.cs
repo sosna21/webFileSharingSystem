@@ -239,6 +239,15 @@ namespace webFileSharingSystem.Web.Controllers
 
         private FileResponse ToFileResponse(File file)
         {
+            var activeShares = file.Shares.Where(IsActiveShare).ToArray();
+            var hasIndefiniteShare = activeShares.Any(share => share.ValidUntil is null);
+            var sharedUntil = hasIndefiniteShare
+                ? null
+                : activeShares.Where(share => share.ValidUntil.HasValue)
+                    .Select(share => share.ValidUntil!.Value)
+                    .Cast<DateTime?>()
+                    .Max();
+
             return new FileResponse
             {
                 Id = file.Id,
@@ -246,7 +255,8 @@ namespace webFileSharingSystem.Web.Controllers
                 FileName = file.FileName,
                 MimeType = file.MimeType,
                 Size = file.Size,
-                IsShared = file.IsShared,
+                IsShared = activeShares.Length > 0,
+                SharedUntil = sharedUntil is not null ? DateTime.SpecifyKind(sharedUntil.Value, DateTimeKind.Utc) : null,
                 IsFavourite = file.IsFavourite,
                 IsDirectory = file.IsDirectory,
                 ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
@@ -320,6 +330,12 @@ namespace webFileSharingSystem.Web.Controllers
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0
             };
+        }
+
+        private static bool IsActiveShare(Share share)
+        {
+            return share.RevokedAt is null &&
+                   (share.ValidUntil is null || share.ValidUntil.Value > DateTime.UtcNow);
         }
 
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
