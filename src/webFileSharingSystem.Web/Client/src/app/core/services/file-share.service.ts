@@ -153,12 +153,19 @@ export class FileShareService {
       action: (item) => this.shareFile(item.file, item.shareRequest),
       beforeStart: (item) => this.fileService.setLoading(item.file.id, true),
       onSuccess: (item) => {
-        this.fileService.updateFile(item.file, { isShared: true });
+        this.fileService.updateFile(item.file, {
+          isShared: true,
+          sharedUntil: this.mergeSharedTo(
+            item.file.sharedUntil,
+            item.shareRequest.ShareValidTo,
+            item.file.isShared,
+          ),
+        });
         this.fileService.setLoading(item.file.id, false);
       },
       onError: (item, err) => {
         this.toast.show(
-          'Failed to share file',
+          `Failed to share file: "${item.file.fileName}"`,
           err.error || String(err),
           MessageSeverity.error,
         );
@@ -208,5 +215,23 @@ export class FileShareService {
       'Share link has been copied to clipboard',
       MessageSeverity.success,
     );
+  }
+
+  private mergeSharedTo(
+    currentSharedTo: string | null,
+    newShareValidTo: Date | undefined,
+    fallbackIsShared: boolean,
+  ): string | null {
+    if (!newShareValidTo) {
+      return null;
+    }
+
+    if (!currentSharedTo) {
+      return fallbackIsShared ? null : newShareValidTo.toISOString();
+    }
+
+    return new Date(currentSharedTo) > newShareValidTo
+      ? currentSharedTo
+      : newShareValidTo.toISOString();
   }
 }

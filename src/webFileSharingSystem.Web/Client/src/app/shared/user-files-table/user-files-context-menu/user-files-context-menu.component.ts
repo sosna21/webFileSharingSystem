@@ -2,10 +2,11 @@ import { NgStyle, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, input, output, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
+import { AppFile } from '../../../core/models/app-file.model';
 import {
-  AppFile,
-} from '../../../core/models/app-file.model';
-import { ProgressStatus, FileStatus } from '../../../core/models/base-file.model';
+  ProgressStatus,
+  FileStatus,
+} from '../../../core/models/base-file.model';
 
 @Component({
   selector: 'app-user-files-context-menu',
@@ -21,13 +22,13 @@ export class UserFilesContextMenuComponent {
   readonly ProgressStatus = ProgressStatus;
   readonly areSelectedFilesUploading = computed(() =>
     this.selectedFiles().every(
-      (file) => file.progressStatus === ProgressStatus.Started
-    )
+      (file) => file.progressStatus === ProgressStatus.Started,
+    ),
   );
   readonly areAllFilesIncomplete = computed(() =>
     this.selectedFiles().every(
-      (file) => file.fileStatus === FileStatus.Incomplete
-    )
+      (file) => file.fileStatus === FileStatus.Incomplete,
+    ),
   );
   readonly allFilesHaveSameUploadStatus = computed(
     () =>
@@ -36,33 +37,33 @@ export class UserFilesContextMenuComponent {
         .filter((file) => file.fileStatus === FileStatus.Incomplete)
         .every(
           (file) =>
-            file.progressStatus === this.selectedFiles()[0].progressStatus
-        )
+            file.progressStatus === this.selectedFiles()[0].progressStatus,
+        ),
   );
   readonly areAllFilesComplete = computed(() =>
     this.selectedFiles().every(
-      (file) => file.fileStatus === FileStatus.Completed
-    )
+      (file) => file.fileStatus === FileStatus.Completed,
+    ),
   );
   readonly anySelectedFileIsUnFavourite = computed(() =>
     this.selectedFiles()
       .filter((file) => file.fileStatus === FileStatus.Completed)
-      .some((file) => !file.isFavourite)
+      .some((file) => !file.isFavourite),
   );
   readonly mixedFileComplition = computed(
-    () => !this.areAllFilesIncomplete() && !this.areAllFilesComplete()
+    () => !this.areAllFilesIncomplete() && !this.areAllFilesComplete(),
   );
   readonly showOpenFolder = computed(
     () =>
       this.selectedFiles().length === 1 &&
       this.selectedFiles()[0].isDirectory &&
-      this.selectedFiles()[0].fileStatus === FileStatus.Completed
+      this.selectedFiles()[0].fileStatus === FileStatus.Completed,
   );
   readonly showManageShares = computed(
     () =>
       this.selectedFiles().length === 1 &&
       this.selectedFiles()[0].fileStatus === FileStatus.Completed &&
-      this.selectedFiles()[0].isShared
+      this.isFileShared(this.selectedFiles()[0]),
   );
 
   readonly rename = output<AppFile>();
@@ -84,6 +85,23 @@ export class UserFilesContextMenuComponent {
     this.dropdown()?.open();
   }
 
+  private isFileShared(file: AppFile): boolean {
+    if (!file.isShared) {
+      return false;
+    }
+
+    if (file.sharedUntil === null) {
+      return true;
+    }
+
+    const sharedUntilTimestamp = Date.parse(file.sharedUntil);
+    if (Number.isNaN(sharedUntilTimestamp)) {
+      return false;
+    }
+
+    return sharedUntilTimestamp >= Date.now();
+  }
+
   close() {
     if (this.dropdown()?.isOpen()) {
       this.dropdown()?.close();
@@ -94,7 +112,7 @@ export class UserFilesContextMenuComponent {
     const uploadingFiles = this.selectedFiles().filter(
       (file) =>
         file.fileStatus === FileStatus.Incomplete &&
-        file.progressStatus === ProgressStatus.Started
+        file.progressStatus === ProgressStatus.Started,
     );
     this.pauseUpload.emit(uploadingFiles);
   }
@@ -103,56 +121,56 @@ export class UserFilesContextMenuComponent {
     const pausedFiles = this.selectedFiles().filter(
       (file) =>
         file.fileStatus === FileStatus.Incomplete &&
-        file.progressStatus !== ProgressStatus.Started
+        file.progressStatus !== ProgressStatus.Started,
     );
     this.resumeUpload.emit(pausedFiles);
   }
 
   cancelUploadClicked() {
     const incompleteFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Incomplete
+      (file) => file.fileStatus === FileStatus.Incomplete,
     );
     this.cancelUpload.emit(incompleteFiles);
   }
 
   moveClicked() {
     const completedFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Completed
+      (file) => file.fileStatus === FileStatus.Completed,
     );
     this.move.emit(completedFiles);
   }
 
   copyClicked() {
     const completedFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Completed
+      (file) => file.fileStatus === FileStatus.Completed,
     );
     this.copy.emit(completedFiles);
   }
 
   shareClicked() {
     const completedFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Completed
+      (file) => file.fileStatus === FileStatus.Completed,
     );
     this.share.emit(completedFiles);
   }
 
   deleteClicked() {
     const completedFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Completed
+      (file) => file.fileStatus === FileStatus.Completed,
     );
     this.delete.emit(completedFiles);
   }
 
   downloadClicked() {
     const completedFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Completed
+      (file) => file.fileStatus === FileStatus.Completed,
     );
     this.download.emit(completedFiles);
   }
 
   generateLinkClicked() {
     const completedFiles = this.selectedFiles().filter(
-      (file) => file.fileStatus === FileStatus.Completed
+      (file) => file.fileStatus === FileStatus.Completed,
     );
     this.generateLink.emit(completedFiles);
   }
