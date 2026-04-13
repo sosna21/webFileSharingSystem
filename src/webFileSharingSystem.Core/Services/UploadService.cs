@@ -83,14 +83,17 @@ namespace webFileSharingSystem.Core.Services
                 var file = new File
                 {
                     //file belongs to directory owner (in shared directories uploads)
-                    UserId = targetUserId, 
+                    UserId = targetUserId,
                     FileName = fileName,
                     MimeType = mimeType,
                     Size = (ulong)size,
                     FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,
                     FileGuid = fileGuidId,
                     ParentId = parentId,
-                    PartialFileInfo = partialFileInfo
+                    PartialFileInfo = partialFileInfo,
+                    Creator = isOwnFile
+                        ? targetUser
+                        : (await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken))!
                 };
 
                 _unitOfWork.Repository<File>().Add(file);
@@ -128,6 +131,7 @@ namespace webFileSharingSystem.Core.Services
                         AccessMode = sharedFile?.AccessMode,
                         ValidUntil = sharedFile?.ValidUntil,
                         SharedUserName = sharedFile?.SharedUserName,
+                        SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
                         IsInherited = sharedFile?.IsInherited
                     };
                     
@@ -482,7 +486,7 @@ namespace webFileSharingSystem.Core.Services
                 _cacheDictionary.TryGetValue(key, out var cacheValueLazy);
                 var cacheValue = cacheValueLazy?.IsValueCreated ?? false ? cacheValueLazy.Value.Result : null;
 
-                if (cacheValue is not null)
+                if (cacheValue is not null && !cacheValue.IsJunk)
                 {
                     value = cacheValue;
                     return true;

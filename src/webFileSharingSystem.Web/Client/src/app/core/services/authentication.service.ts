@@ -65,13 +65,28 @@ export class AuthenticationService {
   }
 
   private handleLogInResponse(response: any) {
-    let user = <User>response.user;
+    const user = response.user as User;
     user.token = response.tokens.token;
 
     this.jwtService.setTokenAndUpdateUserInfo(user);
     this.localStorageManager.saveUser(user);
     this._currentUser.set(user);
     return user;
+  }
+
+  updateCurrentUserPhoto(photoUrl: string | null) {
+    const currentUser = this._currentUser();
+    if (!currentUser) {
+      return;
+    }
+
+    const updatedUser: User = {
+      ...currentUser,
+      photoUrl,
+    };
+
+    this.localStorageManager.saveUser(updatedUser);
+    this._currentUser.set(updatedUser);
   }
 
   refreshToken() {
@@ -112,13 +127,5 @@ export class AuthenticationService {
   private removeUser() {
     this.localStorageManager.removeUser();
     this._currentUser.set(null);
-  }
-
-  updateCurrentUserUsedSpace(difference: number): void {
-    if (!this._currentUser()) return;
-    this._currentUser.update(
-      (user) => ({ ...user, usedSpace: user!.usedSpace + difference }) as User,
-    );
-    localStorage.setItem('currentUser', JSON.stringify(this._currentUser()));
   }
 }

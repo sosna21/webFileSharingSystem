@@ -5,7 +5,11 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  takeUntilDestroyed,
+  toObservable,
+  toSignal,
+} from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
@@ -13,7 +17,17 @@ import { FileResponse } from '../models/file-response.model';
 import { debouncedSignal } from '../utils/signal-utils';
 import { Router, NavigationEnd } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
-import { Observable, filter, map } from 'rxjs';
+import {
+  Observable,
+  filter,
+  map,
+  switchMap,
+  interval,
+  catchError,
+  EMPTY,
+  tap,
+  of,
+} from 'rxjs';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
@@ -31,6 +45,7 @@ import {
 } from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
+import { StorageService } from './storage.service';
 import { AuthenticationService } from './authentication.service';
 
 @Injectable()
@@ -38,7 +53,8 @@ export class FileService {
   private readonly fileUrl = `${environment.apiUrl}/File`;
   private readonly router = inject(Router);
   private readonly fileApiService = inject(FileApiService);
-  private readonly auth = inject(AuthenticationService);
+  private readonly authService = inject(AuthenticationService);
+  private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private readonly actionContext = linkedSignal<
@@ -47,7 +63,7 @@ export class FileService {
   >({
     source: () =>
       Object.fromEntries(
-        this.userFiles().map((item) => [item.id, item]),
+        this._userFiles().map((item) => [item.id, item]),
       ) as Record<string, BaseFile>,
     computation: (source, previous) => {
       if (!previous || !previous.value?.files) return null;
@@ -110,31 +126,169 @@ export class FileService {
 
   public readonly currentPage = signal<number>(1);
   public readonly itemsPerPage = signal<number>(9999);
-  public readonly userFiles = linkedSignal<AppFile[]>(
-    () =>
-      this._linkedFilesResponse()
-        ?.items.map((file) => ({
-          ...file,
-          progressStatus: ProgressStatus.Stopped,
-        }))
-        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? [],
-  );
+  private readonly _userFiles = linkedSignal<
+    FileResponse<AppFile> | undefined,
+    AppFile[]
+  >({
+    source: () => this._linkedFilesResponse(),
+    computation: (source, previous) => {
+      const prevProgress = new Map(
+        previous?.value?.map((f) => [f.id, f.progressStatus]) ?? [],
+      );
 
-  public readonly sharedFiles = linkedSignal<SharedFile[]>(
-    () =>
-      this._linkedSharedFilesResponse()
-        ?.items.map((file) => ({
+      return (
+        source?.items.map((file) => ({
           ...file,
-          progressStatus: ProgressStatus.Stopped,
-          fileStatus: FileStatus.Completed,
-        }))
-        .sort((a, b) => a.fileName.localeCompare(b.fileName)) ?? [],
-  );
+          progressStatus: prevProgress.get(file.id) ?? ProgressStatus.Stopped,
+        })) ?? []
+      );
+    },
+  });
+
+  public readonly sortOption = signal<{
+    column: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  public toggleSort(column: string) {
+    this.sortOption.update((current) => {
+      if (current?.column === column) {
+        if (current.direction === 'asc') {
+          return { column, direction: 'desc' };
+        } else {
+          return null;
+        }
+      }
+      return { column, direction: 'asc' };
+    });
+  }
+
+  private sortFiles<T extends BaseFile>(
+    files: T[],
+    sort: { column: string; direction: 'asc' | 'desc' } | null,
+    isUserFiles: boolean,
+  ): T[] {
+    return files.sort((a, b) => {
+      if (isUserFiles) {
+        const currentUserId = this.authService.currentUser()?.id;
+        const aIsOther =
+          a.createdBy !== currentUserId &&
+          a.fileStatus === FileStatus.Incomplete;
+        const bIsOther =
+          b.createdBy !== currentUserId &&
+          b.fileStatus === FileStatus.Incomplete;
+        if (aIsOther !== bIsOther) {
+          // Uploading files, not created by user go first
+          return aIsOther ? -1 : 1;
+        }
+      }
+
+      if (sort) {
+        let valA: any;
+        let valB: any;
+
+        switch (sort.column) {
+          case 'fileName':
+            valA = a.fileName;
+            valB = b.fileName;
+            break;
+          case 'size':
+            valA = a.size;
+            valB = b.size;
+            break;
+          case 'lastModification':
+            valA = (a as any).modificationDate;
+            valB = (b as any).modificationDate;
+            break;
+          case 'createdByUserName':
+            valA = a.createdByUserName;
+            valB = b.createdByUserName;
+            break;
+          case 'favourite':
+            valA = !!(a as any).isFavourite;
+            valB = !!(b as any).isFavourite;
+            break;
+          case 'share':
+            valA = !!(a as any).isShared;
+            valB = !!(b as any).isShared;
+            break;
+          case 'validUntil':
+            valA = a.validUntil;
+            valB = b.validUntil;
+            break;
+          case 'accessMode':
+            valA = a.accessMode;
+            valB = b.accessMode;
+            break;
+          case 'sharedBy/createdBy':
+            valA = this.parentId()
+              ? a.createdByUserName
+              : (a as any).sharedUserName;
+            valB = this.parentId()
+              ? b.createdByUserName
+              : (b as any).sharedUserName;
+            break;
+          default:
+            valA = (a as any)[sort.column];
+            valB = (b as any)[sort.column];
+        }
+
+        let comparison = 0;
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          comparison = valA.localeCompare(valB);
+        } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+          comparison = valA === valB ? 0 : valA ? 1 : -1;
+        } else if (valA != null && valB != null) {
+          comparison = valA < valB ? -1 : valA > valB ? 1 : 0;
+        } else if (valA != null) {
+          comparison = 1;
+        } else if (valB != null) {
+          comparison = -1;
+        }
+
+        if (comparison !== 0) {
+          return sort.direction === 'asc' ? comparison : -comparison;
+        }
+      }
+
+      // Default sorting by fileName
+      return a.fileName.localeCompare(b.fileName);
+    });
+  }
+
+  public readonly userFiles = computed(() => {
+    const files = [...this._userFiles()];
+    return this.sortFiles(files, this.sortOption(), true);
+  });
+
+  private readonly _sharedFiles = linkedSignal<
+    FileResponse<SharedFile> | undefined,
+    SharedFile[]
+  >({
+    source: () => this._linkedSharedFilesResponse(),
+    computation: (source, previous) => {
+      const prevProgress = new Map(
+        previous?.value?.map((f) => [f.id, f.progressStatus]) ?? [],
+      );
+
+      return (
+        source?.items.map((file) => ({
+          ...file,
+          progressStatus: prevProgress.get(file.id) ?? ProgressStatus.Stopped,
+        })) ?? []
+      );
+    },
+  });
+
+  public readonly sharedFiles = computed(() => {
+    const files = [...this._sharedFiles()];
+    return this.sortFiles(files, this.sortOption(), false);
+  });
 
   public readonly currentFiles = computed<(AppFile | SharedFile)[]>(() => {
     return this.mode() === 'GetSharedWithMe'
-      ? this.sharedFiles()
-      : this.userFiles();
+      ? this._sharedFiles()
+      : this._userFiles();
   });
 
   readonly names = computed(
@@ -170,6 +324,48 @@ export class FileService {
           : ''
       }`,
   );
+
+  constructor() {
+    toObservable(this.parentId)
+      .pipe(
+        switchMap(() => interval(3000)),
+        switchMap((tick) => {
+          if (tick % 5 === 4) {
+            this.refreshActiveList();
+            return EMPTY;
+          }
+
+          const hasThirdPartyActiveUploads = this.currentFiles().some(
+            (file) =>
+              file.fileStatus === FileStatus.Incomplete &&
+              file.createdBy !== this.authService.currentUser()?.id,
+          );
+
+          if (hasThirdPartyActiveUploads) {
+            return this.fileApiService.getActiveUploads(this.parentId()).pipe(
+              catchError(() => of([])),
+              tap((uploads) => {
+                uploads.forEach((upload) => {
+                  if (upload.status === FileStatus.Completed) {
+                    this.completeUploadFile(upload.fileId);
+                  } else {
+                    this.updateFileUploadProgress({
+                      fileId: upload.fileId,
+                      progress: upload.uploadProgress,
+                      status: UploadStatus.Stopped,
+                    });
+                  }
+                });
+              }),
+            );
+          }
+
+          return EMPTY;
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe();
+  }
 
   private refreshActiveList() {
     if (this.mode() === 'GetSharedWithMe') {
@@ -254,6 +450,7 @@ export class FileService {
   });
 
   goToFolder(folderId: number | null) {
+    this.searchedPhrase.set('');
     if (folderId === null)
       this.router.navigate(['/disc', this.mapModeToRoute(this.mode())]);
     else
@@ -316,11 +513,11 @@ export class FileService {
   // Update this method to handle both lists
   updateFile(file: BaseFile, updates: Record<string, any>) {
     if (this.mode() === 'GetSharedWithMe') {
-      this.sharedFiles.update((files) =>
+      this._sharedFiles.update((files) =>
         files.map((f) => (f.id === file.id ? { ...f, ...updates } : f)),
       );
     } else {
-      this.userFiles.update((files) =>
+      this._userFiles.update((files) =>
         files.map((f) => (f.id === file.id ? { ...f, ...updates } : f)),
       );
     }
@@ -540,30 +737,40 @@ export class FileService {
     const totalFiles = filesToDelete.length;
     const fileNamesList = filesToDelete.map((f) => f.fileName);
 
+    const areFilesUploaded = filesToDelete.every(
+      (file) => file.fileStatus === FileStatus.Completed,
+    );
     let confirmText = '';
 
     if (totalFiles === 1) {
-      confirmText = `Are you sure you want to delete '${fileNamesList[0]}' file?`;
-    } else if (totalFiles > maxLines) {
-      const shownCount = Math.max(1, maxLines - 1);
-      const shown = fileNamesList.slice(0, shownCount);
-      const remainingCount = totalFiles - shownCount;
-      const displayNames = [
-        ...shown.map((name) => `• ${name}`),
-        `...and ${remainingCount} more`,
-      ];
-      confirmText = `Are you sure you want to delete these files?\n${displayNames.join(
-        '\n',
-      )}`;
+      confirmText = areFilesUploaded
+        ? `Are you sure you want to delete '${fileNamesList[0]}' file?`
+        : `Are you sure you want to cancel upload for '${fileNamesList[0]}' file?`;
     } else {
-      const displayNames = fileNamesList.map((name) => `• ${name}`);
-      confirmText = `Are you sure you want to delete these files?\n${displayNames.join(
-        '\n',
-      )}`;
+      let displayNames: string[] = [];
+      if (totalFiles > maxLines) {
+        const shownCount = Math.max(1, maxLines - 1);
+        const shown = fileNamesList.slice(0, shownCount);
+        const remainingCount = totalFiles - shownCount;
+        displayNames = [
+          ...shown.map((name) => `• ${name}`),
+          `...and ${remainingCount} more`,
+        ];
+      } else {
+        displayNames = fileNamesList.map((name) => `• ${name}`);
+      }
+
+      confirmText =
+        (areFilesUploaded
+          ? 'Are you sure you want to delete these files?'
+          : `Are you sure you want to cancel upload for these files?`) +
+        `\n${displayNames.join('\n')}`;
     }
 
     const confirmationResult = await this.modalService.confirmChoice({
-      title: 'Confirm File Deletion',
+      title: areFilesUploaded
+        ? 'Confirm File Deletion'
+        : 'Confirm Upload Cancellation',
       message: confirmText,
       confirmText: 'Delete',
       cancelText: 'Cancel',
@@ -577,15 +784,15 @@ export class FileService {
       beforeStart: (file) => this.setLoading(file.id, true),
       onSuccess: (file) => {
         this.mode() === 'GetSharedWithMe'
-          ? this.sharedFiles.update((list) =>
+          ? this._sharedFiles.update((list) =>
               list.filter((f) => f.id !== file.id),
             )
-          : this.userFiles.update((list) =>
+          : this._userFiles.update((list) =>
               list.filter((f) => f.id !== file.id),
             );
 
         if (this.mode() !== 'GetSharedWithMe') {
-          this.auth.updateCurrentUserUsedSpace(-file.size);
+          this.storage.updateCurrentUserUsedSpace(-file.size);
         }
       },
       onError: (file, err) => {
@@ -600,13 +807,17 @@ export class FileService {
       successMessage: (count) => {
         if (count === 1) {
           return {
-            title: 'File Deletion',
-            message: `Deleted '${filesToDelete[0].fileName}' successfully`,
+            title: areFilesUploaded ? 'File Deletion' : 'Upload Cancellation',
+            message: areFilesUploaded
+              ? `Deleted '${filesToDelete[0].fileName}' successfully`
+              : `Cancelled upload for '${filesToDelete[0].fileName}' successfully`,
           };
         } else {
           return {
-            title: 'File Deletion',
-            message: `Deleted ${count} files successfully`,
+            title: areFilesUploaded ? 'File Deletion' : 'Upload Cancellation',
+            message: areFilesUploaded
+              ? `Deleted ${count} files successfully`
+              : `Cancelled upload for ${count} files successfully`,
           };
         }
       },
@@ -649,7 +860,7 @@ export class FileService {
           }
 
           if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
-            this.auth.updateCurrentUserUsedSpace(
+            this.storage.updateCurrentUserUsedSpace(
               (result as BaseFile[]).reduce((acc, file) => acc + file.size, 0),
             );
           }
@@ -668,13 +879,23 @@ export class FileService {
       });
   }
 
-  addFileIfNotExists(file: AppFile) {
-    if (this.userFiles().find((f) => f.id === file.id)) return;
-    this.userFiles.update((files) => [...files, file]);
+  addFileIfNotExists(file: AppFile | SharedFile) {
+    if (this.mode() === 'GetSharedWithMe') {
+      const fileToAdd = file as SharedFile;
+      if (this._sharedFiles().find((f) => f.id === file.id)) return;
+      this._sharedFiles.update((files) => [...files, fileToAdd]);
+    } else {
+      const fileToAdd = file as AppFile;
+      if (this._userFiles().find((f) => f.id === file.id)) return;
+      this._userFiles.update((files) => [...files, fileToAdd]);
+    }
   }
 
   completeUploadFile(fileId: number): void {
-    this.userFiles.update((files) =>
+    const currentFilesSignal =
+      this.mode() === 'GetSharedWithMe' ? this._sharedFiles : this._userFiles;
+
+    currentFilesSignal.update((files: any[]) =>
       files.map((file) =>
         file.id === fileId
           ? { ...file, fileStatus: FileStatus.Completed }
@@ -705,7 +926,9 @@ export class FileService {
   }
 
   updateFileUploadProgress(uploadProgressInfo: UploadProgressInfo) {
-    this.userFiles.update((files) =>
+    const currentFilesSignal =
+      this.mode() === 'GetSharedWithMe' ? this._sharedFiles : this._userFiles;
+    currentFilesSignal.update((files: any[]) =>
       files.map((file) =>
         uploadProgressInfo.fileId === file.id
           ? {

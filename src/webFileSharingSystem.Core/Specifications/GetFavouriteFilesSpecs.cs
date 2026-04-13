@@ -9,6 +9,8 @@ namespace webFileSharingSystem.Core.Specifications
                     && file.IsFavourite == true
                     && (string.IsNullOrEmpty(searchPhrase) || file.FileName.Contains(searchPhrase)))
         {
+            AddInclude(file => file.Creator);
+            AddInclude(file => file.Shares);
             ApplyOrderBy(file => file.Id);
         }
     }

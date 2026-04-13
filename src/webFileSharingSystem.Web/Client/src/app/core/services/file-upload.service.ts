@@ -29,6 +29,9 @@ import { MessageSeverity } from '../models/toast-info.model';
 import { UploadFileInfo } from '../models/upload-file-info.model';
 import { AppFile } from '../models/app-file.model';
 import { FileService } from './file.service';
+import { BaseFile } from '../models/base-file.model';
+import { SharedFile } from '../models/shared-file.model';
+import { StorageService } from './storage.service';
 
 @Injectable()
 export class FileUploadService {
@@ -36,6 +39,7 @@ export class FileUploadService {
   private readonly numberOfConcurrentChunkUploads = 2;
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthenticationService);
+  private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);
 
@@ -124,9 +128,14 @@ export class FileUploadService {
                   tap(() => successCount++),
                   catchError((err) => {
                     failCount++;
+                    var errorMessage =
+                      err.error[0] ===
+                      'File does not exist or you do not have access'
+                        ? 'Upload was cancelled by directory owner'
+                        : '';
                     this.toast.show(
                       'Upload error',
-                      `Failed to upload file '${file.name}'`,
+                      `Failed to upload file '${file.name}'${errorMessage ? `. ${errorMessage}` : ''}`,
                       MessageSeverity.error,
                     );
                     return EMPTY;
@@ -172,7 +181,7 @@ export class FileUploadService {
 
         // Only update used space for new uploads, and not for "Shared with me" folder
         if (this.fileService.mode() !== 'GetSharedWithMe')
-          this.auth.updateCurrentUserUsedSpace(file.size);
+          this.storage.updateCurrentUserUsedSpace(file.size);
 
         this.filesInfo[partial.fileId] = { partial, file };
 
@@ -319,7 +328,7 @@ export class FileUploadService {
     });
   }
 
-  public async resume(file: AppFile, parentId: number | null = null) {
+  public async resume(file: BaseFile, parentId: number | null = null) {
     const fileId = file.id;
     let fileInfo = this.filesInfo[fileId];
     if (!fileInfo) {
@@ -469,7 +478,10 @@ export class FileUploadService {
       mimeType: file.type,
       parentId,
     };
-    return this.http.post<AppFile>(`${environment.apiUrl}/Upload/Start`, data);
+    return this.http.post<AppFile | SharedFile>(
+      `${environment.apiUrl}/Upload/Start`,
+      data,
+    );
   }
 
   private completeFileUpload(fileId: number) {

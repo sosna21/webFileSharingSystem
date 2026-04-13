@@ -15,7 +15,11 @@ export class TableContextMenuComponent {
   readonly position = input.required<{ x: number; y: number }>();
   readonly accessMode = input.required<ShareAccessMode | undefined>();
   readonly canPaste = input.required<boolean>();
-  readonly sortableColumns = input<string[]>();
+  readonly sortableColumns = input<{ column: string; displayName: string }[]>();
+  readonly sortOption = input<{
+    column: string;
+    direction: 'asc' | 'desc';
+  } | null>();
 
   readonly ShareAccessMode = ShareAccessMode;
   readonly hasMinReadWriteAccess = computed(

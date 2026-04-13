@@ -5,4 +5,5 @@ export interface SharedFile extends BaseFile {
 
   shareId: number | null;
   sharedUserName: string;
+  sharedUserPhotoUrl: string | null;
 }

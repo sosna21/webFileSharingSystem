@@ -62,19 +62,19 @@ namespace webFileSharingSystem.Web.Controllers
             {
                 var files = await _unitOfWork.Repository<File>()
                     .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                        file => ToFileResponse(file, userId!.Value),
+                        ToFileResponse,
                         new GetAllFilesSpecs(userId!.Value, request.ParentId));
                 return files;
             }
-            
+
             if (request.ParentId is null)
                 return await _unitOfWork.Repository<File>().PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    file => ToFileResponse(file, userId!.Value),
+                    ToFileResponse,
                     new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!));
-            
+
             var filteredFiles = await _unitOfWork.Repository<File>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    file => ToFileResponse(file, userId!.Value),
+                    ToFileResponse,
                     _unitOfWork.CustomQueriesRepository().GetFilteredListOfAllChildrenAsFilesQuery(
                         request.ParentId.Value, new GetSearchedFilesSpec(userId!.Value, request.SearchedPhrase!)));
 
@@ -99,7 +99,7 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    file => ToFileResponse(file, userId!.Value),
+                    file => ToFileResponse(file),
                     new GetFavouriteFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
 
@@ -111,7 +111,7 @@ namespace webFileSharingSystem.Web.Controllers
             var userId = _currentUserService.UserId;
             return await _unitOfWork.Repository<File>()
                 .PaginatedListFindAsync(request.PageNumber, request.PageSize,
-                    file => ToFileResponse(file, userId!.Value)
+                    file => ToFileResponse(file)
                     , new GetRecentFilesSpecs(userId!.Value, request.SearchedPhrase));
         }
 
@@ -124,7 +124,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .PaginatedListFindAsync<File, FileResponse>(
                     request.PageNumber,
                     request.PageSize,
-                    file => ToFileResponse(file, userId),
+                    file => ToFileResponse(file),
                     new GetSharedByUserFilesSpec(userId, request.SearchedPhrase)
                 );
 
@@ -188,7 +188,7 @@ namespace webFileSharingSystem.Web.Controllers
                 return actionResult.ToActionResult(actionResult.Errors.Length > 0
                 ? actionResult.Errors[0]
                 : "Unknown problem with creating a directory");
-            return Ok(ToFileResponse(file!, userId!.Value));
+            return Ok(ToFileResponse(file!));
         }
 
         [HttpDelete]
@@ -210,7 +210,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             if (ctx!.First().IsOwnFile)
             {
-                var response = ctx.Select(c => ToFileResponse(c.File, userId.Value));
+                var response = ctx.Select(c => ToFileResponse(c.File));
                 return Ok(response);
             }
 
@@ -229,7 +229,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             if (ctx!.First().IsOwnFile)
             {
-                var response = ctx.Select(c => ToFileResponse(c.File, userId.Value));
+                var response = ctx.Select(c => ToFileResponse(c.File));
                 return Ok(response);
             }
 
@@ -237,8 +237,17 @@ namespace webFileSharingSystem.Web.Controllers
             return Ok(sharedFilesResponse);
         }
 
-        private FileResponse ToFileResponse(File file, int userId)
+        private FileResponse ToFileResponse(File file)
         {
+            var activeShares = file.Shares.Where(IsActiveShare).ToArray();
+            var hasIndefiniteShare = activeShares.Any(share => share.ValidUntil is null);
+            var sharedUntil = hasIndefiniteShare
+                ? null
+                : activeShares.Where(share => share.ValidUntil.HasValue)
+                    .Select(share => share.ValidUntil!.Value)
+                    .Cast<DateTime?>()
+                    .Max();
+
             return new FileResponse
             {
                 Id = file.Id,
@@ -246,27 +255,34 @@ namespace webFileSharingSystem.Web.Controllers
                 FileName = file.FileName,
                 MimeType = file.MimeType,
                 Size = file.Size,
-                IsShared = file.IsShared,
+                IsShared = activeShares.Length > 0,
+                SharedUntil = sharedUntil is not null ? DateTime.SpecifyKind(sharedUntil.Value, DateTimeKind.Utc) : null,
                 IsFavourite = file.IsFavourite,
                 IsDirectory = file.IsDirectory,
                 ModificationDate = DateTime.SpecifyKind(file.LastModified ?? file.Created, DateTimeKind.Utc),
                 FileStatus = file.FileStatus,
-                PartialFileInfo =  _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo,
+                PartialFileInfo =  _uploadService.GetCachedPartialFileInfo(file.CreatedBy, file.Id) ?? file.PartialFileInfo,
                 UploadProgress = CalculateUploadProgress(
-                    _uploadService.GetCachedPartialFileInfo(userId, file.Id) ?? file.PartialFileInfo)
+                    _uploadService.GetCachedPartialFileInfo(file.CreatedBy, file.Id) ?? file.PartialFileInfo),
+                CreatedBy = file.CreatedBy,
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
+                CreatedByPhotoUrl = GetPhotoUrl(file.Creator.PhotoAccessId)
             };
         }
-        
-        private static SharedFileResponse ToSharedFileResponse(SharedFileSqlRow sharedFile)
+
+        private SharedFileResponse ToSharedFileResponse(SharedFileSqlRow sharedFile)
         {
-            var partialFileInfo = sharedFile.PartialFileInfoId.HasValue ? new PartialFileInfo
-            {
-                FileId = sharedFile.Id,
-                FileSize = sharedFile.UploadFileSize!.Value,
-                ChunkSize = sharedFile.ChunkSize!.Value,
-                PersistenceMap = sharedFile.PersistenceMap!,
-            } : null;
-            
+            var partialFileInfo = _uploadService.GetCachedPartialFileInfo(sharedFile.FileCreatedBy, sharedFile.Id) ??
+                                  (sharedFile.PartialFileInfoId.HasValue
+                                      ? new PartialFileInfo
+                                      {
+                                          FileId = sharedFile.Id,
+                                          FileSize = sharedFile.UploadFileSize!.Value,
+                                          ChunkSize = sharedFile.ChunkSize!.Value,
+                                          PersistenceMap = sharedFile.PersistenceMap!,
+                                      }
+                                      : null);
+
             return new SharedFileResponse
             {
                 Id = sharedFile.Id,
@@ -277,15 +293,19 @@ namespace webFileSharingSystem.Web.Controllers
                 Size = sharedFile.Size,
                 IsDirectory = sharedFile.IsDirectory,
                 SharedUserName = sharedFile.SharedUserName,
+                SharedUserPhotoUrl = GetPhotoUrl(sharedFile.SharedUserPhotoAccessId),
                 AccessMode = sharedFile.AccessMode,
                 ValidUntil = sharedFile.ValidUntil is not null ? DateTime.SpecifyKind(sharedFile.ValidUntil.Value, DateTimeKind.Utc) : null,
                 FileStatus = sharedFile.FileStatus,
+                CreatedBy = sharedFile.FileCreatedBy,
+                CreatedByUserName = sharedFile.FileCreatedByUserName ?? sharedFile.FileCreatedByEmail!,
+                CreatedByPhotoUrl = GetPhotoUrl(sharedFile.CreatedByPhotoAccessId), 
                 PartialFileInfo = partialFileInfo,
                 UploadProgress = CalculateUploadProgress(partialFileInfo)
             };
         }
-        
-        private static SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
+
+        private SharedFileResponse ToSharedFileResponse(FileOperationContext ctx)
         {
             var file = ctx.File;
             return new SharedFileResponse
@@ -302,10 +322,20 @@ namespace webFileSharingSystem.Web.Controllers
                 ValidUntil = ctx.ValidUntil is not null
                     ? DateTime.SpecifyKind(ctx.ValidUntil.Value, DateTimeKind.Utc)
                     : null,
+                CreatedBy = file.CreatedBy,
+                CreatedByUserName = file.Creator.UserName ?? file.Creator.EmailAddress!,
+                CreatedByPhotoUrl = GetPhotoUrl(file.Creator.PhotoAccessId),
+                SharedUserPhotoUrl = null,
                 FileStatus = file.FileStatus,
                 PartialFileInfo = file.PartialFileInfo,
                 UploadProgress = 0
             };
+        }
+
+        private static bool IsActiveShare(Share share)
+        {
+            return share.RevokedAt is null &&
+                   (share.ValidUntil is null || share.ValidUntil.Value > DateTime.UtcNow);
         }
 
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
@@ -314,6 +344,14 @@ namespace webFileSharingSystem.Web.Controllers
             var uploadedChunks = partialFileInfo.PersistenceMap
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
             return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
+        }
+        
+        private string? GetPhotoUrl(Guid? photoAccessId)
+        {
+            if (!photoAccessId.HasValue)
+                return null;
+
+            return Url.ActionLink("GetPhotoById", "User", new { photoId = photoAccessId.Value });
         }
     }
 }

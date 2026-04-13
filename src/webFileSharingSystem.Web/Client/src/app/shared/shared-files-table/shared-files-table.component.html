@@ -12,12 +12,14 @@
 <app-table-context-menu
   [position]="contextMenuPosition()"
   [accessMode]="currentDirectoryAccessMode()"
-  [sortableColumns]="columnsToDisplay()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
   [canPaste]="canPaste()"
   (refresh)="refresh()"
   (createFolder)="createFolder()"
   (upload)="uploadFiles($event)"
   (paste)="pasteFiles()"
+  (sortByColumn)="toggleSort($event)"
 />
 
 <div
@@ -40,14 +42,6 @@
       recycleRows
       class="table table-hover table-sm no-select my-0"
     >
-      <!-- File id Definition -->
-      <ng-container cdkColumnDef="id">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
-          Id
-        </th>
-        <td cdk-cell *cdkCellDef="let file">{{ file.id }}</td>
-      </ng-container>
-
       <!-- Row Selector Definition -->
       <ng-container cdkColumnDef="rowSelector">
         <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
@@ -64,64 +58,73 @@
           *cdkCellDef="let file"
           class="d-table-cell align-middle text-center"
         >
-          @if (file.fileStatus === FileStatus.Incomplete) {
-            <i
-              class="bi bi-x-octagon text-danger"
-              style="-webkit-text-stroke: 1px; font-size: large"
-              appClicableIcon
-              ngbTooltip="Cancel upload"
-              [openDelay]="300"
-            ></i>
-          } @else if (isLoading(file.id)) {
-            <span class="spinner-border spinner-border-sm"></span>
-          }
+          <app-row-selector-cell
+            [file]="file"
+            [isLoading]="isLoading(file.id)"
+            (cancelFilesUpload)="cancelFilesUpload($event)"
+          />
         </td>
       </ng-container>
 
       <!-- File name Definition -->
       <ng-container cdkColumnDef="fileName">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" class="text-left">
-          FileName
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          (click)="toggleSort('fileName')"
+        >
+          <app-sortable-header column="fileName" [sortOption]="sortOption()"
+            >File Name</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-            @if (editingId() === file.id) {
-              <input
-                appSelectFilename
-                type="text"
-                style="min-width: 85%"
-                [ngModel]="file.fileName"
-                [placeholder]="file.fileName"
-                (blur)="rename(file, $any($event.target).value)"
-                (keydown)="fileRenameKeyDown($event, file)"
-              />
-            } @else {
-              {{ file.fileName }}
-            }
-          </div>
+          <app-file-name-cell
+            [file]="file"
+            [editingId]="editingId()"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (rename)="rename($event.file, $event.newName)"
+            (fileRenameKeyDown)="fileRenameKeyDown($event.event, $event.file)"
+            (stopFilesUpload)="stopFilesUpload($event)"
+            (continueFilesUpload)="continueFilesUpload($event)"
+          />
         </td>
       </ng-container>
 
-      <!-- Shared User Name Definition -->
-      <ng-container cdkColumnDef="sharedUserName">
+      <!-- Shared User Name / Created By Definition -->
+      <ng-container cdkColumnDef="sharedBy/createdBy">
         <th
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 12%"
+          (click)="toggleSort('sharedBy/createdBy')"
         >
-          Shared By
+          <app-sortable-header
+            column="sharedBy/createdBy"
+            [sortOption]="sortOption()"
+            >{{
+              currentDirectoryId() ? "Created By" : "Shared By"
+            }}</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.sharedUserName }}
-          </div>
+          @if (currentDirectoryId()) {
+            <app-created-by-cell
+              [file]="file"
+              (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            />
+          } @else {
+            <app-shared-user-name-cell
+              [file]="file"
+              (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            />
+          }
         </td>
       </ng-container>
 
@@ -133,18 +136,23 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 10%"
+          (click)="toggleSort('accessMode')"
         >
-          Access Mode
+          <app-sortable-header column="accessMode" [sortOption]="sortOption()"
+            >Access Mode</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i class="bi" [class]="getAccessModeIconClass(file.accessMode)"></i>
-            {{ getAccessModeName(file.accessMode) }}
-          </div>
+          <app-access-mode-cell
+            [file]="file"
+            [accessModeName]="getAccessModeName(file.accessMode)"
+            [accessModeIconClass]="getAccessModeIconClass(file.accessMode)"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -154,40 +162,55 @@
           Actions
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i
-              #icon
-              appClicableIcon
-              class="bi bi-three-dots fs-5"
-              (click)="actionIconClick($event, icon, file)"
-              ngbTooltip="Show more actions"
-              [openDelay]="300"
-            ></i>
-          </div>
+          <app-actions-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (actionIconClick)="
+              actionIconClick($event.event, $event.icon, $event.file)
+            "
+          />
         </td>
       </ng-container>
 
       <!-- Size  Definition -->
       <ng-container cdkColumnDef="size">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 6%">
-          Size
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          style="width: 6%"
+          (click)="toggleSort('size')"
+        >
+          <app-sortable-header column="size" [sortOption]="sortOption()"
+            >Size</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.size | fileSize }}
-          </div>
+          <app-size-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
       <!-- Valid Until Definition -->
       <ng-container cdkColumnDef="validUntil">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 10%">
-          Valid Until
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          style="width: 10%"
+          (click)="toggleSort('validUntil')"
+        >
+          <app-sortable-header column="validUntil" [sortOption]="sortOption()"
+            >Valid Until</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.validUntil | remainigTime }}
-          </div>
+          <app-valid-until-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -215,9 +238,7 @@
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
         [class.selectable]="file.isDirectory"
         [draggable]="
-          file.fileStatus === FileStatus.Completed &&
-          !isLoading(file.id) &&
-          !isEditing(file.id)
+          canMoveSelected() && !isLoading(file.id) && !isEditing(file.id)
         "
         (dragstart)="onRowDragStart($event, file)"
         (dragleave)="onRowDragLeave($event, file)"
@@ -258,5 +279,5 @@
 <!-- Do not remove this -->
 <!-- Invisible drag preview component, necessary for drag preview view snapshot -->
 <div style="position: absolute; top: -9999px; left: -9999px">
-  <app-drag-preview [files]="selectedFiles()" />
+  <app-drag-preview [files]="movableSelectedFiles()" />
 </div>

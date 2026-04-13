@@ -9,13 +9,13 @@
     style="cursor: pointer"
   >
     <img
-      [src]="userPhotoUrl || 'user.png'"
-      alt="user proffile pic"
+      [src]="userPhotoUrl() ?? 'user.png'"
+      [alt]="'Profile photo of ' + userName()"
       width="32"
       height="32"
       class="rounded-circle"
     />
-    {{ userName }}
+    {{ userName() }}
   </span>
   <ul ngbDropdownMenu class="dropdown-menu text-small">
     <li ngbDropdownItem>

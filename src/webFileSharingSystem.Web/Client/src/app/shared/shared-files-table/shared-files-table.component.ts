@@ -7,26 +7,17 @@ import {
   ElementRef,
   inject,
   signal,
-  Signal,
   TrackByFunction,
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
-  NgbProgressbarModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
-import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
-import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
-import { AppFile } from '../../core/models/app-file.model';
-import { FileSizePipe } from '../../core/pipes/file-size.pipe';
-import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../core/services/download.service';
-import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
@@ -35,32 +26,44 @@ import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { SharedFile } from '../../core/models/shared-file.model';
 import { SharedFilesContextMenuComponent } from './shared-files-context-menu/shared-files-context-menu.component';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
-import { RemainigTimePipe } from '../../core/pipes/remainig-time.pipe';
 import { FileService } from '../../core/services/file.service';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
+import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
+import { RowSelectorCellComponent } from '../table-cells/row-selector-cell/row-selector-cell.component';
+import { ActionsCellComponent } from '../table-cells/actions-cell/actions-cell.component';
+import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component';
+import { ValidUntilCellComponent } from '../table-cells/valid-until-cell/valid-until-cell.component';
+import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cell/shared-user-name-cell.component';
+import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
+import { ToastService } from '../../core/services/toast.service';
+import { MessageSeverity } from '../../core/models/toast-info.model';
+import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
+import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 
 @Component({
   selector: 'app-shared-files-table',
   imports: [
     CommonModule,
-    FileToIconPipe,
     NgbTooltipModule,
     NgbDropdownModule,
     TimeagoModule,
-    FileSizePipe,
-    ClicableIconDirective,
-    FormsModule,
-    SelectFilenameDirective,
     SharedFilesContextMenuComponent,
     DragPreviewComponent,
-    NgbProgressbarModule,
     CdkTableModule,
-    RemainigTimePipe,
     UploadOverlayComponent,
     TableContextMenuComponent,
+    FileNameCellComponent,
+    RowSelectorCellComponent,
+    ActionsCellComponent,
+    SizeCellComponent,
+    ValidUntilCellComponent,
+    SharedUserNameCellComponent,
+    AccessModeCellComponent,
+    CreatedByCellComponent,
+    SortableHeaderComponent,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -72,40 +75,6 @@ import { generateUniqueDirName } from '../../core/utils/file-utils';
   },
 })
 export class SharedFilesTableComponent {
-  refresh() {
-    location.reload();
-  }
-
-  pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
-  }
-
-  uploadFiles($event: File[]) {
-    const filesWithPath: { file: File; path: string }[] = $event.map(
-      (file) => ({
-        file: file,
-        path: '',
-      }),
-    );
-    this.uploadService
-      .uploadFiles([], filesWithPath, this.fileService.parentId())
-      .subscribe();
-  }
-
-  async createFolder() {
-    const newDirName = await this.modalService.getNewDirectoryName({
-      startName: generateUniqueDirName(this.fileService.names()),
-      blacklistedNames: this.fileService.names(),
-    });
-
-    if (!newDirName) return;
-
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
-  }
-
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
@@ -114,21 +83,40 @@ export class SharedFilesTableComponent {
   private readonly selection = inject(SelectionService<SharedFile>);
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly modalService = inject(ModalService);
+  private readonly toast = inject(ToastService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
-  readonly currentDirectoryAccessMode = computed(() => this.fileService.parentBreadcrumb()?.accessMode);
+  readonly currentDirectoryAccessMode = computed(
+    () => this.fileService.parentBreadcrumb()?.accessMode,
+  );
+  readonly sortOption = this.fileService.sortOption;
+
+  toggleSort(column: string) {
+    this.fileService.toggleSort(column);
+  }
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
-    'id',
     'rowSelector',
     'fileName',
-    'sharedUserName',
+    'sharedBy/createdBy',
     'accessMode',
     'actions',
     'size',
     'validUntil',
   ]);
+
+  sortableColumns = computed(() => [
+    { column: 'fileName', displayName: 'File name' },
+    {
+      column: 'sharedBy/createdBy',
+      displayName: this.currentDirectoryId() ? 'Created By' : 'Shared By',
+    },
+    { column: 'accessMode', displayName: 'Access Mode' },
+    { column: 'size', displayName: 'Size' },
+    { column: 'validUntil', displayName: 'Valid Until' },
+  ]);
+
   files = this.fileService.sharedFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
@@ -138,6 +126,10 @@ export class SharedFilesTableComponent {
       this.files().length > 0 &&
       this.selectedIds().size === this.files().length,
   );
+  movableSelectedFiles = computed(() =>
+    (this.selectedFiles() as SharedFile[]).filter((file) => this.canMove(file)),
+  );
+  canMoveSelected = computed(() => this.movableSelectedFiles().length > 0);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
@@ -193,13 +185,6 @@ export class SharedFilesTableComponent {
     this.selection.onRowMouseUp(row, event);
   }
 
-  isFileUploadCompleted() {
-    // Shared files are always completed for now as we don't upload to shared folders yet?
-    // Or we check if it has status property. SharedFile doesn't have fileStatus.
-    // Assuming true for SharedFile as they are existing files.
-    return true;
-  }
-
   selectFolder(folderId: number) {
     this.fileService.goToFolder(folderId);
   }
@@ -225,17 +210,6 @@ export class SharedFilesTableComponent {
   downloadFiles(files: SharedFile[]) {
     this.downloadService.downloadFilesWithFeedback(files);
   }
-
-  // showShareManagementModal(sharedFile: AppFile) {
-  //   this.modalService.manageSharesModal({
-  //     sharedFile: sharedFile,
-  //     title: `Manage shares for file: '${sharedFile.fileName}'`,
-  //   });
-  // }
-
-  // shareFile(files: AppFile[]) {
-  //   this.shareService.shareFilesWithFeedback(files);
-  // }
 
   contextMenuClick(event: MouseEvent, file: SharedFile) {
     event.preventDefault();
@@ -265,6 +239,40 @@ export class SharedFilesTableComponent {
     this.selectedIds.set(new Set([file.id]));
 
     this.openContextMenu(position);
+  }
+
+  refresh() {
+    location.reload();
+  }
+
+  pasteFiles() {
+    this.fileService.pasteFilesWithFeedback();
+  }
+
+  uploadFiles($event: File[]) {
+    const filesWithPath: { file: File; path: string }[] = $event.map(
+      (file) => ({
+        file: file,
+        path: '',
+      }),
+    );
+    this.uploadService
+      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .subscribe();
+  }
+
+  async createFolder() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(
+      newDirName,
+      this.selection.selectedIds.set,
+    );
   }
 
   private openContextMenu(position: { x: number; y: number }) {
@@ -311,12 +319,21 @@ export class SharedFilesTableComponent {
   onRowDragStart(event: DragEvent, file: SharedFile) {
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
-    this.dragFacade.rowDragStart(
-      event,
-      file,
-      this.selectedFiles as unknown as Signal<AppFile[]>,
-      previewEl,
-    );
+
+    this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
+
+    // Unselect files that cannot be moved to avoid confusion during drag
+    if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
+      this.toast.show(
+        'File move',
+        'Unsellected files that cannot be moved',
+        MessageSeverity.info,
+      );
+
+      this.selectedIds.set(
+        new Set(this.movableSelectedFiles().map((f) => f.id)),
+      );
+    }
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {
@@ -332,7 +349,6 @@ export class SharedFilesTableComponent {
   }
 
   async onRowDrop(event: DragEvent, targetFile: SharedFile) {
-    //this.fileService.canPasteToDirectory(targetFile.id); //TODO check if can drop
     if (!this.canBeTargetDirectory(targetFile)) return;
 
     await this.dragFacade.rowDrop(event);
@@ -355,14 +371,14 @@ export class SharedFilesTableComponent {
   }
 
   // File upload controls
-  stopFilesUpload(files: AppFile[]) {
+  stopFilesUpload(files: SharedFile[]) {
     const uploadingFiles = files.filter(
       (file) => file.progressStatus === ProgressStatus.Started,
     );
     uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
   }
 
-  continueFilesUpload(files: AppFile[]) {
+  continueFilesUpload(files: SharedFile[]) {
     const stoppedFiles = files.filter(
       (file) => file.progressStatus === ProgressStatus.Stopped,
     );
@@ -371,13 +387,13 @@ export class SharedFilesTableComponent {
     );
   }
 
-  // async cancelFilesUpload(files: AppFile[]) {
-  //   const incompleteFiles = files.filter(
-  //     (file) => file.fileStatus === FileStatus.Incomplete
-  //   );
-  //   if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-  //     incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  // }
+  async cancelFilesUpload(files: SharedFile[]) {
+    const incompleteFiles = files.filter(
+      (file) => file.fileStatus === FileStatus.Incomplete,
+    );
+    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
+      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
+  }
 
   getFileSize(fileSize: string) {
     return +fileSize.split(' ')[0];
@@ -407,5 +423,12 @@ export class SharedFilesTableComponent {
       default:
         return 'bi-eye';
     }
+  }
+
+  canMove(file: SharedFile): boolean {
+    return (
+      file.fileStatus === FileStatus.Completed &&
+      file.accessMode! >= ShareAccessMode.ReadWrite
+    );
   }
 }

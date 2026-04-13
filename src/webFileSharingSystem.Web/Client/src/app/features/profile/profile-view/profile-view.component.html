@@ -1,0 +1,19 @@
+<div class="d-flex flex-column flex-sm-row align-items-center gap-4 mb-4">
+  <img
+    [src]="displayedPhotoUrl() ?? 'user.png'"
+    [alt]="'Profile photo of ' + (profile()?.userName ?? 'current user')"
+    width="120"
+    height="120"
+    class="rounded-circle profile-avatar shadow-sm"
+  />
+
+  <div class="text-center text-sm-start flex-grow-1">
+    <div class="fw-bold fs-5">
+      {{ profile()?.userName || "User" }}
+    </div>
+    <div class="text-secondary mb-3">
+      {{ profile()?.emailAddress || "No email" }}
+    </div>
+    <app-storage-quota></app-storage-quota>
+  </div>
+</div>

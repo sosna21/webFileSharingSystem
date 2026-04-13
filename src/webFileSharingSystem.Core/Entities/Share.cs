@@ -9,6 +9,7 @@ namespace webFileSharingSystem.Core.Entities
         public int SharedByUserId { get; set; }
         public int SharedWithUserId { get; set; }
         public int FileId { get; set; }
+        public virtual ApplicationUser SharedWithUser { get; set; } = null!;
         public File File { get; set; } = null!;
         public ShareAccessMode AccessMode { get; set; }
         public DateTime? ValidUntil { get; set; }

@@ -36,10 +36,8 @@
           ngbDropdownAnchor
           (click)="sortBySubmenu.toggle()"
           class="d-flex"
-          disabled
         >
           <i class="bi bi-sort-down me-1 text-secondary"></i> Sort By
-          <small class="mt-auto mx-1"> (in development)</small>
           <span class="ms-auto">→</span>
         </button>
         <div ngbDropdownMenu>
@@ -82,8 +80,8 @@
       [disabled]="!hasMinReadWriteAccess()"
     >
       <i
-        class="bi bi-upload me-1 text-primary"
-        [class.text-secondary]="hasMinReadWriteAccess()"
+        class="bi bi-upload me-1"
+        [class.text-primary]="hasMinReadWriteAccess()"
       ></i>
       Upload Files
     </button>
@@ -103,13 +101,20 @@
 </ng-template>
 
 <ng-template #sortByActions>
-  @for (column of sortableColumns()!; track $index) {
+  @for (col of sortableColumns()!; track $index) {
     <button
       ngbDropdownItem
-      (click)="sortByColumn.emit(column); menu.close()"
-      class="text-capitalize"
+      (click)="sortByColumn.emit(col.column); menu.close()"
+      class="text-capitalize d-flex align-items-center gap-1"
     >
-      {{ column }}
+      {{ col.displayName }}
+      @if (sortOption()?.column === col.column) {
+        <i
+          class="bi"
+          [class.bi-caret-up-fill]="sortOption()?.direction === 'asc'"
+          [class.bi-caret-down-fill]="sortOption()?.direction === 'desc'"
+        ></i>
+      }
     </button>
   }
 </ng-template>

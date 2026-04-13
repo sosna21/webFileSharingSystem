@@ -42,10 +42,12 @@ namespace webFileSharingSystem.Infrastructure
             {
                 services.AddSingleton(x => new BlobServiceClient(configuration.GetConnectionString("AzureBlobStorageConnection")));
                 services.AddScoped<IFilePersistenceService, AzureFilePersistenceService>();
+                services.AddScoped<IProfilePhotoPersistenceService, AzureProfilePhotoPersistenceService>();
             }
             else
             {
                 services.AddScoped<IFilePersistenceService, LocalFilePersistenceService>();
+                services.AddScoped<IProfilePhotoPersistenceService, LocalProfilePhotoPersistenceService>();
             }
 
             services.AddScoped<IApplicationDbContext>(provider => provider.GetService<ApplicationDbContext>()!);

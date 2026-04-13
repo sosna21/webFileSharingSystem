@@ -88,17 +88,37 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .WithOne()
                 .HasForeignKey<ApplicationUser>(e => e.IdentityUserId);
 
+            builder.Entity<ApplicationUser>()
+                .Property(e => e.PhotoMimeType)
+                .HasMaxLength(128);
+
+            builder.Entity<ApplicationUser>()
+                .HasIndex(e => e.PhotoFileGuid);
+
+            builder.Entity<ApplicationUser>()
+                .HasIndex(e => e.PhotoAccessId)
+                .HasFilter("[PhotoAccessId] IS NOT NULL")
+                .IsUnique();
+            
             builder.Entity<File>()
-                .HasOne<ApplicationUser>()
-                .WithMany(e => e.Files)
-                .HasForeignKey(e => e.UserId);
+                .HasOne(f => f.User)
+                .WithMany(u => u.Files)
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<File>()
-                .HasOne(e => e.Parent)
-                .WithMany(e => e.Children)
-                .HasForeignKey(e => e.ParentId);
+                .HasOne(f => f.Creator)
+                .WithMany()
+                .HasForeignKey(f => f.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            builder.Entity<File>()
+                .HasOne(f => f.Parent)
+                .WithMany(f => f.Children)
+                .HasForeignKey(f => f.ParentId);
 
-            builder.Entity<File>().HasIndex(t => t.FileGuid);
+            builder.Entity<File>()
+                .HasIndex(f => f.FileGuid);
 
             builder.Entity<PartialFileInfo>()
                 .HasOne<File>()
@@ -110,13 +130,16 @@ namespace webFileSharingSystem.Infrastructure.Data
                 .HasForeignKey(e => e.SharedByUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<Share>().HasOne<ApplicationUser>()
-                .WithMany(e => e.Shares)
+            builder.Entity<Share>()
+                .HasOne(e => e.SharedWithUser)
+                .WithMany()
                 .HasForeignKey(e => e.SharedWithUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             builder.Entity<Share>()
-                .HasOne(e => e.File);
+                .HasOne(e => e.File)
+                .WithMany(e => e.Shares)
+                .HasForeignKey(e => e.FileId);
             
             builder.Entity<Share>()
                 .HasIndex(s => new { s.FileId, s.SharedWithUserId })

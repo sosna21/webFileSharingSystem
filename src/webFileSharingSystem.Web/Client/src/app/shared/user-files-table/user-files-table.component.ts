@@ -1,5 +1,5 @@
 import { CdkTableModule } from '@angular/cdk/table';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,19 +12,13 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
-  NgbProgressbarModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
-import { ClicableIconDirective } from '../../core/directives/clicable-icon.directive';
-import { SelectFilenameDirective } from '../../core/directives/select-filename.directive';
 import { AppFile } from '../../core/models/app-file.model';
-import { FileSizePipe } from '../../core/pipes/file-size.pipe';
-import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { DownloadService } from '../../core/services/download.service';
 import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
@@ -38,26 +32,38 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
+import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
+import { RowSelectorCellComponent } from '../table-cells/row-selector-cell/row-selector-cell.component';
+import { ActionsCellComponent } from '../table-cells/actions-cell/actions-cell.component';
+import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component';
+import { FavouriteCellComponent } from '../table-cells/favourite-cell/favourite-cell.component';
+import { LastModificationCellComponent } from '../table-cells/last-modification-cell/last-modification-cell.component';
+import { ShareCellComponent } from '../table-cells/share-cell/share-cell.component';
+import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
+import { AuthenticationService } from '../../core/services/authentication.service';
+import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 
 @Component({
   selector: 'app-user-files-table',
   imports: [
     CommonModule,
-    DecimalPipe,
-    FileToIconPipe,
     NgbTooltipModule,
     NgbDropdownModule,
     TimeagoModule,
-    FileSizePipe,
-    ClicableIconDirective,
-    FormsModule,
-    SelectFilenameDirective,
     UserFilesContextMenuComponent,
     DragPreviewComponent,
-    NgbProgressbarModule,
     CdkTableModule,
     UploadOverlayComponent,
     TableContextMenuComponent,
+    FileNameCellComponent,
+    RowSelectorCellComponent,
+    ActionsCellComponent,
+    SizeCellComponent,
+    FavouriteCellComponent,
+    ShareCellComponent,
+    LastModificationCellComponent,
+    CreatedByCellComponent,
+    SortableHeaderComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -69,45 +75,12 @@ import { generateUniqueDirName } from '../../core/utils/file-utils';
   },
 })
 export class UserFilesTableComponent {
-  refresh() {
-    location.reload();
-  }
-
-  pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
-  }
-
-  uploadFiles($event: File[]) {
-    const filesWithPath: { file: File; path: string }[] = $event.map(
-      (file) => ({
-        file: file,
-        path: '',
-      }),
-    );
-    this.uploadService
-      .uploadFiles([], filesWithPath, this.fileService.parentId())
-      .subscribe();
-  }
-
-  async createFolder() {
-    const newDirName = await this.modalService.getNewDirectoryName({
-      startName: generateUniqueDirName(this.fileService.names()),
-      blacklistedNames: this.fileService.names(),
-    });
-
-    if (!newDirName) return;
-
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
-  }
-
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
   private readonly downloadService = inject(DownloadService);
+  private readonly authService = inject(AuthenticationService);
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly injector = inject(Injector);
@@ -116,17 +89,32 @@ export class UserFilesTableComponent {
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
+  readonly sortOption = this.fileService.sortOption;
+
+  toggleSort(column: string) {
+    this.fileService.toggleSort(column);
+  }
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([
-    'id',
     'rowSelector',
     'fileName',
     'favourite',
     'share',
     'actions',
     'size',
+    'createdByUserName',
     'lastModification',
   ]);
+
+  sortableColumns = computed(() => [
+    { column: 'fileName', displayName: 'File name' },
+    { column: 'favourite', displayName: 'Favourite' },
+    { column: 'share', displayName: 'Share' },
+    { column: 'size', displayName: 'Size' },
+    { column: 'createdByUserName', displayName: 'Created By' },
+    { column: 'lastModification', displayName: 'Last Modification' },
+  ]);
+
   files = this.fileService.userFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
@@ -136,6 +124,7 @@ export class UserFilesTableComponent {
       this.files().length > 0 &&
       this.selectedIds().size === this.files().length,
   );
+  currentUserId = computed(() => this.authService.currentUser()?.id);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(UserFilesContextMenuComponent);
@@ -189,10 +178,6 @@ export class UserFilesTableComponent {
 
   onRowMouseUp(row: AppFile, event: MouseEvent) {
     this.selection.onRowMouseUp(row, event);
-  }
-
-  isFileUploadCompleted(file: AppFile) {
-    return file.fileStatus === FileStatus.Completed;
   }
 
   selectFolder(folderId: number) {
@@ -276,6 +261,40 @@ export class UserFilesTableComponent {
     this.openContextMenu(position);
   }
 
+  refresh() {
+    location.reload();
+  }
+
+  pasteFiles() {
+    this.fileService.pasteFilesWithFeedback();
+  }
+
+  uploadFiles($event: File[]) {
+    const filesWithPath: { file: File; path: string }[] = $event.map(
+      (file) => ({
+        file: file,
+        path: '',
+      }),
+    );
+    this.uploadService
+      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .subscribe();
+  }
+
+  async createFolder() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(
+      newDirName,
+      this.selection.selectedIds.set,
+    );
+  }
+
   private openContextMenu(position: { x: number; y: number }) {
     this.contextMenu()?.close();
     this.tableContextMenu()?.close();
@@ -320,7 +339,7 @@ export class UserFilesTableComponent {
   onRowDragStart(event: DragEvent, file: AppFile) {
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
-    this.dragFacade.rowDragStart(event, file, this.selectedFiles, previewEl);
+    this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
   }
 
   onRowDragEnter(event: DragEvent, row: AppFile) {

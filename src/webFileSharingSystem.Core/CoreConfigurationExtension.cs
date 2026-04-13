@@ -13,9 +13,10 @@ namespace webFileSharingSystem.Core
             services.AddScoped<IShareService, ShareService>();
             services.AddScoped<IGuardService, GuardService>();
             services.AddScoped<IDownloadService, DownloadService>();
-            
+            services.AddScoped<IProfilePhotoService, ProfilePhotoService>();
+
             services.AddHostedService(sp => new RefreshUploadCacheService(sp));
-            
+
             return services;
         }
     }

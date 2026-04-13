@@ -86,7 +86,6 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   }
 
   clear() {
-    console.log('Clearing selection');
     this.selectedIds.set(new Set());
   }
 

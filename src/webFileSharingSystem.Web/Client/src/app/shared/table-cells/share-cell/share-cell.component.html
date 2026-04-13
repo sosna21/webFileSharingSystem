@@ -1,0 +1,9 @@
+<i
+  appClicableIcon
+  (click)="onShareAction(file())"
+  [disabled]="file().fileStatus === FileStatus.Incomplete"
+  class="bi bi-share-fill fs-5"
+  [class]="shareClass()"
+  [ngbTooltip]="shareTooltip()"
+  [openDelay]="300"
+></i>

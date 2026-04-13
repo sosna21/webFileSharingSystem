@@ -238,6 +238,22 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<bool>("IsBlocked")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("PhotoAccessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PhotoFileGuid")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PhotoMimeType")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal?>("PhotoSize")
+                        .HasColumnType("decimal(20,0)");
+
+                    b.Property<DateTime?>("PhotoUpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("Quota")
                         .HasColumnType("decimal(20,0)");
 
@@ -252,7 +268,13 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("IdentityUserId")
                         .IsUnique();
 
-                    b.ToTable("ApplicationUsers");
+                    b.HasIndex("PhotoAccessId")
+                        .IsUnique()
+                        .HasFilter("[PhotoAccessId] IS NOT NULL");
+
+                    b.HasIndex("PhotoFileGuid");
+
+                    b.ToTable("ApplicationUsers", (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.File", b =>
@@ -308,13 +330,15 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedBy");
+
                     b.HasIndex("FileGuid");
 
                     b.HasIndex("ParentId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("File");
+                    b.ToTable("File", (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.FileAccessMode", b =>
@@ -379,7 +403,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("FileId")
                         .IsUnique();
 
-                    b.ToTable("PartialFileInfos");
+                    b.ToTable("PartialFileInfos", (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.Share", b =>
@@ -422,6 +446,8 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SharedByUserId");
+
                     b.HasIndex("SharedWithUserId")
                         .HasFilter("[RevokedAt] IS NULL");
 
@@ -429,7 +455,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasFilter("[RevokedAt] IS NULL");
 
-                    b.ToTable("Share");
+                    b.ToTable("Share", (string)null);
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.SharedFile", b =>
@@ -496,8 +522,17 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<int?>("ChunkSize")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("CreatedByPhotoAccessId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("FileCreatedBy")
                         .HasColumnType("int");
+
+                    b.Property<string>("FileCreatedByEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileCreatedByUserName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("FileGuid")
                         .HasColumnType("uniqueidentifier");
@@ -533,6 +568,9 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Property<string>("SharedUserName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SharedUserPhotoAccessId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Size")
                         .HasColumnType("decimal(20,0)");
@@ -601,7 +639,7 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.HasIndex("Token")
                         .IsUnique();
 
-                    b.ToTable("RefreshToken");
+                    b.ToTable("RefreshToken", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -666,17 +704,27 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.File", b =>
                 {
+                    b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", "Creator")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("webFileSharingSystem.Core.Entities.File", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId");
 
-                    b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", null)
+                    b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", "User")
                         .WithMany("Files")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Creator");
+
                     b.Navigation("Parent");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.PartialFileInfo", b =>
@@ -691,18 +739,26 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.Share", b =>
                 {
                     b.HasOne("webFileSharingSystem.Core.Entities.File", "File")
-                        .WithMany()
+                        .WithMany("Shares")
                         .HasForeignKey("FileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", null)
                         .WithMany("Shares")
+                        .HasForeignKey("SharedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("webFileSharingSystem.Core.Entities.ApplicationUser", "SharedWithUser")
+                        .WithMany()
                         .HasForeignKey("SharedWithUserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("File");
+
+                    b.Navigation("SharedWithUser");
                 });
 
             modelBuilder.Entity("webFileSharingSystem.Core.Entities.SharedFile", b =>
@@ -735,6 +791,8 @@ namespace webFileSharingSystem.Infrastructure.Data.Migrations
                     b.Navigation("Children");
 
                     b.Navigation("PartialFileInfo");
+
+                    b.Navigation("Shares");
                 });
 #pragma warning restore 612, 618
         }

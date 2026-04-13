@@ -49,6 +49,10 @@ namespace webFileSharingSystem.Web.Controllers
                         EmailAddress = applicationUser.EmailAddress,
                         UsedSpace = applicationUser.UsedSpace,
                         Quota = applicationUser.Quota,
+                        PhotoUrl = GetPhotoUrl(applicationUser.PhotoAccessId),
+                        PhotoMimeType = applicationUser.PhotoMimeType,
+                        PhotoSize = applicationUser.PhotoSize,
+                        PhotoUpdatedAt = applicationUser.PhotoUpdatedAt,
                     };
                     SetRefreshTokenCookie(refreshToken!);
                     return Ok(new {User = userResponse, Tokens = new TokenResponse{Token = token!, RefreshToken = refreshToken!}});
@@ -96,6 +100,10 @@ namespace webFileSharingSystem.Web.Controllers
                         EmailAddress = applicationUser.EmailAddress,
                         UsedSpace = applicationUser.UsedSpace,
                         Quota = applicationUser.Quota,
+                        PhotoUrl = GetPhotoUrl(applicationUser.PhotoAccessId),
+                        PhotoMimeType = applicationUser.PhotoMimeType,
+                        PhotoSize = applicationUser.PhotoSize,
+                        PhotoUpdatedAt = applicationUser.PhotoUpdatedAt,
                     };
                     SetRefreshTokenCookie(refreshToken!);
                     return Ok(new {User = userResponse, Tokens = new TokenResponse{Token = token!, RefreshToken = refreshToken!}});
@@ -182,6 +190,16 @@ namespace webFileSharingSystem.Web.Controllers
             if (Request.Headers.ContainsKey("X-Forwarded-For")) return Request.Headers["X-Forwarded-For"];
             
             return HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? string.Empty;
+        }
+
+        private string? GetPhotoUrl(Guid? photoAccessId)
+        {
+            if (!photoAccessId.HasValue)
+            {
+                return null;
+            }
+
+            return Url.ActionLink("GetPhotoById", "User", new { photoId = photoAccessId.Value });
         }
     }
 }

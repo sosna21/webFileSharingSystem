@@ -1,0 +1,8 @@
+.profile-avatar {
+  border: 4px solid var(--bs-body-bg);
+  object-fit: cover;
+}
+
+[data-bs-theme="dark"] .profile-avatar {
+  border-color: var(--bs-tertiary-bg);
+}

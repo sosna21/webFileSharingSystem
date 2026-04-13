@@ -14,11 +14,15 @@ public sealed class SharedFileSqlRow : BaseEntity, IFileBaseEntity
     public bool IsDirectory { get; set; }
     public Guid? FileGuid { get; set; }
     public int FileCreatedBy { get; set; }
+    public string? FileCreatedByUserName { get; set; }
+    public string? FileCreatedByEmail { get; set; }
+    public Guid? CreatedByPhotoAccessId { get; set; }
     public FileStatus FileStatus { get; set; }
     
     public ShareAccessMode AccessMode { get; set; }
     public DateTime? ValidUntil { get; set; }
     public string SharedUserName { get; set; } = null!;
+    public Guid? SharedUserPhotoAccessId { get; set; }
     public bool IsInherited { get; set; }
     
     //Cannot return full PartialFileInfo due to

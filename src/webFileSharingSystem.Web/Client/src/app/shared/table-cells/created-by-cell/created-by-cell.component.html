@@ -1,0 +1,13 @@
+<img
+  [src]="userPhotoUrl() ?? 'user.png'"
+  [alt]="
+    'Profile photo of ' +
+    (file().createdBy === currentUserId() ? 'you' : file().createdByUserName)
+  "
+  width="32"
+  height="32"
+  class="rounded-circle me-1"
+/>
+<span class="align-bottom">
+  {{ file().createdBy === currentUserId() ? "You" : file().createdByUserName }}
+</span>

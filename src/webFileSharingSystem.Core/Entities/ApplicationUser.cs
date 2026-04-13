@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using webFileSharingSystem.Core.Entities.Common;
 
 namespace webFileSharingSystem.Core.Entities
@@ -23,6 +24,16 @@ namespace webFileSharingSystem.Core.Entities
         public ulong Quota { get; set; }
         
         public bool IsBlocked { get; set; }
+
+        public Guid? PhotoFileGuid { get; set; }
+
+        public Guid? PhotoAccessId { get; set; }
+
+        public string? PhotoMimeType { get; set; }
+
+        public ulong? PhotoSize { get; set; }
+
+        public DateTime? PhotoUpdatedAt { get; set; }
         
         public string IdentityUserId { get; set; }
         

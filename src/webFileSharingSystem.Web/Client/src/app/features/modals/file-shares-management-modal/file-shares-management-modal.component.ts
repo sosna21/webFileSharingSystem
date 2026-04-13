@@ -10,6 +10,19 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
 import { AddShareRequest } from '../../../core/models/add-share-request.model';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
+import { ShareClockService } from '../../../core/services/share-clock.service';
+
+const EXPIRING_SOON_THRESHOLD_MS = 10 * 60 * 1000;
+
+type ShareStatus = 'active' | 'expiring-soon' | 'expired';
+
+interface ShareRowViewModel {
+  share: Share;
+  status: ShareStatus;
+  validUntilLabel: string;
+  canEdit: boolean;
+  canCancel: boolean;
+}
 
 @Component({
   selector: 'app-file-shares-management-modal',
@@ -26,6 +39,7 @@ export class FileSharesManagementModalComponent {
   private readonly modalService = inject(ModalService);
   private readonly toast = inject(ToastService);
   private readonly injector = inject(Injector);
+  private readonly shareClock = inject(ShareClockService);
 
   private readonly url = computed(() =>
     this.sharedFile()
@@ -33,6 +47,42 @@ export class FileSharesManagementModalComponent {
       : undefined,
   );
   readonly sharesResource = httpResource<Share[]>(() => this.url());
+  readonly shareRows = computed<ShareRowViewModel[]>(() => {
+    const shares = this.sharesResource.value() ?? [];
+    const nowTimestamp = this.shareClock.now();
+
+    return shares.map((share) => {
+      const status = this.getShareStatus(share, nowTimestamp);
+
+      if (status === 'expired') {
+        return {
+          share,
+          status,
+          validUntilLabel: 'Already expired',
+          canEdit: false,
+          canCancel: false,
+        };
+      }
+
+      if (status === 'expiring-soon') {
+        return {
+          share,
+          status,
+          validUntilLabel: `Expires soon (${this.getLocalised(share.validUntil) ?? 'Unknown'})`,
+          canEdit: true,
+          canCancel: true,
+        };
+      }
+
+      return {
+        share,
+        status,
+        validUntilLabel: this.getLocalised(share.validUntil) ?? 'No expiration',
+        canEdit: true,
+        canCancel: true,
+      };
+    });
+  });
 
   async openAddShareModal() {
     if (!this.sharedFile()) return;
@@ -76,6 +126,10 @@ export class FileSharesManagementModalComponent {
   }
 
   async openEditShareModal(shareToEdit: Share) {
+    if (this.getShareStatus(shareToEdit, this.shareClock.now()) === 'expired') {
+      return;
+    }
+
     this.activeModal.update({ modalDialogClass: 'd-none' });
     const editedShare = await this.shareService.editFileShareWithFeedback(
       shareToEdit,
@@ -88,6 +142,10 @@ export class FileSharesManagementModalComponent {
   }
 
   deleteShare(share: Share) {
+    if (this.getShareStatus(share, this.shareClock.now()) === 'expired') {
+      return;
+    }
+
     this.shareService.deleteSharesWithFeedback(
       [share],
       (share) => this.deleteFromShareDataIfExists(share),
@@ -113,6 +171,26 @@ export class FileSharesManagementModalComponent {
 
   getLocalised(date: string | null) {
     return date ? new Date(date).toLocaleString() : null;
+  }
+
+  private getShareStatus(share: Share, nowTimestamp: number): ShareStatus {
+    if (share.validUntil === null) {
+      return 'active';
+    }
+
+    const validUntilTimestamp = Date.parse(share.validUntil);
+    if (
+      Number.isNaN(validUntilTimestamp) ||
+      validUntilTimestamp < nowTimestamp
+    ) {
+      return 'expired';
+    }
+
+    if (validUntilTimestamp - nowTimestamp <= EXPIRING_SOON_THRESHOLD_MS) {
+      return 'expiring-soon';
+    }
+
+    return 'active';
   }
 
   getAccessModeName(accessMode: ShareAccessMode) {

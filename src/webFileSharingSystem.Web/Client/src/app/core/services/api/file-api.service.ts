@@ -6,6 +6,7 @@ import { AppFile } from '../../models/app-file.model';
 import { Breadcrumb } from '../../models/breadcrumb.model';
 import { FileResponse } from '../../models/file-response.model';
 import { SharedFile } from '../../models/shared-file.model';
+import { UploadStateDto } from '../../models/upload-state.model';
 
 export interface FileQuery {
   mode: 'GetAll' | 'GetSharedByMe' | 'GetFavourites' | 'GetRecent';
@@ -62,6 +63,13 @@ export class FileApiService {
   getSharedFiles(query: FileQuery) {
     const url = `${this.fileUrl}/${query.mode}?${this.buildQueryParams(query)}`;
     return this.http.get<FileResponse<SharedFile>>(url);
+  }
+
+  getActiveUploads(directoryId: number | null) {
+    const api = `${environment.apiUrl}/upload/active${
+      directoryId ? '?directoryId=' + directoryId : ''
+    }`;
+    return this.http.get<UploadStateDto[]>(api);
   }
 
   private buildQueryParams(query: FileQuery): string {

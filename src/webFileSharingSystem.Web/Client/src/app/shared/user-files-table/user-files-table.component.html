@@ -20,12 +20,14 @@
 <app-table-context-menu
   [position]="contextMenuPosition()"
   [accessMode]="undefined"
-  [sortableColumns]="columnsToDisplay()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
   [canPaste]="canPaste()"
   (refresh)="refresh()"
   (createFolder)="createFolder()"
   (upload)="uploadFiles($event)"
   (paste)="pasteFiles()"
+  (sortByColumn)="toggleSort($event)"
 />
 
 <div
@@ -72,121 +74,36 @@
           *cdkCellDef="let file"
           class="d-table-cell align-middle text-center"
         >
-          @if (file.fileStatus === FileStatus.Incomplete) {
-            <i
-              class="bi bi-x-octagon text-danger"
-              style="-webkit-text-stroke: 1px; font-size: large"
-              (click)="cancelFilesUpload([file])"
-              appClicableIcon
-              ngbTooltip="Cancel upload"
-              [openDelay]="300"
-            ></i>
-          } @else if (isLoading(file.id)) {
-            <span class="spinner-border spinner-border-sm"></span>
-          }
+          <app-row-selector-cell
+            [file]="file"
+            [isLoading]="isLoading(file.id)"
+            (cancelFilesUpload)="cancelFilesUpload($event)"
+          />
         </td>
       </ng-container>
 
       <!-- File name Definition -->
       <ng-container cdkColumnDef="fileName">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" class="text-left">
-          FileName
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          (click)="toggleSort('fileName')"
+        >
+          <app-sortable-header column="fileName" [sortOption]="sortOption()"
+            >File Name</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            @if (file.fileStatus === FileStatus.Completed) {
-              <i class="bi fs-4 me-1" [ngClass]="file | fileToIcon"></i>
-              @if (editingId() === file.id) {
-                <input
-                  appSelectFilename
-                  type="text"
-                  style="min-width: 85%"
-                  [ngModel]="file.fileName"
-                  [placeholder]="file.fileName"
-                  (blur)="rename(file, $any($event.target).value)"
-                  (keydown)="fileRenameKeyDown($event, file)"
-                />
-              } @else {
-                {{ file.fileName }}
-              }
-            } @else {
-              <div class="d-flex align-items-center gap-3">
-                <!-- File icon -->
-                <i class="bi fs-4" [ngClass]="file | fileToIcon"></i>
-
-                <!-- File details (name + progress bar) -->
-                <div class="flex-grow-1">
-                  <div class="text-truncate">
-                    {{ file.fileName }}
-                    <span
-                      [class]="
-                        'small ' +
-                        (file.progressStatus === ProgressStatus.Started
-                          ? 'text-muted'
-                          : file.progressStatus === ProgressStatus.Stopping
-                            ? 'text-warning-emphasis'
-                            : 'text-danger-emphasis')
-                      "
-                      >({{
-                        file.progressStatus === ProgressStatus.Started
-                          ? "Uploading"
-                          : file.progressStatus === ProgressStatus.Stopping
-                            ? "Stopping"
-                            : "Stopped"
-                      }}:
-                      {{
-                        getFileSize(file.size | fileSize) * file.uploadProgress
-                          | number: "1.2-2"
-                      }}/{{ file.size | fileSize }})</span
-                    >
-                  </div>
-                  <div class="d-flex">
-                    <ngb-progressbar
-                      [value]="file.uploadProgress * 100"
-                      [showValue]="true"
-                      [type]="
-                        file.progressStatus === ProgressStatus.Started
-                          ? 'primary'
-                          : file.progressStatus === ProgressStatus.Stopping
-                            ? 'warning'
-                            : 'secondary'
-                      "
-                      [animated]="
-                        file.progressStatus === ProgressStatus.Stopping
-                      "
-                      [striped]="file.progressStatus !== ProgressStatus.Stopped"
-                      class="mt-1 w-50 border border-secondary"
-                    ></ngb-progressbar>
-                    <div
-                      class="d-flex ms-2 align-items-start"
-                      style="margin-top: -5px"
-                    >
-                      <i
-                        appClicableIcon
-                        class="bi bi-pause-circle"
-                        [disabled]="
-                          file.progressStatus !== ProgressStatus.Started
-                        "
-                        (click)="stopFilesUpload([file])"
-                        ngbTooltip="Pause upload"
-                        [openDelay]="300"
-                      ></i>
-                      <i
-                        appClicableIcon
-                        class="bi bi-play-circle-fill"
-                        [disabled]="
-                          file.progressStatus === ProgressStatus.Started
-                        "
-                        (click)="continueFilesUpload([file])"
-                        ngbTooltip="Resume upload"
-                        [openDelay]="300"
-                      ></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
+          <app-file-name-cell
+            [file]="file"
+            [editingId]="editingId()"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (rename)="rename($event.file, $event.newName)"
+            (fileRenameKeyDown)="fileRenameKeyDown($event.event, $event.file)"
+            (stopFilesUpload)="stopFilesUpload($event)"
+            (continueFilesUpload)="continueFilesUpload($event)"
+          />
         </td>
       </ng-container>
 
@@ -198,36 +115,28 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 5%"
+          (click)="toggleSort('favourite')"
         >
-          Favourite
+          <app-sortable-header
+            column="favourite"
+            [sortOption]="sortOption()"
+            justify="justify-content-center"
+          >
+            Favourite
+          </app-sortable-header>
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i
-              #favIcon
-              appClicableIcon
-              [disabled]="file.fileStatus === FileStatus.Incomplete"
-              class="bi fs-5"
-              [class]="
-                file.isFavourite
-                  ? 'bi-star-fill text-warning'
-                  : 'bi-star text-secondary'
-              "
-              (click)="changeFavourite([file], !file.isFavourite)"
-              [ngbTooltip]="
-                file.fileStatus === FileStatus.Incomplete
-                  ? undefined
-                  : file.isFavourite
-                    ? 'Remove from favourites'
-                    : 'Add to favourites'
-              "
-              [openDelay]="300"
-            ></i>
-          </div>
+          <app-favourite-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (changeFavourite)="
+              changeFavourite($event.files, $event.isFavourite)
+            "
+          />
         </td>
       </ng-container>
 
@@ -239,36 +148,23 @@
           scope="col"
           class="d-none d-md-table-cell"
           style="width: 5%"
+          (click)="toggleSort('share')"
         >
-          Share
+          <app-sortable-header column="share" [sortOption]="sortOption()"
+            >Share</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
           class="d-none d-md-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i
-              appClicableIcon
-              (click)="
-                file.isShared
-                  ? showShareManagementModal(file)
-                  : shareFile([file])
-              "
-              [disabled]="file.fileStatus === FileStatus.Incomplete"
-              class="bi bi-share-fill fs-5"
-              [class.text-primary]="file.isShared"
-              [class.text-secondary]="!file.isShared"
-              [ngbTooltip]="
-                file.fileStatus === FileStatus.Incomplete
-                  ? undefined
-                  : file.isShared
-                    ? 'Manage shares'
-                    : 'Share file'
-              "
-              [openDelay]="300"
-            ></i>
-          </div>
+          <app-share-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (showShareManagementModal)="showShareManagementModal($event)"
+            (shareFile)="shareFile($event)"
+          />
         </td>
       </ng-container>
 
@@ -278,28 +174,62 @@
           Actions
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <i
-              #icon
-              appClicableIcon
-              class="bi bi-three-dots fs-5"
-              (click)="actionIconClick($event, icon, file)"
-              ngbTooltip="Show more actions"
-              [openDelay]="300"
-            ></i>
-          </div>
+          <app-actions-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+            (actionIconClick)="
+              actionIconClick($event.event, $event.icon, $event.file)
+            "
+          />
         </td>
       </ng-container>
 
       <!-- Size  Definition -->
       <ng-container cdkColumnDef="size">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 6%">
-          Size
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          style="width: 5%"
+          (click)="toggleSort('size')"
+        >
+          <app-sortable-header column="size" [sortOption]="sortOption()"
+            >Size</app-sortable-header
+          >
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            {{ file.size | fileSize }}
-          </div>
+          <app-size-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
+        </td>
+      </ng-container>
+
+      <!-- Created By Definition -->
+      <ng-container cdkColumnDef="createdByUserName">
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          class="d-none d-sm-table-cell"
+          style="width: 9%"
+          (click)="toggleSort('createdByUserName')"
+        >
+          <app-sortable-header
+            column="createdByUserName"
+            [sortOption]="sortOption()"
+            >Created By</app-sortable-header
+          >
+        </th>
+        <td
+          cdk-cell
+          *cdkCellDef="let file"
+          class="d-none d-sm-table-cell align-middle"
+        >
+          <app-created-by-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -311,19 +241,23 @@
           scope="col"
           class="d-none d-sm-table-cell"
           style="width: 12%"
+          (click)="toggleSort('lastModification')"
         >
-          Last Modification
+          <app-sortable-header
+            column="lastModification"
+            [sortOption]="sortOption()"
+            >Last Modification</app-sortable-header
+          >
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
           class="d-none d-sm-table-cell align-middle"
         >
-          <div class="d-inline" (contextmenu)="contextMenuClick($event, file)">
-            <span [ngbTooltip]="file.modificationDate | date: 'medium'">{{
-              file.modificationDate | timeago
-            }}</span>
-          </div>
+          <app-last-modification-cell
+            [file]="file"
+            (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          />
         </td>
       </ng-container>
 
@@ -348,7 +282,10 @@
         "
         (click)="selectFile(file, $event)"
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
-        class="bg-transparent"
+        [class.table-active]="
+          file.fileStatus === FileStatus.Incomplete &&
+          file.createdBy !== currentUserId()
+        "
         [class.selected-row]="selectedIds().has(file.id)"
         [class.selectable]="file.isDirectory"
         [draggable]="

@@ -1,11 +1,11 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { AppFile } from '../models/app-file.model';
+import { BaseFile } from '../models/base-file.model';
 
 @Pipe({
   name: 'fileToIcon'
 })
 export class FileToIconPipe implements PipeTransform {
-  transform(file: AppFile, withColor: boolean = true): string {
+  transform(file: BaseFile, withColor: boolean = true): string {
     if (!file) {
       return withColor ? 'bi-file-earmark text-secondary' : 'bi-file-earmark';
     }

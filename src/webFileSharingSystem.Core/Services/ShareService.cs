@@ -35,11 +35,22 @@ namespace webFileSharingSystem.Core.Services
             var fileToShare = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
             if (fileToShare is null) return (Result.Failure(OperationResult.BadRequest, "File doesn't exist or you do not have access"), null);
 
-            var existingShare = (await _unitOfWork.Repository<Share>()
-                    .FindAsync(new FindSharesByUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
+            var existingNonRevokedShare = (await _unitOfWork.Repository<Share>()
+                    .FindAsync(new FindNonRevokedShareBySharedWithUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
                 .SingleOrDefault();
 
-            if (existingShare is not null) return (Result.Failure(OperationResult.BadRequest, "This file is already shared with that user"), null);
+            if (existingNonRevokedShare is not null)
+            {
+                var isActive = existingNonRevokedShare.ValidUntil is null || existingNonRevokedShare.ValidUntil.Value > DateTime.UtcNow;
+                if (isActive)
+                    return (Result.Failure(OperationResult.BadRequest, "This file is already shared with that user"), null);
+
+                existingNonRevokedShare.RevokedAt = DateTime.UtcNow;
+                _unitOfWork.Repository<Share>().Update(existingNonRevokedShare);
+
+                if (await _unitOfWork.Complete(cancellationToken) <= 0)
+                    return (Result.Failure(OperationResult.Exception, "Problem with replacing expired share"), null);
+            }
 
             var newShare = new Share
             {
@@ -50,9 +61,6 @@ namespace webFileSharingSystem.Core.Services
                 ValidUntil = validUntil
             };
             _unitOfWork.Repository<Share>().Add(newShare);
-
-            fileToShare.IsShared = true;
-            _unitOfWork.Repository<File>().Update(fileToShare);
 
             return await _unitOfWork.Complete(cancellationToken) > 0
                 ? (Result.Success<OperationResult>(), newShare)
@@ -65,13 +73,13 @@ namespace webFileSharingSystem.Core.Services
         {
             if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40))
                 return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
-            var share = await _unitOfWork.Repository<Share>().FindByIdAsync(shareId, cancellationToken);
+            var share = (await _unitOfWork.Repository<Share>().FindAsync(new FindActiveShareByIdSpecs(shareId), cancellationToken)).SingleOrDefault();
             if (share is null || share.SharedByUserId != currentUserId)
-                return (Result.Failure(OperationResult.BadRequest, "Share doesn't exist or you do not have access"),
+                return (Result.Failure(OperationResult.BadRequest, "Share doesn't exist, already expired or you do not have access"),
                     null);
             
             share.AccessMode = accessMode;
-            share.ValidUntil = validUntil ?? DateTime.MaxValue;
+            share.ValidUntil = validUntil;
 
             _unitOfWork.Repository<Share>().Update(share);
 
@@ -83,21 +91,12 @@ namespace webFileSharingSystem.Core.Services
         public async Task<Result<OperationResult>> RemoveShareByFileIdAsync(int fileId, int userId, CancellationToken cancellationToken = default)
         {
             var shareToRemove = (await _unitOfWork.Repository<Share>()
-                .FindAsync(new FindSharesByUserIdAndFileIdSpecs(userId, fileId), cancellationToken)).FirstOrDefault();
+                .FindAsync(new FindActiveSharesBySharedWithUserIdAndFileIdSpecs(userId, fileId), cancellationToken)).FirstOrDefault();
 
             if (shareToRemove is null) return Result.Failure(OperationResult.BadRequest, "To delete this share you must delete whole shared folder.");
 
-            _unitOfWork.Repository<Share>().Remove(shareToRemove);
-
-            if (await _unitOfWork.Repository<Share>().CountAsync(share => share.FileId == shareToRemove.FileId, cancellationToken) <= 1)
-            {
-                var fileToStopShare = await _unitOfWork.Repository<File>().FindByIdAsync(shareToRemove.FileId, cancellationToken);
-                if (fileToStopShare is not null)
-                {
-                    fileToStopShare.IsShared = false;
-                    _unitOfWork.Repository<File>().Update(fileToStopShare);
-                }
-            }
+            shareToRemove.RevokedAt = DateTime.UtcNow;
+            _unitOfWork.Repository<Share>().Update(shareToRemove);
 
             return await _unitOfWork.Complete(cancellationToken) > 0
                 ? Result.Success<OperationResult>()
@@ -111,17 +110,8 @@ namespace webFileSharingSystem.Core.Services
             if (shareToDelete.SharedByUserId != userId && shareToDelete.SharedWithUserId != userId)
                 return Result.Failure(OperationResult.Unauthorized, "File is not shared with anybody or you do not have access");
 
-            _unitOfWork.Repository<Share>().Remove(shareToDelete);
-
-            if (await _unitOfWork.Repository<Share>().CountAsync(share => share.FileId == shareToDelete.FileId, cancellationToken) <= 1)
-            {
-                var fileToStopShare = await _unitOfWork.Repository<File>().FindByIdAsync(shareToDelete.FileId, cancellationToken);
-                if (fileToStopShare is not null)
-                {
-                    fileToStopShare.IsShared = false;
-                    _unitOfWork.Repository<File>().Update(fileToStopShare);
-                }
-            }
+            shareToDelete.RevokedAt = DateTime.UtcNow;
+            _unitOfWork.Repository<Share>().Update(shareToDelete);
 
             return await _unitOfWork.Complete(cancellationToken) > 0
                 ? Result.Success<OperationResult>()
@@ -132,7 +122,7 @@ namespace webFileSharingSystem.Core.Services
             CancellationToken cancellationToken = default)
         {
             var shares = await _unitOfWork.Repository<Share>()
-                .FindAsync(new GetShareByUserAndFileIdSpecs(userId, fileId), cancellationToken);
+                .FindAsync(new FindActiveSharesByUserIdAndFileIdSpecs(userId, fileId), cancellationToken);
 
             return (Result.Success<OperationResult>(), shares);
         }

@@ -11,5 +11,6 @@ public class FileOperationContext
     public ShareAccessMode? AccessMode { get; init; }
     public DateTime? ValidUntil { get; init; }
     public string? SharedUserName { get; init; }
+    public Guid? SharedUserPhotoAccessId { get; set; }
     public bool? IsInherited { get; init; }
 }

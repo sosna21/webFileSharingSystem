@@ -44,30 +44,53 @@
           </tr>
         </thead>
         <tbody>
-          @for (share of sharesResource.value(); track share.shareId) {
+          @for (row of shareRows(); track row.share.shareId) {
           <tr class="align-bottom">
             <td>
               <i
                 appClicableIcon
-                class="bi bi-x-circle text-danger fs-5"
-                (click)="deleteShare(share)"
-                ngbTooltip="Cancel share"
+                [class]="
+                  row.canCancel
+                    ? 'bi bi-x-circle text-danger fs-5'
+                    : 'bi bi-x-circle text-secondary fs-5 opacity-50'
+                "
+                [attr.aria-disabled]="!row.canCancel"
+                [attr.tabindex]="row.canCancel ? 0 : -1"
+                (click)="row.canCancel && deleteShare(row.share)"
+                [ngbTooltip]="
+                  row.canCancel ? 'Cancel share' : 'Cannot cancel expired share'
+                "
                 [openDelay]="300"
               ></i>
             </td>
             <td>
-              {{ share.sharedWithUserName }}
+              {{ row.share.sharedWithUserName }}
             </td>
             <td>
-              {{ getAccessModeName(share.accessMode) }}
+              {{ getAccessModeName(row.share.accessMode) }}
             </td>
             <td>
-              {{ getLocalised(share.validUntil) ?? "No expiration" }}
+              <span
+                [class]="
+                  row.status === 'expired'
+                    ? 'text-danger fw-semibold'
+                    : row.status === 'expiring-soon'
+                      ? 'text-warning fw-semibold'
+                      : ''
+                "
+              >
+                {{ row.validUntilLabel }}
+              </span>
             </td>
             <td>
               <button
                 class="btn btn-sm btn-outline-warning w-100"
-                (click)="openEditShareModal(share)"
+                [disabled]="!row.canEdit"
+                [ngbTooltip]="
+                  row.canEdit ? 'Edit share' : 'Cannot edit expired share'
+                "
+                [openDelay]="300"
+                (click)="openEditShareModal(row.share)"
               >
                 Edit
               </button>
