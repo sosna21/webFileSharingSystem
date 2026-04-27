@@ -11,7 +11,9 @@ import {
   TrackByFunction,
   viewChild,
   viewChildren,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
@@ -86,10 +88,20 @@ export class UserFilesTableComponent {
   private readonly injector = inject(Injector);
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
+  private readonly destroyRef = inject(DestroyRef);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
   readonly sortOption = this.fileService.sortOption;
+
+  constructor() {
+    this.selection.scrollRequested
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ index, key }) => {
+        const container = this.scrollContainer()?.nativeElement;
+        this.selection.handleTableScroll(container, index, key);
+      });
+  }
 
   toggleSort(column: string) {
     this.fileService.toggleSort(column);
@@ -129,6 +141,7 @@ export class UserFilesTableComponent {
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(UserFilesContextMenuComponent);
   tableContextMenu = viewChild(TableContextMenuComponent);
+  scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
@@ -147,6 +160,46 @@ export class UserFilesTableComponent {
   }
 
   onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key.toLowerCase() === 'n'
+    ) {
+      event.preventDefault();
+      this.createFolder();
+      return;
+    }
+
+    if (event.key === 'F2') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length === 1) {
+        this.initRename(selected[0] as AppFile);
+      }
+      return;
+    }
+
+    if (event.key === 'Delete') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length > 0) {
+        this.deleteFiles(selected as AppFile[]);
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      const selected = this.selectedFiles() as AppFile[];
+      if (selected.length === 1 && selected[0].isDirectory) {
+        event.preventDefault();
+        this.selectFolder(selected[0].id);
+      }
+      return;
+    }
+
     this.selection.onKeydown(event);
   }
 

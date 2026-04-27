@@ -10,7 +10,9 @@ import {
   TrackByFunction,
   viewChild,
   viewChildren,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
@@ -84,6 +86,7 @@ export class SharedFilesTableComponent {
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly modalService = inject(ModalService);
   private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -91,6 +94,15 @@ export class SharedFilesTableComponent {
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
   readonly sortOption = this.fileService.sortOption;
+
+  constructor() {
+    this.selection.scrollRequested
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ index, key }) => {
+        const container = this.scrollContainer()?.nativeElement;
+        this.selection.handleTableScroll(container, index, key);
+      });
+  }
 
   toggleSort(column: string) {
     this.fileService.toggleSort(column);
@@ -134,6 +146,7 @@ export class SharedFilesTableComponent {
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
   tableContextMenu = viewChild(TableContextMenuComponent);
+  scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
@@ -152,6 +165,46 @@ export class SharedFilesTableComponent {
   }
 
   onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key.toLowerCase() === 'n'
+    ) {
+      event.preventDefault();
+      this.createFolder();
+      return;
+    }
+
+    if (event.key === 'F2') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length === 1) {
+        this.initRename(selected[0] as SharedFile);
+      }
+      return;
+    }
+
+    if (event.key === 'Delete') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length > 0) {
+        this.deleteFiles(selected as SharedFile[]);
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      const selected = this.selectedFiles() as SharedFile[];
+      if (selected.length === 1 && selected[0].isDirectory) {
+        event.preventDefault();
+        this.selectFolder(selected[0].id);
+      }
+      return;
+    }
+
     this.selection.onKeydown(event);
   }
 

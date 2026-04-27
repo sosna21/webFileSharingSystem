@@ -5,6 +5,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { Subject } from 'rxjs';
 
 export interface SelectableItem {
   id: number;
@@ -18,6 +19,10 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   private filesSig!: Signal<T[]>;
 
   readonly selectedIds: WritableSignal<Set<number>> = signal(new Set());
+  readonly scrollRequested = new Subject<{
+    index: number;
+    key: 'Home' | 'End' | 'ArrowUp' | 'ArrowDown';
+  }>();
   readonly areAllChecked = computed(
     () =>
       this.filesSig?.() &&
@@ -46,16 +51,24 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
       event.preventDefault();
       const all = new Set(this.filesSig().map((f) => f.id));
       this.selectedIds.set(all);
-    } else if (this.selectedIds().size > 0) {
+    } else if (this.selectedIds().size > 0 || this.filesSig().length > 0) {
       if (event.key === 'Escape') {
         this.selectedIds.set(new Set());
-      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      } else if (
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowDown' ||
+        event.key === 'Home' ||
+        event.key === 'End'
+      ) {
         event.preventDefault();
         const files = this.filesSig();
+        if (files.length === 0) return;
+
         const selectedIds = this.selectedIds();
         let anchorId = this.fileSelectionAnchorId();
         if (anchorId === null && selectedIds.size > 0) {
@@ -63,19 +76,75 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         }
         const anchorIndex = files.findIndex((f) => f.id === anchorId);
         let newIndex: number;
-        if (event.key === 'ArrowUp') {
+
+        if (event.key === 'Home') {
+          newIndex = 0;
+        } else if (event.key === 'End') {
+          newIndex = files.length - 1;
+        } else if (event.key === 'ArrowUp') {
           newIndex = Math.max(0, anchorIndex - 1);
         } else {
           newIndex = Math.min(files.length - 1, anchorIndex + 1);
         }
+
         const newAnchorId = files[newIndex].id;
         this.fileSelectionAnchorId.set(newAnchorId);
+
         if (event.shiftKey) {
-          this.selectedIds.update((prev) => new Set([...prev, newAnchorId]));
+          const startIndex = Math.min(Math.max(anchorIndex, 0), newIndex);
+          const endIndex = Math.max(Math.max(anchorIndex, 0), newIndex);
+          const rangeIds = files
+            .filter((_, idx) => idx >= startIndex && idx <= endIndex)
+            .map((f) => f.id);
+          this.selectedIds.update((prev) => new Set([...prev, ...rangeIds]));
         } else {
           this.selectedIds.set(new Set([newAnchorId]));
         }
+
+        this.scrollRequested.next({
+          index: newIndex,
+          key: event.key as 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
+        });
       }
+    }
+  }
+
+  handleTableScroll(
+    container: HTMLElement | undefined,
+    index: number,
+    key: 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
+  ) {
+    if (!container) return;
+
+    if (key === 'Home') {
+      container.scrollTop = 0;
+      return;
+    }
+
+    if (key === 'End') {
+      container.scrollTop = container.scrollHeight;
+      return;
+    }
+
+    const rows = Array.from(container.querySelectorAll('tr[cdk-row]'));
+    if (!rows || index >= rows.length) return;
+
+    const row = rows[index] as HTMLElement;
+    const header = container.querySelector(
+      'tr[cdk-header-row]',
+    ) as HTMLElement | null;
+    const headerHeight = header ? header.offsetHeight : 0;
+
+    const rowTop = row.offsetTop;
+    const rowBottom = rowTop + row.offsetHeight;
+
+    const viewTop = container.scrollTop + headerHeight;
+    const viewBottom = container.scrollTop + container.clientHeight;
+
+    if (rowTop < viewTop) {
+      container.scrollTop = rowTop - headerHeight;
+    } else if (rowBottom > viewBottom) {
+      container.scrollTop = Math.max(0, rowBottom - container.clientHeight);
     }
   }
 
