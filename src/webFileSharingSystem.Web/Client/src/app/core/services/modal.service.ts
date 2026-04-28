@@ -12,6 +12,7 @@ import { Share } from '../models/share.model';
 import { UpdateFileShareRequest } from '../models/update-share-request.model';
 import { CopyToClipboardModalComponent } from '../../features/modals/copy-to-clipboard-modal/copy-to-clipboard-modal.component';
 import { DirectoryCreationModalComponent } from '../../features/modals/directory-creation-modal/directory-creation-modal.component';
+import { KeyboardShortcutsModalComponent } from '../../features/modals/keyboard-shortcuts-modal/keyboard-shortcuts-modal.component';
 
 @Injectable({
   providedIn: 'root',
@@ -224,6 +225,24 @@ export class ModalService {
       return modalRef.result.catch(() => null);
     } catch {
       return new Promise(() => null);
+    }
+  }
+
+  keyboardShortcutsModal(): Promise<boolean> {
+    if (this.modalService.hasOpenModals()) {
+      this.closeAll();
+      return new Promise(() => false);
+    }
+    try {
+      const modalRef = this.modalService.open(KeyboardShortcutsModalComponent, {
+        centered: true,
+        size: 'lg',
+        scrollable: true,
+      });
+
+      return modalRef.result.catch(() => false);
+    } catch {
+      return new Promise(() => false);
     }
   }
 }

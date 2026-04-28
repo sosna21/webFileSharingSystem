@@ -1,0 +1,40 @@
+<div class="modal-header">
+  <h4 class="modal-title">
+    <i class="bi bi-keyboard text-primary me-2"></i>
+    Keyboard Shortcuts
+  </h4>
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss()"
+  ></button>
+</div>
+<div class="modal-body pb-0">
+  <div class="container-fluid px-3">
+    @for (shortcut of shortcuts; track shortcut.description) {
+      <div class="row py-3 align-items-center shortcut-row">
+        <div class="col-6 text-end pe-4">
+          @for (key of shortcut.keys; track key) {
+            <kbd class="mx-1 px-2 py-1 fs-6 lh-lg">{{ key }}</kbd>
+            @if (!$last) {
+              <span class="text-secondary fw-semibold mx-1">+</span>
+            }
+          }
+        </div>
+        <div class="col-6 fs-6 text-body-secondary lh-sm">
+          {{ shortcut.description }}
+        </div>
+      </div>
+    }
+  </div>
+</div>
+<div class="modal-footer border-top-0 pt-0">
+  <button
+    type="button"
+    class="btn btn-primary px-4"
+    (click)="activeModal.close()"
+  >
+    Got it
+  </button>
+</div>
