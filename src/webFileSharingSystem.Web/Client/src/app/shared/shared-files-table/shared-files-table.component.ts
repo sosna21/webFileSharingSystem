@@ -44,6 +44,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { MessageSeverity } from '../../core/models/toast-info.model';
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
+import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -66,6 +67,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
     AccessModeCellComponent,
     CreatedByCellComponent,
     SortableHeaderComponent,
+    TooltipOnOverflowDirective,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',

@@ -48,6 +48,17 @@ tr.drop-folder-hover > * {
   background-color: rgba(13, 110, 253, 0.12) !important;
 }
 
+td.cdk-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+td.cdk-column-fileName,
+th.cdk-column-fileName {
+  min-width: 150px;
+}
+
 tr.drop-folder-hover {
   outline: 2px dashed #0d6efd !important;
   outline-offset: -2px;

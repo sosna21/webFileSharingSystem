@@ -44,6 +44,7 @@ import { ShareCellComponent } from '../table-cells/share-cell/share-cell.compone
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
+import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-user-files-table',
@@ -66,6 +67,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
     LastModificationCellComponent,
     CreatedByCellComponent,
     SortableHeaderComponent,
+    TooltipOnOverflowDirective,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',

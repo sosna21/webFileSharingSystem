@@ -46,6 +46,7 @@
   >
     <table
       cdk-table
+      fixedLayout="true"
       [dataSource]="files()"
       [trackBy]="trackByFileId"
       recycleRows
@@ -89,13 +90,18 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
+          style="width: 56%"
           (click)="toggleSort('fileName')"
         >
           <app-sortable-header column="fileName" [sortOption]="sortOption()"
             >File Name</app-sortable-header
           >
         </th>
-        <td cdk-cell *cdkCellDef="let file">
+        <td
+          cdk-cell
+          *cdkCellDef="let file"
+          [appTooltipOnOverflow]="file.fileName"
+        >
           <app-file-name-cell
             [file]="file"
             [editingId]="editingId()"
