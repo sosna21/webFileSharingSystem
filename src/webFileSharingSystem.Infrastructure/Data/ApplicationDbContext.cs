@@ -39,7 +39,10 @@ namespace webFileSharingSystem.Infrastructure.Data
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        entry.Entity.CreatedBy = _currentUserService.UserId ?? -1;
+                        if (entry.Entity.CreatedBy == default && _currentUserService.UserId.HasValue)
+                        {
+                            entry.Entity.CreatedBy = _currentUserService.UserId.Value;
+                        }
                         entry.Entity.Created = DateTime.UtcNow;
                         break;
 
