@@ -29,16 +29,16 @@ import { CommonModule } from '@angular/common';
 export class BaseDiscPageComponent {
   private readonly fileService = inject(FileService);
   readonly showPagination = computed(
-    () => this.totalItems() > this.itemsPerPage()
+    () => this.totalItems() > this.itemsPerPage(),
   );
 
   itemsPerPage = this.fileService.itemsPerPage;
   currentPage = this.fileService.currentPage;
   totalItems = computed(
-    () => this.fileService.pagainationData()?.totalItems || 0
+    () => this.fileService.pagainationData()?.totalItems || 0,
   );
 
-  fileResource = this.fileService.fileResource;
+  fileResource = this.fileService.currentResource;
 
-  loadingData = computed(() => this.fileResource.isLoading());
+  loadingData = computed(() => this.fileResource().status() === 'loading');
 }

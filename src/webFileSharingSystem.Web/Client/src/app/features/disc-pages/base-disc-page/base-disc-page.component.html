@@ -5,24 +5,37 @@
   <ng-content select="app-base-disc-page-header"></ng-content>
   <ng-content></ng-content>
 
-  <div>
-    @if (loadingData()) { @defer(on timer(100ms)) {
-    <span>Loading...</span>
-    } }
+  <div
+    class="position-relative flex-grow-1 overflow-hidden d-flex flex-column h-100"
+  >
+    @if (loadingData()) {
+      @defer (on timer(100ms)) {
+        <div
+          class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-body-tertiary bg-opacity-50 rounded-4"
+          style="z-index: 1050; backdrop-filter: blur(0.6px)"
+        >
+          <div
+            class="spinner-border text-primary"
+            style="width: 3rem; height: 3rem"
+            role="status"
+          >
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      }
+    }
+
+    <ng-content select="table, [data-view]"> No table provided. </ng-content>
   </div>
 
-  <ng-content select="table, [data-view]">
-    No table provided.
-  </ng-content>
-
   @if (showPagination()) {
-  <ngb-pagination
-    class="d-flex justify-content-center mt-3"
-    [collectionSize]="totalItems()"
-    [pageSize]="itemsPerPage()"
-    [(page)]="currentPage"
-    [boundaryLinks]="true"
-    [maxSize]="6"
-  />
+    <ngb-pagination
+      class="d-flex justify-content-center mt-3"
+      [collectionSize]="totalItems()"
+      [pageSize]="itemsPerPage()"
+      [(page)]="currentPage"
+      [boundaryLinks]="true"
+      [maxSize]="6"
+    />
   }
 </div>

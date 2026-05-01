@@ -381,6 +381,11 @@ export class FileService {
   readonly _sharedFilesResource = httpResource<FileResponse<SharedFile>>(() =>
     this.mode() === 'GetSharedWithMe' ? this._request() : undefined,
   );
+  readonly currentResource = computed(() => {
+    return this.mode() === 'GetSharedWithMe'
+      ? this._sharedFilesResource
+      : this._fileResource;
+  });
 
   private readonly _linkedFilesResponse = linkedSignal<
     FileResponse<AppFile> | undefined,
