@@ -1,11 +1,10 @@
 <img
   [src]="userPhotoUrl() ?? 'user.png'"
-  [alt]="
-    'Profile photo of ' +
-    (file().userId === currentUserId() ? 'you' : file().sharedUserName)
-  "
+  [alt]="'Profile photo of ' + file().sharedUserName"
   width="32"
   height="32"
-  class="rounded-circle me-1"
+  class="rounded-circle me-2"
 />
-{{ file().sharedUserName }}
+<span class="text-truncate" [appTooltipOnOverflow]="file().sharedUserName">
+  {{ file().sharedUserName }}
+</span>

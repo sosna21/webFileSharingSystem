@@ -1,13 +1,12 @@
+@let formattedCreatedBy =
+  file().createdBy === currentUserId() ? "You" : file().createdByUserName;
 <img
   [src]="userPhotoUrl() ?? 'user.png'"
-  [alt]="
-    'Profile photo of ' +
-    (file().createdBy === currentUserId() ? 'you' : file().createdByUserName)
-  "
+  [alt]="'Profile photo of ' + formattedCreatedBy"
   width="32"
   height="32"
-  class="rounded-circle me-1"
+  class="rounded-circle me-2"
 />
-<span class="align-bottom">
-  {{ file().createdBy === currentUserId() ? "You" : file().createdByUserName }}
+<span class="text-truncate" [appTooltipOnOverflow]="formattedCreatedBy">
+  {{ formattedCreatedBy }}
 </span>

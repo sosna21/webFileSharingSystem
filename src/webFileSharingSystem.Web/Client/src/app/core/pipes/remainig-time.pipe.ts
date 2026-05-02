@@ -5,7 +5,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class RemainigTimePipe implements PipeTransform {
   transform(validUntil: string | Date | null | undefined): string {
-    if (!validUntil) return 'Indefinitely ♾️';
+    if (!validUntil) return 'Indefinitely';
 
     const now = Date.now();
     const end = new Date(validUntil).getTime();

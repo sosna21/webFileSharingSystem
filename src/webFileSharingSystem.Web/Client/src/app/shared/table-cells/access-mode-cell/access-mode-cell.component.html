@@ -1,2 +1,12 @@
-<i class="bi" [class]="accessModeIconClass()"></i>
-{{ accessModeName() }}
+<span
+  class="d-inline-flex align-items-center d-xl-none"
+  [ngbTooltip]="accessModeName()"
+  [openDelay]="250"
+>
+  <i class="bi me-1" [class]="accessModeIconClass()"></i>
+  <span>{{ getShortAccessModeName(accessModeName()) }}</span>
+</span>
+<span class="d-none d-xl-inline-flex align-items-center">
+  <i class="bi me-1" [class]="accessModeIconClass()"></i>
+  {{ accessModeName() }}
+</span>

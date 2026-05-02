@@ -17,6 +17,7 @@ kbd {
     0 2px 0 var(--bs-border-color),
     0 3px 2px rgba(0, 0, 0, 0.05);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 :host-context([data-bs-theme="dark"]) kbd {

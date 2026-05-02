@@ -38,7 +38,7 @@
   >
     <table
       cdk-table
-      fixedLayout="true"
+      fixedLayout
       [dataSource]="files()"
       [trackBy]="trackByFileId"
       recycleRows
@@ -46,7 +46,7 @@
     >
       <!-- Row Selector Definition -->
       <ng-container cdkColumnDef="rowSelector">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
+        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 40px">
           <label class="lbl-checkbox">
             <input
               type="checkbox"
@@ -74,7 +74,6 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          style="width: 54%"
           (click)="toggleSort('fileName')"
         >
           <app-sortable-header column="fileName" [sortOption]="sortOption()"
@@ -105,7 +104,7 @@
           *cdkHeaderCellDef
           scope="col"
           class="d-none d-md-table-cell"
-          style="width: 12%"
+          style="width: 150px"
           (click)="toggleSort('sharedBy/createdBy')"
         >
           <app-sortable-header
@@ -119,7 +118,7 @@
         <td
           cdk-cell
           *cdkCellDef="let file"
-          class="d-none d-md-table-cell align-middle"
+          class="d-none d-md-table-cell align-middle pe-2"
         >
           @if (currentDirectoryId()) {
             <app-created-by-cell
@@ -141,19 +140,15 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          class="d-none d-md-table-cell"
-          style="width: 10%"
+          class="align-middle access-mode-column"
           (click)="toggleSort('accessMode')"
         >
-          <app-sortable-header column="accessMode" [sortOption]="sortOption()"
-            >Access Mode</app-sortable-header
-          >
+          <app-sortable-header column="accessMode" [sortOption]="sortOption()">
+            <span class="d-table-cell d-xl-none">Access</span>
+            <span class="d-none d-xl-table-cell">Access Mode</span>
+          </app-sortable-header>
         </th>
-        <td
-          cdk-cell
-          *cdkCellDef="let file"
-          class="d-none d-md-table-cell align-middle"
-        >
+        <td cdk-cell *cdkCellDef="let file" class="align-middle">
           <app-access-mode-cell
             [file]="file"
             [accessModeName]="getAccessModeName(file.accessMode)"
@@ -165,7 +160,12 @@
 
       <!-- Actions Definition -->
       <ng-container cdkColumnDef="actions">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 5%">
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          class="actions-column"
+        >
           Actions
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
@@ -185,7 +185,7 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          style="width: 6%"
+          class="size-column"
           (click)="toggleSort('size')"
         >
           <app-sortable-header column="size" [sortOption]="sortOption()"
@@ -206,14 +206,18 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          style="width: 10%"
+          class="valid-until-column d-none d-sm-table-cell"
           (click)="toggleSort('validUntil')"
         >
           <app-sortable-header column="validUntil" [sortOption]="sortOption()"
             >Valid Until</app-sortable-header
           >
         </th>
-        <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
+        <td
+          cdk-cell
+          *cdkCellDef="let file"
+          class="d-none d-sm-table-cell align-middle"
+        >
           <app-valid-until-cell
             [file]="file"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
@@ -222,9 +226,8 @@
       </ng-container>
 
       <!-- Header and Row Declarations -->
-      <tr *cdkNoDataRow>
-        <td colspan="100%" class="text-center fs-5">Empty directory</td>
-      </tr>
+      <tr *cdkNoDataRow></tr>
+      <!-- Leave empty - Required for correct display of "No data" row -->
 
       <tr
         cdk-header-row
@@ -269,6 +272,7 @@
     </table>
 
     @if (files().length === 0) {
+      <div class="text-center fs-5 border ms-1 py-1">Empty directory</div>
       <div
         class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
       >

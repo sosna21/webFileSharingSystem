@@ -1,3 +1,7 @@
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+
 th {
   font-weight: lighter;
 }
@@ -11,7 +15,7 @@ tr.selectable {
 }
 
 table {
-  @media (max-width: 992px) {
+  @include media-breakpoint-down(md) {
     font-size: 0.85rem;
   }
 }
@@ -66,7 +70,33 @@ td.cdk-cell {
   text-overflow: ellipsis;
 }
 
-td.cdk-column-fileName,
-th.cdk-column-fileName {
-  min-width: 150px;
+.valid-until-column {
+  width: 100px;
+  @include media-breakpoint-up(md) {
+    width: 120px;
+  }
+  @include media-breakpoint-up(xl) {
+    width: 160px;
+  }
+}
+
+.access-mode-column {
+  width: 70px;
+  @include media-breakpoint-up(xl) {
+    width: 120px;
+  }
+}
+
+.size-column {
+  width: 75px;
+  @include media-breakpoint-up(xl) {
+    width: 100px;
+  }
+}
+
+.actions-column {
+  width: 64px;
+  @include media-breakpoint-up(xl) {
+    width: 80px;
+  }
 }

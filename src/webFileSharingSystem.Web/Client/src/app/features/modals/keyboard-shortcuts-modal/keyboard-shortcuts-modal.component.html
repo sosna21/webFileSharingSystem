@@ -13,12 +13,14 @@
 <div class="modal-body pb-0">
   <div class="container-fluid px-3">
     @for (shortcut of shortcuts; track shortcut.description) {
-      <div class="row py-3 align-items-center shortcut-row">
-        <div class="col-6 text-end pe-4">
+      <div class="row py-2 py-xl-3 align-items-center shortcut-row">
+        <div
+          class="col-6 text-end pe-4 d-flex flex-wrap justify-content-end align-items-center gap-1"
+        >
           @for (key of shortcut.keys; track key) {
-            <kbd class="mx-1 px-2 py-1 fs-6 lh-lg">{{ key }}</kbd>
+            <kbd class="px-2 fs-6">{{ key }}</kbd>
             @if (!$last) {
-              <span class="text-secondary fw-semibold mx-1">+</span>
+              <span class="text-secondary fw-semibold">+</span>
             }
           }
         </div>

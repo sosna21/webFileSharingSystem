@@ -1,4 +1,6 @@
-@import "bootstrap/scss/bootstrap";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
 
 .grid {
   height: 100vh;
@@ -26,7 +28,7 @@ main {
   overflow-y: auto;
 }
 
-@include media-breakpoint-down(md) {
+@include media-breakpoint-down(lg) {
   .grid {
     grid-template-columns: 1fr;
   }

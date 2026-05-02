@@ -10,15 +10,16 @@ import { SharedFile } from '../../../core/models/shared-file.model';
 import { BaseCellDirective } from '../base-cell.directive';
 import { AuthenticationService } from '../../../core/services/authentication.service';
 import { UserPhotoService } from '../../../core/services/user-photo.service';
+import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-shared-user-name-cell',
-  imports: [CommonModule],
+  imports: [CommonModule, TooltipOnOverflowDirective],
   templateUrl: './shared-user-name-cell.component.html',
   styleUrl: './shared-user-name-cell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'text-nowrap',
+    class: 'd-flex align-items-center',
   },
 })
 export class SharedUserNameCellComponent extends BaseCellDirective<SharedFile> {
