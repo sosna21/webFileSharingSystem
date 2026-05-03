@@ -39,7 +39,7 @@ namespace webFileSharingSystem.Core.Services
             var filePathParts = fileToGetPath.UserId == userId
                 ? await _unitOfWork.CustomQueriesRepository().FindPathToAllParentsForUserFile(fileId, cancellationToken)
                 : await _unitOfWork.CustomQueriesRepository().FindPathToAllParentForSharedFile(userId, fileId, cancellationToken);
-            
+
             return (Result.Success<OperationResult>(), filePathParts);
         }
 
@@ -68,7 +68,7 @@ namespace webFileSharingSystem.Core.Services
                 var parentDirectory =
                     await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
                 if (parentDirectory is null)
-                    return  (Result.Failure(OperationResult.BadRequest, "Parent directory does not exist or you do not have access"), null);
+                    return (Result.Failure(OperationResult.BadRequest, "Parent directory does not exist or you do not have access"), null);
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
                     return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
             }
@@ -80,23 +80,27 @@ namespace webFileSharingSystem.Core.Services
                 ParentId = parentId,
                 UserId = userId
             };
-            
+
             var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(userId, parentId, directoryName), cancellationToken);
             if (!isNameAvailable)
                 return (Result.Failure(OperationResult.BadRequest, "Directory with that name already exists"), null);
 
             _unitOfWork.Repository<File>().Add(file);
 
-            return await _unitOfWork.Complete(cancellationToken) > 0
-                ? (Result.Success<OperationResult>(), file)
-                : (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
+            if (await _unitOfWork.Complete(cancellationToken) <= 0)
+                return (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
+
+            file.Creator = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken)
+                ?? throw new Exception($"User not found, userId: {userId}");
+
+            return (Result.Success<OperationResult>(), file);
         }
 
         public async Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default)
         {
             var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
             if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
-            
+
             var releaser = await _userLocks.AcquireAsync(fileToDelete.UserId, cancellationToken);
             try
             {
@@ -226,7 +230,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (enumeratedFileIds.Except(filesToMove.Select(f => f.Id)).Any())
                 return (Result.Failure(OperationResult.BadRequest, "Some files not found"), null);
-            
+
             var usersToLock = filesToMove
                 .Select(f => f.UserId)
                 .Append(targetUserId)
