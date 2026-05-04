@@ -94,10 +94,10 @@ export class FileActionsStripComponent {
 
   createDirectory() {
     if (this.isNameForbidden()) return;
-    this.fileService.createDirectoryWithFeedback(
-      this.newFolderName(),
-      this.selectionService.selectedIds.set,
-    );
+    this.fileService.createDirectoryWithFeedback(this.newFolderName(), (id) => {
+      this.selectionService.selectedIds.set(new Set([id]));
+      this.selectionService.scrollToId(id);
+    });
 
     this.newFolderName.set(generateUniqueDirName(this.names()));
     this.cancelRename();

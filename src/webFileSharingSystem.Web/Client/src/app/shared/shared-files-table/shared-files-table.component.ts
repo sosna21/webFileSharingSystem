@@ -10,9 +10,7 @@ import {
   TrackByFunction,
   viewChild,
   viewChildren,
-  DestroyRef,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NgbTooltipModule,
   NgbDropdownModule,
@@ -88,7 +86,6 @@ export class SharedFilesTableComponent {
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly modalService = inject(ModalService);
   private readonly toast = inject(ToastService);
-  private readonly destroyRef = inject(DestroyRef);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -98,12 +95,7 @@ export class SharedFilesTableComponent {
   readonly sortOption = this.fileService.sortOption;
 
   constructor() {
-    this.selection.scrollRequested
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ index, key }) => {
-        const container = this.scrollContainer()?.nativeElement;
-        this.selection.handleTableScroll(container, index, key);
-      });
+    this.selection.setScrollContainer(this.scrollContainer);
   }
 
   toggleSort(column: string) {
@@ -324,10 +316,10 @@ export class SharedFilesTableComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
+    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+      this.selection.selectedIds.set(new Set([id]));
+      this.selection.scrollToId(id);
+    });
   }
 
   private openContextMenu(position: { x: number; y: number }) {

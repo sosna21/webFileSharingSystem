@@ -60,9 +60,11 @@ namespace webFileSharingSystem.Core.Services
                 : Result.Failure(OperationResult.Exception, "Problem with renaming the file");
         }
 
-        public async Task<(Result<OperationResult> result, File? file)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+        public async Task<(Result<OperationResult> result, FileOperationContext? operationContext)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
             CancellationToken cancellationToken = default)
         {
+            var targetUserId = userId;
+            var isOwnFile = true;
             if (parentId != null)
             {
                 var parentDirectory =
@@ -71,6 +73,9 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure(OperationResult.BadRequest, "Parent directory does not exist or you do not have access"), null);
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
                     return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
+
+                isOwnFile = userId == parentDirectory.UserId;
+                targetUserId = parentDirectory.UserId;
             }
 
             var file = new File
@@ -78,10 +83,10 @@ namespace webFileSharingSystem.Core.Services
                 FileName = directoryName,
                 IsDirectory = true,
                 ParentId = parentId,
-                UserId = userId
+                UserId = targetUserId
             };
 
-            var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(userId, parentId, directoryName), cancellationToken);
+            var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(targetUserId, parentId, directoryName), cancellationToken);
             if (!isNameAvailable)
                 return (Result.Failure(OperationResult.BadRequest, "Directory with that name already exists"), null);
 
@@ -90,10 +95,29 @@ namespace webFileSharingSystem.Core.Services
             if (await _unitOfWork.Complete(cancellationToken) <= 0)
                 return (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
 
-            file.Creator = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken)
-                ?? throw new Exception($"User not found, userId: {userId}");
+            var creatorId = isOwnFile ? targetUserId : userId;
+            file.Creator = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(creatorId, cancellationToken)
+                ?? throw new Exception($"User not found, userId: {creatorId}");
 
-            return (Result.Success<OperationResult>(), file);
+            SharedFileSqlRow? sharedFile = null;
+            if (!isOwnFile)
+            {
+                sharedFile = await _unitOfWork.CustomQueriesRepository()
+                    .GetSharedFileById(userId, file.Id, cancellationToken);
+            }
+
+            var ctx = new FileOperationContext
+            {
+                IsOwnFile = isOwnFile,
+                File = file,
+                AccessMode = sharedFile?.AccessMode,
+                ValidUntil = sharedFile?.ValidUntil,
+                SharedUserName = sharedFile?.SharedUserName,
+                SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
+                IsInherited = sharedFile?.IsInherited
+            };
+
+            return (Result.Success<OperationResult>(), ctx);
         }
 
         public async Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default)

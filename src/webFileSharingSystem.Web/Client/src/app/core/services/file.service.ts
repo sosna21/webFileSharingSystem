@@ -631,16 +631,45 @@ export class FileService {
 
   createDirectoryWithFeedback(
     directoryName: string,
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (id: number) => void,
   ) {
     this.fileApiService
       .createDirectory(directoryName, this.parentId())
       .subscribe({
         next: (response) => {
-          this.refreshActiveList();
-          if (setSelection) {
-            setSelection(new Set([response.id]));
+          // Optimistic update: add the new directory to the local list immediately
+          const currentMode = this.mode();
+
+          if (currentMode === 'GetSharedWithMe') {
+            const optimisticSharedFile: SharedFile = {
+              ...(response as SharedFile),
+              fileStatus: FileStatus.Completed,
+              progressStatus: null,
+              partialFileInfo: null,
+              uploadProgress: null,
+            };
+            this._sharedFiles.update((files) => [
+              ...files,
+              optimisticSharedFile,
+            ]);
+          } else {
+            const optimisticAppFile: AppFile = {
+              ...(response as AppFile),
+              fileStatus: FileStatus.Completed,
+              progressStatus: null,
+              partialFileInfo: null,
+              uploadProgress: null,
+            };
+            this._userFiles.update((files) => [...files, optimisticAppFile]);
           }
+
+          if (onSuccess) {
+            onSuccess(response.id);
+          }
+
+          // Sync with server to ensure consistency
+          this.refreshActiveList();
+
           this.toast.show(
             'New directory created',
             `Directory "${response.fileName}" has been created`,

@@ -37,7 +37,7 @@ export class FileApiService {
     const api = `${this.fileUrl}/CreateDir/${name}${
       parentId ? '?parentId=' + parentId : ''
     }`;
-    return this.http.post<AppFile>(api, null);
+    return this.http.post<AppFile | SharedFile>(api, null);
   }
 
   moveFiles(filesIds: number[], targetDirectoryId: number | null) {

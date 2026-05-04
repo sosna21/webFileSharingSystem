@@ -178,17 +178,25 @@ namespace webFileSharingSystem.Web.Controllers
 
         [HttpPost]
         [Route("CreateDir/{name}")]
-        public async Task<ActionResult<FileResponse>> CreateDir(string name, [FromQuery] int? parentId = null)
+        public async Task<ActionResult> CreateDir(string name, [FromQuery] int? parentId = null)
         {
             var userId = _currentUserService.UserId;
-            var (actionResult, file) =
+            var (actionResult, ctx) =
                 await _fileService.CreateDirectoryAsync(parentId, _currentUserService.UserId!.Value, name);
 
             if (!actionResult.Succeeded)
                 return actionResult.ToActionResult(actionResult.Errors.Length > 0
                 ? actionResult.Errors[0]
                 : "Unknown problem with creating a directory");
-            return Ok(ToFileResponse(file!));
+
+            if (ctx!.IsOwnFile)
+            {
+                var response = ToFileResponse(ctx.File);
+                return Ok(response);
+            }
+
+            var sharedResponse = ToSharedFileResponse(ctx);
+            return Ok(sharedResponse);
         }
 
         [HttpDelete]

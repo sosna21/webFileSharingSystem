@@ -1,11 +1,11 @@
 import {
+  ElementRef,
   Injectable,
   Signal,
   WritableSignal,
   computed,
   signal,
 } from '@angular/core';
-import { Subject } from 'rxjs';
 
 export interface SelectableItem {
   id: number;
@@ -17,12 +17,9 @@ type DragKind = null | 'standard' | 'ctrl' | 'shift';
 export class SelectionService<T extends SelectableItem = SelectableItem> {
   // Host supplies live files list
   private filesSig!: Signal<T[]>;
+  private scrollContainerSig?: Signal<ElementRef<HTMLElement> | undefined>;
 
   readonly selectedIds: WritableSignal<Set<number>> = signal(new Set());
-  readonly scrollRequested = new Subject<{
-    index: number;
-    key: 'Home' | 'End' | 'ArrowUp' | 'ArrowDown';
-  }>();
   readonly areAllChecked = computed(
     () =>
       this.filesSig?.() &&
@@ -44,8 +41,24 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     window.addEventListener('mouseup', this.endDragSelection.bind(this));
   }
 
+  scrollToId(id: number) {
+    const files = this.filesSig ? this.filesSig() : [];
+    const index = files.findIndex((f) => f.id === id);
+    if (index !== -1) {
+      this.fileSelectionAnchorId.set(id);
+      setTimeout(() => {
+        const container = this.scrollContainerSig?.()?.nativeElement;
+        this.handleTableScroll(container, index);
+      });
+    }
+  }
+
   init(files: Signal<T[]>) {
     this.filesSig = files;
+  }
+
+  setScrollContainer(container: Signal<ElementRef<HTMLElement> | undefined>) {
+    this.scrollContainerSig = container;
   }
 
   onKeydown(event: KeyboardEvent) {
@@ -101,10 +114,12 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
           this.selectedIds.set(new Set([newAnchorId]));
         }
 
-        this.scrollRequested.next({
-          index: newIndex,
-          key: event.key as 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
-        });
+        const container = this.scrollContainerSig?.()?.nativeElement;
+        this.handleTableScroll(
+          container,
+          newIndex,
+          event.key as 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
+        );
       }
     }
   }
@@ -112,7 +127,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   handleTableScroll(
     container: HTMLElement | undefined,
     index: number,
-    key: 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
+    key?: 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
   ) {
     if (!container) return;
 
