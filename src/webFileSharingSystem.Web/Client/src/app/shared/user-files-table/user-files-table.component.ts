@@ -313,7 +313,12 @@ export class UserFilesTableComponent {
   }
 
   pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
+    this.fileService.pasteFilesWithFeedback((ids) => {
+      this.selection.selectedIds.set(ids);
+      if (ids.size > 0) {
+        this.selection.scrollToId(Array.from(ids).pop()!);
+      }
+    });
   }
 
   uploadFiles($event: File[]) {

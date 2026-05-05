@@ -88,7 +88,11 @@ export class SharedFilesTableComponent {
   private readonly toast = inject(ToastService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
-  readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
+  readonly canPaste = computed(
+    () =>
+      !!this.fileService.awaitingActionState() &&
+      this.fileService.isParentMinWriteAccess(),
+  );
   readonly currentDirectoryAccessMode = computed(
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
@@ -293,7 +297,12 @@ export class SharedFilesTableComponent {
   }
 
   pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
+    this.fileService.pasteFilesWithFeedback((ids) => {
+      this.selection.selectedIds.set(ids);
+      if (ids.size > 0) {
+        this.selection.scrollToId(Array.from(ids).pop()!);
+      }
+    });
   }
 
   uploadFiles($event: File[]) {

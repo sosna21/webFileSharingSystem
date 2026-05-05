@@ -42,12 +42,12 @@ export class FileApiService {
 
   moveFiles(filesIds: number[], targetDirectoryId: number | null) {
     const api = `${this.fileUrl}/Move/${targetDirectoryId ?? -1}`;
-    return this.http.put(api, filesIds);
+    return this.http.put<AppFile[] | SharedFile[]>(api, filesIds);
   }
 
   copyFiles(filesIds: number[], targetDirectoryId: number | null) {
     const api = `${this.fileUrl}/Copy/${targetDirectoryId ?? -1}`;
-    return this.http.post<AppFile[]>(api, filesIds);
+    return this.http.post<AppFile[] | SharedFile[]>(api, filesIds);
   }
 
   deleteFile(fileId: number) {

@@ -399,6 +399,9 @@ namespace webFileSharingSystem.Core.Services
                 if (!updateResult.Succeeded)
                     return (Result.Failure(OperationResult.BadRequest, updateResult.Errors), null);
 
+                var creatorUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken)
+                    ?? throw new Exception($"User not found, userId: {userId}");
+
                 foreach (var fileToCopy in filesToCopy)
                 {
                     if (!await _guard.UserCanPerform(userId, fileToCopy, ShareAccessMode.ReadOnly, cancellationToken))
@@ -413,7 +416,8 @@ namespace webFileSharingSystem.Core.Services
                         Size = fileToCopy.Size,
                         IsDirectory = fileToCopy.IsDirectory,
                         FileGuid = fileToCopy.FileGuid,
-                        FileStatus = FileStatus.Completed
+                        FileStatus = FileStatus.Completed,
+                        Creator = creatorUser
                     };
 
                     _unitOfWork.Repository<File>().Add(file);

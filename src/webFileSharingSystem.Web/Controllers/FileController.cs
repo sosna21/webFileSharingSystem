@@ -230,7 +230,6 @@ namespace webFileSharingSystem.Web.Controllers
         [Route("Copy/{parentId:int}")]
         public async Task<ActionResult> CopyFiles(int parentId, [FromBody] int[] ids)
         {
-            var userId = _currentUserService.UserId;
             var dbParentId = parentId == -1 ? (int?)null : parentId;
             var (result, ctx) = await _fileService.CopyFilesAsync(dbParentId, ids, _currentUserService.UserId!.Value);
             if (!result.Succeeded) return result.ToActionResult(string.Join(", ", result.Errors));

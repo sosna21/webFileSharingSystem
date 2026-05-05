@@ -32,7 +32,6 @@ export class FileActionsStripComponent {
     this.names().has(this.newFolderName()),
   );
 
-  readonly activeAction = this.fileService.awaitingActionState;
   readonly selectedFiles = this.selectionService.selectedItems;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canCreateDirectory = computed(
@@ -42,7 +41,11 @@ export class FileActionsStripComponent {
         this.fileService.parentBreadcrumb()!.accessMode! >=
           ShareAccessMode.ReadWrite),
   );
-  readonly canPaste = computed(() => this.activeAction() !== null);
+  readonly canPaste = computed(
+    () =>
+      !!this.fileService.awaitingActionState() &&
+      this.fileService.isParentMinWriteAccess(),
+  );
   readonly canCopy = computed(
     () =>
       this.selectedFiles().length > 0 &&
@@ -141,7 +144,12 @@ export class FileActionsStripComponent {
 
   onPaste() {
     if (!this.canPaste()) return;
-    this.fileService.pasteFilesWithFeedback();
+    this.fileService.pasteFilesWithFeedback((ids) => {
+      this.selectionService.selectedIds.set(ids);
+      if (ids.size > 0) {
+        this.selectionService.scrollToId(Array.from(ids).pop()!);
+      }
+    });
   }
 
   onRename() {

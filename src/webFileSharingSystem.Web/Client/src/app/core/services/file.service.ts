@@ -708,7 +708,7 @@ export class FileService {
     );
   }
 
-  pasteFilesWithFeedback(setSelection?: (value: Set<number>) => void) {
+  pasteFilesWithFeedback(onSuccess?: (ids: Set<number>) => void) {
     const action = this.awaitingActionState();
     if (!action) return;
     if (action.type === ActionType.Move) {
@@ -716,25 +716,23 @@ export class FileService {
         Array.from(action.files),
         this.parentId(),
         this.parentName() ?? 'home directory',
-        setSelection,
+        onSuccess,
       );
     } else if (action.type === ActionType.Copy) {
       this.copyFilesWithFeedback(
         Array.from(action.files),
         this.parentId(),
         this.parentName() ?? 'home directory',
-        setSelection,
+        onSuccess,
       );
     }
-
-    this.clearActionContext();
   }
 
   moveFilesWithFeedback(
     filesToMove: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (ids: Set<number>) => void,
   ) {
     this.executeFileOperationWithFeedback(
       filesToMove,
@@ -742,7 +740,7 @@ export class FileService {
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
       'move',
-      setSelection,
+      onSuccess,
     );
   }
 
@@ -750,7 +748,7 @@ export class FileService {
     filesToCopy: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (ids: Set<number>) => void,
   ) {
     this.executeFileOperationWithFeedback(
       filesToCopy,
@@ -758,7 +756,7 @@ export class FileService {
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
       'copy',
-      setSelection,
+      onSuccess,
     );
   }
 
@@ -865,7 +863,7 @@ export class FileService {
     targetDirectoryName: string,
     operation: (fileIds: number[], targetId: number | null) => Observable<T>,
     operationName: 'move' | 'copy',
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (ids: Set<number>) => void,
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
@@ -878,6 +876,53 @@ export class FileService {
     operation(fileIds, targetDirectoryId)
       .subscribe({
         next: (result) => {
+          const resultFiles = result as unknown as (AppFile | SharedFile)[];
+
+          if (targetDirectoryId === this.parentId()) {
+            const currentMode = this.mode();
+            if (currentMode === 'GetSharedWithMe') {
+              const optimisticSharedFiles: SharedFile[] = resultFiles.map(
+                (r) => ({
+                  ...(r as SharedFile),
+                  fileStatus: FileStatus.Completed,
+                  progressStatus: null,
+                  partialFileInfo: null,
+                  uploadProgress: null,
+                }),
+              );
+              this._sharedFiles.update((list) => [
+                ...list,
+                ...optimisticSharedFiles,
+              ]);
+            } else {
+              const optimisticAppFiles: AppFile[] = resultFiles.map((r) => ({
+                ...(r as AppFile),
+                fileStatus: FileStatus.Completed,
+                progressStatus: null,
+                partialFileInfo: null,
+                uploadProgress: null,
+              }));
+              this._userFiles.update((list) => [
+                ...list,
+                ...optimisticAppFiles,
+              ]);
+            }
+          } else if (operationName === 'move') {
+            if (this.mode() === 'GetSharedWithMe') {
+              this._sharedFiles.update((list) =>
+                list.filter((f) => !fileIds.includes(f.id)),
+              );
+            } else {
+              this._userFiles.update((list) =>
+                list.filter((f) => !fileIds.includes(f.id)),
+              );
+            }
+          }
+
+          if (onSuccess && targetDirectoryId === this.parentId()) {
+            onSuccess(new Set(resultFiles.map((f) => f.id)));
+          }
+
           this.refreshActiveList();
 
           this.toast.show(
@@ -889,13 +934,10 @@ export class FileService {
           );
 
           this.clearActionContext();
-          if (setSelection) {
-            setSelection(new Set((result as BaseFile[]).map((f) => f.id)));
-          }
 
           if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
             this.storage.updateCurrentUserUsedSpace(
-              (result as BaseFile[]).reduce((acc, file) => acc + file.size, 0),
+              resultFiles.reduce((acc, file) => acc + file.size, 0),
             );
           }
         },
