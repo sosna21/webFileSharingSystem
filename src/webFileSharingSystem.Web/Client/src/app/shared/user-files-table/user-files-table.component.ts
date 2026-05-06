@@ -92,6 +92,9 @@ export class UserFilesTableComponent {
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
   readonly sortOption = this.fileService.sortOption;
+  readonly currentDirectoryAccessMode = computed(
+    () => this.fileService.parentBreadcrumb()?.accessMode,
+  );
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);

@@ -19,7 +19,7 @@
 
 <app-table-context-menu
   [position]="contextMenuPosition()"
-  [accessMode]="undefined"
+  [accessMode]="currentDirectoryAccessMode()"
   [sortableColumns]="sortableColumns()"
   [sortOption]="sortOption()"
   [canPaste]="canPaste()"
