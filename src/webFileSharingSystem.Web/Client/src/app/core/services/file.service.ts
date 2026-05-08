@@ -106,7 +106,11 @@ export class FileService {
   });
 
   //TODO add parent folder signal
-  public readonly searchedPhrase = signal<string>('');
+  public readonly searchedPhrase = computed<string>(() => {
+    const url = new URL(this.currentUrl(), 'http://localhost');
+    return url.searchParams.get('search') ?? '';
+  });
+
   public readonly parentId = computed<number | null>(() =>
     this.extractFolderId(this.currentUrl()),
   );
@@ -309,18 +313,18 @@ export class FileService {
       : null,
   );
 
-  private readonly _debouncedSearchedPhrase = debouncedSignal(
-    this.searchedPhrase,
-    300,
-    '',
-  );
+  // private readonly _debouncedSearchedPhrase = debouncedSignal(
+  //   this.searchedPhrase,
+  //   300,
+  //   '',
+  // );
   private readonly _request = computed(
     () => `${
       this.fileUrl
     }/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
       ${this.parentId() ? '&ParentId=' + this.parentId() : ''}${
-        this._debouncedSearchedPhrase() !== ''
-          ? '&SearchedPhrase=' + this._debouncedSearchedPhrase()
+        this.searchedPhrase() !== ''
+          ? '&SearchedPhrase=' + this.searchedPhrase()
           : ''
       }`,
   );
@@ -451,11 +455,27 @@ export class FileService {
         this.mode() === 'GetAll' ? undefined : ShareAccessMode.ReadOnly,
       validUntil: this.mode() === 'GetSharedWithMe' ? null : undefined,
     };
-    return [homeCrumb, ...breadcrumbs].sort((a, b) => a.level - b.level);
+
+    const crumbs = [homeCrumb, ...breadcrumbs].sort(
+      (a, b) => a.level - b.level,
+    );
+
+    if (
+      //this._debouncedSearchedPhrase()?.trim() &&
+      this.searchedPhrase()?.trim()
+    ) {
+      crumbs.push({
+        id: -999, // Dummy ID for search result breadcrumb
+        fileName: 'Search result',
+        level: crumbs.length,
+        accessMode: ShareAccessMode.ReadOnly,
+      });
+    }
+
+    return crumbs;
   });
 
   goToFolder(folderId: number | null) {
-    this.searchedPhrase.set('');
     if (folderId === null)
       this.router.navigate(['/disc', this.mapModeToRoute(this.mode())]);
     else
@@ -467,6 +487,20 @@ export class FileService {
         'folder',
         folderId,
       ]);
+  }
+
+  setSearchPhrase(phrase: string) {
+    const urlTree = this.router.parseUrl(this.router.url);
+    const currentPhrase = (urlTree.queryParams['search'] ?? '').trim();
+    const nextPhrase = phrase.trim();
+
+    if (nextPhrase) {
+      urlTree.queryParams['search'] = nextPhrase;
+    } else {
+      delete urlTree.queryParams['search'];
+    }
+    const shouldPushHistory = currentPhrase === '' && nextPhrase !== '';
+    this.router.navigateByUrl(urlTree, { replaceUrl: !shouldPushHistory });
   }
 
   private mapModeToRoute(

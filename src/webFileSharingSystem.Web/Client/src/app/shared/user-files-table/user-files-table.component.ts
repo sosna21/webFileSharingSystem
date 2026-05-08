@@ -148,6 +148,10 @@ export class UserFilesTableComponent {
     return this.selection.isSelected(id);
   }
 
+  openLocation(file: AppFile) {
+    this.fileService.goToFolder(file.parentId);
+  }
+
   isEditing(id: number): boolean {
     return this.editingId() === id;
   }

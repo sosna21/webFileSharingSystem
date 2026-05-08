@@ -28,6 +28,10 @@ export class FileSearchComponent {
   currentFolderName = retainLastDefined(this.fileService.parentName);
   searchedPhrase = this.fileService.searchedPhrase;
 
+  setSearchPhrase(phrase: string) {
+    this.fileService.setSearchPhrase(phrase);
+  }
+
   onKeydown(event: KeyboardEvent) {
     if (event.key === 'F3') {
       event.preventDefault();

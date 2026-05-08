@@ -2,6 +2,7 @@
   [position]="contextMenuPosition()"
   [selectedFiles]="selectedFiles()"
   (openFolder)="selectFolder($event.id)"
+  (openLocation)="openLocation($event)"
   (download)="downloadFiles($event)"
   (rename)="initRename($event)"
   (move)="initFileMove($event)"

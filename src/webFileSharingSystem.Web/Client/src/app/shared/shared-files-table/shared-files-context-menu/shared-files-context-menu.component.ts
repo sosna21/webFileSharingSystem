@@ -1,9 +1,17 @@
 import { NgStyle } from '@angular/common';
-import { Component, computed, input, output, viewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
 import { SharedFile } from '../../../core/models/shared-file.model';
 import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
+import { FileService } from '../../../core/services/file.service';
 
 @Component({
   selector: 'app-shared-files-context-menu',
@@ -12,10 +20,14 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
   styleUrl: './shared-files-context-menu.component.scss',
 })
 export class SharedFilesContextMenuComponent {
+  private readonly fileService = inject(FileService);
   readonly dropdown = viewChild(NgbDropdown);
   readonly position = input.required<{ x: number; y: number }>();
   readonly selectedFiles = input.required<SharedFile[]>();
 
+  readonly inSearchView = computed(
+    () => !!this.fileService.searchedPhrase()?.trim(),
+  );
   readonly ShareAccessMode = ShareAccessMode;
 
   readonly showOpenFolder = computed(
@@ -51,6 +63,7 @@ export class SharedFilesContextMenuComponent {
   readonly copy = output<SharedFile[]>();
   readonly move = output<SharedFile[]>();
   readonly openFolder = output<SharedFile>();
+  readonly openLocation = output<SharedFile>();
 
   open() {
     this.dropdown()?.open();

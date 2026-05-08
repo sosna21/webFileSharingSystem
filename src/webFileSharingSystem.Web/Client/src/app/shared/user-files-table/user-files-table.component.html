@@ -2,6 +2,7 @@
   [position]="contextMenuPosition()"
   [selectedFiles]="selectedFiles()"
   (openFolder)="selectFolder($event.id)"
+  (openLocation)="openLocation($event)"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
   (delete)="deleteFiles($event)"
