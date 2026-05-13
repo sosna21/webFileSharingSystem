@@ -14,7 +14,6 @@ import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
-import { debouncedSignal } from '../utils/signal-utils';
 import { Router, NavigationEnd } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
 import {
@@ -27,6 +26,7 @@ import {
   EMPTY,
   tap,
   of,
+  firstValueFrom,
 } from 'rxjs';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
@@ -419,6 +419,25 @@ export class FileService {
 
   public readonly fileResource = this._fileResource.asReadonly();
   public readonly sharedFilesResource = this._sharedFilesResource.asReadonly();
+  private readonly currentResourceStatus = computed(() =>
+    this.currentResource().status(),
+  );
+  private readonly currentResourceStatus$ = toObservable(
+    this.currentResourceStatus,
+  );
+
+  private async waitForNextResourceReload(status$: Observable<string>) {
+    await firstValueFrom(
+      status$.pipe(filter((status) => status === 'loading')),
+    );
+    await firstValueFrom(
+      status$.pipe(filter((status) => status === 'resolved')),
+    );
+  }
+
+  async waitForNextCurrentReload() {
+    await this.waitForNextResourceReload(this.currentResourceStatus$);
+  }
 
   //breadcumbs
   private readonly _breadcrumbsQuery = computed(() =>

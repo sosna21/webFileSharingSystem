@@ -154,8 +154,10 @@ export class SharedFilesTableComponent {
     return this.selection.isSelected(id);
   }
 
-  openLocation(file: SharedFile) {
+  async openLocation(file: SharedFile) {
     this.fileService.goToFolder(file.parentId);
+    await this.fileService.waitForNextCurrentReload();
+    this.selection.scrollToId(file.id);
   }
 
   isEditing(id: number): boolean {
