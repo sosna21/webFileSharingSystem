@@ -78,13 +78,20 @@ namespace webFileSharingSystem.Core.Services
                         : StorageExtensions.GeneratePartialFileInfo(size, preferredChunk.Value);
                 }
 
+                var finalFileName = await FileNameUniquenessHelper.GetUniqueNameAsync(
+                    _unitOfWork,
+                    targetUserId,
+                    parentId,
+                    fileName,
+                    cancellationToken);
+
                 var fileGuidId = Guid.NewGuid();
                 //TODO Check if file with the same name already exists for that user
                 var file = new File
                 {
                     //file belongs to directory owner (in shared directories uploads)
                     UserId = targetUserId,
-                    FileName = fileName,
+                    FileName = finalFileName,
                     MimeType = mimeType,
                     Size = (ulong)size,
                     FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,

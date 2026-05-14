@@ -52,6 +52,17 @@ namespace webFileSharingSystem.Core.Services
             if (!await _guard.UserCanPerform(userId, fileToUpdate, ShareAccessMode.ReadWrite, cancellationToken))
                 return Result.Failure(OperationResult.Unauthorized, "You are not authorized to rename that file");
 
+            if (string.Equals(fileToUpdate.FileName, newName, StringComparison.Ordinal))
+                return Result.Success<OperationResult>();
+
+            var sameNameFile = (await _unitOfWork.Repository<File>().FindAsync(
+                    new GetFileByNameSpecs(fileToUpdate.UserId, fileToUpdate.ParentId, newName),
+                    cancellationToken))
+                .SingleOrDefault();
+
+            if (sameNameFile is not null && sameNameFile.Id != fileToUpdate.Id)
+                return Result.Failure(OperationResult.BadRequest, "File with that name already exists");
+
             fileToUpdate.FileName = newName;
             _unitOfWork.Repository<File>().Update(fileToUpdate);
 
@@ -78,17 +89,20 @@ namespace webFileSharingSystem.Core.Services
                 targetUserId = parentDirectory.UserId;
             }
 
+            var finalDirectoryName = await FileNameUniquenessHelper.GetUniqueNameAsync(
+                _unitOfWork,
+                targetUserId,
+                parentId,
+                directoryName,
+                cancellationToken);
+
             var file = new File
             {
-                FileName = directoryName,
+                FileName = finalDirectoryName,
                 IsDirectory = true,
                 ParentId = parentId,
                 UserId = targetUserId
             };
-
-            var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(targetUserId, parentId, directoryName), cancellationToken);
-            if (!isNameAvailable)
-                return (Result.Failure(OperationResult.BadRequest, "Directory with that name already exists"), null);
 
             _unitOfWork.Repository<File>().Add(file);
 
@@ -270,6 +284,12 @@ namespace webFileSharingSystem.Core.Services
                 foreach (var id in usersToLock)
                     lockReleasers.Add(await _userLocks.AcquireAsync(id, cancellationToken));
 
+                var existingNames = await FileNameUniquenessHelper.GetExistingNamesAsync(
+                    _unitOfWork,
+                    targetUserId,
+                    targetParentId,
+                    cancellationToken);
+
                 foreach (var fileToMove in filesToMove)
                 {
                     if (!await _guard.UserCanPerform(userId, fileToMove, ShareAccessMode.ReadWrite, cancellationToken))
@@ -311,6 +331,13 @@ namespace webFileSharingSystem.Core.Services
 
                     if (targetParentId is not null)
                         await UpdateParentFileSizes(targetParentId.Value, (long)fileToMove.Size, cancellationToken);
+
+                    var originalName = fileToMove.FileName;
+                    var isAlreadyInTarget = fileToMove.ParentId == targetParentId && fileToMove.UserId == targetUserId;
+                    if (isAlreadyInTarget)
+                        existingNames.Remove(originalName);
+
+                    fileToMove.FileName = FileNameUniquenessHelper.GetUniqueName(existingNames, originalName);
 
                     fileToMove.ParentId = targetParentId;
                     fileToMove.UserId = targetUserId;
@@ -402,16 +429,24 @@ namespace webFileSharingSystem.Core.Services
                 var creatorUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken)
                     ?? throw new Exception($"User not found, userId: {userId}");
 
+                var existingNames = await FileNameUniquenessHelper.GetExistingNamesAsync(
+                    _unitOfWork,
+                    targetUserId,
+                    targetParentId,
+                    cancellationToken);
+
                 foreach (var fileToCopy in filesToCopy)
                 {
                     if (!await _guard.UserCanPerform(userId, fileToCopy, ShareAccessMode.ReadOnly, cancellationToken))
                         return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to copy some files"), null);
 
+                    var copyName = FileNameUniquenessHelper.GetUniqueCopyName(existingNames, fileToCopy.FileName);
+
                     var file = new File
                     {
                         UserId = targetUserId,
                         ParentId = targetParentId,
-                        FileName = fileToCopy.FileName,
+                        FileName = copyName,
                         MimeType = fileToCopy.MimeType,
                         Size = fileToCopy.Size,
                         IsDirectory = fileToCopy.IsDirectory,

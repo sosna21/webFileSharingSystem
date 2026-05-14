@@ -123,6 +123,10 @@ namespace webFileSharingSystem.Infrastructure.Data
             builder.Entity<File>()
                 .HasIndex(f => f.FileGuid);
 
+            builder.Entity<File>()
+                .HasIndex(f => new { f.UserId, f.ParentId, f.FileName })
+                .IsUnique();
+
             builder.Entity<PartialFileInfo>()
                 .HasOne<File>()
                 .WithOne(e => e.PartialFileInfo)
