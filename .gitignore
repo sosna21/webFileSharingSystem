@@ -33,3 +33,4 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 .idea/.idea.webFileSharingSystem/.idea/data_source_mapping.xml
+**/*.csproj.lscache

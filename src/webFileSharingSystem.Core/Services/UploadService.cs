@@ -295,10 +295,24 @@ namespace webFileSharingSystem.Core.Services
         public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
             UserFileCache.GetValueOrDefault((userId, fileId))?.PartialFileInfo;
 
-        public async Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId,
+        public async Task<(Result result, FileOperationContext? operationContext)> EnsureDirectoriesExist(int userId,
+            int? parentId,
             IEnumerable<string> folders,
             CancellationToken cancellationToken = default)
         {
+            var targetUserId = userId;
+            var isOwnFile = true;
+            if (parentId is not null)
+            {
+                var parentDirectory = await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
+                if (parentDirectory is null) return (Result.Failure("Target directory not found"), null);
+                if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
+                    return (Result.Failure("You are not authorized to create directories in this location"), null);
+
+                targetUserId = parentDirectory.UserId;
+                isOwnFile = userId == targetUserId;
+            }
+
             var createDirectories = false;
             File? directoryFile = null;
             ApplicationUser? creatorUser = null;
@@ -308,7 +322,7 @@ namespace webFileSharingSystem.Core.Services
                 if (!createDirectories)
                 {
                     directoryFile = (await _unitOfWork.Repository<File>()
-                            .FindAsync(new GetFileByNameSpecs(userId, parentId, folder), cancellationToken))
+                            .FindAsync(new GetFileByNameSpecs(targetUserId, parentId, folder), cancellationToken))
                         .SingleOrDefault();
 
                     if (directoryFile is null)
@@ -325,7 +339,7 @@ namespace webFileSharingSystem.Core.Services
                 if (!createDirectories)
                     continue;
 
-                if (creatorUser is null)
+                    if (creatorUser is null)
                 {
                     creatorUser = await _unitOfWork.Repository<ApplicationUser>()
                         .FindByIdAsync(userId, cancellationToken);
@@ -339,7 +353,7 @@ namespace webFileSharingSystem.Core.Services
                     FileName = folder,
                     IsDirectory = true,
                     ParentId = parentId,
-                    UserId = userId,
+                    UserId = targetUserId,
                     Creator = creatorUser
                 };
 
@@ -348,7 +362,31 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure("Problem with creating directories"), null);
                 parentId = directoryFile.Id;
             }
-            return (Result.Success(), directoryFile);
+
+            if (directoryFile is null)
+                return (Result.Failure("No directory created"), null);
+
+            SharedFileSqlRow? sharedFile = null;
+            if (!isOwnFile)
+            {
+                sharedFile = await _unitOfWork.CustomQueriesRepository()
+                    .GetSharedFileById(userId, directoryFile.Id, cancellationToken);
+                if (sharedFile is null)
+                    return (Result.Failure("Shared file context not found"), null);
+            }
+
+            var ctx = new FileOperationContext
+            {
+                IsOwnFile = isOwnFile,
+                File = directoryFile,
+                AccessMode = sharedFile?.AccessMode,
+                ValidUntil = sharedFile?.ValidUntil,
+                SharedUserName = sharedFile?.SharedUserName,
+                SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
+                IsInherited = sharedFile?.IsInherited
+            };
+
+            return (Result.Success(), ctx);
         }
 
         private async Task UpdateParentFileSizes(int parentId, long sizeToAdd, CancellationToken cancellationToken)

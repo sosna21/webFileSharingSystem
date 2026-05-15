@@ -112,16 +112,24 @@ namespace webFileSharingSystem.Web.Controllers
 
         [HttpPost]
         [Route("EnsureDirectory")]
-        public async Task<ActionResult<int>> EnsureDirectory([FromBody] EnsureDirectoryRequest request)
+        public async Task<ActionResult<int>> EnsureDirectory([FromBody] EnsureDirectoryRequest request,
+            CancellationToken cancellationToken = default)
         {
             var userId = _currentUserService.UserId;
 
-            var (result, file) =
-                await _uploadService.EnsureDirectoriesExist(userId!.Value, request.ParentId, request.Folders);
+            var (result, ctx) =
+                await _uploadService.EnsureDirectoriesExist(userId!.Value, request.ParentId, request.Folders,
+                    cancellationToken);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
-            var response = ToFileResponse(file!);
-            return Ok(response);
+            if (ctx!.IsOwnFile)
+            {
+                var response = ToFileResponse(ctx.File);
+                return Ok(response);
+            }
+
+            var sharedResponse = ToSharedFileResponse(ctx);
+            return Ok(sharedResponse);
         }
 
         [HttpGet]

@@ -633,7 +633,7 @@ export class FileUploadService {
     if (path.startsWith('/')) path = path.slice(1);
     const folders = path.split('/').slice(0, -1);
     if (folders.length === 0) return of(null);
-    return this.http.post<AppFile | null>(
+    return this.http.post<AppFile | SharedFile | null>(
       `${environment.apiUrl}/Upload/EnsureDirectory`,
       { parentId, folders },
     );

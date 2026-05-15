@@ -400,9 +400,9 @@ namespace webFileSharingSystem.UnitTests.Helpers
             return null;
         }
 
-        public Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders, CancellationToken cancellationToken = default)
+        public Task<(Result result, FileOperationContext? operationContext)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<(Result result, File? file)>((Result.Success(), null));
+            return Task.FromResult<(Result result, FileOperationContext? operationContext)>((Result.Success(), null));
         }
     }
 
