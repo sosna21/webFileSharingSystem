@@ -324,6 +324,18 @@ namespace webFileSharingSystem.Core.Services
                             share.RevokedAt = now;
                             _unitOfWork.Repository<Share>().Update(share);
                         }
+
+                        if (fileToMove.IsDirectory)
+                        {
+                            var descendants = await _unitOfWork.CustomQueriesRepository()
+                                .GetListOfAllChildrenAsFiles(fileToMove.Id, cancellationToken);
+
+                            foreach (var descendant in descendants.Where(d => d.Id != fileToMove.Id))
+                            {
+                                descendant.UserId = targetUserId;
+                                _unitOfWork.Repository<File>().Update(descendant);
+                            }
+                        }
                     }
 
                     if (fileToMove.ParentId is not null)
