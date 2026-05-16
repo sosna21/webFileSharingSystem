@@ -106,6 +106,7 @@ namespace webFileSharingSystem.Infrastructure.Data
                     IsShared = false,
                     IsFavourite = GenerateRandomBoolean(25),
                     UserId = userId,
+                    CreatedBy = userId,
                     FileGuid = Guid.NewGuid()
                 };
                 _fileRepository.Add(file);

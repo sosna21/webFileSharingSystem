@@ -9,15 +9,16 @@ import { BaseFile } from '../../../core/models/base-file.model';
 import { BaseCellDirective } from '../base-cell.directive';
 import { AuthenticationService } from '../../../core/services/authentication.service';
 import { UserPhotoService } from '../../../core/services/user-photo.service';
+import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-created-by-cell',
-  imports: [],
+  imports: [TooltipOnOverflowDirective],
   templateUrl: './created-by-cell.component.html',
   styleUrl: './created-by-cell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'text-nowrap',
+    class: 'd-flex align-items-center',
   },
 })
 export class CreatedByCellComponent<

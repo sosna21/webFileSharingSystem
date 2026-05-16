@@ -37,17 +37,17 @@ export class FileApiService {
     const api = `${this.fileUrl}/CreateDir/${name}${
       parentId ? '?parentId=' + parentId : ''
     }`;
-    return this.http.post<AppFile>(api, null);
+    return this.http.post<AppFile | SharedFile>(api, null);
   }
 
   moveFiles(filesIds: number[], targetDirectoryId: number | null) {
     const api = `${this.fileUrl}/Move/${targetDirectoryId ?? -1}`;
-    return this.http.put(api, filesIds);
+    return this.http.put<AppFile[] | SharedFile[]>(api, filesIds);
   }
 
   copyFiles(filesIds: number[], targetDirectoryId: number | null) {
     const api = `${this.fileUrl}/Copy/${targetDirectoryId ?? -1}`;
-    return this.http.post<AppFile[]>(api, filesIds);
+    return this.http.post<AppFile[] | SharedFile[]>(api, filesIds);
   }
 
   deleteFile(fileId: number) {

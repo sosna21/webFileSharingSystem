@@ -54,11 +54,11 @@ namespace webFileSharingSystem.Core.Services
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite,
                         cancellationToken))
                     return (Result.Failure("You are not authorized to upload to this directory"), null);
-                
+
                 isOwnFile = userId == parentDirectory.UserId;
                 targetUserId = parentDirectory.UserId; //file belongs to directory owner, not to uploader
             }
-            
+
             var releaser = await _userLocks.AcquireAsync(targetUserId, cancellationToken);
             try
             {
@@ -78,13 +78,20 @@ namespace webFileSharingSystem.Core.Services
                         : StorageExtensions.GeneratePartialFileInfo(size, preferredChunk.Value);
                 }
 
+                var finalFileName = await FileNameUniquenessHelper.GetUniqueNameAsync(
+                    _unitOfWork,
+                    targetUserId,
+                    parentId,
+                    fileName,
+                    cancellationToken);
+
                 var fileGuidId = Guid.NewGuid();
                 //TODO Check if file with the same name already exists for that user
                 var file = new File
                 {
                     //file belongs to directory owner (in shared directories uploads)
                     UserId = targetUserId,
-                    FileName = fileName,
+                    FileName = finalFileName,
                     MimeType = mimeType,
                     Size = (ulong)size,
                     FileStatus = size > 0 ? FileStatus.Incomplete : FileStatus.Completed,
@@ -126,7 +133,7 @@ namespace webFileSharingSystem.Core.Services
                     {
                         IsOwnFile = isOwnFile,
                         File = file,
-                        
+
                         // only if shared
                         AccessMode = sharedFile?.AccessMode,
                         ValidUntil = sharedFile?.ValidUntil,
@@ -134,13 +141,13 @@ namespace webFileSharingSystem.Core.Services
                         SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
                         IsInherited = sharedFile?.IsInherited
                     };
-                    
+
                     return (Result.Success(), ctx);
                 }
                 catch
                 {
                     await _filePersistenceService.DeleteExistingFile(userId, fileGuidId);
-                    return (Result.Failure("Problem during upload initialization"),  null);
+                    return (Result.Failure("Problem during upload initialization"), null);
                 }
             }
             finally
@@ -288,19 +295,34 @@ namespace webFileSharingSystem.Core.Services
         public PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId) =>
             UserFileCache.GetValueOrDefault((userId, fileId))?.PartialFileInfo;
 
-        public async Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId,
+        public async Task<(Result result, FileOperationContext? operationContext)> EnsureDirectoriesExist(int userId,
+            int? parentId,
             IEnumerable<string> folders,
             CancellationToken cancellationToken = default)
         {
+            var targetUserId = userId;
+            var isOwnFile = true;
+            if (parentId is not null)
+            {
+                var parentDirectory = await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
+                if (parentDirectory is null) return (Result.Failure("Target directory not found"), null);
+                if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
+                    return (Result.Failure("You are not authorized to create directories in this location"), null);
+
+                targetUserId = parentDirectory.UserId;
+                isOwnFile = userId == targetUserId;
+            }
+
             var createDirectories = false;
             File? directoryFile = null;
+            ApplicationUser? creatorUser = null;
 
             foreach (var folder in folders)
             {
                 if (!createDirectories)
                 {
                     directoryFile = (await _unitOfWork.Repository<File>()
-                            .FindAsync(new GetFileByNameSpecs(userId, parentId, folder), cancellationToken))
+                            .FindAsync(new GetFileByNameSpecs(targetUserId, parentId, folder), cancellationToken))
                         .SingleOrDefault();
 
                     if (directoryFile is null)
@@ -317,12 +339,22 @@ namespace webFileSharingSystem.Core.Services
                 if (!createDirectories)
                     continue;
 
+                    if (creatorUser is null)
+                {
+                    creatorUser = await _unitOfWork.Repository<ApplicationUser>()
+                        .FindByIdAsync(userId, cancellationToken);
+
+                    if (creatorUser is null)
+                        return (Result.Failure($"User not found, userId: {userId}"), null);
+                }
+
                 directoryFile = new File
                 {
                     FileName = folder,
                     IsDirectory = true,
                     ParentId = parentId,
-                    UserId = userId
+                    UserId = targetUserId,
+                    Creator = creatorUser
                 };
 
                 _unitOfWork.Repository<File>().Add(directoryFile);
@@ -330,9 +362,33 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure("Problem with creating directories"), null);
                 parentId = directoryFile.Id;
             }
-            return (Result.Success(), directoryFile);
+
+            if (directoryFile is null)
+                return (Result.Failure("No directory created"), null);
+
+            SharedFileSqlRow? sharedFile = null;
+            if (!isOwnFile)
+            {
+                sharedFile = await _unitOfWork.CustomQueriesRepository()
+                    .GetSharedFileById(userId, directoryFile.Id, cancellationToken);
+                if (sharedFile is null)
+                    return (Result.Failure("Shared file context not found"), null);
+            }
+
+            var ctx = new FileOperationContext
+            {
+                IsOwnFile = isOwnFile,
+                File = directoryFile,
+                AccessMode = sharedFile?.AccessMode,
+                ValidUntil = sharedFile?.ValidUntil,
+                SharedUserName = sharedFile?.SharedUserName,
+                SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
+                IsInherited = sharedFile?.IsInherited
+            };
+
+            return (Result.Success(), ctx);
         }
-        
+
         private async Task UpdateParentFileSizes(int parentId, long sizeToAdd, CancellationToken cancellationToken)
         {
             var filesToUpdateSize = await _unitOfWork.CustomQueriesRepository()
@@ -353,7 +409,7 @@ namespace webFileSharingSystem.Core.Services
                         fileToUpdate.Size = 0; //TODO log error message
                         break;
                 }
-                
+
                 _unitOfWork.Repository<File>().Update(fileToUpdate);
             }
         }

@@ -23,9 +23,7 @@ export class TableContextMenuComponent {
 
   readonly ShareAccessMode = ShareAccessMode;
   readonly hasMinReadWriteAccess = computed(
-    () =>
-      this.accessMode() === undefined ||
-      this.accessMode()! >= ShareAccessMode.ReadWrite,
+    () => this.accessMode() !== ShareAccessMode.ReadOnly,
   );
 
   readonly refresh = output();

@@ -9,6 +9,7 @@ namespace webFileSharingSystem.Core.Specifications
                     && file.ParentId == parentId
                     && file.FileName == fileName)
         {
+            AddInclude(file => file.Creator);
         }
     }
 }

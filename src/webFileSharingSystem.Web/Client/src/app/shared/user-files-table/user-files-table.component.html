@@ -2,6 +2,7 @@
   [position]="contextMenuPosition()"
   [selectedFiles]="selectedFiles()"
   (openFolder)="selectFolder($event.id)"
+  (openLocation)="openLocation($event)"
   (rename)="initRename($event)"
   (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
   (delete)="deleteFiles($event)"
@@ -19,7 +20,7 @@
 
 <app-table-context-menu
   [position]="contextMenuPosition()"
-  [accessMode]="undefined"
+  [accessMode]="currentDirectoryAccessMode()"
   [sortableColumns]="sortableColumns()"
   [sortOption]="sortOption()"
   [canPaste]="canPaste()"
@@ -37,6 +38,7 @@
   (contextmenu)="tableContextMenuClick($event)"
 >
   <div
+    #scrollContainer
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
@@ -45,6 +47,7 @@
   >
     <table
       cdk-table
+      fixedLayout
       [dataSource]="files()"
       [trackBy]="trackByFileId"
       recycleRows
@@ -60,7 +63,7 @@
 
       <!-- Row Selector Definition -->
       <ng-container cdkColumnDef="rowSelector">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
+        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 40px">
           <label class="lbl-checkbox">
             <input
               type="checkbox"
@@ -94,7 +97,11 @@
             >File Name</app-sortable-header
           >
         </th>
-        <td cdk-cell *cdkCellDef="let file">
+        <td
+          cdk-cell
+          *cdkCellDef="let file"
+          [appTooltipOnOverflow]="file.fileName"
+        >
           <app-file-name-cell
             [file]="file"
             [editingId]="editingId()"
@@ -113,22 +120,17 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          class="d-none d-md-table-cell"
-          style="width: 5%"
+          class="d-none d-xl-table-cell favourite-column"
           (click)="toggleSort('favourite')"
         >
-          <app-sortable-header
-            column="favourite"
-            [sortOption]="sortOption()"
-            justify="justify-content-center"
-          >
+          <app-sortable-header column="favourite" [sortOption]="sortOption()">
             Favourite
           </app-sortable-header>
         </th>
         <td
           cdk-cell
           *cdkCellDef="let file"
-          class="d-none d-md-table-cell align-middle"
+          class="d-none d-xl-table-cell align-middle"
         >
           <app-favourite-cell
             [file]="file"
@@ -146,8 +148,7 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          class="d-none d-md-table-cell"
-          style="width: 5%"
+          class="d-none d-xl-table-cell share-column"
           (click)="toggleSort('share')"
         >
           <app-sortable-header column="share" [sortOption]="sortOption()"
@@ -157,7 +158,7 @@
         <td
           cdk-cell
           *cdkCellDef="let file"
-          class="d-none d-md-table-cell align-middle"
+          class="d-none d-xl-table-cell align-middle"
         >
           <app-share-cell
             [file]="file"
@@ -170,7 +171,12 @@
 
       <!-- Actions Definition -->
       <ng-container cdkColumnDef="actions">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 5%">
+        <th
+          cdk-header-cell
+          *cdkHeaderCellDef
+          scope="col"
+          class="actions-column"
+        >
           Actions
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
@@ -190,7 +196,7 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          style="width: 5%"
+          class="size-column"
           (click)="toggleSort('size')"
         >
           <app-sortable-header column="size" [sortOption]="sortOption()"
@@ -212,7 +218,7 @@
           *cdkHeaderCellDef
           scope="col"
           class="d-none d-sm-table-cell"
-          style="width: 9%"
+          style="width: 150px"
           (click)="toggleSort('createdByUserName')"
         >
           <app-sortable-header
@@ -221,11 +227,7 @@
             >Created By</app-sortable-header
           >
         </th>
-        <td
-          cdk-cell
-          *cdkCellDef="let file"
-          class="d-none d-sm-table-cell align-middle"
-        >
+        <td cdk-cell *cdkCellDef="let file" class="d-none d-sm-table-cell pe-2">
           <app-created-by-cell
             [file]="file"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
@@ -239,8 +241,7 @@
           cdk-header-cell
           *cdkHeaderCellDef
           scope="col"
-          class="d-none d-sm-table-cell"
-          style="width: 12%"
+          class="d-none d-md-table-cell last-mod-column"
           (click)="toggleSort('lastModification')"
         >
           <app-sortable-header
@@ -252,7 +253,7 @@
         <td
           cdk-cell
           *cdkCellDef="let file"
-          class="d-none d-sm-table-cell align-middle"
+          class="d-none d-md-table-cell align-middle"
         >
           <app-last-modification-cell
             [file]="file"
@@ -262,9 +263,8 @@
       </ng-container>
 
       <!-- Header and Row Declarations -->
-      <tr *cdkNoDataRow>
-        <td colspan="100%" class="text-center fs-5">Empty directory</td>
-      </tr>
+      <tr *cdkNoDataRow></tr>
+      <!-- Leave Empty - Required for correct display of "No data" row when there are no files -->
 
       <tr
         cdk-header-row
@@ -312,6 +312,7 @@
     </table>
 
     @if (files().length === 0) {
+      <div class="text-center fs-5 border ms-1 py-1">Empty directory</div>
       <div
         class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
       >

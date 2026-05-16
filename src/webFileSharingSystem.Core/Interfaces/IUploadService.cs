@@ -29,7 +29,7 @@ namespace webFileSharingSystem.Core.Interfaces
 
         PartialFileInfo? GetCachedPartialFileInfo(int userId, int fileId);
 
-        Task<(Result result, File? file)> EnsureDirectoriesExist(int userId, int? parentId, IEnumerable<string> folders,
-            CancellationToken cancellationToken = default);
+        Task<(Result result, FileOperationContext? operationContext)> EnsureDirectoriesExist(int userId, int? parentId,
+            IEnumerable<string> folders, CancellationToken cancellationToken = default);
     }
 }

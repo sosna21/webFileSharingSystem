@@ -14,7 +14,6 @@ import { environment } from '../../../environments/environment.development';
 import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
-import { debouncedSignal } from '../utils/signal-utils';
 import { Router, NavigationEnd } from '@angular/router';
 import { Breadcrumb } from '../models/breadcrumb.model';
 import {
@@ -27,6 +26,7 @@ import {
   EMPTY,
   tap,
   of,
+  firstValueFrom,
 } from 'rxjs';
 import { ActionType } from '../models/action-type.model';
 import { ToastService } from './toast.service';
@@ -106,7 +106,11 @@ export class FileService {
   });
 
   //TODO add parent folder signal
-  public readonly searchedPhrase = signal<string>('');
+  public readonly searchedPhrase = computed<string>(() => {
+    const url = new URL(this.currentUrl(), 'http://localhost');
+    return url.searchParams.get('search') ?? '';
+  });
+
   public readonly parentId = computed<number | null>(() =>
     this.extractFolderId(this.currentUrl()),
   );
@@ -309,18 +313,18 @@ export class FileService {
       : null,
   );
 
-  private readonly _debouncedSearchedPhrase = debouncedSignal(
-    this.searchedPhrase,
-    300,
-    '',
-  );
+  // private readonly _debouncedSearchedPhrase = debouncedSignal(
+  //   this.searchedPhrase,
+  //   300,
+  //   '',
+  // );
   private readonly _request = computed(
     () => `${
       this.fileUrl
     }/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
       ${this.parentId() ? '&ParentId=' + this.parentId() : ''}${
-        this._debouncedSearchedPhrase() !== ''
-          ? '&SearchedPhrase=' + this._debouncedSearchedPhrase()
+        this.searchedPhrase() !== ''
+          ? '&SearchedPhrase=' + this.searchedPhrase()
           : ''
       }`,
   );
@@ -381,6 +385,11 @@ export class FileService {
   readonly _sharedFilesResource = httpResource<FileResponse<SharedFile>>(() =>
     this.mode() === 'GetSharedWithMe' ? this._request() : undefined,
   );
+  readonly currentResource = computed(() => {
+    return this.mode() === 'GetSharedWithMe'
+      ? this._sharedFilesResource
+      : this._fileResource;
+  });
 
   private readonly _linkedFilesResponse = linkedSignal<
     FileResponse<AppFile> | undefined,
@@ -410,6 +419,25 @@ export class FileService {
 
   public readonly fileResource = this._fileResource.asReadonly();
   public readonly sharedFilesResource = this._sharedFilesResource.asReadonly();
+  private readonly currentResourceStatus = computed(() =>
+    this.currentResource().status(),
+  );
+  private readonly currentResourceStatus$ = toObservable(
+    this.currentResourceStatus,
+  );
+
+  private async waitForNextResourceReload(status$: Observable<string>) {
+    await firstValueFrom(
+      status$.pipe(filter((status) => status === 'loading')),
+    );
+    await firstValueFrom(
+      status$.pipe(filter((status) => status === 'resolved')),
+    );
+  }
+
+  async waitForNextCurrentReload() {
+    await this.waitForNextResourceReload(this.currentResourceStatus$);
+  }
 
   //breadcumbs
   private readonly _breadcrumbsQuery = computed(() =>
@@ -446,11 +474,27 @@ export class FileService {
         this.mode() === 'GetAll' ? undefined : ShareAccessMode.ReadOnly,
       validUntil: this.mode() === 'GetSharedWithMe' ? null : undefined,
     };
-    return [homeCrumb, ...breadcrumbs].sort((a, b) => a.level - b.level);
+
+    const crumbs = [homeCrumb, ...breadcrumbs].sort(
+      (a, b) => a.level - b.level,
+    );
+
+    if (
+      //this._debouncedSearchedPhrase()?.trim() &&
+      this.searchedPhrase()?.trim()
+    ) {
+      crumbs.push({
+        id: -999, // Dummy ID for search result breadcrumb
+        fileName: 'Search result',
+        level: crumbs.length,
+        accessMode: ShareAccessMode.ReadOnly,
+      });
+    }
+
+    return crumbs;
   });
 
   goToFolder(folderId: number | null) {
-    this.searchedPhrase.set('');
     if (folderId === null)
       this.router.navigate(['/disc', this.mapModeToRoute(this.mode())]);
     else
@@ -462,6 +506,20 @@ export class FileService {
         'folder',
         folderId,
       ]);
+  }
+
+  setSearchPhrase(phrase: string) {
+    const urlTree = this.router.parseUrl(this.router.url);
+    const currentPhrase = (urlTree.queryParams['search'] ?? '').trim();
+    const nextPhrase = phrase.trim();
+
+    if (nextPhrase) {
+      urlTree.queryParams['search'] = nextPhrase;
+    } else {
+      delete urlTree.queryParams['search'];
+    }
+    const shouldPushHistory = currentPhrase === '' && nextPhrase !== '';
+    this.router.navigateByUrl(urlTree, { replaceUrl: !shouldPushHistory });
   }
 
   private mapModeToRoute(
@@ -626,16 +684,45 @@ export class FileService {
 
   createDirectoryWithFeedback(
     directoryName: string,
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (id: number) => void,
   ) {
     this.fileApiService
       .createDirectory(directoryName, this.parentId())
       .subscribe({
         next: (response) => {
-          this.refreshActiveList();
-          if (setSelection) {
-            setSelection(new Set([response.id]));
+          // Optimistic update: add the new directory to the local list immediately
+          const currentMode = this.mode();
+
+          if (currentMode === 'GetSharedWithMe') {
+            const optimisticSharedFile: SharedFile = {
+              ...(response as SharedFile),
+              fileStatus: FileStatus.Completed,
+              progressStatus: null,
+              partialFileInfo: null,
+              uploadProgress: null,
+            };
+            this._sharedFiles.update((files) => [
+              ...files,
+              optimisticSharedFile,
+            ]);
+          } else {
+            const optimisticAppFile: AppFile = {
+              ...(response as AppFile),
+              fileStatus: FileStatus.Completed,
+              progressStatus: null,
+              partialFileInfo: null,
+              uploadProgress: null,
+            };
+            this._userFiles.update((files) => [...files, optimisticAppFile]);
           }
+
+          if (onSuccess) {
+            onSuccess(response.id);
+          }
+
+          // Sync with server to ensure consistency
+          this.refreshActiveList();
+
           this.toast.show(
             'New directory created',
             `Directory "${response.fileName}" has been created`,
@@ -674,7 +761,7 @@ export class FileService {
     );
   }
 
-  pasteFilesWithFeedback(setSelection?: (value: Set<number>) => void) {
+  pasteFilesWithFeedback(onSuccess?: (ids: Set<number>) => void) {
     const action = this.awaitingActionState();
     if (!action) return;
     if (action.type === ActionType.Move) {
@@ -682,25 +769,23 @@ export class FileService {
         Array.from(action.files),
         this.parentId(),
         this.parentName() ?? 'home directory',
-        setSelection,
+        onSuccess,
       );
     } else if (action.type === ActionType.Copy) {
       this.copyFilesWithFeedback(
         Array.from(action.files),
         this.parentId(),
         this.parentName() ?? 'home directory',
-        setSelection,
+        onSuccess,
       );
     }
-
-    this.clearActionContext();
   }
 
   moveFilesWithFeedback(
     filesToMove: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (ids: Set<number>) => void,
   ) {
     this.executeFileOperationWithFeedback(
       filesToMove,
@@ -708,7 +793,7 @@ export class FileService {
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
       'move',
-      setSelection,
+      onSuccess,
     );
   }
 
@@ -716,7 +801,7 @@ export class FileService {
     filesToCopy: BaseFile[],
     targetDirectoryId: number | null,
     targetDirectoryName: string,
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (ids: Set<number>) => void,
   ) {
     this.executeFileOperationWithFeedback(
       filesToCopy,
@@ -724,7 +809,7 @@ export class FileService {
       targetDirectoryName,
       (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
       'copy',
-      setSelection,
+      onSuccess,
     );
   }
 
@@ -831,7 +916,7 @@ export class FileService {
     targetDirectoryName: string,
     operation: (fileIds: number[], targetId: number | null) => Observable<T>,
     operationName: 'move' | 'copy',
-    setSelection?: (value: Set<number>) => void,
+    onSuccess?: (ids: Set<number>) => void,
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
@@ -844,6 +929,53 @@ export class FileService {
     operation(fileIds, targetDirectoryId)
       .subscribe({
         next: (result) => {
+          const resultFiles = result as unknown as (AppFile | SharedFile)[];
+
+          if (targetDirectoryId === this.parentId()) {
+            const currentMode = this.mode();
+            if (currentMode === 'GetSharedWithMe') {
+              const optimisticSharedFiles: SharedFile[] = resultFiles.map(
+                (r) => ({
+                  ...(r as SharedFile),
+                  fileStatus: FileStatus.Completed,
+                  progressStatus: null,
+                  partialFileInfo: null,
+                  uploadProgress: null,
+                }),
+              );
+              this._sharedFiles.update((list) => [
+                ...list,
+                ...optimisticSharedFiles,
+              ]);
+            } else {
+              const optimisticAppFiles: AppFile[] = resultFiles.map((r) => ({
+                ...(r as AppFile),
+                fileStatus: FileStatus.Completed,
+                progressStatus: null,
+                partialFileInfo: null,
+                uploadProgress: null,
+              }));
+              this._userFiles.update((list) => [
+                ...list,
+                ...optimisticAppFiles,
+              ]);
+            }
+          } else if (operationName === 'move') {
+            if (this.mode() === 'GetSharedWithMe') {
+              this._sharedFiles.update((list) =>
+                list.filter((f) => !fileIds.includes(f.id)),
+              );
+            } else {
+              this._userFiles.update((list) =>
+                list.filter((f) => !fileIds.includes(f.id)),
+              );
+            }
+          }
+
+          if (onSuccess && targetDirectoryId === this.parentId()) {
+            onSuccess(new Set(resultFiles.map((f) => f.id)));
+          }
+
           this.refreshActiveList();
 
           this.toast.show(
@@ -855,13 +987,10 @@ export class FileService {
           );
 
           this.clearActionContext();
-          if (setSelection) {
-            setSelection(new Set((result as BaseFile[]).map((f) => f.id)));
-          }
 
           if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
             this.storage.updateCurrentUserUsedSpace(
-              (result as BaseFile[]).reduce((acc, file) => acc + file.size, 0),
+              resultFiles.reduce((acc, file) => acc + file.size, 0),
             );
           }
         },

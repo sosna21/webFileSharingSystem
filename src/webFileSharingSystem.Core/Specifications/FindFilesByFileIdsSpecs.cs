@@ -9,6 +9,7 @@ namespace webFileSharingSystem.Core.Specifications
         public FindFilesByFileIdsSpecs(IEnumerable<int> fileIds) : base(
             e => fileIds.Contains( e.Id ))
         {
+            AddInclude(e => e.Creator);
         }
     }
 }

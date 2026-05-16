@@ -1,1 +1,5 @@
-{{ file().validUntil | remainigTime }}
+@if (!file().validUntil) {
+  Indefinitely <i class="bi bi-infinity text-primary"></i>
+} @else {
+  {{ file().validUntil | remainigTime }}
+}

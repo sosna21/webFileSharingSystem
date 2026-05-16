@@ -39,7 +39,7 @@ namespace webFileSharingSystem.Core.Services
             var filePathParts = fileToGetPath.UserId == userId
                 ? await _unitOfWork.CustomQueriesRepository().FindPathToAllParentsForUserFile(fileId, cancellationToken)
                 : await _unitOfWork.CustomQueriesRepository().FindPathToAllParentForSharedFile(userId, fileId, cancellationToken);
-            
+
             return (Result.Success<OperationResult>(), filePathParts);
         }
 
@@ -52,6 +52,17 @@ namespace webFileSharingSystem.Core.Services
             if (!await _guard.UserCanPerform(userId, fileToUpdate, ShareAccessMode.ReadWrite, cancellationToken))
                 return Result.Failure(OperationResult.Unauthorized, "You are not authorized to rename that file");
 
+            if (string.Equals(fileToUpdate.FileName, newName, StringComparison.Ordinal))
+                return Result.Success<OperationResult>();
+
+            var sameNameFile = (await _unitOfWork.Repository<File>().FindAsync(
+                    new GetFileByNameSpecs(fileToUpdate.UserId, fileToUpdate.ParentId, newName),
+                    cancellationToken))
+                .SingleOrDefault();
+
+            if (sameNameFile is not null && sameNameFile.Id != fileToUpdate.Id)
+                return Result.Failure(OperationResult.BadRequest, "File with that name already exists");
+
             fileToUpdate.FileName = newName;
             _unitOfWork.Repository<File>().Update(fileToUpdate);
 
@@ -60,43 +71,74 @@ namespace webFileSharingSystem.Core.Services
                 : Result.Failure(OperationResult.Exception, "Problem with renaming the file");
         }
 
-        public async Task<(Result<OperationResult> result, File? file)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+        public async Task<(Result<OperationResult> result, FileOperationContext? operationContext)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
             CancellationToken cancellationToken = default)
         {
+            var targetUserId = userId;
+            var isOwnFile = true;
             if (parentId != null)
             {
                 var parentDirectory =
                     await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
                 if (parentDirectory is null)
-                    return  (Result.Failure(OperationResult.BadRequest, "Parent directory does not exist or you do not have access"), null);
+                    return (Result.Failure(OperationResult.BadRequest, "Parent directory does not exist or you do not have access"), null);
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
                     return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
+
+                isOwnFile = userId == parentDirectory.UserId;
+                targetUserId = parentDirectory.UserId;
             }
+
+            var finalDirectoryName = await FileNameUniquenessHelper.GetUniqueNameAsync(
+                _unitOfWork,
+                targetUserId,
+                parentId,
+                directoryName,
+                cancellationToken);
 
             var file = new File
             {
-                FileName = directoryName,
+                FileName = finalDirectoryName,
                 IsDirectory = true,
                 ParentId = parentId,
-                UserId = userId
+                UserId = targetUserId
             };
-            
-            var isNameAvailable = !await _unitOfWork.Repository<File>().ContainsAsync(new GetFileByNameSpecs(userId, parentId, directoryName), cancellationToken);
-            if (!isNameAvailable)
-                return (Result.Failure(OperationResult.BadRequest, "Directory with that name already exists"), null);
 
             _unitOfWork.Repository<File>().Add(file);
 
-            return await _unitOfWork.Complete(cancellationToken) > 0
-                ? (Result.Success<OperationResult>(), file)
-                : (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
+            if (await _unitOfWork.Complete(cancellationToken) <= 0)
+                return (Result.Failure(OperationResult.Exception, "Problem with creating directory"), null);
+
+            var creatorId = isOwnFile ? targetUserId : userId;
+            file.Creator = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(creatorId, cancellationToken)
+                ?? throw new Exception($"User not found, userId: {creatorId}");
+
+            SharedFileSqlRow? sharedFile = null;
+            if (!isOwnFile)
+            {
+                sharedFile = await _unitOfWork.CustomQueriesRepository()
+                    .GetSharedFileById(userId, file.Id, cancellationToken);
+            }
+
+            var ctx = new FileOperationContext
+            {
+                IsOwnFile = isOwnFile,
+                File = file,
+                AccessMode = sharedFile?.AccessMode,
+                ValidUntil = sharedFile?.ValidUntil,
+                SharedUserName = sharedFile?.SharedUserName,
+                SharedUserPhotoAccessId = sharedFile?.SharedUserPhotoAccessId,
+                IsInherited = sharedFile?.IsInherited
+            };
+
+            return (Result.Success<OperationResult>(), ctx);
         }
 
         public async Task<Result<OperationResult>> DeleteAsync(int fileId, int userId, CancellationToken cancellationToken = default)
         {
             var fileToDelete = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
             if (fileToDelete is null) return Result.Failure(OperationResult.BadRequest, "File not found");
-            
+
             var releaser = await _userLocks.AcquireAsync(fileToDelete.UserId, cancellationToken);
             try
             {
@@ -226,7 +268,7 @@ namespace webFileSharingSystem.Core.Services
 
             if (enumeratedFileIds.Except(filesToMove.Select(f => f.Id)).Any())
                 return (Result.Failure(OperationResult.BadRequest, "Some files not found"), null);
-            
+
             var usersToLock = filesToMove
                 .Select(f => f.UserId)
                 .Append(targetUserId)
@@ -241,6 +283,12 @@ namespace webFileSharingSystem.Core.Services
             {
                 foreach (var id in usersToLock)
                     lockReleasers.Add(await _userLocks.AcquireAsync(id, cancellationToken));
+
+                var existingNames = await FileNameUniquenessHelper.GetExistingNamesAsync(
+                    _unitOfWork,
+                    targetUserId,
+                    targetParentId,
+                    cancellationToken);
 
                 foreach (var fileToMove in filesToMove)
                 {
@@ -276,6 +324,18 @@ namespace webFileSharingSystem.Core.Services
                             share.RevokedAt = now;
                             _unitOfWork.Repository<Share>().Update(share);
                         }
+
+                        if (fileToMove.IsDirectory)
+                        {
+                            var descendants = await _unitOfWork.CustomQueriesRepository()
+                                .GetListOfAllChildrenAsFiles(fileToMove.Id, cancellationToken);
+
+                            foreach (var descendant in descendants.Where(d => d.Id != fileToMove.Id))
+                            {
+                                descendant.UserId = targetUserId;
+                                _unitOfWork.Repository<File>().Update(descendant);
+                            }
+                        }
                     }
 
                     if (fileToMove.ParentId is not null)
@@ -283,6 +343,13 @@ namespace webFileSharingSystem.Core.Services
 
                     if (targetParentId is not null)
                         await UpdateParentFileSizes(targetParentId.Value, (long)fileToMove.Size, cancellationToken);
+
+                    var originalName = fileToMove.FileName;
+                    var isAlreadyInTarget = fileToMove.ParentId == targetParentId && fileToMove.UserId == targetUserId;
+                    if (isAlreadyInTarget)
+                        existingNames.Remove(originalName);
+
+                    fileToMove.FileName = FileNameUniquenessHelper.GetUniqueName(existingNames, originalName);
 
                     fileToMove.ParentId = targetParentId;
                     fileToMove.UserId = targetUserId;
@@ -371,21 +438,33 @@ namespace webFileSharingSystem.Core.Services
                 if (!updateResult.Succeeded)
                     return (Result.Failure(OperationResult.BadRequest, updateResult.Errors), null);
 
+                var creatorUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken)
+                    ?? throw new Exception($"User not found, userId: {userId}");
+
+                var existingNames = await FileNameUniquenessHelper.GetExistingNamesAsync(
+                    _unitOfWork,
+                    targetUserId,
+                    targetParentId,
+                    cancellationToken);
+
                 foreach (var fileToCopy in filesToCopy)
                 {
                     if (!await _guard.UserCanPerform(userId, fileToCopy, ShareAccessMode.ReadOnly, cancellationToken))
                         return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to copy some files"), null);
 
+                    var copyName = FileNameUniquenessHelper.GetUniqueCopyName(existingNames, fileToCopy.FileName);
+
                     var file = new File
                     {
                         UserId = targetUserId,
                         ParentId = targetParentId,
-                        FileName = fileToCopy.FileName,
+                        FileName = copyName,
                         MimeType = fileToCopy.MimeType,
                         Size = fileToCopy.Size,
                         IsDirectory = fileToCopy.IsDirectory,
                         FileGuid = fileToCopy.FileGuid,
-                        FileStatus = FileStatus.Completed
+                        FileStatus = FileStatus.Completed,
+                        Creator = creatorUser
                     };
 
                     _unitOfWork.Repository<File>().Add(file);

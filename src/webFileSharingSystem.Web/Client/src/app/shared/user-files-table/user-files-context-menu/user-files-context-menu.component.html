@@ -6,58 +6,62 @@
   ></div>
 
   <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
-    @if(mixedFileComplition()) {
-    <button ngbDropdownItem disabled class="text-danger">
-      <i class="bi bi-exclamation-triangle me-1"></i> Some files are still
-      uploading
-    </button>
-    <div class="dropdown-divider"></div>
-
-    <div ngbDropdown #uploadsSubmenu="ngbDropdown" placement="right-top">
-      <button
-        ngbDropdownItem
-        ngbDropdownAnchor
-        (click)="uploadsSubmenu.toggle()"
-        class="d-flex"
-      >
-        Manage uploads <span class="ms-auto">→</span>
+    @if (mixedFileComplition()) {
+      <button ngbDropdownItem disabled class="text-danger">
+        <i class="bi bi-exclamation-triangle me-1"></i> Some files are still
+        uploading
       </button>
-      <div ngbDropdownMenu>
-        <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
-      </div>
-    </div>
+      <div class="dropdown-divider"></div>
 
-    <div class="dropdown-divider"></div>
-
-    <div ngbDropdown #fileSubmenu="ngbDropdown" placement="right-top">
-      <button
-        ngbDropdownItem
-        ngbDropdownAnchor
-        (click)="fileSubmenu.toggle()"
-        class="d-flex"
-      >
-        Manage files <span class="ms-auto">→</span>
-      </button>
-      <div ngbDropdownMenu>
-        <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+      <div ngbDropdown #uploadsSubmenu="ngbDropdown" placement="right-top">
+        <button
+          ngbDropdownItem
+          ngbDropdownAnchor
+          (click)="uploadsSubmenu.toggle()"
+          class="d-flex"
+        >
+          Manage uploads <span class="ms-auto">→</span>
+        </button>
+        <div ngbDropdownMenu>
+          <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+        </div>
       </div>
-    </div>
-    } @if (areAllFilesIncomplete()) {
-    <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
-    } @if(areAllFilesComplete()) {
-    <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+
+      <div class="dropdown-divider"></div>
+
+      <div ngbDropdown #fileSubmenu="ngbDropdown" placement="right-top">
+        <button
+          ngbDropdownItem
+          ngbDropdownAnchor
+          (click)="fileSubmenu.toggle()"
+          class="d-flex"
+        >
+          Manage files <span class="ms-auto">→</span>
+        </button>
+        <div ngbDropdownMenu>
+          <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+        </div>
+      </div>
+    }
+    @if (areAllFilesIncomplete()) {
+      <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+    }
+    @if (areAllFilesComplete()) {
+      <ng-container *ngTemplateOutlet="fileActions"></ng-container>
     }
   </div>
 </div>
 
-@let selectedFile = selectedFiles()[0]; @let selectedFilesCount =
-selectedFiles().length;
+@let selectedFile = selectedFiles()[0];
+@let selectedFilesCount = selectedFiles().length;
 
 <ng-template #uploadActions>
-  @let disablePause = allFilesHaveSameUploadStatus() &&
-  selectedFile.progressStatus !== ProgressStatus.Started; @let disableResume =
-  allFilesHaveSameUploadStatus() && selectedFile.progressStatus ===
-  ProgressStatus.Started;
+  @let disablePause =
+    allFilesHaveSameUploadStatus() &&
+    selectedFile.progressStatus !== ProgressStatus.Started;
+  @let disableResume =
+    allFilesHaveSameUploadStatus() &&
+    selectedFile.progressStatus === ProgressStatus.Started;
   <button
     ngbDropdownItem
     (click)="resumeUploadClicked(); menu.close()"
@@ -85,10 +89,22 @@ selectedFiles().length;
 </ng-template>
 
 <ng-template #fileActions>
+  @if (inSearchView() && selectedFiles().length === 1) {
+    <button
+      ngbDropdownItem
+      (click)="openLocation.emit(selectedFile); menu.close()"
+    >
+      <i class="bi bi-box-arrow-in-up-right me-1 text-success"></i>
+      Open Location
+    </button>
+  }
   @if (showOpenFolder()) {
-  <button ngbDropdownItem (click)="openFolder.emit(selectedFile); menu.close()">
-    <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
-  </button>
+    <button
+      ngbDropdownItem
+      (click)="openFolder.emit(selectedFile); menu.close()"
+    >
+      <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
+    </button>
   }
 
   <button ngbDropdownItem (click)="downloadClicked(); menu.close()">
@@ -129,24 +145,24 @@ selectedFiles().length;
           ? "Favourite all"
           : "Add to favourites"
         : selectedFilesCount > 1
-        ? "Unfavourite all"
-        : "Remove from favourites"
+          ? "Unfavourite all"
+          : "Remove from favourites"
     }}
   </button>
 
   <div class="dropdown-divider"></div>
 
   @if (showManageShares()) {
-  <button
-    ngbDropdownItem
-    (click)="manageShares.emit(selectedFile); menu.close()"
-  >
-    <i class="bi bi-share me-1 text-primary"></i> Manage shares
-  </button>
-  }@else {
-  <button ngbDropdownItem (click)="shareClicked(); menu.close()">
-    <i class="bi bi-share me-1 text-primary"></i> Share
-  </button>
+    <button
+      ngbDropdownItem
+      (click)="manageShares.emit(selectedFile); menu.close()"
+    >
+      <i class="bi bi-share me-1 text-primary"></i> Manage shares
+    </button>
+  } @else {
+    <button ngbDropdownItem (click)="shareClicked(); menu.close()">
+      <i class="bi bi-share me-1 text-primary"></i> Share
+    </button>
   }
 
   <button ngbDropdownItem (click)="generateLinkClicked(); menu.close()">

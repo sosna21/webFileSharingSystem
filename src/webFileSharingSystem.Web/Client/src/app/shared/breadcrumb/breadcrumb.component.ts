@@ -22,6 +22,7 @@ import { NgTemplateOutlet } from '@angular/common';
     class:
       'd-flex justify-content-between align-items-center p-2 border border-2 rounded-4 mb-3',
     style: 'min-height: 52px;',
+    '(window:keydown)': 'onKeydown($event)',
   },
 })
 export class BreadcrumbComponent {
@@ -56,5 +57,16 @@ export class BreadcrumbComponent {
 
   async onDrop(event: DragEvent, breadcrumb: Breadcrumb) {
     await this.dragDropService.rowDrop(event);
+  }
+
+  onKeydown(event: KeyboardEvent) {
+    if (event.altKey && event.key === 'ArrowUp') {
+      event.preventDefault();
+      const crumbs = this.breadCrumbs();
+      if (crumbs && crumbs.length > 1) {
+        const parentFolder = crumbs[crumbs.length - 2];
+        this.selectFolder(parentFolder.id);
+      }
+    }
   }
 }

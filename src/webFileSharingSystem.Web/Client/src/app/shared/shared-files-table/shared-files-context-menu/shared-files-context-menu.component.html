@@ -7,6 +7,15 @@
 
   <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
     @let selectedFile = selectedFiles()[0];
+    @if (inSearchView() && selectedFiles().length === 1) {
+      <button
+        ngbDropdownItem
+        (click)="openLocation.emit(selectedFile); menu.close()"
+      >
+        <i class="bi bi-box-arrow-in-up-right me-1 text-success"></i>
+        Open Location
+      </button>
+    }
     @if (showOpenFolder()) {
       <button
         ngbDropdownItem

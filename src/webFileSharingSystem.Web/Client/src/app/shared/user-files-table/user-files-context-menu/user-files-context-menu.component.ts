@@ -1,5 +1,12 @@
 import { NgStyle, NgTemplateOutlet } from '@angular/common';
-import { Component, computed, input, output, viewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
 import { AppFile } from '../../../core/models/app-file.model';
@@ -7,6 +14,7 @@ import {
   ProgressStatus,
   FileStatus,
 } from '../../../core/models/base-file.model';
+import { FileService } from '../../../core/services/file.service';
 
 @Component({
   selector: 'app-user-files-context-menu',
@@ -15,10 +23,14 @@ import {
   styleUrl: './user-files-context-menu.component.scss',
 })
 export class UserFilesContextMenuComponent {
+  private readonly fileService = inject(FileService);
   readonly dropdown = viewChild(NgbDropdown);
   readonly position = input.required<{ x: number; y: number }>();
   readonly selectedFiles = input.required<AppFile[]>();
 
+  readonly inSearchView = computed(
+    () => !!this.fileService.searchedPhrase()?.trim(),
+  );
   readonly ProgressStatus = ProgressStatus;
   readonly areSelectedFilesUploading = computed(() =>
     this.selectedFiles().every(
@@ -80,6 +92,7 @@ export class UserFilesContextMenuComponent {
   readonly manageShares = output<AppFile>();
   readonly generateLink = output<AppFile[]>();
   readonly openFolder = output<AppFile>();
+  readonly openLocation = output<AppFile>();
 
   open() {
     this.dropdown()?.open();

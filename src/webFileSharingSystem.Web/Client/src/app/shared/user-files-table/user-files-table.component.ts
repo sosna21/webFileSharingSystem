@@ -42,6 +42,7 @@ import { ShareCellComponent } from '../table-cells/share-cell/share-cell.compone
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
+import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-user-files-table',
@@ -64,6 +65,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
     LastModificationCellComponent,
     CreatedByCellComponent,
     SortableHeaderComponent,
+    TooltipOnOverflowDirective,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
@@ -90,6 +92,13 @@ export class UserFilesTableComponent {
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
   readonly sortOption = this.fileService.sortOption;
+  readonly currentDirectoryAccessMode = computed(
+    () => this.fileService.parentBreadcrumb()?.accessMode,
+  );
+
+  constructor() {
+    this.selection.setScrollContainer(this.scrollContainer);
+  }
 
   toggleSort(column: string) {
     this.fileService.toggleSort(column);
@@ -129,6 +138,7 @@ export class UserFilesTableComponent {
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(UserFilesContextMenuComponent);
   tableContextMenu = viewChild(TableContextMenuComponent);
+  scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
@@ -136,6 +146,12 @@ export class UserFilesTableComponent {
 
   isSelected(id: number): boolean {
     return this.selection.isSelected(id);
+  }
+
+  async openLocation(file: AppFile) {
+    this.fileService.goToFolder(file.parentId);
+    await this.fileService.waitForNextCurrentReload();
+    this.selection.scrollToId(file.id);
   }
 
   isEditing(id: number): boolean {
@@ -147,6 +163,46 @@ export class UserFilesTableComponent {
   }
 
   onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key.toLowerCase() === 'n'
+    ) {
+      event.preventDefault();
+      this.createFolder();
+      return;
+    }
+
+    if (event.key === 'F2') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length === 1) {
+        this.initRename(selected[0] as AppFile);
+      }
+      return;
+    }
+
+    if (event.key === 'Delete') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length > 0) {
+        this.deleteFiles(selected as AppFile[]);
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      const selected = this.selectedFiles() as AppFile[];
+      if (selected.length === 1 && selected[0].isDirectory) {
+        event.preventDefault();
+        this.selectFolder(selected[0].id);
+      }
+      return;
+    }
+
     this.selection.onKeydown(event);
   }
 
@@ -266,7 +322,12 @@ export class UserFilesTableComponent {
   }
 
   pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
+    this.fileService.pasteFilesWithFeedback((ids) => {
+      this.selection.selectedIds.set(ids);
+      if (ids.size > 0) {
+        this.selection.scrollToId(Array.from(ids).pop()!);
+      }
+    });
   }
 
   uploadFiles($event: File[]) {
@@ -289,10 +350,10 @@ export class UserFilesTableComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
+    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+      this.selection.selectedIds.set(new Set([id]));
+      this.selection.scrollToId(id);
+    });
   }
 
   private openContextMenu(position: { x: number; y: number }) {

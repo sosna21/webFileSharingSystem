@@ -13,10 +13,5 @@ import { FileService } from '../../../../../core/services/file.service';
   },
 })
 export class NavLinkComponent {
-  private readonly fileService = inject(FileService);
   link = input.required<string>();
-
-  resetFileServices() {
-    this.fileService.searchedPhrase.set('');
-  }
 }

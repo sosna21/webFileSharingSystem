@@ -1,3 +1,7 @@
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+
 th {
   font-weight: lighter;
 }
@@ -15,9 +19,13 @@ tr.selectable {
 // }
 
 table {
-  @media (max-width: 992px) {
+  @include media-breakpoint-down(md) {
     font-size: 0.85rem;
   }
+}
+
+.table-transparent {
+  --bs-table-bg: transparent !important;
 }
 
 .no-select {
@@ -48,11 +56,49 @@ tr.drop-folder-hover > * {
   background-color: rgba(13, 110, 253, 0.12) !important;
 }
 
+td.cdk-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
 tr.drop-folder-hover {
   outline: 2px dashed #0d6efd !important;
   outline-offset: -2px;
 }
 
-.table-transparent {
-  --bs-table-bg: transparent !important;
+.last-mod-column {
+  width: 140px;
+  @include media-breakpoint-up(xl) {
+    width: 180px;
+  }
+}
+
+.size-column {
+  width: 75px;
+  @include media-breakpoint-up(xl) {
+    width: 100px;
+  }
+}
+
+.favourite-column {
+  width: 70px;
+  @include media-breakpoint-up(xxl) {
+    width: 100px;
+  }
+}
+
+.share-column {
+  width: 50px;
+  @include media-breakpoint-up(xxl) {
+    width: 80px;
+  }
+}
+
+.actions-column {
+  width: 64px;
+  @include media-breakpoint-up(xl) {
+    width: 80px;
+  }
 }

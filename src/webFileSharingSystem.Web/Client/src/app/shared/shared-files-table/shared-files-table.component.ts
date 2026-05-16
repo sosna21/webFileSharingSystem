@@ -42,6 +42,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { MessageSeverity } from '../../core/models/toast-info.model';
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
+import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -64,6 +65,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
     AccessModeCellComponent,
     CreatedByCellComponent,
     SortableHeaderComponent,
+    TooltipOnOverflowDirective,
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
@@ -86,11 +88,19 @@ export class SharedFilesTableComponent {
   private readonly toast = inject(ToastService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
-  readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
+  readonly canPaste = computed(
+    () =>
+      !!this.fileService.awaitingActionState() &&
+      this.fileService.isParentMinWriteAccess(),
+  );
   readonly currentDirectoryAccessMode = computed(
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
   readonly sortOption = this.fileService.sortOption;
+
+  constructor() {
+    this.selection.setScrollContainer(this.scrollContainer);
+  }
 
   toggleSort(column: string) {
     this.fileService.toggleSort(column);
@@ -134,6 +144,7 @@ export class SharedFilesTableComponent {
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
   tableContextMenu = viewChild(TableContextMenuComponent);
+  scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
   contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
@@ -141,6 +152,12 @@ export class SharedFilesTableComponent {
 
   isSelected(id: number): boolean {
     return this.selection.isSelected(id);
+  }
+
+  async openLocation(file: SharedFile) {
+    this.fileService.goToFolder(file.parentId);
+    await this.fileService.waitForNextCurrentReload();
+    this.selection.scrollToId(file.id);
   }
 
   isEditing(id: number): boolean {
@@ -152,6 +169,46 @@ export class SharedFilesTableComponent {
   }
 
   onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key.toLowerCase() === 'n'
+    ) {
+      event.preventDefault();
+      this.createFolder();
+      return;
+    }
+
+    if (event.key === 'F2') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length === 1) {
+        this.initRename(selected[0] as SharedFile);
+      }
+      return;
+    }
+
+    if (event.key === 'Delete') {
+      event.preventDefault();
+      const selected = this.selectedFiles();
+      if (selected.length > 0) {
+        this.deleteFiles(selected as SharedFile[]);
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      const selected = this.selectedFiles() as SharedFile[];
+      if (selected.length === 1 && selected[0].isDirectory) {
+        event.preventDefault();
+        this.selectFolder(selected[0].id);
+      }
+      return;
+    }
+
     this.selection.onKeydown(event);
   }
 
@@ -246,7 +303,12 @@ export class SharedFilesTableComponent {
   }
 
   pasteFiles() {
-    this.fileService.pasteFilesWithFeedback();
+    this.fileService.pasteFilesWithFeedback((ids) => {
+      this.selection.selectedIds.set(ids);
+      if (ids.size > 0) {
+        this.selection.scrollToId(Array.from(ids).pop()!);
+      }
+    });
   }
 
   uploadFiles($event: File[]) {
@@ -269,10 +331,10 @@ export class SharedFilesTableComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(
-      newDirName,
-      this.selection.selectedIds.set,
-    );
+    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+      this.selection.selectedIds.set(new Set([id]));
+      this.selection.scrollToId(id);
+    });
   }
 
   private openContextMenu(position: { x: number; y: number }) {
