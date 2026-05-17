@@ -87,7 +87,10 @@ namespace webFileSharingSystem.Web
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "webFileSharingSystem.Api v1"));
             }
 
-            app.UseHttpsRedirection();
+            if (!_config.GetValue<bool>("DisableHttpsRedirection"))
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseRouting();
 

@@ -32,21 +32,25 @@ namespace webFileSharingSystem.Web
                     await context.Database.MigrateAsync();
                 }
 
-                var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-                var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
-                var fileRepository = services.GetRequiredService<IRepository<File>>();
-                var filePersistenceService = services.GetRequiredService<IFilePersistenceService>();
+                var disableDbSeeding = config.GetValue<bool>("DisableDbSeeding");
+                if (!disableDbSeeding)
+                {
+                    var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+                    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                    var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
+                    var fileRepository = services.GetRequiredService<IRepository<File>>();
+                    var filePersistenceService = services.GetRequiredService<IFilePersistenceService>();
 
-                var seedData = new ApplicationDbContextSeed(
-                    context,
-                    userManager,
-                    roleManager,
-                    applicationUserRepository,
-                    fileRepository,
-                    filePersistenceService);
+                    var seedData = new ApplicationDbContextSeed(
+                        context,
+                        userManager,
+                        roleManager,
+                        applicationUserRepository,
+                        fileRepository,
+                        filePersistenceService);
 
-                await seedData.SetTestUserDataAsync();
+                    await seedData.SetTestUserDataAsync();
+                }
             }
             catch (Exception ex)
             {
