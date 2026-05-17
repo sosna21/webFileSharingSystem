@@ -5,6 +5,8 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Data;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
@@ -159,6 +161,23 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
             using var scope = _factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             await action(context);
+        }
+
+        protected async Task<T> WithServiceProviderAsync<T>(Func<IServiceProvider, Task<T>> action)
+        {
+            if (_factory is null)
+            {
+                throw new InvalidOperationException("Test server not initialized.");
+            }
+
+            using var scope = _factory.Services.CreateScope();
+            return await action(scope.ServiceProvider);
+        }
+
+        protected async Task<string> GetStorageRootAsync()
+        {
+            return await WithServiceProviderAsync(provider =>
+                Task.FromResult(provider.GetRequiredService<IOptions<StorageSettings>>().Value.OnPremiseFileLocation));
         }
 
         private sealed class LoginResponseEnvelope
