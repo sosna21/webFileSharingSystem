@@ -27,7 +27,7 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
 
         protected HttpClient Client { get; private set; } = null!;
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             _factory = new IntegrationTestWebApplicationFactory(_dbFixture);
             Client = _factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -40,11 +40,11 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
             await _dbFixture.ResetDatabaseAsync();
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             Client.Dispose();
             _factory?.Dispose();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
         protected void SetBearerToken(string token)
