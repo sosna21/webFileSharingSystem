@@ -45,12 +45,16 @@ namespace webFileSharingSystem.Core.Services
             long size,
             CancellationToken cancellationToken = default)
         {
+            if (size < 0)
+                return (Result.Failure("File size must be non-negative"), null);
+
             var targetUserId = userId;
             var isOwnFile = true;
             if (parentId is not null)
             {
                 var parentDirectory = await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
                 if (parentDirectory is null) return (Result.Failure($"Target directory not found"), null);
+                if (!parentDirectory.IsDirectory) return (Result.Failure("Target directory is not a directory"), null);
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite,
                         cancellationToken))
                     return (Result.Failure("You are not authorized to upload to this directory"), null);
@@ -173,6 +177,9 @@ namespace webFileSharingSystem.Core.Services
 
                 if (file.PartialFileInfo is null) return Result.Failure("File does not contain 'PartialFileInfo'");
             }
+
+            if (chunkIndex < 0 || chunkIndex >= partialFileInfoCache!.PartialFileInfo.NumberOfChunks)
+                return Result.Failure("Chunk index is out of range");
 
             await _filePersistenceService.SaveChunk(
                 partialFileInfoCache!.UserId,
@@ -306,6 +313,7 @@ namespace webFileSharingSystem.Core.Services
             {
                 var parentDirectory = await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
                 if (parentDirectory is null) return (Result.Failure("Target directory not found"), null);
+                if (!parentDirectory.IsDirectory) return (Result.Failure("Target directory is not a directory"), null);
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
                     return (Result.Failure("You are not authorized to create directories in this location"), null);
 
