@@ -1,8 +1,6 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Containers;
 using Microsoft.Data.SqlClient;
 using Respawn;
 using Respawn.Graph;
@@ -16,18 +14,13 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
         private readonly SemaphoreSlim _respawnerLock = new(1, 1);
         private Respawner? _respawner;
 
-        public SqlServerContainerFixture()
-        {
-            Container = new MsSqlBuilder()
-                .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-                .WithPassword("Strong_password123!")
-                .WithEnvironment("ACCEPT_EULA", "Y")
-                .WithWaitStrategy(Wait.ForUnixContainer()
-                    .UntilCommandIsCompleted("/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Strong_password123! -C -Q \"SELECT 1\""))
-                .Build();
-        }
-
-        public MsSqlContainer Container { get; }
+        private MsSqlContainer Container { get; } = new MsSqlBuilder()
+            .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+            .WithPassword("Strong_password123!")
+            .WithEnvironment("ACCEPT_EULA", "Y")
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilCommandIsCompleted("/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Strong_password123! -C -Q \"SELECT 1\""))
+            .Build();
 
         public string ConnectionString => Container.GetConnectionString();
 

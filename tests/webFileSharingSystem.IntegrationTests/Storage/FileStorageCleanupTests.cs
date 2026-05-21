@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.IntegrationTests.Helpers;
 using webFileSharingSystem.Web.Contracts.Requests;
 using Xunit;
@@ -12,19 +12,16 @@ using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.IntegrationTests.Storage
 {
-    public class FileStorageCleanupTests : IntegrationTestBase
+    public class FileStorageCleanupTests(SqlServerContainerFixture dbFixture) : IntegrationTestBase(dbFixture)
     {
-        public FileStorageCleanupTests(SqlServerContainerFixture dbFixture) : base(dbFixture)
-        {
-        }
-
         [Fact]
         public async Task DeleteCompletedFile_RemovesFileFromStorage()
         {
-            var token = await RegisterAndLoginAsync("storage_delete_complete", "Pass123!", "storage_delete_complete@example.com");
+            var token = await RegisterAndLoginAsync("storage_delete_complete", "Pass123!", "storage_delete_complete@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
-            var fileId = await UploadAndCompleteAsync("delete-complete.bin", 512 * 1024, 37);
+            var fileId = await UploadAndCompleteAsync("delete-complete.bin", 512 * 1024, 37, token: TestContext.Current.CancellationToken);
 
             var storageRoot = await GetStorageRootAsync();
             Guid fileGuid = Guid.Empty;
@@ -44,14 +41,15 @@ namespace webFileSharingSystem.IntegrationTests.Storage
         [Fact]
         public async Task DeleteFolder_RemovesNestedFilesFromStorage()
         {
-            var token = await RegisterAndLoginAsync("storage_delete_folder", "Pass123!", "storage_delete_folder@example.com");
+            var token = await RegisterAndLoginAsync("storage_delete_folder", "Pass123!", "storage_delete_folder@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
-            var parent = await CreateDirectoryAsync($"parent-{Guid.NewGuid():N}");
-            var child = await CreateDirectoryAsync($"child-{Guid.NewGuid():N}", parent.Id);
+            var parent = await CreateDirectoryAsync($"parent-{Guid.NewGuid():N}", token: TestContext.Current.CancellationToken);
+            var child = await CreateDirectoryAsync($"child-{Guid.NewGuid():N}", parent.Id, TestContext.Current.CancellationToken);
 
-            var parentFileId = await UploadAndCompleteAsync("parent.bin", 64 * 1024, 41, parent.Id);
-            var childFileId = await UploadAndCompleteAsync("child.bin", 64 * 1024, 43, child.Id);
+            var parentFileId = await UploadAndCompleteAsync("parent.bin", 64 * 1024, 41, parent.Id, TestContext.Current.CancellationToken);
+            var childFileId = await UploadAndCompleteAsync("child.bin", 64 * 1024, 43, child.Id, TestContext.Current.CancellationToken);
 
             var storageRoot = await GetStorageRootAsync();
             var fileGuids = new[] { parentFileId, childFileId }.Select(_ => Guid.Empty).ToArray();
@@ -73,7 +71,8 @@ namespace webFileSharingSystem.IntegrationTests.Storage
             }
         }
 
-        private async Task<int> UploadAndCompleteAsync(string fileName, int sizeBytes, int seed, int? parentId = null)
+        private async Task<int> UploadAndCompleteAsync(string fileName, int sizeBytes, int seed, int? parentId = null,
+            CancellationToken token = default)
         {
             var content = new byte[sizeBytes];
             new Random(seed).NextBytes(content);
@@ -85,10 +84,10 @@ namespace webFileSharingSystem.IntegrationTests.Storage
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream",
                 ParentId = parentId
-            });
+            }, token);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, token);
+            await CompleteUploadAsync(file.Id, token);
             return file.Id;
         }
     }

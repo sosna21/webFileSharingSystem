@@ -6,12 +6,8 @@ using Xunit;
 
 namespace webFileSharingSystem.IntegrationTests.Authorization
 {
-    public class DownloadAuthorizationTests : IntegrationTestBase
+    public class DownloadAuthorizationTests(SqlServerContainerFixture dbFixture) : IntegrationTestBase(dbFixture)
     {
-        public DownloadAuthorizationTests(SqlServerContainerFixture dbFixture) : base(dbFixture)
-        {
-        }
-
         [Fact]
         public async Task GenerateDownloadUrl_ReturnsUnauthorized_WithoutToken()
         {

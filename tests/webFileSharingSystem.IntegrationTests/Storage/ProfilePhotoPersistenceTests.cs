@@ -93,15 +93,15 @@ namespace webFileSharingSystem.IntegrationTests.Storage
 
         private static byte[] GetFakeJpeg()
         {
-            return new byte[]
-            {
+            return
+            [
                 0xFF, 0xD8, 0xFF, 0xE0,
                 0x00, 0x10, 0x4A, 0x46,
                 0x49, 0x46, 0x00, 0x01,
                 0x01, 0x01, 0x00, 0x60,
                 0x00, 0x60, 0x00, 0x00,
                 0xFF, 0xD9
-            };
+            ];
         }
     }
 }

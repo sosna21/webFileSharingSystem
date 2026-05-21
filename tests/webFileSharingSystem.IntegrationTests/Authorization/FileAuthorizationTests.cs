@@ -10,12 +10,8 @@ using Xunit;
 
 namespace webFileSharingSystem.IntegrationTests.Authorization
 {
-    public class FileAuthorizationTests : IntegrationTestBase
+    public class FileAuthorizationTests(SqlServerContainerFixture dbFixture) : IntegrationTestBase(dbFixture)
     {
-        public FileAuthorizationTests(SqlServerContainerFixture dbFixture) : base(dbFixture)
-        {
-        }
-
         [Fact]
         public async Task GetAll_ReturnsUnauthorized_WithoutToken()
         {
@@ -39,7 +35,8 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         {
             ClearBearerToken();
 
-            var response = await Client.PostAsync("/api/File/CreateDir/unauth", content: null, cancellationToken: TestContext.Current.CancellationToken);
+            var response = await Client.PostAsync("/api/File/CreateDir/unauth", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
@@ -48,7 +45,8 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         {
             ClearBearerToken();
 
-            var response = await Client.PutAsync("/api/File/Rename/1?name=unauth", content: null, cancellationToken: TestContext.Current.CancellationToken);
+            var response = await Client.PutAsync("/api/File/Rename/1?name=unauth", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
@@ -82,7 +80,8 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         [Fact]
         public async Task DeleteSharedReadOnly_ReturnsUnauthorized()
         {
-            var ownerToken = await RegisterAndLoginAsync("file_auth_owner", "Pass123!", "file_auth_owner@example.com");
+            var ownerToken = await RegisterAndLoginAsync("file_auth_owner", "Pass123!", "file_auth_owner@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(ownerToken);
 
             var content = new byte[1024];
@@ -94,17 +93,18 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var guestToken = await RegisterAndLoginAsync("file_auth_guest", "Pass123!", "file_auth_guest@example.com");
+            var guestToken = await RegisterAndLoginAsync("file_auth_guest", "Pass123!", "file_auth_guest@example.com",
+                TestContext.Current.CancellationToken);
             await AddShareAsync(file.Id, new AddFileShareRequest
             {
                 UserNameToShareWith = "file_auth_guest",
                 AccessMode = ShareAccessMode.ReadOnly
-            });
+            }, TestContext.Current.CancellationToken);
 
             SetBearerToken(guestToken);
             var response = await Client.DeleteAsync($"/api/File/Delete/{file.Id}", TestContext.Current.CancellationToken);
@@ -114,7 +114,8 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         [Fact]
         public async Task RenameSharedReadOnly_ReturnsUnauthorized()
         {
-            var ownerToken = await RegisterAndLoginAsync("file_auth_owner_rename", "Pass123!", "file_auth_owner_rename@example.com");
+            var ownerToken = await RegisterAndLoginAsync("file_auth_owner_rename", "Pass123!", "file_auth_owner_rename@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(ownerToken);
 
             var content = new byte[1024];
@@ -126,20 +127,22 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var guestToken = await RegisterAndLoginAsync("file_auth_guest_rename", "Pass123!", "file_auth_guest_rename@example.com");
+            var guestToken = await RegisterAndLoginAsync("file_auth_guest_rename", "Pass123!", "file_auth_guest_rename@example.com",
+                TestContext.Current.CancellationToken);
             await AddShareAsync(file.Id, new AddFileShareRequest
             {
                 UserNameToShareWith = "file_auth_guest_rename",
                 AccessMode = ShareAccessMode.ReadOnly
-            });
+            }, TestContext.Current.CancellationToken);
 
             SetBearerToken(guestToken);
-            var response = await Client.PutAsync($"/api/File/Rename/{file.Id}?name=renamed", content: null, cancellationToken: TestContext.Current.CancellationToken);
+            var response = await Client.PutAsync($"/api/File/Rename/{file.Id}?name=renamed", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
     }

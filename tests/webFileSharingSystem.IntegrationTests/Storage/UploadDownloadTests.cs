@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
@@ -17,20 +18,20 @@ namespace webFileSharingSystem.IntegrationTests.Storage
         private const string OnPremiseFileLocation = "./TestResources";
         private const int UserId = 1;
         private readonly Guid _testFileGuid = Guid.NewGuid();
-        
+
         private readonly Random _random = new();
 
         private readonly LocalFilePersistenceService _filePersistenceService = new(
             Options.Create(new StorageSettings
-        {
-            UserDefaultQuota = 0,
-            OnPremiseFileLocation = OnPremiseFileLocation
-        }));
+            {
+                UserDefaultQuota = 0,
+                OnPremiseFileLocation = OnPremiseFileLocation
+            }));
 
         public UploadDownloadTests()
         {
             Directory.CreateDirectory(OnPremiseFileLocation);
-            
+
             var testFilePath = Path.Combine(OnPremiseFileLocation, _testFileGuid.ToString());
             File.Copy(TestFilePath, testFilePath);
         }
@@ -42,7 +43,7 @@ namespace webFileSharingSystem.IntegrationTests.Storage
                 Directory.Delete(OnPremiseFileLocation, true);
             }
         }
-        
+
         [Fact]
         public async Task GetChunks()
         {
@@ -82,12 +83,12 @@ namespace webFileSharingSystem.IntegrationTests.Storage
             var fileSizeInBytes = fileInfo.Length;
             var chunkSize = 512 * 1024; //0.5MB
 
-            var chunks = await GetFileChunks(UserId, _testFileGuid, fileSizeInBytes, chunkSize);
+            var chunks = await GetFileChunks(UserId, _testFileGuid, fileSizeInBytes, chunkSize, TestContext.Current.CancellationToken);
 
             var totalFileSizeFromChunks = 0;
 
             foreach (var (index, chunk) in chunks.Select((c, index) => (Index: index, Chunk: c))
-                .OrderBy(_ => _random.Next()))
+                         .OrderBy(_ => _random.Next()))
             {
                 var dataStream = new MemoryStream(chunk);
                 await _filePersistenceService.SaveChunk(UserId, newFileGuid, index, chunkSize, dataStream, TestContext.Current.CancellationToken);
@@ -137,7 +138,8 @@ namespace webFileSharingSystem.IntegrationTests.Storage
             var invalidIndex = partialFileInfo.NumberOfChunks + 1;
 
             var outputStream = new MemoryStream();
-            await _filePersistenceService.GetChunk(UserId, _testFileGuid, chunkSize, invalidIndex, outputStream, TestContext.Current.CancellationToken);
+            await _filePersistenceService.GetChunk(UserId, _testFileGuid, chunkSize, invalidIndex, outputStream,
+                TestContext.Current.CancellationToken);
 
             outputStream.Length.Should().Be(0);
         }
@@ -155,7 +157,7 @@ namespace webFileSharingSystem.IntegrationTests.Storage
             File.Exists(filePath).Should().BeFalse();
         }
 
-        private async Task<byte[][]> GetFileChunks(int userId, Guid fileGuid, long fileSizeInBytes, int chunkSize)
+        private async Task<byte[][]> GetFileChunks(int userId, Guid fileGuid, long fileSizeInBytes, int chunkSize, CancellationToken token = default)
         {
             var partialFileInfo = StorageExtensions.GeneratePartialFileInfo(fileSizeInBytes, chunkSize);
 
@@ -166,7 +168,7 @@ namespace webFileSharingSystem.IntegrationTests.Storage
             for (var i = 0; i < partialFileInfo.NumberOfChunks; i++)
             {
                 var outputStream = new MemoryStream();
-                await _filePersistenceService.GetChunk(userId, fileGuid, chunkSize, i, outputStream);
+                await _filePersistenceService.GetChunk(userId, fileGuid, chunkSize, i, outputStream, token);
                 chunks[i] = outputStream.ToArray();
             }
 

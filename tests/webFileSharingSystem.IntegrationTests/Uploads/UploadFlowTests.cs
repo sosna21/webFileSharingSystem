@@ -1,13 +1,12 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using webFileSharingSystem.IntegrationTests.Helpers;
-using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
 using Xunit;
@@ -15,18 +14,14 @@ using File = webFileSharingSystem.Core.Entities.File;
 
 namespace webFileSharingSystem.IntegrationTests.Uploads
 {
-    public class UploadFlowTests : IntegrationTestBase
+    public class UploadFlowTests(SqlServerContainerFixture dbFixture) : IntegrationTestBase(dbFixture)
     {
         private const int DefaultChunkSize = 512 * 1024;
-
-        public UploadFlowTests(SqlServerContainerFixture dbFixture) : base(dbFixture)
-        {
-        }
 
         [Fact]
         public async Task UploadSingleChunk_CompletesAndAppearsInList()
         {
-            var token = await RegisterAndLoginAsync("user_upload", "Pass123!", "user_upload@example.com");
+            var token = await RegisterAndLoginAsync("user_upload", "Pass123!", "user_upload@example.com", TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[128 * 1024];
@@ -38,32 +33,35 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(startResponse.Id, content);
+            await UploadSingleChunkAsync(startResponse.Id, content, TestContext.Current.CancellationToken);
 
-            var missingChunksResponse = await Client.GetAsync($"/api/Upload/{startResponse.Id}/MissingChunks");
+            var missingChunksResponse = await Client.GetAsync($"/api/Upload/{startResponse.Id}/MissingChunks", TestContext.Current.CancellationToken);
             missingChunksResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            var missingChunks = await missingChunksResponse.Content.ReadFromJsonAsync<int[]>();
+            var missingChunks =
+                await missingChunksResponse.Content.ReadFromJsonAsync<int[]>(cancellationToken: TestContext.Current.CancellationToken);
             missingChunks.Should().NotBeNull();
             missingChunks!.Should().BeEmpty();
 
-            await CompleteUploadAsync(startResponse.Id);
+            await CompleteUploadAsync(startResponse.Id, TestContext.Current.CancellationToken);
 
-            var listResponse = await Client.GetAsync("/api/File/GetAll?PageNumber=1&PageSize=10");
+            var listResponse = await Client.GetAsync("/api/File/GetAll?PageNumber=1&PageSize=10", TestContext.Current.CancellationToken);
             listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var list = await listResponse.Content.ReadFromJsonAsync<PaginatedListResponse<FileResponse>>();
+            var list = await listResponse.Content.ReadFromJsonAsync<PaginatedListResponse<FileResponse>>(
+                cancellationToken: TestContext.Current.CancellationToken);
             list.Should().NotBeNull();
             list!.Items.Should().ContainSingle(item => item.Id == startResponse.Id && item.FileStatus == Core.Entities.FileStatus.Completed);
 
-            await AssertStoredFileEqualsAsync(startResponse.Id, content);
+            await AssertStoredFileEqualsAsync(startResponse.Id, content, TestContext.Current.CancellationToken);
         }
 
         [Fact]
         public async Task UploadMultiChunk_CompletesAfterMissingChunksUploaded()
         {
-            var token = await RegisterAndLoginAsync("user_upload_multi", "Pass123!", "user_upload_multi@example.com");
+            var token = await RegisterAndLoginAsync("user_upload_multi", "Pass123!", "user_upload_multi@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[DefaultChunkSize * 2 + 10];
@@ -75,36 +73,39 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadChunkAsync(startResponse.Id, 0, GetChunk(content, 0));
+            await UploadChunkAsync(startResponse.Id, 0, GetChunk(content, 0), TestContext.Current.CancellationToken);
 
-            var missingChunksResponse = await Client.GetAsync($"/api/Upload/{startResponse.Id}/MissingChunks");
+            var missingChunksResponse = await Client.GetAsync($"/api/Upload/{startResponse.Id}/MissingChunks", TestContext.Current.CancellationToken);
             missingChunksResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            var missingChunks = await missingChunksResponse.Content.ReadFromJsonAsync<int[]>();
+            var missingChunks =
+                await missingChunksResponse.Content.ReadFromJsonAsync<int[]>(cancellationToken: TestContext.Current.CancellationToken);
             missingChunks.Should().NotBeNull();
             missingChunks.Should().Contain(1);
             missingChunks.Should().Contain(2);
 
-            await UploadChunkAsync(startResponse.Id, 1, GetChunk(content, 1));
-            await UploadChunkAsync(startResponse.Id, 2, GetChunk(content, 2));
+            await UploadChunkAsync(startResponse.Id, 1, GetChunk(content, 1), TestContext.Current.CancellationToken);
+            await UploadChunkAsync(startResponse.Id, 2, GetChunk(content, 2), TestContext.Current.CancellationToken);
 
-            await CompleteUploadAsync(startResponse.Id);
+            await CompleteUploadAsync(startResponse.Id, TestContext.Current.CancellationToken);
 
-            var listResponse = await Client.GetAsync("/api/File/GetAll?PageNumber=1&PageSize=10");
+            var listResponse = await Client.GetAsync("/api/File/GetAll?PageNumber=1&PageSize=10", TestContext.Current.CancellationToken);
             listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var list = await listResponse.Content.ReadFromJsonAsync<PaginatedListResponse<FileResponse>>();
+            var list = await listResponse.Content.ReadFromJsonAsync<PaginatedListResponse<FileResponse>>(
+                cancellationToken: TestContext.Current.CancellationToken);
             list.Should().NotBeNull();
             list!.Items.Should().ContainSingle(item => item.Id == startResponse.Id && item.FileStatus == Core.Entities.FileStatus.Completed);
 
-            await AssertStoredFileEqualsAsync(startResponse.Id, content);
+            await AssertStoredFileEqualsAsync(startResponse.Id, content, TestContext.Current.CancellationToken);
         }
 
         [Fact]
         public async Task PauseAndResume_SameFileSucceeds_DifferentFileCompletionFails()
         {
-            var token = await RegisterAndLoginAsync("user_upload_pause", "Pass123!", "user_upload_pause@example.com");
+            var token = await RegisterAndLoginAsync("user_upload_pause", "Pass123!", "user_upload_pause@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[DefaultChunkSize * 2];
@@ -116,21 +117,23 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadChunkAsync(firstUpload.Id, 0, GetChunk(content, 0));
+            await UploadChunkAsync(firstUpload.Id, 0, GetChunk(content, 0), TestContext.Current.CancellationToken);
 
-            var pauseResponse = await Client.PutAsync($"/api/Upload/{firstUpload.Id}/Pause", content: null);
+            var pauseResponse = await Client.PutAsync($"/api/Upload/{firstUpload.Id}/Pause", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             pauseResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var missingChunksResponse = await Client.GetAsync($"/api/Upload/{firstUpload.Id}/MissingChunks");
+            var missingChunksResponse = await Client.GetAsync($"/api/Upload/{firstUpload.Id}/MissingChunks", TestContext.Current.CancellationToken);
             missingChunksResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            var missingChunks = await missingChunksResponse.Content.ReadFromJsonAsync<int[]>();
+            var missingChunks =
+                await missingChunksResponse.Content.ReadFromJsonAsync<int[]>(cancellationToken: TestContext.Current.CancellationToken);
             missingChunks.Should().NotBeNull();
             missingChunks!.Should().Contain(1);
 
-            await UploadChunkAsync(firstUpload.Id, 1, GetChunk(content, 1));
-            await CompleteUploadAsync(firstUpload.Id);
+            await UploadChunkAsync(firstUpload.Id, 1, GetChunk(content, 1), TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(firstUpload.Id, TestContext.Current.CancellationToken);
 
             var secondUpload = await StartUploadAsync(new UploadFileInfoRequest
             {
@@ -138,21 +141,24 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadChunkAsync(secondUpload.Id, 0, GetChunk(content, 0));
+            await UploadChunkAsync(secondUpload.Id, 0, GetChunk(content, 0), TestContext.Current.CancellationToken);
 
-            var pauseSecondResponse = await Client.PutAsync($"/api/Upload/{secondUpload.Id}/Pause", content: null);
+            var pauseSecondResponse = await Client.PutAsync($"/api/Upload/{secondUpload.Id}/Pause", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             pauseSecondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var completeSecondResponse = await Client.PutAsync($"/api/Upload/{secondUpload.Id}/Complete", content: null);
+            var completeSecondResponse = await Client.PutAsync($"/api/Upload/{secondUpload.Id}/Complete", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             completeSecondResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
         [Fact]
         public async Task CancelOngoingUpload_RemovesFileAndStorage()
         {
-            var token = await RegisterAndLoginAsync("user_upload_cancel", "Pass123!", "user_upload_cancel@example.com");
+            var token = await RegisterAndLoginAsync("user_upload_cancel", "Pass123!", "user_upload_cancel@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[DefaultChunkSize];
@@ -164,9 +170,9 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadChunkAsync(startResponse.Id, 0, GetChunk(content, 0));
+            await UploadChunkAsync(startResponse.Id, 0, GetChunk(content, 0), TestContext.Current.CancellationToken);
 
             var storageRoot = await GetStorageRootAsync();
             Guid fileGuid = Guid.Empty;
@@ -176,10 +182,10 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 fileGuid = file!.FileGuid!.Value;
             });
 
-            var deleteResponse = await Client.DeleteAsync($"/api/File/Delete/{startResponse.Id}");
+            var deleteResponse = await Client.DeleteAsync($"/api/File/Delete/{startResponse.Id}", TestContext.Current.CancellationToken);
             deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var list = await GetFilesAsync();
+            var list = await GetFilesAsync(TestContext.Current.CancellationToken);
             list.Items.Should().NotContain(item => item.Id == startResponse.Id);
 
             var filePath = Path.Combine(storageRoot, fileGuid.ToString());
@@ -189,7 +195,8 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
         [Fact]
         public async Task CancelPausedUpload_RemovesFileAndStorage()
         {
-            var token = await RegisterAndLoginAsync("user_upload_cancel_pause", "Pass123!", "user_upload_cancel_pause@example.com");
+            var token = await RegisterAndLoginAsync("user_upload_cancel_pause", "Pass123!", "user_upload_cancel_pause@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[DefaultChunkSize];
@@ -201,11 +208,12 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadChunkAsync(startResponse.Id, 0, GetChunk(content, 0));
+            await UploadChunkAsync(startResponse.Id, 0, GetChunk(content, 0), TestContext.Current.CancellationToken);
 
-            var pauseResponse = await Client.PutAsync($"/api/Upload/{startResponse.Id}/Pause", content: null);
+            var pauseResponse = await Client.PutAsync($"/api/Upload/{startResponse.Id}/Pause", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             pauseResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var storageRoot = await GetStorageRootAsync();
@@ -216,10 +224,10 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
                 fileGuid = file!.FileGuid!.Value;
             });
 
-            var deleteResponse = await Client.DeleteAsync($"/api/File/Delete/{startResponse.Id}");
+            var deleteResponse = await Client.DeleteAsync($"/api/File/Delete/{startResponse.Id}", TestContext.Current.CancellationToken);
             deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var list = await GetFilesAsync();
+            var list = await GetFilesAsync(TestContext.Current.CancellationToken);
             list.Items.Should().NotContain(item => item.Id == startResponse.Id);
 
             var filePath = Path.Combine(storageRoot, fileGuid.ToString());
@@ -231,20 +239,20 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
             public T[] Items { get; set; } = Array.Empty<T>();
         }
 
-        private async Task<PaginatedListResponse<FileResponse>> GetFilesAsync()
+        private async Task<PaginatedListResponse<FileResponse>> GetFilesAsync(CancellationToken token = default)
         {
-            var listResponse = await Client.GetAsync("/api/File/GetAll?PageNumber=1&PageSize=50");
+            var listResponse = await Client.GetAsync("/api/File/GetAll?PageNumber=1&PageSize=50", token);
             listResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var list = await listResponse.Content.ReadFromJsonAsync<PaginatedListResponse<FileResponse>>();
+            var list = await listResponse.Content.ReadFromJsonAsync<PaginatedListResponse<FileResponse>>(cancellationToken: token);
             list.Should().NotBeNull();
             return list!;
         }
 
-        private async Task AssertStoredFileEqualsAsync(int fileId, byte[] expected)
+        private async Task AssertStoredFileEqualsAsync(int fileId, byte[] expected, CancellationToken token = default)
         {
             var storageRoot = await GetStorageRootAsync();
-            Guid fileGuid = Guid.Empty;
+            var fileGuid = Guid.Empty;
             await WithDbContextAsync(async context =>
             {
                 var file = await context.Set<File>().FindAsync(fileId);
@@ -252,17 +260,17 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
             });
 
             var filePath = Path.Combine(storageRoot, fileGuid.ToString());
-            var actual = await System.IO.File.ReadAllBytesAsync(filePath);
+            var actual = await System.IO.File.ReadAllBytesAsync(filePath, token);
             actual.Should().Equal(expected);
         }
 
-        private async Task UploadChunkAsync(int fileId, int chunkIndex, byte[] chunk)
+        private async Task UploadChunkAsync(int fileId, int chunkIndex, byte[] chunk, CancellationToken token = default)
         {
             using var form = new MultipartFormDataContent();
             using var chunkContent = new ByteArrayContent(chunk);
             form.Add(chunkContent, "chunk", $"chunk-{chunkIndex}.bin");
 
-            var response = await Client.PutAsync($"/api/Upload/{fileId}/Chunk/{chunkIndex}", form);
+            var response = await Client.PutAsync($"/api/Upload/{fileId}/Chunk/{chunkIndex}", form, token);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 

@@ -11,12 +11,8 @@ using Xunit;
 
 namespace webFileSharingSystem.IntegrationTests.Authorization
 {
-    public class UploadAuthorizationTests : IntegrationTestBase
+    public class UploadAuthorizationTests(SqlServerContainerFixture dbFixture) : IntegrationTestBase(dbFixture)
     {
-        public UploadAuthorizationTests(SqlServerContainerFixture dbFixture) : base(dbFixture)
-        {
-        }
-
         [Fact]
         public async Task StartUpload_ReturnsUnauthorized_WithoutToken()
         {
@@ -90,17 +86,19 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         [Fact]
         public async Task EnsureDirectory_ReturnsBadRequest_WhenSharedReadOnly()
         {
-            var ownerToken = await RegisterAndLoginAsync("upload_auth_owner", "Pass123!", "upload_auth_owner@example.com");
+            var ownerToken = await RegisterAndLoginAsync("upload_auth_owner", "Pass123!", "upload_auth_owner@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(ownerToken);
 
-            var directory = await CreateDirectoryAsync($"shared-auth-{Guid.NewGuid():N}");
+            var directory = await CreateDirectoryAsync($"shared-auth-{Guid.NewGuid():N}", token: TestContext.Current.CancellationToken);
 
-            var guestToken = await RegisterAndLoginAsync("upload_auth_guest", "Pass123!", "upload_auth_guest@example.com");
+            var guestToken = await RegisterAndLoginAsync("upload_auth_guest", "Pass123!", "upload_auth_guest@example.com",
+                TestContext.Current.CancellationToken);
             await AddShareAsync(directory.Id, new AddFileShareRequest
             {
                 UserNameToShareWith = "upload_auth_guest",
                 AccessMode = ShareAccessMode.ReadOnly
-            });
+            }, TestContext.Current.CancellationToken);
 
             SetBearerToken(guestToken);
             var response = await Client.PostAsJsonAsync("/api/Upload/EnsureDirectory", new EnsureDirectoryRequest
@@ -115,7 +113,8 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         [Fact]
         public async Task CompleteUpload_ReturnsBadRequest_WhenUserNotOwner()
         {
-            var ownerToken = await RegisterAndLoginAsync("upload_complete_owner", "Pass123!", "upload_complete_owner@example.com");
+            var ownerToken = await RegisterAndLoginAsync("upload_complete_owner", "Pass123!", "upload_complete_owner@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(ownerToken);
 
             var file = await StartUploadAsync(new UploadFileInfoRequest
@@ -124,19 +123,22 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
                 Size = 256,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            var otherToken = await RegisterAndLoginAsync("upload_complete_other", "Pass123!", "upload_complete_other@example.com");
+            var otherToken = await RegisterAndLoginAsync("upload_complete_other", "Pass123!", "upload_complete_other@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(otherToken);
 
-            var response = await Client.PutAsync($"/api/Upload/{file.Id}/Complete", content: null, cancellationToken: TestContext.Current.CancellationToken);
+            var response = await Client.PutAsync($"/api/Upload/{file.Id}/Complete", content: null,
+                cancellationToken: TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
         [Fact]
         public async Task MissingChunks_ReturnsBadRequest_WhenUserNotOwner()
         {
-            var ownerToken = await RegisterAndLoginAsync("upload_missing_owner", "Pass123!", "upload_missing_owner@example.com");
+            var ownerToken = await RegisterAndLoginAsync("upload_missing_owner", "Pass123!", "upload_missing_owner@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(ownerToken);
 
             var file = await StartUploadAsync(new UploadFileInfoRequest
@@ -145,9 +147,10 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
                 Size = 256,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            var otherToken = await RegisterAndLoginAsync("upload_missing_other", "Pass123!", "upload_missing_other@example.com");
+            var otherToken = await RegisterAndLoginAsync("upload_missing_other", "Pass123!", "upload_missing_other@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(otherToken);
 
             var response = await Client.GetAsync($"/api/Upload/{file.Id}/MissingChunks", TestContext.Current.CancellationToken);

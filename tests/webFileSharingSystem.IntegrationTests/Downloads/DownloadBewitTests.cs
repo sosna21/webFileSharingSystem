@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.AspNetCore.WebUtilities;
@@ -12,16 +13,13 @@ using Xunit;
 
 namespace webFileSharingSystem.IntegrationTests.Downloads
 {
-    public class DownloadBewitTests : IntegrationTestBase
+    public class DownloadBewitTests(SqlServerContainerFixture dbFixture) : IntegrationTestBase(dbFixture)
     {
-        public DownloadBewitTests(SqlServerContainerFixture dbFixture) : base(dbFixture)
-        {
-        }
-
         [Fact]
         public async Task DownloadBewit_AllowsAccess()
         {
-            var token = await RegisterAndLoginAsync("download_bewit_ok", "Pass123!", "download_bewit_ok@example.com");
+            var token = await RegisterAndLoginAsync("download_bewit_ok", "Pass123!", "download_bewit_ok@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[64 * 1024];
@@ -33,16 +31,16 @@ namespace webFileSharingSystem.IntegrationTests.Downloads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var downloadUrl = await GetDownloadUrlAsync(file.Id);
+            var downloadUrl = await GetDownloadUrlAsync(file.Id, TestContext.Current.CancellationToken);
             downloadUrl.Should().NotBeNullOrWhiteSpace();
 
             using var anonymousClient = CreateAnonymousClient();
-            var downloadResponse = await anonymousClient.GetAsync(downloadUrl);
+            var downloadResponse = await anonymousClient.GetAsync(downloadUrl, TestContext.Current.CancellationToken);
             downloadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             downloadResponse.Content.Headers.ContentType!.MediaType.Should().Be("application/octet-stream");
         }
@@ -50,7 +48,8 @@ namespace webFileSharingSystem.IntegrationTests.Downloads
         [Fact]
         public async Task DownloadBewit_RejectsMissingBewit()
         {
-            var token = await RegisterAndLoginAsync("download_bewit_missing", "Pass123!", "download_bewit_missing@example.com");
+            var token = await RegisterAndLoginAsync("download_bewit_missing", "Pass123!", "download_bewit_missing@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[32 * 1024];
@@ -62,24 +61,25 @@ namespace webFileSharingSystem.IntegrationTests.Downloads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var downloadUrl = await GetDownloadUrlAsync(file.Id);
+            var downloadUrl = await GetDownloadUrlAsync(file.Id, TestContext.Current.CancellationToken);
             downloadUrl.Should().NotBeNullOrWhiteSpace();
 
             using var anonymousClient = CreateAnonymousClient();
             var urlWithoutBewit = RemoveQueryParameter(downloadUrl!, "bewit");
-            var missingBewitResponse = await anonymousClient.GetAsync(urlWithoutBewit);
+            var missingBewitResponse = await anonymousClient.GetAsync(urlWithoutBewit, TestContext.Current.CancellationToken);
             missingBewitResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
         [Fact]
         public async Task DownloadBewit_RejectsTamperedBewit()
         {
-            var token = await RegisterAndLoginAsync("download_bewit_tamper", "Pass123!", "download_bewit_tamper@example.com");
+            var token = await RegisterAndLoginAsync("download_bewit_tamper", "Pass123!", "download_bewit_tamper@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[32 * 1024];
@@ -91,24 +91,25 @@ namespace webFileSharingSystem.IntegrationTests.Downloads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var downloadUrl = await GetDownloadUrlAsync(file.Id);
+            var downloadUrl = await GetDownloadUrlAsync(file.Id, TestContext.Current.CancellationToken);
             downloadUrl.Should().NotBeNullOrWhiteSpace();
 
             using var anonymousClient = CreateAnonymousClient();
             var tamperedUrl = ReplaceQueryParameter(downloadUrl!, "bewit", "tampered");
-            var response = await anonymousClient.GetAsync(tamperedUrl);
+            var response = await anonymousClient.GetAsync(tamperedUrl, TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
         [Fact]
         public async Task DownloadBewit_RejectsMissingToken()
         {
-            var token = await RegisterAndLoginAsync("download_bewit_no_token", "Pass123!", "download_bewit_no_token@example.com");
+            var token = await RegisterAndLoginAsync("download_bewit_no_token", "Pass123!", "download_bewit_no_token@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[32 * 1024];
@@ -120,28 +121,29 @@ namespace webFileSharingSystem.IntegrationTests.Downloads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var downloadUrl = await GetDownloadUrlAsync(file.Id);
+            var downloadUrl = await GetDownloadUrlAsync(file.Id, TestContext.Current.CancellationToken);
             downloadUrl.Should().NotBeNullOrWhiteSpace();
 
             using var anonymousClient = CreateAnonymousClient();
             var urlWithoutToken = RemoveQueryParameter(downloadUrl!, "token");
-            var response = await anonymousClient.GetAsync(urlWithoutToken);
+            var response = await anonymousClient.GetAsync(urlWithoutToken, TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-            
+
             var urlWithoutBewit = RemoveQueryParameter(downloadUrl!, "bewit");
-            var missingBewitResponse = await anonymousClient.GetAsync(urlWithoutBewit);
+            var missingBewitResponse = await anonymousClient.GetAsync(urlWithoutBewit, TestContext.Current.CancellationToken);
             missingBewitResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
         [Fact]
         public async Task DownloadBewit_ReturnsOriginalFileContent()
         {
-            var token = await RegisterAndLoginAsync("download_bewit_content", "Pass123!", "download_bewit_content@example.com");
+            var token = await RegisterAndLoginAsync("download_bewit_content", "Pass123!", "download_bewit_content@example.com",
+                TestContext.Current.CancellationToken);
             SetBearerToken(token);
 
             var content = new byte[48 * 1024];
@@ -153,33 +155,33 @@ namespace webFileSharingSystem.IntegrationTests.Downloads
                 Size = content.Length,
                 LastModificationDate = DateTime.UtcNow,
                 MimeType = "application/octet-stream"
-            });
+            }, TestContext.Current.CancellationToken);
 
-            await UploadSingleChunkAsync(file.Id, content);
-            await CompleteUploadAsync(file.Id);
+            await UploadSingleChunkAsync(file.Id, content, TestContext.Current.CancellationToken);
+            await CompleteUploadAsync(file.Id, TestContext.Current.CancellationToken);
 
-            var downloadUrl = await GetDownloadUrlAsync(file.Id);
+            var downloadUrl = await GetDownloadUrlAsync(file.Id, TestContext.Current.CancellationToken);
             downloadUrl.Should().NotBeNullOrWhiteSpace();
 
             using var anonymousClient = CreateAnonymousClient();
-            var response = await anonymousClient.GetAsync(downloadUrl);
+            var response = await anonymousClient.GetAsync(downloadUrl, TestContext.Current.CancellationToken);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            var downloadedBytes = await response.Content.ReadAsByteArrayAsync();
+            var downloadedBytes = await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken);
             downloadedBytes.Should().Equal(content);
         }
-        
-        private async Task<string?> GetDownloadUrlAsync(int fileId)
+
+        private async Task<string?> GetDownloadUrlAsync(int fileId, CancellationToken token = default)
         {
-            var urlResponse = await Client.PostAsync($"/api/Download/url?fileIds={fileId}", content: null);
+            var urlResponse = await Client.PostAsync($"/api/Download/url?fileIds={fileId}", content: null, cancellationToken: token);
             urlResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            return await ExtractDownloadUrlAsync(urlResponse);
+            return await ExtractDownloadUrlAsync(urlResponse, token);
         }
 
-        private static async Task<string?> ExtractDownloadUrlAsync(HttpResponseMessage response)
+        private static async Task<string?> ExtractDownloadUrlAsync(HttpResponseMessage response, CancellationToken token = default)
         {
-            var content = await response.Content.ReadAsStringAsync();
+            var content = await response.Content.ReadAsStringAsync(token);
             var result = JsonSerializer.Deserialize<DownloadUrlResponse>(content, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
