@@ -158,6 +158,7 @@ namespace webFileSharingSystem.Core.Services
 
             var previousPhotoGuid = user.PhotoFileGuid.Value;
             user.PhotoFileGuid = null;
+            user.PhotoAccessId = null;
             user.PhotoMimeType = null;
             user.PhotoSize = null;
             user.PhotoUpdatedAt = DateTime.UtcNow;
