@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.IntegrationTests.Helpers;
 using webFileSharingSystem.Web.Contracts.Requests;
 using webFileSharingSystem.Web.Contracts.Responses;
@@ -355,6 +356,89 @@ namespace webFileSharingSystem.IntegrationTests.Uploads
             }, TestContext.Current.CancellationToken);
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task EnsureDirectory_CreatesNestedFolders_ReturnsLast()
+        {
+            var token = await RegisterAndLoginAsync("ensure_nested_create", "Pass123!", "ensure_nested_create@example.com",
+                TestContext.Current.CancellationToken);
+            SetBearerToken(token);
+
+            var response = await Client.PostAsJsonAsync("/api/Upload/EnsureDirectory", new EnsureDirectoryRequest
+            {
+                ParentId = null,
+                Folders = new[] { "alpha", "beta", "gamma" }
+            }, TestContext.Current.CancellationToken);
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var created = await response.Content.ReadFromJsonAsync<FileResponse>(cancellationToken: TestContext.Current.CancellationToken);
+            created.Should().NotBeNull();
+            created!.FileName.Should().Be("gamma");
+
+            var secondResponse = await Client.PostAsJsonAsync("/api/Upload/EnsureDirectory", new EnsureDirectoryRequest
+            {
+                ParentId = null,
+                Folders = new[] { "alpha", "beta", "gamma" }
+            }, TestContext.Current.CancellationToken);
+
+            secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            var existing = await secondResponse.Content.ReadFromJsonAsync<FileResponse>(cancellationToken: TestContext.Current.CancellationToken);
+            existing.Should().NotBeNull();
+            existing!.Id.Should().Be(created.Id);
+        }
+
+        [Fact]
+        public async Task EnsureDirectory_WhenPartiallyExists_CreatesRemaining()
+        {
+            var token = await RegisterAndLoginAsync("ensure_partial_create", "Pass123!", "ensure_partial_create@example.com",
+                TestContext.Current.CancellationToken);
+            SetBearerToken(token);
+
+            var existing = await CreateDirectoryAsync("alpha", token: TestContext.Current.CancellationToken);
+
+            var response = await Client.PostAsJsonAsync("/api/Upload/EnsureDirectory", new EnsureDirectoryRequest
+            {
+                ParentId = null,
+                Folders = new[] { "alpha", "beta" }
+            }, TestContext.Current.CancellationToken);
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var created = await response.Content.ReadFromJsonAsync<FileResponse>(cancellationToken: TestContext.Current.CancellationToken);
+            created.Should().NotBeNull();
+            created!.FileName.Should().Be("beta");
+            created.ParentId.Should().Be(existing.Id);
+        }
+
+        [Fact]
+        public async Task EnsureDirectory_ReadWriteSharedParent_ReturnsSharedResponse()
+        {
+            var ownerToken = await RegisterAndLoginAsync("ensure_shared_owner", "Pass123!", "ensure_shared_owner@example.com",
+                TestContext.Current.CancellationToken);
+            SetBearerToken(ownerToken);
+
+            var sharedRoot = await CreateDirectoryAsync("shared-root", token: TestContext.Current.CancellationToken);
+
+            var guestToken = await RegisterAndLoginAsync("ensure_shared_guest", "Pass123!", "ensure_shared_guest@example.com",
+                TestContext.Current.CancellationToken);
+
+            await AddShareAsync(sharedRoot.Id, new AddFileShareRequest
+            {
+                UserNameToShareWith = "ensure_shared_guest",
+                AccessMode = ShareAccessMode.ReadWrite
+            }, TestContext.Current.CancellationToken);
+
+            SetBearerToken(guestToken);
+            var response = await Client.PostAsJsonAsync("/api/Upload/EnsureDirectory", new EnsureDirectoryRequest
+            {
+                ParentId = sharedRoot.Id,
+                Folders = new[] { "child", "grand" }
+            }, TestContext.Current.CancellationToken);
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var created = await response.Content.ReadFromJsonAsync<SharedFileResponse>(cancellationToken: TestContext.Current.CancellationToken);
+            created.Should().NotBeNull();
+            created!.AccessMode.Should().Be(ShareAccessMode.ReadWrite);
         }
 
         private async Task<(int FileId, int ChunkSize, int NumberOfChunks)> StartUploadWithInfoAsync(string fileName, int sizeBytes,

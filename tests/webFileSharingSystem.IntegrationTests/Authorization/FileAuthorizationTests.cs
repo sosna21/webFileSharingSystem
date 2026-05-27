@@ -31,6 +31,15 @@ namespace webFileSharingSystem.IntegrationTests.Authorization
         }
 
         [Fact]
+        public async Task GetNames_ReturnsUnauthorized_WithoutToken()
+        {
+            ClearBearerToken();
+
+            var response = await Client.GetAsync("/api/File/GetNames/-1", TestContext.Current.CancellationToken);
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        [Fact]
         public async Task CreateDirectory_ReturnsUnauthorized_WithoutToken()
         {
             ClearBearerToken();

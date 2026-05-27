@@ -18,7 +18,8 @@ namespace webFileSharingSystem.Core.Services
         private readonly IUploadService _uploadService;
         private readonly IUserLocks _userLocks;
 
-        public FileService(IUnitOfWork unitOfWork, IGuardService guard, IFilePersistenceService filePersistenceService, IUploadService uploadService, IUserLocks userLocks)
+        public FileService(IUnitOfWork unitOfWork, IGuardService guard, IFilePersistenceService filePersistenceService, IUploadService uploadService,
+            IUserLocks userLocks)
         {
             _unitOfWork = unitOfWork;
             _guard = guard;
@@ -71,7 +72,8 @@ namespace webFileSharingSystem.Core.Services
                 : Result.Failure(OperationResult.Exception, "Problem with renaming the file");
         }
 
-        public async Task<(Result<OperationResult> result, FileOperationContext? operationContext)> CreateDirectoryAsync(int? parentId, int userId, string directoryName,
+        public async Task<(Result<OperationResult> result, FileOperationContext? operationContext)> CreateDirectoryAsync(int? parentId, int userId,
+            string directoryName,
             CancellationToken cancellationToken = default)
         {
             var targetUserId = userId;
@@ -82,6 +84,8 @@ namespace webFileSharingSystem.Core.Services
                     await _unitOfWork.Repository<File>().FindByIdAsync(parentId.Value, cancellationToken);
                 if (parentDirectory is null)
                     return (Result.Failure(OperationResult.BadRequest, "Parent directory does not exist or you do not have access"), null);
+                if (!parentDirectory.IsDirectory)
+                    return (Result.Failure(OperationResult.BadRequest, "Parent is not a directory"), null);
                 if (!await _guard.UserCanPerform(userId, parentDirectory, ShareAccessMode.ReadWrite, cancellationToken))
                     return (Result.Failure(OperationResult.Unauthorized, "You are not authorized to create directory"), null);
 
@@ -111,7 +115,7 @@ namespace webFileSharingSystem.Core.Services
 
             var creatorId = isOwnFile ? targetUserId : userId;
             file.Creator = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(creatorId, cancellationToken)
-                ?? throw new Exception($"User not found, userId: {creatorId}");
+                           ?? throw new Exception($"User not found, userId: {creatorId}");
 
             SharedFileSqlRow? sharedFile = null;
             if (!isOwnFile)
@@ -439,7 +443,7 @@ namespace webFileSharingSystem.Core.Services
                     return (Result.Failure(OperationResult.BadRequest, updateResult.Errors), null);
 
                 var creatorUser = await _unitOfWork.Repository<ApplicationUser>().FindByIdAsync(userId, cancellationToken)
-                    ?? throw new Exception($"User not found, userId: {userId}");
+                                  ?? throw new Exception($"User not found, userId: {userId}");
 
                 var existingNames = await FileNameUniquenessHelper.GetExistingNamesAsync(
                     _unitOfWork,
