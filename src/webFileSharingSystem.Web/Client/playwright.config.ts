@@ -26,7 +26,10 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'http://localhost:4200',
+    baseURL: 'https://localhost:4200',
+
+    /* Allow HTTPS API calls to local dev certificate. */
+    ignoreHTTPSErrors: true,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -71,9 +74,23 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:4200',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'dotnet run --project ../webFileSharingSystem.Web.csproj --urls https://localhost:5001 --launch-profile "webFileSharingSystem.Web (Backend Only)"',
+      url: 'https://localhost:5001/health',
+      reuseExistingServer: !process.env.CI,
+      ignoreHTTPSErrors: true,
+      env: {
+        ASPNETCORE_ENVIRONMENT: 'E2E',
+        E2E_USE_TESTCONTAINERS: 'true',
+        DisableDbSeeding: 'true'
+      }
+    },
+    {
+      command: 'npm run start',
+      url: 'https://localhost:4200',
+      reuseExistingServer: !process.env.CI,
+      ignoreHTTPSErrors: true,
+    }
+  ],
 });

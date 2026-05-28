@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Testcontainers.MsSql;
 
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
@@ -18,6 +19,20 @@ namespace webFileSharingSystem.Web
     {
         public static async Task Main(string[] args)
         {
+            MsSqlContainer? e2eContainer = null;
+            if (ShouldUseE2EContainer())
+            {
+                e2eContainer = new MsSqlBuilder()
+                    .WithCleanUp(true)
+                    .Build();
+
+                await e2eContainer.StartAsync();
+
+                Environment.SetEnvironmentVariable("ConnectionStrings__LocalDbConnection", e2eContainer.GetConnectionString());
+                Environment.SetEnvironmentVariable("UseDockerDatabase", "false");
+                Environment.SetEnvironmentVariable("DisableDbSeeding", "true");
+            }
+
             var host = CreateHostBuilder(args).Build();
             using var scope = host.Services.CreateScope();
             var services = scope.ServiceProvider;
@@ -58,7 +73,23 @@ namespace webFileSharingSystem.Web
                 logger.LogError(ex, "An error occurred during migration");
             }
 
-            await host.RunAsync();
+            try
+            {
+                await host.RunAsync();
+            }
+            finally
+            {
+                if (e2eContainer is not null)
+                {
+                    await e2eContainer.DisposeAsync();
+                }
+            }
+        }
+
+        private static bool ShouldUseE2EContainer()
+        {
+            var flag = Environment.GetEnvironmentVariable("E2E_USE_TESTCONTAINERS");
+            return string.Equals(flag, "true", StringComparison.OrdinalIgnoreCase);
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

@@ -34,6 +34,7 @@ namespace webFileSharingSystem.Web
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 
             services.AddControllers();
+            services.AddHealthChecks();
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend",
@@ -100,7 +101,11 @@ namespace webFileSharingSystem.Web
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapHealthChecks("/health");
+            });
 
             app.UseStaticFiles();
         }
