@@ -33,6 +33,7 @@
 
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
+  data-testid="user-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
   (mouseup)="resetFileSelection($event)"
   (contextmenu)="tableContextMenuClick($event)"

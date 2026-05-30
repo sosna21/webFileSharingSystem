@@ -47,6 +47,8 @@ namespace webFileSharingSystem.Web
                     await context.Database.MigrateAsync();
                 }
 
+                await EnsureRoleExistsAsync(services, "Member");
+
                 var disableDbSeeding = config.GetValue<bool>("DisableDbSeeding");
                 if (!disableDbSeeding)
                 {
@@ -99,5 +101,41 @@ namespace webFileSharingSystem.Web
                     {
                         webBuilder.UseStartup<Startup>();
                     });
+
+        private static async Task EnsureRoleExistsAsync(IServiceProvider services, string roleName)
+        {
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+            if (await roleManager.RoleExistsAsync(roleName))
+            {
+                return;
+            }
+
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                try
+                {
+                    var result = await roleManager.CreateAsync(new IdentityRole(roleName));
+                    if (result.Succeeded || await roleManager.RoleExistsAsync(roleName))
+                    {
+                        return;
+                    }
+                }
+                catch (DbUpdateException)
+                {
+                    if (await roleManager.RoleExistsAsync(roleName))
+                    {
+                        return;
+                    }
+                }
+
+                await Task.Delay(100);
+            }
+
+            if (!await roleManager.RoleExistsAsync(roleName))
+            {
+                throw new InvalidOperationException($"Failed to ensure role exists: {roleName}");
+            }
+        }
     }
 }

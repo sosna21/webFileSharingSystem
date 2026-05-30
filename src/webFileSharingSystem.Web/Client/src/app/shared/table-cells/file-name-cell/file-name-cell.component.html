@@ -11,7 +11,7 @@
       (keydown)="onFileRenameKeyDown($event, file())"
     />
   } @else {
-    {{ file().fileName }}
+    <span [attr.data-testid]="'file-name-' + file().id">{{ file().fileName }}</span>
   }
 } @else {
   <div class="d-flex align-items-center gap-3">

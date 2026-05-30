@@ -1,5 +1,9 @@
 <div class="col-8 mx-auto d-grid">
-  <button [disabled]="loading()" class="btn btn-primary">
+  <button
+    [disabled]="loading()"
+    class="btn btn-primary"
+    [attr.data-testid]="testId()"
+  >
     @if (loading()) {
     <span class="spinner-border spinner-border-sm me-1"></span>
     }<ng-content></ng-content>

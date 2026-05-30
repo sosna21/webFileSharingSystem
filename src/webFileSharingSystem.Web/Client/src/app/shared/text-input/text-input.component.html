@@ -9,6 +9,7 @@
     class="form-control"
     [formControl]="control"
     [placeholder]="label()"
+    [attr.data-testid]="testId()"
   />
   <label>{{ label() }}</label>
   @if (control.hasError('required')) {

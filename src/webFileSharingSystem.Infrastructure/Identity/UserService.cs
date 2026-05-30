@@ -15,6 +15,7 @@ using webFileSharingSystem.Core.Entities.Common;
 using webFileSharingSystem.Core.Interfaces;
 using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Common;
+using webFileSharingSystem.Infrastructure.Data;
 
 namespace webFileSharingSystem.Infrastructure.Identity
 {
@@ -28,6 +29,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
 
         private readonly TokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ApplicationDbContext _dbContext;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IOptions<StorageSettings> _options;
         private readonly InternalCustomQueriesRepository _internalCustomQueries;
@@ -38,6 +40,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
             IUserClaimsPrincipalFactory<IdentityUser> identityUserClaimsPrincipalFactory,
             IAuthorizationService authorizationService,
             IUnitOfWork unitOfWork,
+            ApplicationDbContext dbContext,
             RoleManager<IdentityRole> roleManager,
             IOptions<StorageSettings> options,
             TokenService tokenService,
@@ -48,6 +51,7 @@ namespace webFileSharingSystem.Infrastructure.Identity
             _identityUserClaimsPrincipalFactory = identityUserClaimsPrincipalFactory;
             _authorizationService = authorizationService;
             _unitOfWork = unitOfWork;
+            _dbContext = dbContext;
             _roleManager = roleManager;
             _options = options;
             _tokenService = tokenService;
@@ -85,42 +89,42 @@ namespace webFileSharingSystem.Infrastructure.Identity
             
             var identityRole = new IdentityRole("Member");
 
-            if (_roleManager.Roles.All(r => r.Name != identityRole.Name))
-            {
-                await _roleManager.CreateAsync(identityRole);
-            }
-
             var user = new IdentityUser
             {
                 UserName = userName,
                 Email = email,
             };
 
-            using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                
-                var identityResult = password is not null ? await _userManager.CreateAsync(user, password) 
+                await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+                var identityResult = password is not null
+                    ? await _userManager.CreateAsync(user, password)
                     : await _userManager.CreateAsync(user);
                 if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
 
-                identityResult = await _userManager.AddToRolesAsync(user, new[] {identityRole.Name});
+                identityResult = await _userManager.AddToRolesAsync(user, new[] { identityRole.Name });
                 if (!identityResult.Succeeded) return (ToApplicationResult(identityResult), 0);
-                
-                if(providerKey is not null)
+
+                if (providerKey is not null)
+                {
                     await _userManager.AddLoginAsync(user, new UserLoginInfo(
-                        GoogleDefaults.AuthenticationScheme, 
-                            providerKey, 
-                            GoogleDefaults.AuthenticationScheme));
+                        GoogleDefaults.AuthenticationScheme,
+                        providerKey,
+                        GoogleDefaults.AuthenticationScheme));
+                }
 
                 var applicationUser =
                     new ApplicationUser(user.UserName, user.Email, user.Id, _options.Value.UserDefaultQuota);
                 _unitOfWork.Repository<ApplicationUser>().Add(applicationUser);
                 if (await _unitOfWork.Complete() <= 0) return (Result.Failure("Problem with creating user"), 0);
-                scope.Complete();
+
+                await transaction.CommitAsync();
                 return (Result.Success(), applicationUser.Id);
-            }
+            });
         }
-        
 
         public async Task<(AuthenticationResult Result, ApplicationUser? AppUser, string? Token, string? RefreshToken)>
             AuthenticateAsync(string userName, string? password, string ipAddress, CancellationToken cancellationToken)
