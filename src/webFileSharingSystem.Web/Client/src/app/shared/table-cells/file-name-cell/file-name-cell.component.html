@@ -1,5 +1,6 @@
 @if (file().fileStatus === FileStatus.Completed) {
   <i class="bi fs-4 me-1" [class]="file() | fileToIcon"></i>
+
   @if (editingId() === file().id) {
     <input
       appSelectFilename
@@ -11,82 +12,50 @@
       (keydown)="onFileRenameKeyDown($event, file())"
     />
   } @else {
-    <span [attr.data-testid]="'file-name-' + file().id">{{ file().fileName }}</span>
+    <span data-testid="file-name">{{ file().fileName }}</span>
   }
 } @else {
-  <div class="d-flex align-items-center gap-3">
+  <div class="d-flex align-items-center gap-3" data-testid="file-upload-data">
     <!-- File icon -->
-    <i class="bi fs-4" [class]="file() | fileToIcon"></i>
+    <i class="bi fs-4 flex-shrink-0" [class]="file() | fileToIcon"></i>
 
-    <!-- File details (name + progress bar) -->
-    <div class="flex-grow-1">
-      <div class="text-truncate">
-        {{ file().fileName }}
-        @if (isUserCreatedFile()) {
-          <span
-            [class]="
-              'small ' +
-              (file().progressStatus === ProgressStatus.Started
-                ? 'text-muted'
-                : file().progressStatus === ProgressStatus.Stopping
-                  ? 'text-warning-emphasis'
-                  : 'text-danger-emphasis')
-            "
-            >({{
-              file().progressStatus === ProgressStatus.Started
-                ? "Uploading"
-                : file().progressStatus === ProgressStatus.Stopping
-                  ? "Stopping"
-                  : "Stopped"
-            }}:
-            {{
-              getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
-                | number: "1.2-2"
-            }}/{{ file().size | fileSize }})</span
-          >
-        } @else {
-          <span class="small text-muted"
-            >({{
-              getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
-                | number: "1.2-2"
-            }}/{{ file().size | fileSize }})</span
-          >
-        }
+    <!-- Upload content -->
+    <div
+      class="flex-grow-1 upload-content"
+      style="min-width: 0; max-width: 500px"
+    >
+      <!-- Filename row -->
+      <div class="d-flex align-items-center" style="min-width: 0">
+        <span
+          class="text-truncate"
+          data-testid="file-name"
+          [appTooltipOnOverflow]="file().fileName"
+        >
+          {{ file().fileName }}
+        </span>
+
+        <app-upload-status
+          [file]="file()"
+          class="upload-status-inline ms-1 flex-shrink-0"
+          [disableColoring]="!isUserCreatedFile()"
+        />
       </div>
-      <div class="d-flex">
-        <ngb-progressbar
-          [value]="(file().uploadProgress ?? 0) * 100"
-          [showValue]="true"
-          [type]="
-            file().progressStatus === ProgressStatus.Started
-              ? 'primary'
-              : file().progressStatus === ProgressStatus.Stopping
-                ? 'warning'
-                : 'secondary'
-          "
-          [animated]="file().progressStatus === ProgressStatus.Stopping"
-          [striped]="file().progressStatus !== ProgressStatus.Stopped"
-          class="mt-1 w-50 border border-secondary"
-        ></ngb-progressbar>
+
+      <app-upload-status [file]="file()" class="upload-status-stacked lh-sm" />
+
+      <!-- Progress row -->
+      <div
+        class="d-flex align-items-center gap-2"
+        style="min-width: 0; max-width: 500px"
+      >
+        <app-upload-progressbar [file]="file()" class="flex-grow-1" />
+
         @if (isUserCreatedFile()) {
-          <div class="d-flex ms-2 align-items-start" style="margin-top: -5px">
-            <i
-              appClicableIcon
-              class="bi bi-pause-circle"
-              [disabled]="file().progressStatus !== ProgressStatus.Started"
-              (click)="onStopFilesUpload([file()])"
-              ngbTooltip="Pause upload"
-              [openDelay]="300"
-            ></i>
-            <i
-              appClicableIcon
-              class="bi bi-play-circle-fill"
-              [disabled]="file().progressStatus === ProgressStatus.Started"
-              (click)="onContinueFilesUpload([file()])"
-              ngbTooltip="Resume upload"
-              [openDelay]="300"
-            ></i>
-          </div>
+          <app-upload-control-btns
+            [file]="file()"
+            (pause)="onStopFilesUpload([file()])"
+            (continue)="onContinueFilesUpload([file()])"
+          />
         }
       </div>
     </div>

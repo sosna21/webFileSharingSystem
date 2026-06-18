@@ -1,0 +1,17 @@
+.upload-content {
+  container-type: inline-size;
+}
+
+.upload-status-stacked {
+  display: none;
+}
+
+@container (max-width: 280px) {
+  .upload-status-inline {
+    display: none;
+  }
+
+  .upload-status-stacked {
+    display: block;
+  }
+}

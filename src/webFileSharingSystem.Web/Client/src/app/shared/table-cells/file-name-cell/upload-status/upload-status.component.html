@@ -1,0 +1,19 @@
+<span
+  class="small"
+  [class.text-muted]="
+    disableColoring() || file().progressStatus === ProgressStatus.Started
+  "
+  [class.text-warning-emphasis]="
+    !disableColoring() && file().progressStatus === ProgressStatus.Stopping
+  "
+  [class.text-danger-emphasis]="
+    !disableColoring() && file().progressStatus === ProgressStatus.Stopped
+  "
+  data-testid="file-upload-progress"
+>
+  ↑
+  {{
+    getFileSize(file().size | fileSize) * (file().uploadProgress ?? 0)
+      | number: "1.2-2"
+  }}/{{ file().size | fileSize }}
+</span>
