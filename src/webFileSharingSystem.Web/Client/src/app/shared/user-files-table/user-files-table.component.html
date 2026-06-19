@@ -40,6 +40,7 @@
 >
   <div
     #scrollContainer
+    data-testid="user-files-drop-area"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
@@ -276,6 +277,11 @@
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
+        [attr.data-testid]="
+          file.fileStatus === FileStatus.Completed
+            ? 'file-row-'
+            : 'upload-row-' + file.id
+        "
         (contextmenu)="
           isSelected(file.id)
             ? contextMenuClick($event, file)

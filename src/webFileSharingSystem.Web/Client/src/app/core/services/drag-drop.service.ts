@@ -182,34 +182,38 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
     event.preventDefault();
     event.stopPropagation();
 
-    try {
-      if (!this.hasMinWriteAccess()) return;
-      const destination = this.dragTarget();
-      if (!destination) return;
-      const destinationId = destination.id;
+    if (!this.hasMinWriteAccess()) return;
 
+    const destination = this.dragTarget();
+    if (!destination) return;
+
+    const destinationId = destination.id;
+
+    let operation: Promise<void> | undefined;
+
+    try {
       // External files upload
       if (this.external.allowExternalFiles(event)) {
-        if (!this.hasMinWriteAccess()) return;
-        await this.external.uploadDraggedFiles(event, destinationId);
-        return;
+        operation = this.external.uploadDraggedFiles(event, destinationId);
       }
-
       // Internal move
-      if (this.internal.allowAppFiles(event)) {
+      else if (this.internal.allowAppFiles(event)) {
         if (this.internal.draggedFiles().some((f) => f.id === destinationId))
-          return; // Prevent moving into itself
-        await this.internal.moveDraggedFiles(
+          return;
+
+        operation = this.internal.moveDraggedFiles(
           event,
           destinationId ?? -1,
           destination.name,
         );
-        this.internal.clearDragedFiles();
       }
     } finally {
+      // Runs immediately after operation is started
       this.internal.clearDragedFiles();
       this.clearHover();
     }
+
+    await operation;
   }
 
   // Table handlers

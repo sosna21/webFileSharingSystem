@@ -1,14 +1,17 @@
+import { randomUUID } from 'crypto';
+
 export type Credentials = {
   username: string;
   email: string;
   password: string;
 };
 
-export function createCredentials(seed: number = Date.now()): Credentials {
-  const unique = seed.toString();
+export function createCredentials(): Credentials {
+  const id = randomUUID();
+
   return {
-    username: `e2e_user_${unique}`,
-    email: `e2e_${unique}@example.com`,
+    username: `e2e_user_${id}`,
+    email: `e2e_${id}@example.com`,
     password: 'Pass123!',
   };
 }

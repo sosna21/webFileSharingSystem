@@ -10,6 +10,7 @@
     !disableColoring() && file().progressStatus === ProgressStatus.Stopped
   "
   data-testid="file-upload-progress"
+  [attr.data-progress-status]="ProgressStatus[file().progressStatus!]"
 >
   ↑
   {{
