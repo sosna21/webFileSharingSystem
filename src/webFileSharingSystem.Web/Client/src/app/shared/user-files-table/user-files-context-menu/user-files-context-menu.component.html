@@ -107,7 +107,11 @@
     </button>
   }
 
-  <button ngbDropdownItem (click)="downloadClicked(); menu.close()">
+  <button
+    ngbDropdownItem
+    (click)="downloadClicked(); menu.close()"
+    data-testid="context-menu-download"
+  >
     <i class="bi bi-download me-1 text-primary"></i> Download
   </button>
 
