@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures/authenticated-fixture';
 import { dragDropEntries, startDragDropEntries } from './helpers/drag-drop';
+import { createDirectoryName, createFileName } from './helpers/file-names';
 import { createFolderStructure, createTempFile } from './helpers/test-files';
 import { getUniqueName } from './helpers/unique-name';
 import { UploadButtons } from './pages/upload-buttons.part';
@@ -8,17 +9,12 @@ import { UserFilesTable } from './pages/user-files-table.part';
 const multiChunkContentSize = 'a'.repeat(15 * 1024 * 1024); // 15MB, ensures chunked upload
 const singleChunkContentSize = 'a'.repeat(512); // 512B
 
-function buildUnique(testSuffix: string, prefix: string) {
-  return `${prefix}-${Date.now()}-${testSuffix}`;
-}
-
 test.describe('Upload Flow', () => {
   test('single file upload via picker', async ({
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
-    const suffix = `${testInfo.parallelIndex}`;
-    const fileName = `${buildUnique(suffix, 'upload')}.txt`;
+    const fileName = createFileName(testInfo, 'upload');
 
     const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);
@@ -37,8 +33,7 @@ test.describe('Upload Flow', () => {
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
-    const suffix = `${testInfo.parallelIndex}`;
-    const rootFolder = buildUnique(suffix, 'folder');
+    const rootFolder = createDirectoryName(testInfo, 'folder');
     const nestedFolder = 'nested';
     const nestedFile = 'nested-file.txt';
     const rootFile = 'root-file.txt';
@@ -70,9 +65,8 @@ test.describe('Upload Flow', () => {
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
-    const suffix = `${testInfo.parallelIndex}`;
-    const mixedFile = `${buildUnique(suffix, 'drag-file')}.txt`;
-    const folderName = buildUnique(suffix, 'drag-folder');
+    const mixedFile = createFileName(testInfo, 'drag-file');
+    const folderName = createDirectoryName(testInfo, 'drag-folder');
     const nestedFile = 'inside.txt';
 
     const table = new UserFilesTable(page);
@@ -93,8 +87,7 @@ test.describe('Upload Flow', () => {
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
-    const suffix = `${testInfo.parallelIndex}`;
-    const fileName = `${buildUnique(suffix, 'duplicate')}.txt`;
+    const fileName = createFileName(testInfo, 'duplicate');
 
     const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);
@@ -145,8 +138,7 @@ test.describe('Upload Flow', () => {
     );
 
     const page = authenticatedPage;
-    const suffix = `${testInfo.parallelIndex}`;
-    const fileName = `${buildUnique(suffix, 'chunking')}.txt`;
+    const fileName = createFileName(testInfo, 'chunking');
 
     const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);
@@ -172,8 +164,7 @@ test.describe('Upload Flow', () => {
     );
 
     const page = authenticatedPage;
-    const suffix = `${testInfo.parallelIndex}`;
-    const fileName = `${buildUnique(suffix, 'pause-resume')}.txt`;
+    const fileName = createFileName(testInfo, 'pause-resume');
 
     const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);

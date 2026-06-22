@@ -15,6 +15,7 @@
       appSelectFilename
       type="text"
       id="dirName"
+      data-testid="directory-creation-modal-input"
       class="form-control"
       [(ngModel)]="newDirName"
       [class.is-invalid]="!isNameValid()"
@@ -30,6 +31,7 @@
     <button
       type="button"
       class="btn btn-outline-secondary"
+      data-testid="directory-creation-modal-cancel"
       (click)="activeModal.dismiss()"
     >
       Cancel
@@ -37,6 +39,7 @@
     <button
       type="button"
       class="btn btn-success w-25"
+      data-testid="directory-creation-modal-create"
       [disabled]="!isNameValid()"
       (click)="confirm()"
     >

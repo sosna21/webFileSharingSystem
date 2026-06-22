@@ -52,6 +52,7 @@
 
     <button
       ngbDropdownItem
+      data-testid="table-context-menu-create-folder"
       (click)="createFolder.emit(); menu.close()"
       [disabled]="!hasMinReadWriteAccess()"
     >

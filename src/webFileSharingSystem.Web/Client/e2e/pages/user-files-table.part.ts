@@ -1,5 +1,7 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { UploadRow } from './upload-row.part';
+
+const selectedRowClass = /selected/;
 
 export class UserFilesTable {
   readonly page: Page;
@@ -26,6 +28,14 @@ export class UserFilesTable {
       .filter({ hasText: name });
 
     return new UploadRow(row);
+  }
+
+  async expectRowSelectedAndVisible(name: string) {
+    const row = this.fileRowByName(name);
+
+    await expect(row).toBeVisible();
+    await expect(row).toHaveClass(selectedRowClass);
+    await expect(row).toBeInViewport();
   }
 
   async openFolder(name: string) {

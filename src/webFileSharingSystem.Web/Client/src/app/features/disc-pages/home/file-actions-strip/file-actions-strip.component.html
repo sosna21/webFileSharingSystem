@@ -1,6 +1,7 @@
 <div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
   <i
     class="bi bi-folder-plus action-icon action-warning"
+    data-testid="directory-create-trigger"
     [class.disabled]="!canCreateDirectory()"
     (click)="initDirCreation()"
     ngbTooltip="Create new folder"
@@ -12,6 +13,7 @@
         appSelectFilename
         type="text"
         class="form-control"
+        data-testid="directory-create-input"
         placeholder="New folder"
         required
         [(ngModel)]="newFolderName"
