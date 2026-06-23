@@ -10,4 +10,8 @@ export class UserFilesContextMenu {
   async clickDownload() {
     await this.page.getByTestId('context-menu-download').click();
   }
+
+  async clickRename() {
+    await this.page.getByTestId('context-menu-rename').click();
+  }
 }

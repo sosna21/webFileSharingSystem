@@ -4,6 +4,7 @@
   @if (editingId() === file().id) {
     <input
       appSelectFilename
+      data-testid="rename-input"
       type="text"
       style="min-width: 85%"
       [ngModel]="file().fileName"

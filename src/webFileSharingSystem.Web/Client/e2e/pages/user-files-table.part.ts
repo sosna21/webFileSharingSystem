@@ -48,6 +48,10 @@ export class UserFilesTable {
     await row.click({ button: 'right' });
   }
 
+  async openTableContextMenu() {
+    await this.table.click({ button: 'right' });
+  }
+
   async rightClickRow(name: string) {
     const row = this.fileRowByName(name);
     await row.click({ button: 'right' });

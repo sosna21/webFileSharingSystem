@@ -119,6 +119,7 @@
     ngbDropdownItem
     [disabled]="selectedFiles().length !== 1"
     (click)="rename.emit(selectedFile); menu.close()"
+    data-testid="context-menu-rename"
   >
     <i
       class="bi bi-pencil me-1"
