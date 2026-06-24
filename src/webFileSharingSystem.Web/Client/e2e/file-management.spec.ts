@@ -71,18 +71,53 @@ test.describe('Directory Management', () => {
     const directoryName = createDirectoryName(testInfo, 'dir');
     await actionsStrip.createDirectory(directoryName);
 
-    await expect(table.fileRowByName(directoryName)).toBeVisible();
-    await table.openContextMenuForRow(directoryName);
-
-    const menu = new UserFilesContextMenu(page);
-    await menu.clickRename();
+    await table.expectRowSelectedAndVisible(directoryName);
+    await actionsStrip.initiateRename();
 
     const renameEditor = new RenameInlineEditor(page);
     const newDirectoryName = createDirectoryName(testInfo, 'renamed-dir');
     await renameEditor.renameTo(newDirectoryName);
 
     await expect(table.fileRowByName(directoryName)).not.toBeVisible();
-    await expect(table.fileRowByName(newDirectoryName)).toBeVisible();
+    await table.expectRowSelectedAndVisible(newDirectoryName);
+  });
+
+  test('Move directory', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+
+    const directoryName = createDirectoryName(testInfo, 'root-dir');
+    await actionsStrip.createDirectory(directoryName);
+    await table.expectRowSelectedAndVisible(directoryName);
+
+    const directoryToMoveName = createDirectoryName(testInfo, 'move-dir');
+    await actionsStrip.createDirectory(directoryToMoveName);
+    await table.expectRowSelectedAndVisible(directoryToMoveName);
+
+    await table.openContextMenuForRow(directoryToMoveName);
+    const menu = new UserFilesContextMenu(page);
+    await menu.initiateMove();
+    // Now row should be in "cut" state, but still visible (slighly faded)
+    await expect(table.fileRowByName(directoryToMoveName)).toHaveAttribute(
+      'data-cut',
+      'true',
+    );
+
+    await expect(table.fileRowByName(directoryToMoveName)).toBeVisible();
+    await table.openFolder(directoryName);
+    await table.openTableContextMenu();
+    const tableMenu = new TableContextMenu(page);
+    await tableMenu.clickPaste();
+
+    // Destination contains moved file
+    await expect(table.fileRowByName(directoryToMoveName)).toBeVisible();
+
+    const breadcrumb = new Breadcrumb(page);
+    await breadcrumb.expectPath(['Home', directoryName]);
+    await breadcrumb.navigateTo('Home');
+
+    // Source no longer contains moved file
+    await expect(table.fileRowByName(directoryToMoveName)).not.toBeVisible();
   });
 });
 
@@ -99,13 +134,51 @@ test.describe('File Management', () => {
     await table.openContextMenuForRow(fileName);
 
     const menu = new UserFilesContextMenu(page);
-    await menu.clickRename();
+    await menu.initiateRename();
 
     const renameEditor = new RenameInlineEditor(page);
     const newFileName = createFileName(testInfo, 'renamed-file');
     await renameEditor.renameTo(newFileName);
 
     await expect(table.fileRowByName(fileName)).not.toBeVisible();
-    await expect(table.fileRowByName(newFileName)).toBeVisible();
+    await table.expectRowSelectedAndVisible(newFileName);
+  });
+
+  test('Move file', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+    const uploadButtons = new UploadButtons(page);
+
+    const directoryName = createDirectoryName(testInfo, 'dir');
+    await actionsStrip.createDirectory(directoryName);
+
+    await table.expectRowSelectedAndVisible(directoryName);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+    await uploadButtons.uploadFiles(filePath);
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await table.selectSingleRow(fileName);
+    await actionsStrip.initiateMoveForSelectedFiles();
+    // Now row should be in "cut" state, but still visible (slighly faded)
+    await expect(table.fileRowByName(fileName)).toHaveAttribute(
+      'data-cut',
+      'true',
+    );
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await table.openFolder(directoryName);
+    await actionsStrip.pasteFilesToCurrentLocation();
+
+    // Destination contains moved file
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+
+    const breadcrumb = new Breadcrumb(page);
+    await breadcrumb.expectPath(['Home', directoryName]);
+    await breadcrumb.navigateTo('Home');
+
+    // Source no longer contains moved file
+    await expect(table.fileRowByName(fileName)).not.toBeVisible();
   });
 });

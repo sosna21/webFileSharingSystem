@@ -312,6 +312,10 @@
           filesMarkedForAction()?.type === 1 &&
           filesMarkedForAction()?.filesIds!.has(file.id)
         "
+        [attr.data-cut]="
+          filesMarkedForAction()?.type === 1 &&
+          filesMarkedForAction()?.filesIds!.has(file.id)
+        "
         [class.drop-folder-hover]="
           dragTarget()?.id === file.id && canBeTargetDirectory(file)
         "

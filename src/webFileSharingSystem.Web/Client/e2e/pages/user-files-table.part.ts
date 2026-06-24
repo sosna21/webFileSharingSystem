@@ -57,6 +57,11 @@ export class UserFilesTable {
     await row.click({ button: 'right' });
   }
 
+  async selectSingleRow(name: string) {
+    const row = this.fileRowByName(name);
+    await row.click();
+  }
+
   async selectRowsCtrl(names: string[]) {
     await this.page.keyboard.down('Control');
     for (const n of names) {

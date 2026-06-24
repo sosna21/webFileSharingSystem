@@ -67,6 +67,7 @@
       ngbDropdownItem
       (click)="paste.emit(); menu.close()"
       [disabled]="!hasMinReadWriteAccess() || !canPaste()"
+      data-testid="table-context-menu-paste"
     >
       <i
         class="bi bi-clipboard me-1"

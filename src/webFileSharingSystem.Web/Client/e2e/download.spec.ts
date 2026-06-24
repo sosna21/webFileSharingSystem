@@ -24,7 +24,7 @@ test.describe('Download Flow', () => {
     await table.openContextMenuForRow(fileName);
 
     const download = await captureDownload(page, async () => {
-      await menu.clickDownload();
+      await menu.downloadSelection();
     });
 
     expect(download.suggestedFilename()).toBeTruthy();
@@ -62,7 +62,7 @@ test.describe('Download Flow', () => {
     const download = await captureDownload(page, async () => {
       // Open context menu on one of selected rows
       await table.fileRowByName(files[0]).click({ button: 'right' });
-      await menu.clickDownload();
+      await menu.downloadSelection();
     });
 
     const suggested = download.suggestedFilename();
@@ -105,7 +105,7 @@ test.describe('Download Flow', () => {
     await table.openContextMenuForRow(rootFolder);
 
     const download = await captureDownload(page, async () => {
-      await menu.clickDownload();
+      await menu.downloadSelection();
     });
 
     const suggested = download.suggestedFilename();

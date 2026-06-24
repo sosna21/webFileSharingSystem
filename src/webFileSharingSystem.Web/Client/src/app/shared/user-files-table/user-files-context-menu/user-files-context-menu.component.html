@@ -19,6 +19,7 @@
           ngbDropdownAnchor
           (click)="uploadsSubmenu.toggle()"
           class="d-flex"
+          data-testid="context-menu-manage-uploads"
         >
           Manage uploads <span class="ms-auto">→</span>
         </button>
@@ -35,6 +36,7 @@
           ngbDropdownAnchor
           (click)="fileSubmenu.toggle()"
           class="d-flex"
+          data-testid="context-menu-manage-files"
         >
           Manage files <span class="ms-auto">→</span>
         </button>
@@ -66,6 +68,7 @@
     ngbDropdownItem
     (click)="resumeUploadClicked(); menu.close()"
     [disabled]="disableResume"
+    data-testid="context-menu-resume-upload"
   >
     <i
       class="bi bi-play-circle-fill me-1"
@@ -78,12 +81,17 @@
     ngbDropdownItem
     (click)="pauseUploadClicked(); menu.close()"
     [disabled]="disablePause"
+    data-testid="context-menu-pause-upload"
   >
     <i class="bi bi-pause-circle me-1" [class.text-warning]="!disablePause"></i>
     Pause Upload
   </button>
 
-  <button ngbDropdownItem (click)="cancelUploadClicked(); menu.close()">
+  <button
+    ngbDropdownItem
+    (click)="cancelUploadClicked(); menu.close()"
+    data-testid="context-menu-cancel-upload"
+  >
     <i class="bi bi-x-circle text-danger me-1"></i> Cancel Upload
   </button>
 </ng-template>
@@ -93,6 +101,7 @@
     <button
       ngbDropdownItem
       (click)="openLocation.emit(selectedFile); menu.close()"
+      data-testid="context-menu-open-directory"
     >
       <i class="bi bi-box-arrow-in-up-right me-1 text-success"></i>
       Open Location
@@ -128,16 +137,25 @@
     Rename
   </button>
 
-  <button ngbDropdownItem (click)="copyClicked(); menu.close()">
+  <button
+    ngbDropdownItem
+    (click)="copyClicked(); menu.close()"
+    data-testid="context-menu-copy"
+  >
     <i class="bi bi-files me-1 text-warning-emphasis"></i> Copy
   </button>
-  <button ngbDropdownItem (click)="moveClicked(); menu.close()">
+  <button
+    ngbDropdownItem
+    (click)="moveClicked(); menu.close()"
+    data-testid="context-menu-cut"
+  >
     <i class="bi bi-folder-symlink me-1 text-warning-emphasis"></i> Move
   </button>
 
   <button
     ngbDropdownItem
     (click)="toggleFavourite.emit(anySelectedFileIsUnFavourite()); menu.close()"
+    data-testid="context-menu-favourite"
   >
     <i
       class="bi bi-star me-1"
@@ -161,22 +179,35 @@
     <button
       ngbDropdownItem
       (click)="manageShares.emit(selectedFile); menu.close()"
+      data-testid="context-menu-manage-shares"
     >
       <i class="bi bi-share me-1 text-primary"></i> Manage shares
     </button>
   } @else {
-    <button ngbDropdownItem (click)="shareClicked(); menu.close()">
+    <button
+      ngbDropdownItem
+      (click)="shareClicked(); menu.close()"
+      data-testid="context-menu-share"
+    >
       <i class="bi bi-share me-1 text-primary"></i> Share
     </button>
   }
 
-  <button ngbDropdownItem (click)="generateLinkClicked(); menu.close()">
+  <button
+    ngbDropdownItem
+    (click)="generateLinkClicked(); menu.close()"
+    data-testid="context-menu-share-link"
+  >
     <i class="bi bi-link me-1 text-primary-emphasis"></i> Generate share link
   </button>
 
   <div class="dropdown-divider"></div>
 
-  <button ngbDropdownItem (click)="deleteClicked(); menu.close()">
+  <button
+    ngbDropdownItem
+    (click)="deleteClicked(); menu.close()"
+    data-testid="context-menu-delete"
+  >
     <i class="bi bi-trash me-1 text-danger"></i> Delete
   </button>
 </ng-template>
