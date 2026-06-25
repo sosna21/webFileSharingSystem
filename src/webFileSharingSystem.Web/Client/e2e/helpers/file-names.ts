@@ -1,4 +1,5 @@
 import type { TestInfo } from '@playwright/test';
+import path from 'path/win32';
 
 export function createDirectoryName(
   testInfo: TestInfo,
@@ -13,4 +14,9 @@ export function createFileName(
   extension: string = 'txt',
 ): string {
   return `${prefix}-${Date.now()}-${testInfo.parallelIndex}.${extension}`;
+}
+
+export function getFileNameOnCopy(fileName: string, copyIndex: number): string {
+  const parsed = path.parse(fileName);
+  return `${parsed.name} - Copy${copyIndex > 1 ? ` (${copyIndex})` : ''}${parsed.ext}`;
 }

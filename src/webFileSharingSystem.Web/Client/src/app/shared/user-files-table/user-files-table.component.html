@@ -278,9 +278,9 @@
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
         [attr.data-testid]="
-          file.fileStatus === FileStatus.Completed
+          (file.fileStatus === FileStatus.Completed
             ? 'file-row-'
-            : 'upload-row-' + file.id
+            : 'upload-row-') + file.fileName
         "
         (contextmenu)="
           isSelected(file.id)

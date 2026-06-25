@@ -1,5 +1,9 @@
 import { expect, test } from './fixtures/authenticated-fixture';
-import { createDirectoryName, createFileName } from './helpers/file-names';
+import {
+  createDirectoryName,
+  createFileName,
+  getFileNameOnCopy,
+} from './helpers/file-names';
 import { FileActionsStrip } from './pages/file-actions-strip.part';
 import { TableContextMenu } from './pages/table-context-menu.part';
 import { DirectoryCreationModal } from './pages/directory-creation-modal.part';
@@ -119,6 +123,28 @@ test.describe('Directory Management', () => {
     // Source no longer contains moved file
     await expect(table.fileRowByName(directoryToMoveName)).not.toBeVisible();
   });
+
+  test('Copy directory', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+
+    const directoryName = createDirectoryName(testInfo, 'dir');
+    await actionsStrip.createDirectory(directoryName);
+    await table.expectRowSelectedAndVisible(directoryName);
+
+    await table.openContextMenuForRow(directoryName);
+    const menu = new UserFilesContextMenu(page);
+    await menu.initiateCopy();
+
+    await table.openTableContextMenu();
+    const tableMenu = new TableContextMenu(page);
+    await tableMenu.clickPaste();
+
+    //Both original and copied directory should be visible
+    const copiedDirectoryName = getFileNameOnCopy(directoryName, 1);
+    await table.expectRowSelectedAndVisible(copiedDirectoryName);
+    await expect(table.fileRowByName(directoryName)).toBeVisible();
+  });
 });
 
 test.describe('File Management', () => {
@@ -180,5 +206,25 @@ test.describe('File Management', () => {
 
     // Source no longer contains moved file
     await expect(table.fileRowByName(fileName)).not.toBeVisible();
+  });
+
+  test('Copy file', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+    const uploadButtons = new UploadButtons(page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+    await uploadButtons.uploadFiles(filePath);
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await table.selectSingleRow(fileName);
+    await actionsStrip.initiateCopyForSelectedFiles();
+    await actionsStrip.pasteFilesToCurrentLocation();
+
+    //Both original and copied file should be visible
+    const copiedFileName = getFileNameOnCopy(fileName, 1);
+    await table.expectRowSelectedAndVisible(copiedFileName);
+    await expect(table.fileRowByName(fileName)).toBeVisible();
   });
 });

@@ -17,15 +17,11 @@ export class UserFilesTable {
   }
 
   fileRowByName(name: string): Locator {
-    return this.table
-      .locator('[data-testid^="file-row-"]')
-      .filter({ hasText: name });
+    return this.table.getByTestId(`file-row-${name}`);
   }
 
   uploadRowByName(name: string): UploadRow {
-    const row = this.table
-      .locator('[data-testid^="upload-row-"]')
-      .filter({ hasText: name });
+    const row = this.table.getByTestId(`upload-row-${name}`);
 
     return new UploadRow(row);
   }
