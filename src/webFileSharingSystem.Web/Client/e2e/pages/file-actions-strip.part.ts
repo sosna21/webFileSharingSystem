@@ -57,7 +57,7 @@ export class FileActionsStrip {
     await this.shareFilesTrigger.click();
   }
 
-  async deleteSelectedFiles() {
+  async deleteSelection() {
     await this.deleteFilesTrigger.click();
   }
 }

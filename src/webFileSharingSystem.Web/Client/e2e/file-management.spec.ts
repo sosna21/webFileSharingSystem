@@ -13,6 +13,7 @@ import { UserFilesContextMenu } from './pages/user-files-context-menu.part';
 import { UploadButtons } from './pages/upload-buttons.part';
 import { createTempFile } from './helpers/test-files';
 import { RenameInlineEditor } from './pages/rename-inline-editior.part';
+import { ConfirmActionModal } from './pages/confirm-action-modal.part';
 
 test.describe('Directory Management', () => {
   test('Create directory', async ({ authenticatedPage: page }, testInfo) => {
@@ -145,6 +146,26 @@ test.describe('Directory Management', () => {
     await table.expectRowSelectedAndVisible(copiedDirectoryName);
     await expect(table.fileRowByName(directoryName)).toBeVisible();
   });
+
+  test('Delete directory', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+
+    const directoryName = createDirectoryName(testInfo, 'dir');
+    await actionsStrip.createDirectory(directoryName);
+    await table.expectRowSelectedAndVisible(directoryName);
+
+    await table.openContextMenuForRow(directoryName);
+    const menu = new UserFilesContextMenu(page);
+    await menu.deleteSelection();
+
+    const modal = new ConfirmActionModal(page);
+    await modal.expectVisible();
+    await modal.confirm();
+
+    // Directory should be deleted
+    await expect(table.fileRowByName(directoryName)).not.toBeVisible();
+  });
 });
 
 test.describe('File Management', () => {
@@ -225,6 +246,49 @@ test.describe('File Management', () => {
     //Both original and copied file should be visible
     const copiedFileName = getFileNameOnCopy(fileName, 1);
     await table.expectRowSelectedAndVisible(copiedFileName);
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+  });
+
+  test('Delete file', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+    const uploadButtons = new UploadButtons(page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+    await uploadButtons.uploadFiles(filePath);
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await table.selectSingleRow(fileName);
+    await actionsStrip.deleteSelection();
+
+    const modal = new ConfirmActionModal(page);
+    await modal.expectVisible();
+    await modal.confirm();
+
+    // File should be deleted
+    await expect(table.fileRowByName(fileName)).not.toBeVisible();
+  });
+
+  test('Cancel delete', async ({ authenticatedPage: page }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+    const uploadButtons = new UploadButtons(page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+    await uploadButtons.uploadFiles(filePath);
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await table.selectSingleRow(fileName);
+    await actionsStrip.deleteSelection();
+
+    const modal = new ConfirmActionModal(page);
+    await modal.expectVisible();
+    await modal.cancel();
+    await modal.expectClosed();
+
+    // File should still be visible
     await expect(table.fileRowByName(fileName)).toBeVisible();
   });
 });

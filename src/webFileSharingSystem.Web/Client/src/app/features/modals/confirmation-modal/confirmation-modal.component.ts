@@ -6,7 +6,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
   imports: [],
   templateUrl: './confirmation-modal.component.html',
   styleUrl: './confirmation-modal.component.scss',
-  host: { class: 'd-block' },
+  host: { class: 'd-block', 'data-testid': 'confirm-modal' },
 })
 export class ConfirmationModalComponent {
   readonly activeModal = inject(NgbActiveModal);
