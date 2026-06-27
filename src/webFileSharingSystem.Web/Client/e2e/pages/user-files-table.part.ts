@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { UploadRow } from './upload-row.part';
 
-const selectedRowClass = /selected/;
+const selectedRowClass = 'selected-row';
 
 export class UserFilesTable {
   readonly page: Page;
@@ -30,7 +30,7 @@ export class UserFilesTable {
     const row = this.fileRowByName(name);
 
     await expect(row).toBeVisible();
-    await expect(row).toHaveClass(selectedRowClass);
+    await expect(row).toContainClass(selectedRowClass);
     await expect(row).toBeInViewport();
   }
 
@@ -44,13 +44,16 @@ export class UserFilesTable {
     await row.click({ button: 'right' });
   }
 
-  async openTableContextMenu() {
-    await this.table.click({ button: 'right' });
+  async openContextMenuForSelectedRows() {
+    //find first row with selected class, it should have getByTestId starting with `file-row-` then first from that list with selected class
+    const row = this.table
+      .locator('[data-testid^="file-row-"].selected-row')
+      .first();
+    await row.click({ button: 'right' });
   }
 
-  async rightClickRow(name: string) {
-    const row = this.fileRowByName(name);
-    await row.click({ button: 'right' });
+  async openTableContextMenu() {
+    await this.table.click({ button: 'right' });
   }
 
   async selectSingleRow(name: string) {
@@ -74,5 +77,15 @@ export class UserFilesTable {
     await this.page.keyboard.down('Shift');
     await end.click();
     await this.page.keyboard.up('Shift');
+  }
+
+  async selectAllRows() {
+    await this.page.keyboard.down('Control');
+    await this.page.keyboard.press('KeyA');
+    await this.page.keyboard.up('Control');
+  }
+
+  async resetSelection() {
+    await this.table.click();
   }
 }

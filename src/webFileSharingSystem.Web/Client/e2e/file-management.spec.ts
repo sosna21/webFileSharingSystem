@@ -14,6 +14,7 @@ import { UploadButtons } from './pages/upload-buttons.part';
 import { createTempFile } from './helpers/test-files';
 import { RenameInlineEditor } from './pages/rename-inline-editior.part';
 import { ConfirmActionModal } from './pages/confirm-action-modal.part';
+import { dragDropEntries } from './helpers/drag-drop';
 
 test.describe('Directory Management', () => {
   test('Create directory', async ({ authenticatedPage: page }, testInfo) => {

@@ -61,7 +61,7 @@ test.describe('Download Flow', () => {
 
     const download = await captureDownload(page, async () => {
       // Open context menu on one of selected rows
-      await table.fileRowByName(files[0]).click({ button: 'right' });
+      await table.openContextMenuForSelectedRows();
       await menu.downloadSelection();
     });
 

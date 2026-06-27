@@ -6,11 +6,11 @@ import { getUniqueName } from './helpers/unique-name';
 import { UploadButtons } from './pages/upload-buttons.part';
 import { UserFilesTable } from './pages/user-files-table.part';
 
-const multiChunkContentSize = 'a'.repeat(15 * 1024 * 1024); // 15MB, ensures chunked upload
+const multiChunkContentSize = 'a'.repeat(100 * 1024 * 1024); // 100MB, ensures chunked upload
 const singleChunkContentSize = 'a'.repeat(512); // 512B
 
 test.describe('Upload Flow', () => {
-  test('single file upload via picker', async ({
+  test('Single file upload via picker', async ({
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
@@ -29,7 +29,7 @@ test.describe('Upload Flow', () => {
     await expect(table.fileRowByName(fileName)).toBeVisible();
   });
 
-  test('folder upload via picker keeps structure', async ({
+  test('Folder upload via picker keeps structure', async ({
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
@@ -61,7 +61,7 @@ test.describe('Upload Flow', () => {
     await expect(table.fileRowByName(nestedFile)).toBeVisible();
   });
 
-  test('drag and drop mixed files and folders', async ({
+  test('Drag and drop mixed files and folders', async ({
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
@@ -83,7 +83,7 @@ test.describe('Upload Flow', () => {
     await expect(table.fileRowByName(nestedFile)).toBeVisible();
   });
 
-  test('cross-method consistency uses unique names', async ({
+  test('Cross-method consistency uses unique names', async ({
     authenticatedPage,
   }, testInfo) => {
     const page = authenticatedPage;
@@ -109,7 +109,7 @@ test.describe('Upload Flow', () => {
     await expect(table.fileRowByName(expectedDuplicate)).toBeVisible();
   });
 
-  test('shows upload overlay when dragging external files', async ({
+  test('Shows upload overlay when dragging external files', async ({
     authenticatedPage,
   }) => {
     const page = authenticatedPage;
@@ -128,7 +128,7 @@ test.describe('Upload Flow', () => {
     await expect(table.uploadOverlay).toBeHidden();
   });
 
-  test('file upload with chunking', async ({
+  test('File upload with chunking', async ({
     authenticatedPage,
     browserName,
   }, testInfo) => {
@@ -154,7 +154,7 @@ test.describe('Upload Flow', () => {
     await expect(table.fileRowByName(fileName)).toBeVisible();
   });
 
-  test('pauses progress when clicking pause and resumes when clicking resume', async ({
+  test('Pauses progress when clicking pause and resumes when clicking resume', async ({
     authenticatedPage,
     browserName,
   }, testInfo) => {

@@ -1,5 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
+const disabledClass = 'disabled';
 export class FileActionsStrip {
   readonly createDirectoryTrigger: Locator;
   readonly createDirectoryInput: Locator;
@@ -59,5 +60,54 @@ export class FileActionsStrip {
 
   async deleteSelection() {
     await this.deleteFilesTrigger.click();
+  }
+
+  // Availability assertions
+  async expectRenameEnabled() {
+    await this.expectTriggerEnabled(this.renameFileTrigger);
+  }
+
+  async expectRenameDisabled() {
+    await this.expectTriggerDisabled(this.renameFileTrigger);
+  }
+
+  async expectMoveEnabled() {
+    await this.expectTriggerEnabled(this.cutFilesTrigger);
+  }
+
+  async expectMoveDisabled() {
+    await this.expectTriggerDisabled(this.cutFilesTrigger);
+  }
+
+  async expectCopyEnabled() {
+    await this.expectTriggerEnabled(this.copyFilesTrigger);
+  }
+
+  async expectPasteEnabled() {
+    await this.expectTriggerEnabled(this.pasteFilesTrigger);
+  }
+
+  async expectPasteDisabled() {
+    await this.expectTriggerDisabled(this.pasteFilesTrigger);
+  }
+  
+  async expectCopyDisabled() {
+    await this.expectTriggerDisabled(this.copyFilesTrigger);
+  }
+
+  async expectDeleteEnabled() {
+    await this.expectTriggerEnabled(this.deleteFilesTrigger);
+  }
+
+  async expectDeleteDisabled() {
+    await this.expectTriggerDisabled(this.deleteFilesTrigger);
+  }
+
+  private async expectTriggerEnabled(trigger: Locator) {
+    await expect(trigger).not.toContainClass(disabledClass);
+  }
+
+  private async expectTriggerDisabled(trigger: Locator) {
+    await expect(trigger).toContainClass(disabledClass);
   }
 }

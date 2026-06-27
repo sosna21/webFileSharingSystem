@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export class TableContextMenu {
   readonly page: Page;
@@ -19,5 +19,15 @@ export class TableContextMenu {
 
   async clickPaste() {
     await this.pasteItem.click();
+  }
+
+  // Availability assertions
+
+  async expectPasteEnabled() {
+    await expect(this.pasteItem).toBeEnabled();
+  }
+
+  async expectPasteDisabled() {
+    await expect(this.pasteItem).toBeDisabled();
   }
 }
