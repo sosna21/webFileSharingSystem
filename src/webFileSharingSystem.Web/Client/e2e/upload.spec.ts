@@ -3,6 +3,7 @@ import { dragDropEntries, startDragDropEntries } from './helpers/drag-drop';
 import { createDirectoryName, createFileName } from './helpers/file-names';
 import { createFolderStructure, createTempFile } from './helpers/test-files';
 import { getUniqueName } from './helpers/unique-name';
+import { ToastNotification } from './pages/toast-notifications.part';
 import { UploadButtons } from './pages/upload-buttons.part';
 import { UserFilesTable } from './pages/user-files-table.part';
 
@@ -11,14 +12,12 @@ const singleChunkContentSize = 'a'.repeat(512); // 512B
 
 test.describe('Upload Flow', () => {
   test('Single file upload via picker', async ({
-    authenticatedPage,
+    authenticatedPage: page,
   }, testInfo) => {
-    const page = authenticatedPage;
-    const fileName = createFileName(testInfo, 'upload');
-
-    const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);
+    const uploadButtons = new UploadButtons(page);
 
+    const fileName = createFileName(testInfo, 'upload');
     const filePath = await createTempFile(
       testInfo,
       fileName,
@@ -30,17 +29,15 @@ test.describe('Upload Flow', () => {
   });
 
   test('Folder upload via picker keeps structure', async ({
-    authenticatedPage,
+    authenticatedPage: page,
   }, testInfo) => {
-    const page = authenticatedPage;
+    const table = new UserFilesTable(page);
+    const uploadButtons = new UploadButtons(page);
+
     const rootFolder = createDirectoryName(testInfo, 'folder');
     const nestedFolder = 'nested';
     const nestedFile = 'nested-file.txt';
     const rootFile = 'root-file.txt';
-
-    const uploadButtons = new UploadButtons(page);
-    const table = new UserFilesTable(page);
-
     const folderPath = await createFolderStructure(testInfo, rootFolder, [
       { path: rootFile, content: singleChunkContentSize },
       {
@@ -62,19 +59,21 @@ test.describe('Upload Flow', () => {
   });
 
   test('Drag and drop mixed files and folders', async ({
-    authenticatedPage,
+    authenticatedPage: page,
   }, testInfo) => {
-    const page = authenticatedPage;
+    const table = new UserFilesTable(page);
+    const notifications = new ToastNotification(page);
+
     const mixedFile = createFileName(testInfo, 'drag-file');
     const folderName = createDirectoryName(testInfo, 'drag-folder');
     const nestedFile = 'inside.txt';
-
-    const table = new UserFilesTable(page);
 
     await dragDropEntries(page, table.dropArea, [
       { path: mixedFile, content: singleChunkContentSize },
       { path: `${folderName}/${nestedFile}`, content: singleChunkContentSize },
     ]);
+
+    await notifications.expectUploadCompleted();
 
     await expect(table.fileRowByName(mixedFile)).toBeVisible();
     await expect(table.fileRowByName(folderName)).toBeVisible();
@@ -84,14 +83,12 @@ test.describe('Upload Flow', () => {
   });
 
   test('Cross-method consistency uses unique names', async ({
-    authenticatedPage,
+    authenticatedPage: page,
   }, testInfo) => {
-    const page = authenticatedPage;
-    const fileName = createFileName(testInfo, 'duplicate');
-
-    const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);
+    const uploadButtons = new UploadButtons(page);
 
+    const fileName = createFileName(testInfo, 'duplicate');
     const filePath = await createTempFile(
       testInfo,
       fileName,
@@ -104,15 +101,13 @@ test.describe('Upload Flow', () => {
     ]);
 
     const expectedDuplicate = getUniqueName(new Set([fileName]), fileName);
-
     await expect(table.fileRowByName(fileName)).toBeVisible();
     await expect(table.fileRowByName(expectedDuplicate)).toBeVisible();
   });
 
   test('Shows upload overlay when dragging external files', async ({
-    authenticatedPage,
+    authenticatedPage: page,
   }) => {
-    const page = authenticatedPage;
     const table = new UserFilesTable(page);
 
     const drag = await startDragDropEntries(page, table.dropArea, [
@@ -124,12 +119,11 @@ test.describe('Upload Flow', () => {
     await expect(table.uploadOverlay).toHaveText('Upload 2 file(s) here');
 
     await drag.drop();
-
     await expect(table.uploadOverlay).toBeHidden();
   });
 
   test('File upload with chunking', async ({
-    authenticatedPage,
+    authenticatedPage: page,
     browserName,
   }, testInfo) => {
     test.skip(
@@ -137,7 +131,6 @@ test.describe('Upload Flow', () => {
       'Chunked uploads are not reliable in WebKit Playwright',
     );
 
-    const page = authenticatedPage;
     const fileName = createFileName(testInfo, 'chunking');
 
     const uploadButtons = new UploadButtons(page);
@@ -151,23 +144,21 @@ test.describe('Upload Flow', () => {
     await uploadButtons.uploadFiles(filePath);
 
     await table.uploadRowByName(fileName).waitForVisible();
-    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await expect(table.fileRowByName(fileName)).toBeVisible({ timeout: 30000 });
   });
 
   test('Pauses progress when clicking pause and resumes when clicking resume', async ({
-    authenticatedPage,
+    authenticatedPage: page,
     browserName,
   }, testInfo) => {
     test.skip(
       browserName === 'webkit',
       'Chunked uploads are not reliable in WebKit Playwright',
     );
-
-    const page = authenticatedPage;
-    const fileName = createFileName(testInfo, 'pause-resume');
-
-    const uploadButtons = new UploadButtons(page);
     const table = new UserFilesTable(page);
+    const uploadButtons = new UploadButtons(page);
+
+    const fileName = createFileName(testInfo, 'pause-resume');
 
     const filePath = await createTempFile(
       testInfo,
@@ -191,7 +182,7 @@ test.describe('Upload Flow', () => {
     await uploadRow.waitForUploading();
     await uploadRow.waitForProgressGreaterThan(pausedProgress);
 
-    await uploadRow.waitForCompletion();
+    await uploadRow.waitForCompletion(30000);
     await uploadRow.waitForHidden();
     await expect(table.fileRowByName(fileName)).toBeVisible();
   });

@@ -982,7 +982,7 @@ export class FileService {
             'Success',
             `File${
               isPlural ? 's' : ''
-            } ${operationName}d to '${targetDirectoryName}'.`,
+            } ${operationName === 'copy' ? 'copied' : 'moved'} to '${targetDirectoryName}'.`,
             MessageSeverity.success,
           );
 

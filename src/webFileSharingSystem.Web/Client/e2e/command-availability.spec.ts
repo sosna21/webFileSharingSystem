@@ -4,6 +4,7 @@ import { createFileName, createDirectoryName } from './helpers/file-names';
 import { Breadcrumb } from './pages/breadcrumb.part';
 import { FileActionsStrip } from './pages/file-actions-strip.part';
 import { TableContextMenu } from './pages/table-context-menu.part';
+import { ToastNotification } from './pages/toast-notifications.part';
 import { UserFilesContextMenu } from './pages/user-files-context-menu.part';
 import { UserFilesTable } from './pages/user-files-table.part';
 
@@ -102,6 +103,7 @@ test.describe('Command Availability', () => {
     const table = new UserFilesTable(page);
     const breadcrumb = new Breadcrumb(page);
     const actionsStrip = new FileActionsStrip(page);
+    const notifications = new ToastNotification(page);
     const menu = new TableContextMenu(page);
 
     const firstFile = createFileName(testInfo, 'file-1');
@@ -112,6 +114,8 @@ test.describe('Command Availability', () => {
       { path: firstFile, content: 'abc' },
       { path: `${directoryName}/${secondFile}`, content: 'def' },
     ]);
+
+    await notifications.expectUploadCompleted();
 
     await expect(table.fileRowByName(firstFile)).toBeVisible();
     await expect(table.fileRowByName(directoryName)).toBeVisible();

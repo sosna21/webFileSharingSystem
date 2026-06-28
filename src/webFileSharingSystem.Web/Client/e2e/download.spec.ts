@@ -4,6 +4,7 @@ import { UserFilesTable } from './pages/user-files-table.part';
 import { UserFilesContextMenu } from './pages/user-files-context-menu.part';
 import { UploadButtons } from './pages/upload-buttons.part';
 import { captureDownload, readDownloadBuffer } from './helpers/downloads';
+import { ToastNotification as ToastNotifications } from './pages/toast-notifications.part';
 
 test.describe('Download Flow', () => {
   test('Single file download', async ({
@@ -98,9 +99,10 @@ test.describe('Download Flow', () => {
 
     await uploadButtons.uploadFolder(folderPath);
 
-    await expect(table.fileRowByName(rootFolder)).toBeVisible({
-      timeout: 15000,
-    });
+    const notyfications = new ToastNotifications(page);
+    await notyfications.expectUploadCompleted();
+
+    await expect(table.fileRowByName(rootFolder)).toBeVisible();
 
     await table.openContextMenuForRow(rootFolder);
 
