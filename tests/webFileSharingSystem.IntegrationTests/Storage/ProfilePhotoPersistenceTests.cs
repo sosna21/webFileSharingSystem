@@ -7,7 +7,7 @@ using webFileSharingSystem.Core.Options;
 using webFileSharingSystem.Infrastructure.Storage;
 using Xunit;
 
-namespace webFileSharingSystem.IntegrationTests
+namespace webFileSharingSystem.IntegrationTests.Storage
 {
     public class ProfilePhotoPersistenceTests : IDisposable
     {
@@ -42,16 +42,16 @@ namespace webFileSharingSystem.IntegrationTests
             var expected = GetFakeJpeg();
 
             await using var saveStream = new MemoryStream(expected);
-            await _profilePhotoPersistenceService.SavePhoto(UserId, fileGuid, saveStream);
+            await _profilePhotoPersistenceService.SavePhoto(UserId, fileGuid, saveStream, TestContext.Current.CancellationToken);
 
             var savedPath = Path.Combine(OnPremiseFileLocation, PhotoSubdirectory, fileGuid.ToString());
             Assert.True(File.Exists(savedPath));
 
             byte[] actual;
-            await using (var output = await _profilePhotoPersistenceService.GetPhotoStream(UserId, fileGuid))
+            await using (var output = await _profilePhotoPersistenceService.GetPhotoStream(UserId, fileGuid, TestContext.Current.CancellationToken))
             await using (var outputBuffer = new MemoryStream())
             {
-                await output.CopyToAsync(outputBuffer);
+                await output.CopyToAsync(outputBuffer, TestContext.Current.CancellationToken);
                 actual = outputBuffer.ToArray();
             }
 
@@ -59,6 +59,28 @@ namespace webFileSharingSystem.IntegrationTests
 
             await _profilePhotoPersistenceService.DeletePhoto(UserId, fileGuid);
             Assert.False(File.Exists(savedPath));
+        }
+
+        [Fact]
+        public async Task GetPhotoStream_ThrowsWhenMissing()
+        {
+            var missingGuid = Guid.NewGuid();
+
+            await Assert.ThrowsAsync<FileNotFoundException>(async () =>
+            {
+                await using var stream = await _profilePhotoPersistenceService.GetPhotoStream(UserId, missingGuid, TestContext.Current.CancellationToken);
+            });
+        }
+
+        [Fact]
+        public async Task DeletePhoto_DoesNotThrow_WhenMissing()
+        {
+            var missingGuid = Guid.NewGuid();
+            var missingPath = Path.Combine(OnPremiseFileLocation, PhotoSubdirectory, missingGuid.ToString());
+
+            await _profilePhotoPersistenceService.DeletePhoto(UserId, missingGuid);
+
+            Assert.False(File.Exists(missingPath));
         }
 
         public void Dispose()
@@ -71,15 +93,15 @@ namespace webFileSharingSystem.IntegrationTests
 
         private static byte[] GetFakeJpeg()
         {
-            return new byte[]
-            {
+            return
+            [
                 0xFF, 0xD8, 0xFF, 0xE0,
                 0x00, 0x10, 0x4A, 0x46,
                 0x49, 0x46, 0x00, 0x01,
                 0x01, 0x01, 0x00, 0x60,
                 0x00, 0x60, 0x00, 0x00,
                 0xFF, 0xD9
-            };
+            ];
         }
     }
 }

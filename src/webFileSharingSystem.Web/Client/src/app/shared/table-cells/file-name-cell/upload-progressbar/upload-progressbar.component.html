@@ -1,0 +1,17 @@
+<ngb-progressbar
+  data-testid="file-upload-progressbar"
+  [value]="(file().uploadProgress ?? 0) * 100"
+  [showValue]="true"
+  [type]="
+    file().progressStatus === ProgressStatus.Started
+      ? 'primary'
+      : file().progressStatus === ProgressStatus.Stopping
+        ? 'warning'
+        : 'secondary'
+  "
+  [animated]="file().progressStatus === ProgressStatus.Stopping"
+  [striped]="file().progressStatus !== ProgressStatus.Stopped"
+  class="border border-secondary"
+  style="min-width: 0"
+>
+</ngb-progressbar>

@@ -12,14 +12,21 @@
         [formControl]="controls.username"
         label="Username/Email"
         (focusin)="resetError()"
+        [testId]="'login-username'"
       ></app-text-input>
       <app-text-input
         [formControl]="controls.password"
         label="Password"
         (focusin)="resetError()"
         type="password"
+        [testId]="'login-password'"
       ></app-text-input>
-      <app-main-action-btn [loading]="loading()">Login</app-main-action-btn>
+      <app-main-action-btn
+        [loading]="loading()"
+        [testId]="'login-submit'"
+      >
+        Login
+      </app-main-action-btn>
     </form>
   </app-card-main-content>
   <app-card-secondary-content>

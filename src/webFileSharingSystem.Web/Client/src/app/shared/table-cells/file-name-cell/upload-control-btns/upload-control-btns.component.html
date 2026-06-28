@@ -1,0 +1,20 @@
+<i
+  appClicableIcon
+  bgSize="1.7em"
+  class="bi bi-pause-circle"
+  data-testid="file-upload-pause-btn"
+  [disabled]="file().progressStatus !== ProgressStatus.Started"
+  (click)="pause.emit()"
+  ngbTooltip="Pause upload"
+  [openDelay]="300"
+></i>
+<i
+  appClicableIcon
+  bgSize="1.7em"
+  class="bi bi-play-circle-fill"
+  data-testid="file-upload-resume-btn"
+  [disabled]="file().progressStatus === ProgressStatus.Started"
+  (click)="continue.emit()"
+  ngbTooltip="Resume upload"
+  [openDelay]="300"
+></i>

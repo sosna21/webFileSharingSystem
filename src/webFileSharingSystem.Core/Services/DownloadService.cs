@@ -42,7 +42,8 @@ namespace webFileSharingSystem.Core.Services
         public async Task<(Result<OperationResult> Result, DownloadActionType Action, string Token)> PrepareDownloadAsync(
             int[] fileIds, int userId, CancellationToken cancellationToken = default)
         {
-            if (fileIds is null || fileIds.Length == 0)
+            const string errorMessage = "Files or directories does not exist or you do not have access";
+            if (fileIds.Length == 0)
                 return (Result.Failure(OperationResult.BadRequest, "No file IDs provided"), default, string.Empty);
 
             DownloadActionType action;
@@ -51,10 +52,25 @@ namespace webFileSharingSystem.Core.Services
                 var file = await _unitOfWork.Repository<File>().FindByIdAsync(fileIds[0], cancellationToken);
                 if (file is null)
                     return (Result.Failure(OperationResult.BadRequest, "File not found"), default, string.Empty);
+                if (!await _guardService.UserCanPerform(userId, file, ShareAccessMode.ReadOnly, cancellationToken))
+                    return (Result.Failure(OperationResult.Unauthorized, errorMessage), default, string.Empty);
                 action = file.IsDirectory ? DownloadActionType.Archive : DownloadActionType.File;
             }
             else
             {
+                var filesToDownload = (await _unitOfWork.CustomQueriesRepository()
+                        .GetListOfAllFilesFromLocations(fileIds, cancellationToken))
+                    .ToDictionary(k => k.Id);
+
+                if (fileIds.Except(filesToDownload.Keys).Any())
+                    return (Result.Failure(OperationResult.Unauthorized, errorMessage), default, string.Empty);
+
+                foreach (var (_, fileToDownload) in filesToDownload.Where(f => fileIds.Contains(f.Key)))
+                {
+                    if (!await _guardService.UserCanPerform(userId, fileToDownload, ShareAccessMode.ReadOnly, cancellationToken))
+                        return (Result.Failure(OperationResult.Unauthorized, errorMessage), default, string.Empty);
+                }
+
                 action = DownloadActionType.Archive;
             }
 
@@ -130,7 +146,7 @@ namespace webFileSharingSystem.Core.Services
                 await using var entryStream = entry.Open();
                 try
                 {
-                    var fileStream = await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value, cancellationToken);
+                    await using var fileStream = await _filePersistenceService.GetFileStream(userId, file.FileGuid!.Value, cancellationToken);
                     await fileStream.CopyToAsync(entryStream, cancellationToken);
                 }
                 catch (Exception)

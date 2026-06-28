@@ -25,12 +25,14 @@
 
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
+  data-testid="shared-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
   (mouseup)="resetFileSelection($event)"
   (contextmenu)="tableContextMenuClick($event)"
 >
   <div
     #scrollContainer
+    data-testid="shared-files-drop-area"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
@@ -239,6 +241,7 @@
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
+        [attr.data-testid]="'file-row-' + file.id"
         (contextmenu)="
           isSelected(file.id)
             ? contextMenuClick($event, file)

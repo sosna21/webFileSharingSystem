@@ -1,7 +1,7 @@
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb m-0">
     @for (breadcrumb of breadCrumbs(); track breadcrumb.id) {
-      <li class="breadcrumb-item my-1">
+      <li class="breadcrumb-item my-1" data-testid="breadcrumb-item">
         @if (!$last) {
           <a
             class="px-2 py-1"

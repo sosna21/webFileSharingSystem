@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Testcontainers.MsSql;
 
 using webFileSharingSystem.Core.Entities;
 using webFileSharingSystem.Core.Interfaces;
@@ -18,6 +19,20 @@ namespace webFileSharingSystem.Web
     {
         public static async Task Main(string[] args)
         {
+            MsSqlContainer? e2eContainer = null;
+            if (ShouldUseE2EContainer())
+            {
+                e2eContainer = new MsSqlBuilder()
+                    .WithCleanUp(true)
+                    .Build();
+
+                await e2eContainer.StartAsync();
+
+                Environment.SetEnvironmentVariable("ConnectionStrings__LocalDbConnection", e2eContainer.GetConnectionString());
+                Environment.SetEnvironmentVariable("UseDockerDatabase", "false");
+                Environment.SetEnvironmentVariable("DisableDbSeeding", "true");
+            }
+
             var host = CreateHostBuilder(args).Build();
             using var scope = host.Services.CreateScope();
             var services = scope.ServiceProvider;
@@ -32,21 +47,27 @@ namespace webFileSharingSystem.Web
                     await context.Database.MigrateAsync();
                 }
 
-                var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-                var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
-                var fileRepository = services.GetRequiredService<IRepository<File>>();
-                var filePersistenceService = services.GetRequiredService<IFilePersistenceService>();
+                await EnsureRoleExistsAsync(services, "Member");
 
-                var seedData = new ApplicationDbContextSeed(
-                    context,
-                    userManager,
-                    roleManager,
-                    applicationUserRepository,
-                    fileRepository,
-                    filePersistenceService);
+                var disableDbSeeding = config.GetValue<bool>("DisableDbSeeding");
+                if (!disableDbSeeding)
+                {
+                    var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+                    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                    var applicationUserRepository = services.GetRequiredService<IRepository<ApplicationUser>>();
+                    var fileRepository = services.GetRequiredService<IRepository<File>>();
+                    var filePersistenceService = services.GetRequiredService<IFilePersistenceService>();
 
-                await seedData.SetTestUserDataAsync();
+                    var seedData = new ApplicationDbContextSeed(
+                        context,
+                        userManager,
+                        roleManager,
+                        applicationUserRepository,
+                        fileRepository,
+                        filePersistenceService);
+
+                    await seedData.SetTestUserDataAsync();
+                }
             }
             catch (Exception ex)
             {
@@ -54,7 +75,23 @@ namespace webFileSharingSystem.Web
                 logger.LogError(ex, "An error occurred during migration");
             }
 
-            await host.RunAsync();
+            try
+            {
+                await host.RunAsync();
+            }
+            finally
+            {
+                if (e2eContainer is not null)
+                {
+                    await e2eContainer.DisposeAsync();
+                }
+            }
+        }
+
+        private static bool ShouldUseE2EContainer()
+        {
+            var flag = Environment.GetEnvironmentVariable("E2E_USE_TESTCONTAINERS");
+            return string.Equals(flag, "true", StringComparison.OrdinalIgnoreCase);
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -64,5 +101,41 @@ namespace webFileSharingSystem.Web
                     {
                         webBuilder.UseStartup<Startup>();
                     });
+
+        private static async Task EnsureRoleExistsAsync(IServiceProvider services, string roleName)
+        {
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+            if (await roleManager.RoleExistsAsync(roleName))
+            {
+                return;
+            }
+
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                try
+                {
+                    var result = await roleManager.CreateAsync(new IdentityRole(roleName));
+                    if (result.Succeeded || await roleManager.RoleExistsAsync(roleName))
+                    {
+                        return;
+                    }
+                }
+                catch (DbUpdateException)
+                {
+                    if (await roleManager.RoleExistsAsync(roleName))
+                    {
+                        return;
+                    }
+                }
+
+                await Task.Delay(100);
+            }
+
+            if (!await roleManager.RoleExistsAsync(roleName))
+            {
+                throw new InvalidOperationException($"Failed to ensure role exists: {roleName}");
+            }
+        }
     }
 }

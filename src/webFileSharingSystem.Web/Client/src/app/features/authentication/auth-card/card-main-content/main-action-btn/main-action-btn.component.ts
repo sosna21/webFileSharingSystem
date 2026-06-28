@@ -9,4 +9,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class MainActionBtnComponent {
   loading = input.required<boolean>();
+  testId = input<string | null>(null);
 }

@@ -12,7 +12,7 @@
   <p class="d-grid overflow-hidden" style="white-space: pre-wrap">
     {{ message() }}
     @if (showPermanentWarning()) {
-    <span class="text-danger"><br />This operation can not be undone.</span>
+      <span class="text-danger"><br />This operation can not be undone.</span>
     }
   </p>
 </div>
@@ -22,6 +22,7 @@
     type="button"
     class="btn btn-outline-secondary"
     (click)="activeModal.dismiss()"
+    data-testid="confirm-modal-cancel"
   >
     {{ cancelText() }}
   </button>
@@ -30,6 +31,7 @@
     class="btn btn-danger"
     ngbAutofocus
     (click)="activeModal.close(true)"
+    data-testid="confirm-modal-accept"
   >
     {{ confirmText() }}
   </button>

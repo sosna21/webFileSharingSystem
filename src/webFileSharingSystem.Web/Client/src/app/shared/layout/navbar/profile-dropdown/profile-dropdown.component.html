@@ -7,6 +7,7 @@
     ngbDropdownToggle
     class="d-block dropdown-toggle text-white"
     style="cursor: pointer"
+    data-testid="profile-dropdown-toggle"
   >
     <img
       [src]="userPhotoUrl() ?? 'user.png'"
@@ -44,6 +45,7 @@
         class="dropdown-item user-select-none"
         (click)="logout()"
         draggable="false"
+        data-testid="profile-signout"
       >
         <i class="bi bi-power"></i>
         Sign out

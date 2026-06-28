@@ -34,6 +34,7 @@ namespace webFileSharingSystem.Web
             services.AddSingleton<ICurrentUserService, CurrentUserService>();
 
             services.AddControllers();
+            services.AddHealthChecks();
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend",
@@ -87,7 +88,10 @@ namespace webFileSharingSystem.Web
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "webFileSharingSystem.Api v1"));
             }
 
-            app.UseHttpsRedirection();
+            if (!_config.GetValue<bool>("DisableHttpsRedirection"))
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseRouting();
 
@@ -97,7 +101,11 @@ namespace webFileSharingSystem.Web
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapHealthChecks("/health");
+            });
 
             app.UseStaticFiles();
         }

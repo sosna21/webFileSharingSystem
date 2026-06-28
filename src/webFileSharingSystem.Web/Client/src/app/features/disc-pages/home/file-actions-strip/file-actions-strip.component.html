@@ -1,6 +1,7 @@
 <div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
   <i
     class="bi bi-folder-plus action-icon action-warning"
+    data-testid="directory-create-trigger"
     [class.disabled]="!canCreateDirectory()"
     (click)="initDirCreation()"
     ngbTooltip="Create new folder"
@@ -12,6 +13,7 @@
         appSelectFilename
         type="text"
         class="form-control"
+        data-testid="directory-create-input"
         placeholder="New folder"
         required
         [(ngModel)]="newFolderName"
@@ -31,6 +33,7 @@
 <div class="align-self-center d-flex gap-4 h-100 align-items-end">
   <i
     class="bi bi-scissors action-icon action-primary disabled"
+    data-testid="cut-files-trigger"
     [class.disabled]="!canFileAction()"
     ngbTooltip="Cut"
     [openDelay]="300"
@@ -38,6 +41,7 @@
   ></i>
   <i
     class="bi bi-copy action-icon action-primary disabled"
+    data-testid="copy-files-trigger"
     [class.disabled]="!canCopy()"
     ngbTooltip="Copy"
     [openDelay]="300"
@@ -45,6 +49,7 @@
   ></i>
   <i
     class="bi bi-clipboard action-icon action-primary disabled"
+    data-testid="paste-files-trigger"
     [class.disabled]="!canPaste()"
     ngbTooltip="Paste"
     [openDelay]="300"
@@ -53,6 +58,7 @@
   <div class="vr h-75 mt-auto"></div>
   <i
     class="bi bi-download action-icon action-primary disabled"
+    data-testid="download-files-trigger"
     [class.disabled]="!canFileAction()"
     ngbTooltip="Download"
     [openDelay]="300"
@@ -60,6 +66,7 @@
   ></i>
   <i
     class="bi bi-pencil action-icon action-primary disabled"
+    data-testid="rename-files-trigger"
     [class.disabled]="!canRename()"
     ngbTooltip="Rename"
     [openDelay]="300"
@@ -69,6 +76,7 @@
   @if (!viewingSharedFiles()) {
     <i
       class="bi bi-share action-icon action-primary disabled"
+      data-testid="share-files-trigger"
       [class.disabled]="!canFileAction()"
       ngbTooltip="Share"
       [openDelay]="300"
@@ -78,6 +86,7 @@
 
   <i
     class="bi bi-trash action-icon action-danger disabled"
+    data-testid="delete-files-trigger"
     [class.disabled]="!canDelete()"
     ngbTooltip="Delete"
     [openDelay]="300"

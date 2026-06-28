@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { FileUploadService } from './file-upload.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class FileUploadDragDropService {
@@ -29,9 +30,9 @@ export class FileUploadDragDropService {
       event.dataTransfer.items,
     );
 
-    this.uploadService
-      .uploadFiles(directories, files, destinationFolderId)
-      .subscribe();
+    await firstValueFrom(
+      this.uploadService.uploadFiles(directories, files, destinationFolderId),
+    );
   }
 
   async getAllFiles(items: DataTransferItemList): Promise<{

@@ -61,7 +61,7 @@ namespace webFileSharingSystem.Web.Controllers
 
             var result = await _uploadService.UploadFileChunk(userId!.Value, fileId, chunkIndex, chunk.OpenReadStream(),
                 cancellationToken);
-            
+
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok();
@@ -171,6 +171,7 @@ namespace webFileSharingSystem.Web.Controllers
             return new FileResponse
             {
                 Id = file.Id,
+                ParentId = file.ParentId,
                 FileName = file.FileName,
                 MimeType = file.MimeType,
                 Size = file.Size,
@@ -220,7 +221,7 @@ namespace webFileSharingSystem.Web.Controllers
             return share.RevokedAt is null &&
                    (share.ValidUntil is null || share.ValidUntil.Value > DateTime.UtcNow);
         }
-        
+
         private static double? CalculateUploadProgress(PartialFileInfo? partialFileInfo)
         {
             if (partialFileInfo is null) return null;
@@ -228,7 +229,7 @@ namespace webFileSharingSystem.Web.Controllers
                 .GetAllIndexesWithValue(false, maxIndex: partialFileInfo.NumberOfChunks - 1).Length;
             return (double)uploadedChunks / partialFileInfo.NumberOfChunks;
         }
-        
+
         private string? GetPhotoUrl(Guid? photoAccessId)
         {
             if (!photoAccessId.HasValue)

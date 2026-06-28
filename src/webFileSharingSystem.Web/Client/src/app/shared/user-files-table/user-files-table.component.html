@@ -33,12 +33,14 @@
 
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
+  data-testid="user-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
   (mouseup)="resetFileSelection($event)"
   (contextmenu)="tableContextMenuClick($event)"
 >
   <div
     #scrollContainer
+    data-testid="user-files-drop-area"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
@@ -275,6 +277,11 @@
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
+        [attr.data-testid]="
+          (file.fileStatus === FileStatus.Completed
+            ? 'file-row-'
+            : 'upload-row-') + file.fileName
+        "
         (contextmenu)="
           isSelected(file.id)
             ? contextMenuClick($event, file)
@@ -302,6 +309,10 @@
         (mouseenter)="onRowMouseEnter(file)"
         (mouseup)="onRowMouseUp(file, $event)"
         [class.opacity-50]="
+          filesMarkedForAction()?.type === 1 &&
+          filesMarkedForAction()?.filesIds!.has(file.id)
+        "
+        [attr.data-cut]="
           filesMarkedForAction()?.type === 1 &&
           filesMarkedForAction()?.filesIds!.has(file.id)
         "

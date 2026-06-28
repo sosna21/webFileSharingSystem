@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -12,6 +13,7 @@ namespace webFileSharingSystem.Core.Services
 {
     public class ShareService : IShareService
     {
+        private static readonly ConcurrentDictionary<(int FileId, int SharedWithUserId), SemaphoreSlim> ShareLocks = new();
         private readonly IUnitOfWork _unitOfWork;
 
         public ShareService(IUnitOfWork unitOfWork)
@@ -22,7 +24,8 @@ namespace webFileSharingSystem.Core.Services
         public async Task<(Result<OperationResult>, Share?)> AddShareAsync(int fileId, string userNameToShareWith, ShareAccessMode accessMode,
             DateTime? validUntil, int currentUserId, CancellationToken cancellationToken = default)
         {
-            if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40)) return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
+            if (validUntil.HasValue && validUntil.Value <= DateTime.UtcNow.AddSeconds(40))
+                return (Result.Failure(OperationResult.BadRequest, "Valid until date must be in the future"), null);
 
             var applicationUser = (await _unitOfWork.Repository<ApplicationUser>()
                     .FindAsync(new FindUserByUserNameSpecs(userNameToShareWith), cancellationToken))
@@ -35,36 +38,47 @@ namespace webFileSharingSystem.Core.Services
             var fileToShare = await _unitOfWork.Repository<File>().FindByIdAsync(fileId, cancellationToken);
             if (fileToShare is null) return (Result.Failure(OperationResult.BadRequest, "File doesn't exist or you do not have access"), null);
 
-            var existingNonRevokedShare = (await _unitOfWork.Repository<Share>()
-                    .FindAsync(new FindNonRevokedShareBySharedWithUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
-                .SingleOrDefault();
-
-            if (existingNonRevokedShare is not null)
+            var shareKey = (fileId, applicationUser.Id);
+            var shareLock = ShareLocks.GetOrAdd(shareKey, _ => new SemaphoreSlim(1, 1));
+            await shareLock.WaitAsync(cancellationToken);
+            try
             {
-                var isActive = existingNonRevokedShare.ValidUntil is null || existingNonRevokedShare.ValidUntil.Value > DateTime.UtcNow;
-                if (isActive)
-                    return (Result.Failure(OperationResult.BadRequest, "This file is already shared with that user"), null);
+                var existingNonRevokedShare = (await _unitOfWork.Repository<Share>()
+                        .FindAsync(new FindNonRevokedShareBySharedWithUserIdAndFileIdSpecs(applicationUser.Id, fileId), cancellationToken))
+                    .SingleOrDefault();
 
-                existingNonRevokedShare.RevokedAt = DateTime.UtcNow;
-                _unitOfWork.Repository<Share>().Update(existingNonRevokedShare);
+                if (existingNonRevokedShare is not null)
+                {
+                    var isActive = existingNonRevokedShare.ValidUntil is null || existingNonRevokedShare.ValidUntil.Value > DateTime.UtcNow;
+                    if (isActive)
+                        return (Result.Failure(OperationResult.BadRequest, "This file is already shared with that user"), null);
 
-                if (await _unitOfWork.Complete(cancellationToken) <= 0)
-                    return (Result.Failure(OperationResult.Exception, "Problem with replacing expired share"), null);
+                    existingNonRevokedShare.RevokedAt = DateTime.UtcNow;
+                    _unitOfWork.Repository<Share>().Update(existingNonRevokedShare);
+
+                    if (await _unitOfWork.Complete(cancellationToken) <= 0)
+                        return (Result.Failure(OperationResult.Exception, "Problem with replacing expired share"), null);
+                }
+
+                var newShare = new Share
+                {
+                    SharedByUserId = currentUserId,
+                    SharedWithUserId = applicationUser.Id,
+                    FileId = fileId,
+                    AccessMode = accessMode,
+                    ValidUntil = validUntil
+                };
+                _unitOfWork.Repository<Share>().Add(newShare);
+
+                return await _unitOfWork.Complete(cancellationToken) > 0
+                    ? (Result.Success<OperationResult>(), newShare)
+                    : (Result.Failure(OperationResult.Exception, "Problem with adding share"), null);
             }
-
-            var newShare = new Share
+            finally
             {
-                SharedByUserId = currentUserId,
-                SharedWithUserId = applicationUser.Id,
-                FileId = fileId,
-                AccessMode = accessMode,
-                ValidUntil = validUntil
-            };
-            _unitOfWork.Repository<Share>().Add(newShare);
-
-            return await _unitOfWork.Complete(cancellationToken) > 0
-                ? (Result.Success<OperationResult>(), newShare)
-                : (Result.Failure(OperationResult.Exception, "Problem with adding share"), null);
+                shareLock.Release();
+                ShareLocks.TryRemove(shareKey, out _);
+            }
         }
 
         public async Task<(Result<OperationResult>, Share? updatedShare)> UpdateShareAsync(int shareId,
@@ -77,7 +91,7 @@ namespace webFileSharingSystem.Core.Services
             if (share is null || share.SharedByUserId != currentUserId)
                 return (Result.Failure(OperationResult.BadRequest, "Share doesn't exist, already expired or you do not have access"),
                     null);
-            
+
             share.AccessMode = accessMode;
             share.ValidUntil = validUntil;
 

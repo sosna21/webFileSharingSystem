@@ -11,8 +11,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="FluentAssertions" Version="6.12.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-        <PackageReference Include="xunit" Version="2.9.3" />
+      <PackageReference Include="Respawn" Version="6.1.0" />
+      <PackageReference Include="Testcontainers.MsSql" Version="3.9.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -21,6 +25,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="xunit.v3" Version="3.2.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -32,6 +37,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\webFileSharingSystem.Core\webFileSharingSystem.Core.csproj" />
       <ProjectReference Include="..\..\src\webFileSharingSystem.Infrastructure\webFileSharingSystem.Infrastructure.csproj" />
+      <ProjectReference Include="..\..\src\webFileSharingSystem.Web\webFileSharingSystem.Web.csproj" />
     </ItemGroup>
 
 </Project>

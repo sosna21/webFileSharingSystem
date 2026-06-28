@@ -10,6 +10,7 @@
     class="d-none"
     multiple
     (change)="uploadSelectedFiles($event)"
+    data-testid="upload-files-input"
   />
   Upload files
 </label>
@@ -25,6 +26,7 @@
     class="d-none"
     webkitdirectory
     (change)="uploadSelectedFolder($event)"
+    data-testid="upload-folder-input"
   />
   Upload folder
 </label>
