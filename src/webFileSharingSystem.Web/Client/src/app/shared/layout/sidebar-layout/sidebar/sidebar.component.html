@@ -1,28 +1,38 @@
 <nav
+  aria-label="sidebar"
   class="d-flex flex-column px-3 py-5 bg-body-tertiary rounded-end-4 border-end border-2 border-secondary-subtle"
 >
   <ul class="nav nav-pills flex-column" (click)="isCollapsed.set(true)">
-    <li app-nav-link link="home">
+    <li app-nav-link link="home" data-testid="sidebar-link-home">
       <i class="bi bi-house"></i>
       My files
     </li>
-    <li app-nav-link link="shared-with-me">
+    <li
+      app-nav-link
+      link="shared-with-me"
+      data-testid="sidebar-link-shared-with-me"
+    >
       <i class="bi bi-people"></i>
       Shared with me
     </li>
-    <li app-nav-link link="shared-by-me">
+    <li
+      app-nav-link
+      link="shared-by-me"
+      data-testid="sidebar-link-shared-by-me"
+    >
       <i class="bi bi-share"></i>
       Shared by me
     </li>
-    <li app-nav-link link="favourite">
+    <li app-nav-link link="favourite" data-testid="sidebar-link-favourite">
       <i class="bi bi-heart"></i>
       Favourite
     </li>
-    <li app-nav-link link="recent">
+    <li app-nav-link link="recent" data-testid="sidebar-link-recent">
       <i class="bi bi-hourglass"></i>
       Recent
     </li>
   </ul>
+
   <app-space-usage-bar class="mt-2" />
 
   <div class="mt-auto mb-5">

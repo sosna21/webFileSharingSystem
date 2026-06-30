@@ -3,7 +3,7 @@ import { UploadRow } from './upload-row.part';
 
 const selectedRowClass = 'selected-row';
 
-export class UserFilesTable {
+export class SharedFilesTable {
   readonly page: Page;
   readonly table: Locator;
   readonly uploadOverlay: Locator;
@@ -11,9 +11,13 @@ export class UserFilesTable {
 
   constructor(page: Page) {
     this.page = page;
-    this.table = page.getByTestId('user-files-table');
+    this.table = page.getByTestId('shared-files-table');
     this.uploadOverlay = page.getByTestId('upload-overlay');
-    this.dropArea = page.getByTestId('files-drop-area');
+    this.dropArea = page.getByTestId('shared-files-drop-area');
+  }
+
+  async expectVisible() {
+    await expect(this.table).toBeVisible();
   }
 
   fileRowByName(name: string): Locator {

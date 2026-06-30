@@ -15,19 +15,28 @@ export class ToastNotification {
     await this.expectSuccess('Upload complete');
   }
 
+  async expectShareSuccess() {
+    await this.expectSuccess('File Share');
+  }
+
+  async expectShareCancelled() {
+    await this.expectSuccess('Share cancellation');
+  }
+
+  private async expectToast(toasts: Locator, message: string) {
+    await expect(toasts.filter({ hasText: message }).first()).toBeVisible();
+  }
+
   async expectSuccess(message: string) {
-    await expect(this.successToast).toBeVisible();
-    await expect(this.successToast).toContainText(message);
+    await this.expectToast(this.successToast, message);
   }
 
   async expectError(message: string) {
-    await expect(this.errorToast).toBeVisible();
-    await expect(this.errorToast).toContainText(message);
+    await this.expectToast(this.errorToast, message);
   }
 
   async expectInfo(message: string) {
-    await expect(this.infoToast).toBeVisible();
-    await expect(this.infoToast).toContainText(message);
+    await this.expectToast(this.infoToast, message);
   }
 
   async expectSuccessGone() {

@@ -13,6 +13,7 @@ import { FileShareService } from '../../../core/services/file-share.service';
   imports: [FormsModule],
   templateUrl: './file-share-modal.component.html',
   styleUrl: './file-share-modal.component.scss',
+  host: { 'data-testid': 'file-share-modal' },
 })
 export class FileShareModalComponent {
   readonly activeModal = inject(NgbActiveModal);
@@ -26,18 +27,18 @@ export class FileShareModalComponent {
   readonly cancelText = model('Cancel');
   readonly shareWith = signal<string>('');
   readonly sharingMultipleFiles = computed(
-    () => this.filesToShare().length > 1
+    () => this.filesToShare().length > 1,
   );
   readonly selectedCustomDuration = signal<Date | null>(null);
   readonly selectedCustomDurationString = computed(() =>
     this.selectedCustomDuration()
       ? this.selectedCustomDuration()!.toLocaleString()
-      : ''
+      : '',
   );
 
   // Permission options
   readonly selectedPermission = signal<ShareAccessMode>(
-    ShareAccessMode.ReadOnly
+    ShareAccessMode.ReadOnly,
   );
 
   // Share duration
@@ -93,7 +94,7 @@ export class FileShareModalComponent {
   async generateShareLink() {
     await this.shareService.generateShareLinkWithFeedback(
       this.filesToShare().map((f) => f.id),
-      false
+      false,
     );
   }
 }

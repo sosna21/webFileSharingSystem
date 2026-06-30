@@ -29,6 +29,7 @@ interface ShareRowViewModel {
   imports: [ClicableIconDirective, NgbTooltipModule],
   templateUrl: './file-shares-management-modal.component.html',
   styleUrl: './file-shares-management-modal.component.scss',
+  host: { 'data-testid': 'file-shares-management-modal' },
 })
 export class FileSharesManagementModalComponent {
   readonly activeModal = inject(NgbActiveModal);

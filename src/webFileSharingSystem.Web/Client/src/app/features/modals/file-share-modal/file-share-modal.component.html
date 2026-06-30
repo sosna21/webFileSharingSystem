@@ -1,5 +1,10 @@
-<div class="modal-header bg-primary-subtle d-flex">
-  <h4 class="modal-title">{{ title() }}</h4>
+<div
+  class="modal-header bg-primary-subtle d-flex"
+  data-testid="file-share-modal-header"
+>
+  <h4 class="modal-title" data-testid="file-share-modal-title">
+    {{ title() }}
+  </h4>
 
   <button
     type="button"
@@ -17,6 +22,7 @@
         id="shareWith"
         type="text"
         class="form-control"
+        data-testid="file-share-modal-share-with"
         placeholder="Enter username or email to share the file with"
         [(ngModel)]="shareWith"
       />
@@ -39,6 +45,7 @@
           type="radio"
           name="permission"
           id="readOnly"
+          data-testid="file-share-modal-permission-read-only"
           [checked]="selectedPermission() === ShareAccessMode.ReadOnly"
           (change)="setPermission(ShareAccessMode.ReadOnly)"
         />
@@ -53,6 +60,7 @@
           type="radio"
           name="permission"
           id="readWrite"
+          data-testid="file-share-modal-permission-read-write"
           [checked]="selectedPermission() === ShareAccessMode.ReadWrite"
           (change)="setPermission(ShareAccessMode.ReadWrite)"
         />
@@ -69,6 +77,7 @@
           type="radio"
           name="permission"
           id="fullControl"
+          data-testid="file-share-modal-permission-full-control"
           [checked]="selectedPermission() === ShareAccessMode.FullAccess"
           (change)="setPermission(ShareAccessMode.FullAccess)"
         />
@@ -88,6 +97,7 @@
       <select
         id="shareDuration"
         class="form-select"
+        data-testid="file-share-modal-share-duration"
         [(ngModel)]="shareDuration"
         (change)="onDurationChange($event)"
       >
@@ -107,11 +117,12 @@
   </div>
 </div>
 
-<div class="modal-footer">
+<div class="modal-footer" data-testid="file-share-modal-footer">
   <!-- Style link generation -->
   <button
     type="button"
     class="link-cta me-auto"
+    data-testid="file-share-modal-generate-link"
     (click)="generateShareLink()"
     aria-label="Generate share link"
   >
@@ -125,6 +136,7 @@
   <button
     type="button"
     class="btn btn-outline-secondary"
+    data-testid="file-share-modal-cancel"
     (click)="activeModal.dismiss()"
   >
     {{ cancelText() }}
@@ -132,6 +144,7 @@
   <button
     type="button"
     class="btn btn-success w-25"
+    data-testid="file-share-modal-confirm"
     ngbAutofocus
     [disabled]="!shareWith()"
     (click)="confirm()"
