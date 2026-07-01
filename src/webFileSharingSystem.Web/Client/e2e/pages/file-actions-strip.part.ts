@@ -63,6 +63,66 @@ export class FileActionsStrip {
   }
 
   // Availability assertions
+  async expectPermissions(options: {
+    rename?: boolean;
+    move?: boolean;
+    copy?: boolean;
+    paste?: boolean;
+    download?: boolean;
+    share?: boolean;
+    delete?: boolean;
+  }) {
+    if (options.rename !== undefined) {
+      if (options.rename) {
+        await this.expectRenameEnabled();
+      } else {
+        await this.expectRenameDisabled();
+      }
+    }
+    if (options.move !== undefined) {
+      if (options.move) {
+        await this.expectMoveEnabled();
+      } else {
+        await this.expectMoveDisabled();
+      }
+    }
+    if (options.copy !== undefined) {
+      if (options.copy) {
+        await this.expectCopyEnabled();
+      } else {
+        await this.expectCopyDisabled();
+      }
+    }
+    if (options.paste !== undefined) {
+      if (options.paste) {
+        await this.expectPasteEnabled();
+      } else {
+        await this.expectPasteDisabled();
+      }
+    }
+    if (options.download !== undefined) {
+      if (options.download) {
+        await this.expectDownloadEnabled();
+      } else {
+        await this.expectDownloadDisabled();
+      }
+    }
+    if (options.share !== undefined) {
+      if (options.share) {
+        await this.expectShareEnabled();
+      } else {
+        await this.expectShareDisabled();
+      }
+    }
+    if (options.delete !== undefined) {
+      if (options.delete) {
+        await this.expectDeleteEnabled();
+      } else {
+        await this.expectDeleteDisabled();
+      }
+    }
+  }
+
   async expectRenameEnabled() {
     await this.expectTriggerEnabled(this.renameFileTrigger);
   }
@@ -87,10 +147,18 @@ export class FileActionsStrip {
     await this.expectTriggerEnabled(this.pasteFilesTrigger);
   }
 
+  async expectDownloadEnabled() {
+    await this.expectTriggerEnabled(this.downloadFilesTrigger);
+  }
+
+  async expectShareEnabled() {
+    await this.expectTriggerEnabled(this.shareFilesTrigger);
+  }
+
   async expectPasteDisabled() {
     await this.expectTriggerDisabled(this.pasteFilesTrigger);
   }
-  
+
   async expectCopyDisabled() {
     await this.expectTriggerDisabled(this.copyFilesTrigger);
   }
@@ -101,6 +169,14 @@ export class FileActionsStrip {
 
   async expectDeleteDisabled() {
     await this.expectTriggerDisabled(this.deleteFilesTrigger);
+  }
+
+  async expectDownloadDisabled() {
+    await this.expectTriggerDisabled(this.downloadFilesTrigger);
+  }
+
+  async expectShareDisabled() {
+    await this.expectTriggerDisabled(this.shareFilesTrigger);
   }
 
   private async expectTriggerEnabled(trigger: Locator) {
