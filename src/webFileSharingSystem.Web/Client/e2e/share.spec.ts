@@ -1,11 +1,12 @@
 import { test, expect } from './fixtures/shared-users-fixture';
-import { AuthenticatedUser } from './helpers/authenticated-user';
 import { createDirectoryName, createFileName } from './helpers/file-names';
 import { createFolderStructure, createTempFile } from './helpers/test-files';
 import { Breadcrumb } from './pages/breadcrumb.part';
 import { ConfirmActionModal } from './pages/confirm-action-modal.part';
 import { FileActionsStrip } from './pages/file-actions-strip.part';
 import { FileShareModal, ShareAccessMode } from './pages/file-share-modal.part';
+import { FileShareUpdateModal } from './pages/file-share-update-modal.part';
+import { FileSharesManagementModal } from './pages/file-shares-management-modal.part';
 import { RenameInlineEditor } from './pages/rename-inline-editior.part';
 import { SharedFilesContextMenu } from './pages/shared-files-context-menu.part';
 import { SharedFilesTable } from './pages/shared-files-table.part';
@@ -260,5 +261,114 @@ test.describe('Share Permissions', () => {
     // Owner should see the deletion performed by the recipient
     await owner.page.reload();
     await expect(ownerTable.fileRowByName(fileName)).not.toBeVisible();
+  });
+});
+
+test.describe('Share Management', () => {
+  test('Update share', async ({ owner, recipient }, testInfo) => {
+    // Owner: create ReadOnly share
+    const ownerTable = new UserFilesTable(owner.page);
+    const uploadButtons = new UploadButtons(owner.page);
+    const actionStrip = new FileActionsStrip(owner.page);
+    const notifications = new ToastNotification(owner.page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+
+    await uploadButtons.uploadFiles(filePath);
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+
+    const shareModal = new FileShareModal(owner.page);
+    await shareModal.expectVisible();
+    await shareModal.fillShareWith(recipient.user.email);
+    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
+    await shareModal.confirm();
+    await shareModal.expectClosed();
+    await notifications.expectShareSuccess();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+
+    // Recipient: verify initial ReadOnly permissions
+    const sidebar = new Sidebar(recipient.page);
+    await sidebar.navigateTo('shared-with-me');
+    const recipientTable = new SharedFilesTable(recipient.page);
+    await recipientTable.expectVisible();
+    await expect(recipientTable.fileRowByName(fileName)).toBeVisible();
+
+    const recipientActionStrip = new FileActionsStrip(recipient.page);
+    await recipientTable.selectSingleRow(fileName);
+    await recipientActionStrip.expectPermissions(readOnlyPermissions);
+
+    // Owner: update share to ReadWrite
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+    const shareManagementModal = new FileSharesManagementModal(owner.page);
+    await shareManagementModal.expectVisible();
+    await shareManagementModal.waitForLoaded();
+    await shareManagementModal.clickEditByUserName(recipient.user.userName);
+    const shareUpdateModal = new FileShareUpdateModal(owner.page);
+    await shareUpdateModal.expectVisible();
+    await shareUpdateModal.selectPermission(ShareAccessMode.ReadWrite);
+    await shareUpdateModal.confirm();
+    await shareUpdateModal.expectClosed();
+    await notifications.expectShareSuccess();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+
+    // Recipient: verify updated permissions
+    await recipient.page.reload();
+    await expect(recipientTable.fileRowByName(fileName)).toBeVisible();
+    await recipientTable.selectSingleRow(fileName);
+    await recipientActionStrip.expectPermissions(readWritePermissions);
+  });
+
+  test('Delete share', async ({ owner, recipient }, testInfo) => {
+    // Owner: create share
+    const ownerTable = new UserFilesTable(owner.page);
+    const uploadButtons = new UploadButtons(owner.page);
+    const actionStrip = new FileActionsStrip(owner.page);
+    const notifications = new ToastNotification(owner.page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+
+    await uploadButtons.uploadFiles(filePath);
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+
+    const shareModal = new FileShareModal(owner.page);
+    await shareModal.expectVisible();
+    await shareModal.fillShareWith(recipient.user.email);
+    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
+    await shareModal.confirm();
+    await shareModal.expectClosed();
+    await notifications.expectShareSuccess();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+
+    // Recipient: verify share exists
+    const sidebar = new Sidebar(recipient.page);
+    await sidebar.navigateTo('shared-with-me');
+    const recipientTable = new SharedFilesTable(recipient.page);
+    await recipientTable.expectVisible();
+    await expect(recipientTable.fileRowByName(fileName)).toBeVisible();
+
+    // Owner: Delete share
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+    const shareManagementModal = new FileSharesManagementModal(owner.page);
+    await shareManagementModal.expectVisible();
+    await shareManagementModal.waitForLoaded();
+    await shareManagementModal.clickCancelByUserName(recipient.user.userName);
+    const confirmDialog = new ConfirmActionModal(owner.page);
+    await confirmDialog.expectVisible();
+    await confirmDialog.confirm();
+    await confirmDialog.expectClosed();
+    await notifications.expectShareCancelled();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+
+    // Recipient: verify share is removed
+    await recipient.page.reload();
+    await expect(recipientTable.fileRowByName(fileName)).not.toBeVisible();
   });
 });
