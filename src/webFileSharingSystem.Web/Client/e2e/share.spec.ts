@@ -1,8 +1,11 @@
 import { test, expect } from './fixtures/shared-users-fixture';
+import { AuthenticatedUser } from './helpers/authenticated-user';
+import { dragDropEntries } from './helpers/drag-drop';
 import { createDirectoryName, createFileName } from './helpers/file-names';
 import { createFolderStructure, createTempFile } from './helpers/test-files';
 import { Breadcrumb } from './pages/breadcrumb.part';
 import { ConfirmActionModal } from './pages/confirm-action-modal.part';
+import { CopyToClipboardModal } from './pages/copy-to-clipboard-modal.part';
 import { FileActionsStrip } from './pages/file-actions-strip.part';
 import { FileShareModal, ShareAccessMode } from './pages/file-share-modal.part';
 import { FileShareUpdateModal } from './pages/file-share-update-modal.part';
@@ -13,6 +16,7 @@ import { SharedFilesTable } from './pages/shared-files-table.part';
 import { Sidebar } from './pages/sidebar.part';
 import { ToastNotification } from './pages/toast-notifications.part';
 import { UploadButtons } from './pages/upload-buttons.part';
+import { UserFilesContextMenu } from './pages/user-files-context-menu.part';
 import { UserFilesTable } from './pages/user-files-table.part';
 
 const readOnlyPermissions = {
@@ -38,6 +42,15 @@ const fullPermissions = {
   delete: true,
   download: true,
 };
+
+async function expectFileSharedWith(user: AuthenticatedUser, fileName: string) {
+  const sidebar = new Sidebar(user.page);
+  await sidebar.navigateTo('shared-with-me');
+
+  const table = new SharedFilesTable(user.page);
+  await table.expectVisible();
+  await expect(table.fileRowByName(fileName)).toBeVisible();
+}
 
 test.describe('Share Creation', () => {
   test('Share file with ReadOnly access', async ({
@@ -370,5 +383,112 @@ test.describe('Share Management', () => {
     // Recipient: verify share is removed
     await recipient.page.reload();
     await expect(recipientTable.fileRowByName(fileName)).not.toBeVisible();
+  });
+});
+
+const shareLinkRegex =
+  /^https?:\/\/.+\/api\/Download\/file\?token=.*&bewit=.*$/;
+test.describe('Share links', () => {
+  test('Generate share link', async ({ owner }, testInfo) => {
+    const ownerTable = new UserFilesTable(owner.page);
+    const uploadButtons = new UploadButtons(owner.page);
+    const actionStrip = new FileActionsStrip(owner.page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+
+    await uploadButtons.uploadFiles(filePath);
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+
+    const shareModal = new FileShareModal(owner.page);
+    await shareModal.expectVisible();
+    await shareModal.generateLink();
+    const shareLinkModal = new CopyToClipboardModal(owner.page);
+    await shareLinkModal.expectVisible();
+    await shareLinkModal.expectTitle('Share Link');
+    const shareLink = await shareLinkModal.getShareLinkValue();
+
+    await expect(shareLink).toMatch(shareLinkRegex);
+  });
+
+  test('Download through share link', async ({
+    owner,
+    recipient,
+  }, testInfo) => {
+    // Owner: generate share link
+    const ownerTable = new UserFilesTable(owner.page);
+    const uploadButtons = new UploadButtons(owner.page);
+    const actionStrip = new FileActionsStrip(owner.page);
+
+    const fileName = createFileName(testInfo, 'file');
+    const fileContent = 'sample-download-content-' + crypto.randomUUID();
+    const filePath = await createTempFile(testInfo, fileName, fileContent);
+
+    await uploadButtons.uploadFiles(filePath);
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+
+    const shareModal = new FileShareModal(owner.page);
+    await shareModal.expectVisible();
+    await shareModal.generateLink();
+    const shareLinkModal = new CopyToClipboardModal(owner.page);
+    await shareLinkModal.expectVisible();
+    await shareLinkModal.expectTitle('Share Link');
+    const shareLink = await shareLinkModal.getShareLinkValue();
+
+    // Recipient: download file through share link
+    const response = await recipient.page.request.get(shareLink);
+    expect(response.ok()).toBeTruthy();
+    const buf = await response.body();
+    expect(buf.toString()).toContain(fileContent);
+  });
+
+  test('Download multiple files through share link', async ({
+    owner,
+    recipient,
+  }, testInfo) => {
+    // Owner
+    const ownerTable = new UserFilesTable(owner.page);
+    const notifications = new ToastNotification(owner.page);
+
+    const fileName = createFileName(testInfo, 'drag-file');
+    const folderName = createDirectoryName(testInfo, 'drag-folder');
+    const nestedFileName = 'inside.txt';
+    const rootContent = `root-${crypto.randomUUID()}`;
+    const nestedContent = `nested-${crypto.randomUUID()}`;
+
+    await dragDropEntries(owner.page, ownerTable.dropArea, [
+      { path: fileName, content: rootContent },
+      { path: `${folderName}/${nestedFileName}`, content: nestedContent },
+    ]);
+
+    await notifications.expectUploadCompleted();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await expect(ownerTable.fileRowByName(folderName)).toBeVisible();
+
+    await ownerTable.selectAllRows();
+    await ownerTable.openContextMenuForSelectedRows();
+    const contextMenu = new UserFilesContextMenu(owner.page);
+    await contextMenu.waitForVisible();
+    await contextMenu.generateShareLink();
+    const shareLinkModal = new CopyToClipboardModal(owner.page);
+    await shareLinkModal.expectVisible();
+    await shareLinkModal.expectTitle('Share Link');
+    const shareLink = await shareLinkModal.getShareLinkValue();
+
+    // Recipient: download file through share link
+    const response = await recipient.page.request.get(shareLink);
+    expect(response.ok()).toBeTruthy();
+    const buf = await response.body();
+
+    expect(buf.length).toBeGreaterThan(0);
+    expect(buf.includes(Buffer.from(fileName))).toBeTruthy();
+    expect(buf.includes(Buffer.from(folderName))).toBeTruthy();
+    expect(buf.includes(Buffer.from(nestedFileName))).toBeTruthy();
+    expect(buf.includes(Buffer.from(rootContent))).toBeTruthy();
+    expect(buf.includes(Buffer.from(nestedContent))).toBeTruthy();
   });
 });
