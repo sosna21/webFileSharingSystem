@@ -164,6 +164,90 @@ test.describe('Share Creation', () => {
     await sharedContextMenu.waitForVisible();
     await sharedContextMenu.expectPermissions(readOnlyPermissions);
   });
+
+  test('Share multiple files at once', async ({
+    owner,
+    recipient,
+  }, testInfo) => {
+    // Owner
+    const ownerTable = new UserFilesTable(owner.page);
+    const actionStrip = new FileActionsStrip(owner.page);
+    const notifications = new ToastNotification(owner.page);
+
+    const fileName = createFileName(testInfo, 'drag-file');
+    const folderName = createDirectoryName(testInfo, 'drag-folder');
+    const nestedFileName = 'inside.txt';
+
+    await dragDropEntries(owner.page, ownerTable.dropArea, [
+      { path: fileName, content: 'content' },
+      { path: `${folderName}/${nestedFileName}`, content: 'content' },
+    ]);
+
+    await notifications.expectUploadCompleted();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await expect(ownerTable.fileRowByName(folderName)).toBeVisible();
+
+    await ownerTable.selectAllRows();
+    await actionStrip.shareSelectedFiles();
+
+    const shareModal = new FileShareModal(owner.page);
+    await shareModal.expectVisible();
+    await shareModal.fillShareWith(recipient.user.email);
+    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
+    await shareModal.confirm();
+    await shareModal.expectClosed();
+    await notifications.expectShareSuccess();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+
+    // Recipient
+    const sidebar = new Sidebar(recipient.page);
+    await sidebar.navigateTo('shared-with-me');
+    const recipientTable = new SharedFilesTable(recipient.page);
+    await recipientTable.expectVisible();
+    await expect(recipientTable.fileRowByName(fileName)).toBeVisible();
+    await expect(recipientTable.fileRowByName(folderName)).toBeVisible();
+    await recipientTable.openFolder(folderName);
+    await expect(recipientTable.fileRowByName(nestedFileName)).toBeVisible();
+
+    const recipientActionStrip = new FileActionsStrip(recipient.page);
+    await recipientTable.selectSingleRow(nestedFileName);
+    await recipientActionStrip.expectPermissions(readOnlyPermissions);
+  });
+
+  test('Share file with multiple recipients', async ({
+    owner,
+    recipient,
+    createUser,
+  }, testInfo) => {
+    const recipient2 = await createUser();
+    // Owner
+    const ownerTable = new UserFilesTable(owner.page);
+    const uploadButtons = new UploadButtons(owner.page);
+    const actionStrip = new FileActionsStrip(owner.page);
+    const notifications = new ToastNotification(owner.page);
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+
+    await uploadButtons.uploadFiles(filePath);
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+    await ownerTable.selectSingleRow(fileName);
+    await actionStrip.shareSelectedFiles();
+
+    const shareModal = new FileShareModal(owner.page);
+    await shareModal.expectVisible();
+    const recipientEmails = [recipient.user, recipient2.user]
+      .map((r) => r.email)
+      .join(', ');
+    await shareModal.fillShareWith(recipientEmails);
+    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
+    await shareModal.confirm();
+    await shareModal.expectClosed();
+    await notifications.expectShareSuccess();
+    await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
+
+    await expectFileSharedWith(recipient, fileName);
+    await expectFileSharedWith(recipient2, fileName);
+  });
 });
 
 test.describe('Share Permissions', () => {
