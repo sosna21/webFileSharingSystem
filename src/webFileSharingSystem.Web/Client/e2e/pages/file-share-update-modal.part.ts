@@ -75,4 +75,10 @@ export class FileShareUpdateModal {
   async cancel() {
     await this.cancelButton.click();
   }
+
+  async updateShare(permission: ShareAccessMode) {
+    await this.selectPermission(permission);
+    await this.confirm();
+    await this.expectClosed();
+  }
 }

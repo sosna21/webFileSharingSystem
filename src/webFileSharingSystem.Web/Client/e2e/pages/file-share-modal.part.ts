@@ -82,4 +82,12 @@ export class FileShareModal {
   async cancel() {
     await this.cancelButton.click();
   }
+
+  async shareWith(users: string[], permission: ShareAccessMode) {
+    const formattedUsers = users.join(', ');
+    await this.fillShareWith(formattedUsers);
+    await this.selectPermission(permission);
+    await this.confirm();
+    await this.expectClosed();
+  }
 }

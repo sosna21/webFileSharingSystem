@@ -73,10 +73,10 @@ test.describe('Share Creation', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.ReadOnly,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -128,10 +128,10 @@ test.describe('Share Creation', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.ReadOnly,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(rootFolder)).toBeVisible();
 
@@ -192,10 +192,10 @@ test.describe('Share Creation', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.ReadOnly,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -235,13 +235,8 @@ test.describe('Share Creation', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    const recipientEmails = [recipient.user, recipient2.user]
-      .map((r) => r.email)
-      .join(', ');
-    await shareModal.fillShareWith(recipientEmails);
-    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    const recipientEmails = [recipient.user.email, recipient2.user.email];
+    await shareModal.shareWith(recipientEmails, ShareAccessMode.ReadOnly);
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -271,10 +266,10 @@ test.describe('Share Permissions', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.ReadWrite);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.ReadWrite,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -326,10 +321,10 @@ test.describe('Share Permissions', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.FullAccess);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.FullAccess,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -379,10 +374,10 @@ test.describe('Share Management', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.ReadOnly,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -406,9 +401,7 @@ test.describe('Share Management', () => {
     await shareManagementModal.clickEditByUserName(recipient.user.userName);
     const shareUpdateModal = new FileShareUpdateModal(owner.page);
     await shareUpdateModal.expectVisible();
-    await shareUpdateModal.selectPermission(ShareAccessMode.ReadWrite);
-    await shareUpdateModal.confirm();
-    await shareUpdateModal.expectClosed();
+    await shareUpdateModal.updateShare(ShareAccessMode.ReadWrite);
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
@@ -436,10 +429,10 @@ test.describe('Share Management', () => {
 
     const shareModal = new FileShareModal(owner.page);
     await shareModal.expectVisible();
-    await shareModal.fillShareWith(recipient.user.email);
-    await shareModal.selectPermission(ShareAccessMode.ReadOnly);
-    await shareModal.confirm();
-    await shareModal.expectClosed();
+    await shareModal.shareWith(
+      [recipient.user.email],
+      ShareAccessMode.ReadOnly,
+    );
     await notifications.expectShareSuccess();
     await expect(ownerTable.fileRowByName(fileName)).toBeVisible();
 
