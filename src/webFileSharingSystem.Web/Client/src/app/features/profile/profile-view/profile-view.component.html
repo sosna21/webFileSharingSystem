@@ -1,5 +1,9 @@
-<div class="d-flex flex-column flex-sm-row align-items-center gap-4 mb-4">
+<div
+  data-testid="profile-view-content"
+  class="d-flex flex-column flex-sm-row align-items-center gap-4 mb-4"
+>
   <img
+    data-testid="profile-view-avatar"
     [src]="displayedPhotoUrl() ?? 'user.png'"
     [alt]="'Profile photo of ' + (profile()?.userName ?? 'current user')"
     width="120"
@@ -8,12 +12,14 @@
   />
 
   <div class="text-center text-sm-start flex-grow-1">
-    <div class="fw-bold fs-5">
+    <div data-testid="profile-view-user-name" class="fw-bold fs-5">
       {{ profile()?.userName || "User" }}
     </div>
-    <div class="text-secondary mb-3">
+
+    <div data-testid="profile-view-email" class="text-secondary mb-3">
       {{ profile()?.emailAddress || "No email" }}
     </div>
+
     <app-storage-quota></app-storage-quota>
   </div>
 </div>

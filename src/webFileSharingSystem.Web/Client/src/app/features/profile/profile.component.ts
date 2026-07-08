@@ -30,6 +30,7 @@ import { ProfilePhotoDropzoneComponent } from './profile-photo-dropzone/profile-
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-testid': 'profile-component' },
 })
 export class ProfileComponent {
   private readonly maxPhotoSizeBytes = 5 * 1024 * 1024;

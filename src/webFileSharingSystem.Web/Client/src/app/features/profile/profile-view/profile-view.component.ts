@@ -8,6 +8,9 @@ import { AppUserResponse } from '../../../core/models/app-user-response.model';
   templateUrl: './profile-view.component.html',
   styleUrl: './profile-view.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    'data-testid': 'profile-view',
+  },
 })
 export class ProfileViewComponent {
   readonly profile = input<AppUserResponse | null>(null);
