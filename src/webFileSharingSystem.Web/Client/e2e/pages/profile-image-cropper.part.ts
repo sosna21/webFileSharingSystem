@@ -30,4 +30,8 @@ export class ProfileImageCropper {
   async cancel() {
     await this.cancelButton.click();
   }
+
+  async expectHidden() {
+    await expect(this.root).toBeHidden();
+  }
 }
