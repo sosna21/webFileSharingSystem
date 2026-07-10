@@ -6,3 +6,30 @@
 [data-bs-theme="dark"] .profile-avatar {
   border-color: var(--bs-tertiary-bg);
 }
+
+.profile-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+
+  .profile-avatar-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover .profile-avatar-remove,
+  &:focus-within .profile-avatar-remove {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (hover: none) {
+  .profile-avatar-remove {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

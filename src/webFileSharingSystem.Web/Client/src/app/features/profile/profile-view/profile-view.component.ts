@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+} from '@angular/core';
 import { StorageQuotaComponent } from '../../../shared/storage-quota/storage-quota.component';
 import { AppUserResponse } from '../../../core/models/app-user-response.model';
 
@@ -15,4 +20,5 @@ import { AppUserResponse } from '../../../core/models/app-user-response.model';
 export class ProfileViewComponent {
   readonly profile = input<AppUserResponse | null>(null);
   readonly displayedPhotoUrl = input<string | null>(null);
+  readonly deletePhoto = output();
 }

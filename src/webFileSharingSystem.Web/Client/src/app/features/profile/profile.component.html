@@ -23,6 +23,7 @@
             <app-profile-view
               [profile]="profile()"
               [displayedPhotoUrl]="loadedPhotoUrl()"
+              (deletePhoto)="deleteProfilePhoto()"
             />
 
             <hr class="my-4 text-secondary opacity-25" />

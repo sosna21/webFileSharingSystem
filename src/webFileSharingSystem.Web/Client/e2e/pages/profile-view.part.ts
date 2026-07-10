@@ -6,6 +6,7 @@ export class ProfileView {
   readonly avatar: Locator;
   readonly userName: Locator;
   readonly email: Locator;
+  readonly removePhotoButton: Locator;
 
   constructor(root: Locator) {
     this.root = root.getByTestId('profile-view');
@@ -13,6 +14,7 @@ export class ProfileView {
     this.avatar = this.root.getByTestId('profile-view-avatar');
     this.userName = this.root.getByTestId('profile-view-user-name');
     this.email = this.root.getByTestId('profile-view-email');
+    this.removePhotoButton = this.root.getByTestId('profile-view-remove-btn');
   }
 
   async expectVisible() {
@@ -37,5 +39,11 @@ export class ProfileView {
 
   async avatarSrc(): Promise<string> {
     return (await this.avatar.getAttribute('src')) ?? '';
+  }
+
+  async removeProfilePhoto() {
+    await this.avatar.hover();
+    await expect(this.removePhotoButton).toBeVisible();
+    await this.removePhotoButton.click();
   }
 }
