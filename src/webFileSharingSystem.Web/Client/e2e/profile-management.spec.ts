@@ -133,4 +133,35 @@ test.describe('Profile Photo Management', () => {
     await profile.dropzone.expectVisible();
     await profile.view.expectAvatarSrc(avatarBefore);
   });
+
+  test('Remove profile photo', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const profile = new ProfilePage(page);
+    const notifications = new ToastNotification(page);
+
+    await profile.goto();
+    await profile.expectVisible();
+    await profile.view.expectVisible();
+
+    const avatarBefore = await profile.view.avatarSrc();
+    const imagePath = await createTempImage(
+      page.context().browser()!,
+      testInfo,
+      'profile-photo.png',
+    );
+    await profile.dropzone.upload(imagePath);
+
+    await profile.cropper.expectVisible();
+    // Cropper auto-crops by default.
+    await profile.cropper.save();
+
+    await profile.view.expectVisible();
+    await expect
+      .poll(async () => profile.view.avatarSrc())
+      .not.toBe(avatarBefore);
+    await profile.view.removeProfilePhoto();
+    await notifications.expectSuccess('Photo Deleted');
+    await profile.view.expectAvatarSrc(avatarBefore);
+  });
 });
