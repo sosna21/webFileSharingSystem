@@ -229,6 +229,38 @@ test.describe('File Management', () => {
     await expect(table.fileRowByName(fileName)).not.toBeVisible();
   });
 
+  test('Move file using drag and drop', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const actionsStrip = new FileActionsStrip(page);
+    const uploadButtons = new UploadButtons(page);
+
+    const directoryName = createDirectoryName(testInfo, 'dir');
+    await actionsStrip.createDirectory(directoryName);
+
+    await table.expectRowSelectedAndVisible(directoryName);
+
+    const fileName = createFileName(testInfo, 'file');
+    const filePath = await createTempFile(testInfo, fileName, 'content');
+    await uploadButtons.uploadFiles(filePath);
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+    await table.selectSingleRow(fileName);
+
+    await table.dragAndDropSelectedToRow(directoryName);
+    // Source no longer contains moved file
+    await expect(table.fileRowByName(fileName)).not.toBeVisible();
+
+    // Destination contains moved file
+    await table.openFolder(directoryName);
+
+    const breadcrumb = new Breadcrumb(page);
+    await breadcrumb.expectPath(['Home', directoryName]);
+
+    await expect(table.fileRowByName(fileName)).toBeVisible();
+  });
+
   test('Copy file', async ({ authenticatedPage: page }, testInfo) => {
     const table = new UserFilesTable(page);
     const actionsStrip = new FileActionsStrip(page);

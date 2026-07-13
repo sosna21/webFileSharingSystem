@@ -46,9 +46,7 @@ export class UserFilesTable {
 
   async openContextMenuForSelectedRows() {
     //find first row with selected class, it should have getByTestId starting with `file-row-` then first from that list with selected class
-    const row = this.table
-      .locator('[data-testid^="file-row-"].selected-row')
-      .first();
+    const row = this.getFirstSelectedRow();
     await row.click({ button: 'right' });
   }
 
@@ -87,5 +85,15 @@ export class UserFilesTable {
 
   async resetSelection() {
     await this.table.click();
+  }
+
+  async dragAndDropSelectedToRow(directoryName: string) {
+    const oneOfSelectedRows = this.getFirstSelectedRow();
+    const targetRow = this.fileRowByName(directoryName);
+    await oneOfSelectedRows.dragTo(targetRow);
+  }
+
+  private getFirstSelectedRow(): Locator {
+    return this.table.locator('[data-testid^="file-row-"].selected-row').first();
   }
 }
