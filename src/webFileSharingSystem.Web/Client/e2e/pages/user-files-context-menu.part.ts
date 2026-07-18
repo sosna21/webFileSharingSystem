@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 export class UserFilesContextMenu {
   readonly openDirectoryTrigger: Locator;
+  readonly openContainingFolderTrigger: Locator;
 
   readonly downloadTrigger: Locator;
   readonly renameTrigger: Locator;
@@ -21,7 +22,8 @@ export class UserFilesContextMenu {
   readonly manageFilesTrigger: Locator;
 
   constructor(page: Page) {
-    this.openDirectoryTrigger = page.getByTestId('context-menu-open-directory');
+    this.openDirectoryTrigger = page.getByTestId('context-menu-open-folder');
+    this.openContainingFolderTrigger = page.getByTestId('context-menu-open-directory');
 
     this.downloadTrigger = page.getByTestId('context-menu-download');
     this.renameTrigger = page.getByTestId('context-menu-rename');
@@ -77,6 +79,10 @@ export class UserFilesContextMenu {
 
   async openDirectory() {
     await this.openDirectoryTrigger.click();
+  }
+
+  async openContainingDirectory() {
+    await this.openContainingFolderTrigger.click();
   }
 
   async downloadSelection() {

@@ -84,7 +84,8 @@ export default defineConfig({
         ASPNETCORE_ENVIRONMENT: 'E2E',
         E2E_USE_TESTCONTAINERS: 'true',
         DisableDbSeeding: 'true'
-      }
+      },
+      timeout: 300 * 1000, // 5 minutes
     },
     {
       command: 'npm run start',
