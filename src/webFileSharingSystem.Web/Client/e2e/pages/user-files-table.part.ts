@@ -26,6 +26,16 @@ export class UserFilesTable {
     return new UploadRow(row);
   }
 
+  async expectVisibleFiles(...names: string[]) {
+    for (const name of names)
+      await expect(this.fileRowByName(name)).toBeVisible();
+  }
+
+  async expectHiddenFiles(...names: string[]) {
+    for (const name of names)
+      await expect(this.fileRowByName(name)).not.toBeVisible();
+  }
+
   async expectRowSelectedAndVisible(name: string) {
     const row = this.fileRowByName(name);
 
@@ -94,6 +104,8 @@ export class UserFilesTable {
   }
 
   private getFirstSelectedRow(): Locator {
-    return this.table.locator('[data-testid^="file-row-"].selected-row').first();
+    return this.table
+      .locator('[data-testid^="file-row-"].selected-row')
+      .first();
   }
 }
