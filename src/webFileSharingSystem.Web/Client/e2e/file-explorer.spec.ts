@@ -176,3 +176,65 @@ test.describe('Search', () => {
     await breadcrumb.expectPath([HOME, folderName, SEARCH_RESULTS]);
   });
 });
+
+test.describe('Sorting', () => {
+  test('Sort by name descending', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const uploadButtons = new UploadButtons(page);
+    const notifications = new ToastNotification(page);
+
+    const files: { fileName: string; filePath: string }[] = [];
+    for (let i = 0; i < 3; i++) {
+      const fileName = createFileName(testInfo, `file${i + 1}`);
+      const filePath = await createTempFile(
+        testInfo,
+        fileName,
+        `content of file ${i + 1}`,
+      );
+      files.push({ fileName, filePath });
+    }
+    const expectedAscending = files.map((f) => f.fileName);
+    const expectedDescending = [...expectedAscending].reverse();
+
+    await uploadButtons.uploadFiles(files.map((f) => f.filePath));
+    await notifications.expectUploadCompleted();
+    await table.expectVisibleFiles(...expectedAscending);
+
+    //Default sort order is by name ascending
+    await table.expectRowOrder(expectedAscending);
+
+    // Sort by name descending
+    // First click sorts ascending, second click sorts descending
+    await table.sortByColumn('name');
+    await table.sortByColumn('name');
+    await table.expectRowOrder(expectedDescending);
+  });
+
+  test('Selection persists after sorting', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const uploadButtons = new UploadButtons(page);
+    const notifications = new ToastNotification(page);
+
+    const files = [];
+    for (let i = 0; i < 3; i++) {
+      const fileName = createFileName(testInfo, `file${i + 1}`);
+      files.push({
+        fileName,
+        filePath: await createTempFile(testInfo, fileName, `content ${i}`),
+      });
+    }
+
+    await uploadButtons.uploadFiles(files.map((f) => f.filePath));
+    await notifications.expectUploadCompleted();
+
+    await table.selectSingleRow(files[1].fileName);
+    await table.sortByColumn('name');
+    await table.sortByColumn('name'); // Sort descending
+
+    await table.expectRowSelected(files[1].fileName);
+  });
+});

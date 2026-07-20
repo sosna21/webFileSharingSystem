@@ -44,6 +44,37 @@ export class UserFilesTable {
     await expect(row).toBeInViewport();
   }
 
+  async expectRowSelected(name: string) {
+    const row = this.fileRowByName(name);
+
+    await expect(row).toBeVisible();
+    await expect(row).toContainClass(selectedRowClass);
+  }
+
+  async expectRowOrder(expectedNames: string[]) {
+    const rows = this.table.locator('[data-testid^="file-row-"]');
+
+    const actual = [];
+
+    for (let i = 0; i < (await rows.count()); i++) {
+      const testId = await rows.nth(i).getAttribute('data-testid');
+      actual.push(testId!.replace('file-row-', ''));
+    }
+
+    expect(actual).toEqual(expectedNames);
+  }
+
+  /**
+   * Clicks the column header once.
+   *
+   * Sort cycle:
+   * Ascending → Descending → None
+   */
+  async sortByColumn(columnName: 'name' | 'size' | 'modified') {
+    const columnHeader = this.table.getByTestId(`header-${columnName}`);
+    await columnHeader.click();
+  }
+
   async openFolder(name: string) {
     await this.fileRowByName(name).dblclick();
   }
@@ -55,7 +86,6 @@ export class UserFilesTable {
   }
 
   async openContextMenuForSelectedRows() {
-    //find first row with selected class, it should have getByTestId starting with `file-row-` then first from that list with selected class
     const row = this.getFirstSelectedRow();
     await row.click({ button: 'right' });
   }
