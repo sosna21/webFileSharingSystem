@@ -9,9 +9,28 @@ import { UploadButtons } from './pages/upload-buttons.part';
 import { ToastNotification } from './pages/toast-notifications.part';
 import { createTempFile } from './helpers/test-files';
 import { dragDropEntries } from './helpers/drag-drop';
+import { Page, TestInfo } from '@playwright/test';
 
 const HOME = 'Home';
 const SEARCH_RESULTS = 'Search result';
+
+async function uploadTestFiles(page: Page, testInfo: TestInfo) {
+  const uploadButtons = new UploadButtons(page);
+  const notifications = new ToastNotification(page);
+
+  const files = [];
+  for (let i = 0; i < 3; i++) {
+    const fileName = createFileName(testInfo, `file${i + 1}`);
+    files.push({
+      fileName,
+      filePath: await createTempFile(testInfo, fileName, `content ${i}`),
+    });
+  }
+
+  await uploadButtons.uploadFiles(files.map((f) => f.filePath));
+  await notifications.expectUploadCompleted();
+  return files.map((f) => f.fileName);
+}
 
 test.describe('Navigation', () => {
   test('Navigate nested folders', async ({
@@ -71,41 +90,19 @@ test.describe('Search', () => {
     const breadcrumb = new Breadcrumb(page);
     const searchBar = new SearchBar(page);
 
-    const uploadButtons = new UploadButtons(page);
-    const notifications = new ToastNotification(page);
-
-    const fileName = createFileName(testInfo, 'file1');
-    const fileName2 = createFileName(testInfo, 'file2');
-    const fileName3 = createFileName(testInfo, 'file3');
-    const filePath = await createTempFile(
-      testInfo,
-      fileName,
-      'content of file 1',
-    );
-    const filePath2 = await createTempFile(
-      testInfo,
-      fileName2,
-      'content of file 2',
-    );
-    const filePath3 = await createTempFile(
-      testInfo,
-      fileName3,
-      'content of file 3',
-    );
-    await uploadButtons.uploadFiles([filePath, filePath2, filePath3]);
-    await notifications.expectUploadCompleted();
-    await table.expectVisibleFiles(fileName, fileName2, fileName3);
+    const fileNames = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...fileNames);
     await breadcrumb.expectPath([HOME]);
 
     // Search for fileName2
-    await searchBar.search(fileName2);
-    await table.expectHiddenFiles(fileName, fileName3);
-    await table.expectVisibleFiles(fileName2);
+    await searchBar.search(fileNames[1]);
+    await table.expectHiddenFiles(fileNames[0], fileNames[2]);
+    await table.expectVisibleFiles(fileNames[1]);
     await breadcrumb.expectPath([HOME, SEARCH_RESULTS]);
 
     // Clear search
     await searchBar.clear();
-    await table.expectVisibleFiles(fileName, fileName2, fileName3);
+    await table.expectVisibleFiles(...fileNames);
     await breadcrumb.expectPath([HOME]);
   });
 
@@ -182,24 +179,10 @@ test.describe('Sorting', () => {
     authenticatedPage: page,
   }, testInfo) => {
     const table = new UserFilesTable(page);
-    const uploadButtons = new UploadButtons(page);
-    const notifications = new ToastNotification(page);
+    const fileNames = await uploadTestFiles(page, testInfo);
 
-    const files: { fileName: string; filePath: string }[] = [];
-    for (let i = 0; i < 3; i++) {
-      const fileName = createFileName(testInfo, `file${i + 1}`);
-      const filePath = await createTempFile(
-        testInfo,
-        fileName,
-        `content of file ${i + 1}`,
-      );
-      files.push({ fileName, filePath });
-    }
-    const expectedAscending = files.map((f) => f.fileName);
+    const expectedAscending = fileNames.sort((a, b) => a.localeCompare(b));
     const expectedDescending = [...expectedAscending].reverse();
-
-    await uploadButtons.uploadFiles(files.map((f) => f.filePath));
-    await notifications.expectUploadCompleted();
     await table.expectVisibleFiles(...expectedAscending);
 
     //Default sort order is by name ascending
@@ -216,25 +199,106 @@ test.describe('Sorting', () => {
     authenticatedPage: page,
   }, testInfo) => {
     const table = new UserFilesTable(page);
-    const uploadButtons = new UploadButtons(page);
-    const notifications = new ToastNotification(page);
+    const files = await uploadTestFiles(page, testInfo);
 
-    const files = [];
-    for (let i = 0; i < 3; i++) {
-      const fileName = createFileName(testInfo, `file${i + 1}`);
-      files.push({
-        fileName,
-        filePath: await createTempFile(testInfo, fileName, `content ${i}`),
-      });
-    }
-
-    await uploadButtons.uploadFiles(files.map((f) => f.filePath));
-    await notifications.expectUploadCompleted();
-
-    await table.selectSingleRow(files[1].fileName);
+    await table.selectSingleRow(files[1]);
     await table.sortByColumn('name');
     await table.sortByColumn('name'); // Sort descending
 
-    await table.expectRowSelected(files[1].fileName);
+    await table.expectRowsSelected(files[1]);
+  });
+});
+
+test.describe('Selection', () => {
+  test('Select all files Ctrl+A', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const files = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...files);
+    await table.selectAllRows();
+    await table.expectRowsSelected(...files);
+  });
+
+  test('Move selection with arrow keys', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const files = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...files);
+    await table.selectSingleRow(files[0]);
+    for (let i = 1; i < files.length; i++) {
+      await page.keyboard.press('ArrowDown');
+      await table.expectRowsSelected(files[i]);
+    }
+
+    for (let i = files.length - 2; i >= 0; i--) {
+      await page.keyboard.press('ArrowUp');
+      await table.expectRowsSelected(files[i]);
+    }
+  });
+
+  test('Extend selection with Shift+Arrow', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const files = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...files);
+    await table.selectSingleRow(files[0]);
+    await page.keyboard.down('Shift');
+    for (let i = 1; i < files.length; i++) {
+      await page.keyboard.press('ArrowDown');
+      await table.expectRowsSelected(...files.slice(0, i + 1));
+    }
+    await page.keyboard.up('Shift');
+
+    await table.selectSingleRow(files.at(-1)!);
+    await page.keyboard.down('Shift');
+    for (let i = files.length - 2; i >= 0; i--) {
+      await page.keyboard.press('ArrowUp');
+      await table.expectRowsSelected(...files.slice(i + 1, files.length));
+    }
+    await page.keyboard.up('Shift');
+  });
+
+  test('Extend selection with Ctrl+Click', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const files = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...files);
+
+    await table.selectSingleRow(files[0]);
+    await table.selectRowsCtrl([...files.slice(1, files.length)]);
+    await table.expectRowsSelected(...files);
+
+    // Deselect the second file
+    await table.selectRowsCtrl([files[1]]);
+    await table.expectRowsSelected(...files.filter((f) => f !== files[1]));
+  });
+
+  test('Extend selection with Shift+Click', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const files = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...files);
+
+    await table.selectSingleRow(files[0]);
+    await table.selectRange(files[0], files[2]);
+    await table.expectRowsSelected(...files);
+  });
+
+  test('Select using drag selection', async ({
+    authenticatedPage: page,
+  }, testInfo) => {
+    const table = new UserFilesTable(page);
+    const files = await uploadTestFiles(page, testInfo);
+    await table.expectVisibleFiles(...files);
+    const firstRow = table.fileRowByName(files[0]);
+    const lastRow = table.fileRowByName(files.at(-1)!);
+    await firstRow.scrollIntoViewIfNeeded();
+    await firstRow.dragTo(lastRow);
+    await table.expectRowsSelected(...files);
   });
 });

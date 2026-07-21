@@ -44,11 +44,12 @@ export class UserFilesTable {
     await expect(row).toBeInViewport();
   }
 
-  async expectRowSelected(name: string) {
-    const row = this.fileRowByName(name);
-
-    await expect(row).toBeVisible();
-    await expect(row).toContainClass(selectedRowClass);
+  async expectRowsSelected(...names: string[]) {
+    for (const name of names) {
+      const row = this.fileRowByName(name);
+      await expect(row).toBeVisible();
+      await expect(row).toContainClass(selectedRowClass);
+    }
   }
 
   async expectRowOrder(expectedNames: string[]) {
