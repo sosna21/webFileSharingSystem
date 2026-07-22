@@ -42,7 +42,7 @@
   <i
     class="bi bi-copy action-icon action-primary disabled"
     data-testid="copy-files-trigger"
-    [class.disabled]="!canCopy()"
+    [class.disabled]="!canCopyDownload()"
     ngbTooltip="Copy"
     [openDelay]="300"
     (click)="onCopy()"
@@ -59,7 +59,7 @@
   <i
     class="bi bi-download action-icon action-primary disabled"
     data-testid="download-files-trigger"
-    [class.disabled]="!canFileAction()"
+    [class.disabled]="!canCopyDownload()"
     ngbTooltip="Download"
     [openDelay]="300"
     (click)="onDownload()"

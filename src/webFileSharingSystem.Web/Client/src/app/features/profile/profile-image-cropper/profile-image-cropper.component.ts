@@ -16,6 +16,9 @@ import {
   templateUrl: './profile-image-cropper.component.html',
   styleUrl: './profile-image-cropper.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    'data-testid': 'profile-image-cropper',
+  },
 })
 export class ProfileImageCropperComponent {
   readonly selectedPhoto = input.required<File>();

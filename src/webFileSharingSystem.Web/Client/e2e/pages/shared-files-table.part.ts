@@ -3,7 +3,7 @@ import { UploadRow } from './upload-row.part';
 
 const selectedRowClass = 'selected-row';
 
-export class UserFilesTable {
+export class SharedFilesTable {
   readonly page: Page;
   readonly table: Locator;
   readonly uploadOverlay: Locator;
@@ -11,9 +11,13 @@ export class UserFilesTable {
 
   constructor(page: Page) {
     this.page = page;
-    this.table = page.getByTestId('user-files-table');
+    this.table = page.getByTestId('shared-files-table');
     this.uploadOverlay = page.getByTestId('upload-overlay');
-    this.dropArea = page.getByTestId('files-drop-area');
+    this.dropArea = page.getByTestId('shared-files-drop-area');
+  }
+
+  async expectVisible() {
+    await expect(this.table).toBeVisible();
   }
 
   fileRowByName(name: string): Locator {
@@ -26,54 +30,12 @@ export class UserFilesTable {
     return new UploadRow(row);
   }
 
-  async expectVisibleFiles(...names: string[]) {
-    for (const name of names)
-      await expect(this.fileRowByName(name)).toBeVisible();
-  }
-
-  async expectHiddenFiles(...names: string[]) {
-    for (const name of names)
-      await expect(this.fileRowByName(name)).not.toBeVisible();
-  }
-
   async expectRowSelectedAndVisible(name: string) {
     const row = this.fileRowByName(name);
 
     await expect(row).toBeVisible();
     await expect(row).toContainClass(selectedRowClass);
     await expect(row).toBeInViewport();
-  }
-
-  async expectRowsSelected(...names: string[]) {
-    for (const name of names) {
-      const row = this.fileRowByName(name);
-      await expect(row).toBeVisible();
-      await expect(row).toContainClass(selectedRowClass);
-    }
-  }
-
-  async expectRowOrder(expectedNames: string[]) {
-    const rows = this.table.locator('[data-testid^="file-row-"]');
-
-    const actual = [];
-
-    for (let i = 0; i < (await rows.count()); i++) {
-      const testId = await rows.nth(i).getAttribute('data-testid');
-      actual.push(testId!.replace('file-row-', ''));
-    }
-
-    expect(actual).toEqual(expectedNames);
-  }
-
-  /**
-   * Clicks the column header once.
-   *
-   * Sort cycle:
-   * Ascending → Descending → None
-   */
-  async sortByColumn(columnName: 'name' | 'size' | 'modified') {
-    const columnHeader = this.table.getByTestId(`header-${columnName}`);
-    await columnHeader.click();
   }
 
   async openFolder(name: string) {
@@ -87,7 +49,10 @@ export class UserFilesTable {
   }
 
   async openContextMenuForSelectedRows() {
-    const row = this.getFirstSelectedRow();
+    //find first row with selected class, it should have getByTestId starting with `file-row-` then first from that list with selected class
+    const row = this.table
+      .locator('[data-testid^="file-row-"].selected-row')
+      .first();
     await row.click({ button: 'right' });
   }
 
@@ -126,17 +91,5 @@ export class UserFilesTable {
 
   async resetSelection() {
     await this.table.click();
-  }
-
-  async dragAndDropSelectedToRow(directoryName: string) {
-    const oneOfSelectedRows = this.getFirstSelectedRow();
-    const targetRow = this.fileRowByName(directoryName);
-    await oneOfSelectedRows.dragTo(targetRow);
-  }
-
-  private getFirstSelectedRow(): Locator {
-    return this.table
-      .locator('[data-testid^="file-row-"].selected-row')
-      .first();
   }
 }

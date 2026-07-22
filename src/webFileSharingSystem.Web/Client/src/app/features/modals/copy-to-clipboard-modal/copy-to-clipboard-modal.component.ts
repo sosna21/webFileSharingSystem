@@ -6,15 +6,15 @@ import { NgbActiveModal, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
   imports: [NgbTooltipModule],
   templateUrl: './copy-to-clipboard-modal.component.html',
   styleUrl: './copy-to-clipboard-modal.component.scss',
+  host: { 'data-testid': 'copy-to-clipboard-modal' },
 })
 export class CopyToClipboardModalComponent {
   readonly activeModal = inject(NgbActiveModal);
   readonly title = model('Copy to Clipboard');
   readonly textToCopy = model('');
 
-  copyToClipboard() {
-    navigator.clipboard.writeText(this.textToCopy()).then(() => {
-      this.activeModal.close(true);
-    });
+  async copyToClipboard() {
+    await navigator.clipboard.writeText(this.textToCopy());
+    this.activeModal.close(true);
   }
 }

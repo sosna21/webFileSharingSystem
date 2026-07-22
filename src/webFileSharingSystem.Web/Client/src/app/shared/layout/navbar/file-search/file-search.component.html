@@ -2,6 +2,7 @@
   <input
     #searchInput
     class="form-control"
+    data-testId="search-input"
     type="search"
     [placeholder]="`Search in ${currentFolderName()}`"
     [ngModel]="searchedPhrase()"

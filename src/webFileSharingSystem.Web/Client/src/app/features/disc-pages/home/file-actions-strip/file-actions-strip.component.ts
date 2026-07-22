@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, Injector, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
 import { FileService } from '../../../../core/services/file.service';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +9,8 @@ import { SelectionService } from '../../../../core/services/selection.service';
 import { BaseFile, FileStatus } from '../../../../core/models/base-file.model';
 import { ShareAccessMode } from '../../../../core/models/share-access-mode.model';
 import { generateUniqueDirName } from '../../../../core/utils/file-utils';
+import { AppFile } from '../../../../core/models/app-file.model';
+import { ModalService } from '../../../../core/services/modal.service';
 
 @Component({
   selector: 'app-file-actions-strip',
@@ -24,7 +26,9 @@ export class FileActionsStripComponent {
   private readonly selectionService = inject(SelectionService<BaseFile>);
 
   private readonly shareService = inject(FileShareService);
+  private readonly modalService = inject(ModalService);
   private readonly downloadService = inject(DownloadService);
+  private readonly injector = inject(Injector);
   private readonly names = this.fileService.names;
   readonly showDirCreateNameInput = signal(false);
   readonly newFolderName = signal('');
@@ -46,7 +50,7 @@ export class FileActionsStripComponent {
       !!this.fileService.awaitingActionState() &&
       this.fileService.isParentMinWriteAccess(),
   );
-  readonly canCopy = computed(
+  readonly canCopyDownload = computed(
     () =>
       this.selectedFiles().length > 0 &&
       this.selectedFiles().some(
@@ -134,7 +138,7 @@ export class FileActionsStripComponent {
   }
 
   onCopy() {
-    if (!this.canCopy()) return;
+    if (!this.canCopyDownload()) return;
     this.fileService.markFilesToCopyWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed,
@@ -159,11 +163,24 @@ export class FileActionsStripComponent {
 
   onShare() {
     if (!this.canFileAction() || this.viewingSharedFiles()) return;
-    this.shareService.shareFilesWithFeedback(
-      this.selectedFiles().filter(
-        (file) => file.fileStatus === FileStatus.Completed,
-      ),
-    );
+    const files = this.selectedFiles().filter(
+      (file) => file.fileStatus === FileStatus.Completed,
+    ) as AppFile[];
+
+    if (files.length === 0) return;
+    if (files.length === 1 && files[0].isShared) {
+      const sharedFile = files[0];
+      this.modalService.manageSharesModal(
+        {
+          sharedFile: sharedFile,
+          title: `Manage shares for file: '${sharedFile.fileName}'`,
+        },
+        this.injector,
+      );
+      return;
+    }
+
+    this.shareService.shareFilesWithFeedback(files);
   }
 
   onDelete() {

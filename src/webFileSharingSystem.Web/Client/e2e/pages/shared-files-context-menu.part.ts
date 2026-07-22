@@ -1,17 +1,12 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-export class UserFilesContextMenu {
+export class SharedFilesContextMenu {
   readonly openDirectoryTrigger: Locator;
-  readonly openContainingFolderTrigger: Locator;
 
   readonly downloadTrigger: Locator;
   readonly renameTrigger: Locator;
   readonly copyTrigger: Locator;
   readonly moveTrigger: Locator;
-  readonly favouriteTrigger: Locator;
-  readonly shareTrigger: Locator;
-  readonly manageSharesTrigger: Locator;
-  readonly generateShareLinkTrigger: Locator;
   readonly deleteTrigger: Locator;
 
   readonly pauseUploadTrigger: Locator;
@@ -22,17 +17,12 @@ export class UserFilesContextMenu {
   readonly manageFilesTrigger: Locator;
 
   constructor(page: Page) {
-    this.openDirectoryTrigger = page.getByTestId('context-menu-open-folder');
-    this.openContainingFolderTrigger = page.getByTestId('context-menu-open-directory');
+    this.openDirectoryTrigger = page.getByTestId('context-menu-open-directory');
 
     this.downloadTrigger = page.getByTestId('context-menu-download');
     this.renameTrigger = page.getByTestId('context-menu-rename');
     this.copyTrigger = page.getByTestId('context-menu-copy');
     this.moveTrigger = page.getByTestId('context-menu-cut');
-    this.favouriteTrigger = page.getByTestId('context-menu-favourite');
-    this.shareTrigger = page.getByTestId('context-menu-share');
-    this.manageSharesTrigger = page.getByTestId('context-menu-manage-shares');
-    this.generateShareLinkTrigger = page.getByTestId('context-menu-share-link');
     this.deleteTrigger = page.getByTestId('context-menu-delete');
 
     this.pauseUploadTrigger = page.getByTestId('context-menu-pause-upload');
@@ -81,10 +71,6 @@ export class UserFilesContextMenu {
     await this.openDirectoryTrigger.click();
   }
 
-  async openContainingDirectory() {
-    await this.openContainingFolderTrigger.click();
-  }
-
   async downloadSelection() {
     await this.downloadTrigger.click();
   }
@@ -101,27 +87,54 @@ export class UserFilesContextMenu {
     await this.moveTrigger.click();
   }
 
-  async toggleFavourite() {
-    await this.favouriteTrigger.click();
-  }
-
-  async shareSelection() {
-    await this.shareTrigger.click();
-  }
-
-  async openShareManagement() {
-    await this.manageSharesTrigger.click();
-  }
-
-  async generateShareLink() {
-    await this.generateShareLinkTrigger.click();
-  }
-
   async deleteSelection() {
     await this.deleteTrigger.click();
   }
 
   // Availability assertions
+  async expectPermissions(options: {
+    rename?: boolean;
+    move?: boolean;
+    copy?: boolean;
+    download?: boolean;
+    delete?: boolean;
+  }) {
+    if (options.rename !== undefined) {
+      if (options.rename) {
+        await this.expectRenameEnabled();
+      } else {
+        await this.expectRenameDisabled();
+      }
+    }
+    if (options.move !== undefined) {
+      if (options.move) {
+        await this.expectMoveEnabled();
+      } else {
+        await this.expectMoveDisabled();
+      }
+    }
+    if (options.copy !== undefined) {
+      if (options.copy) {
+        await this.expectCopyEnabled();
+      } else {
+        await this.expectCopyDisabled();
+      }
+    }
+    if (options.download !== undefined) {
+      if (options.download) {
+        await this.expectDownloadEnabled();
+      } else {
+        await this.expectDownloadDisabled();
+      }
+    }
+    if (options.delete !== undefined) {
+      if (options.delete) {
+        await this.expectDeleteEnabled();
+      } else {
+        await this.expectDeleteDisabled();
+      }
+    }
+  }
 
   async expectRenameEnabled() {
     await expect(this.renameTrigger).toBeEnabled();
@@ -155,12 +168,12 @@ export class UserFilesContextMenu {
     await expect(this.deleteTrigger).toBeDisabled();
   }
 
-  async expectShareEnabled() {
-    await expect(this.shareTrigger).toBeEnabled();
+  async expectDownloadEnabled() {
+    await expect(this.downloadTrigger).toBeEnabled();
   }
 
-  async expectShareDisabled() {
-    await expect(this.shareTrigger).toBeDisabled();
+  async expectDownloadDisabled() {
+    await expect(this.downloadTrigger).toBeDisabled();
   }
 
   async expectPauseEnabled() {

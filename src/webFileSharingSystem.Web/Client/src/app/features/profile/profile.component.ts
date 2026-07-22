@@ -30,6 +30,7 @@ import { ProfilePhotoDropzoneComponent } from './profile-photo-dropzone/profile-
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-testid': 'profile-component' },
 })
 export class ProfileComponent {
   private readonly maxPhotoSizeBytes = 5 * 1024 * 1024;
@@ -150,8 +151,8 @@ export class ProfileComponent {
           this.clearSelection();
           this.userPhotoService.clearPhoto(this.currentPhotoUrl());
           this.toastService.show(
-            'Success',
-            'Profile photo uploaded successfully.',
+            'Photo Updated',
+            'Profile photo uploaded.',
             MessageSeverity.success,
           );
 
@@ -169,5 +170,26 @@ export class ProfileComponent {
 
   clearSelection() {
     this.selectedPhoto.set(null);
+  }
+
+  deleteProfilePhoto() {
+    this.userApiService.deleteMyPhoto().subscribe({
+      next: () => {
+        this.clearSelection();
+        this.loadProfile();
+        this.toastService.show(
+          'Photo Deleted',
+          'Profile photo deleted.',
+          MessageSeverity.success,
+        );
+      },
+      error: () => {
+        this.toastService.show(
+          'Error',
+          'Could not delete profile photo.',
+          MessageSeverity.error,
+        );
+      },
+    });
   }
 }

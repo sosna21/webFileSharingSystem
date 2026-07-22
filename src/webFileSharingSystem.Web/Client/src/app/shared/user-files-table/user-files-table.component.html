@@ -40,7 +40,7 @@
 >
   <div
     #scrollContainer
-    data-testid="user-files-drop-area"
+    data-testid="files-drop-area"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
@@ -94,6 +94,7 @@
           *cdkHeaderCellDef
           scope="col"
           (click)="toggleSort('fileName')"
+          data-testid="header-name"
         >
           <app-sortable-header column="fileName" [sortOption]="sortOption()"
             >File Name</app-sortable-header
@@ -200,6 +201,7 @@
           scope="col"
           class="size-column"
           (click)="toggleSort('size')"
+          data-testid="header-size"
         >
           <app-sortable-header column="size" [sortOption]="sortOption()"
             >Size</app-sortable-header
@@ -245,6 +247,7 @@
           scope="col"
           class="d-none d-md-table-cell last-mod-column"
           (click)="toggleSort('lastModification')"
+          data-testid="header-modified"
         >
           <app-sortable-header
             column="lastModification"

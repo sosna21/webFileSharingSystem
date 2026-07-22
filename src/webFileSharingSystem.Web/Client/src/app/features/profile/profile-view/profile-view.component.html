@@ -1,19 +1,38 @@
-<div class="d-flex flex-column flex-sm-row align-items-center gap-4 mb-4">
-  <img
-    [src]="displayedPhotoUrl() ?? 'user.png'"
-    [alt]="'Profile photo of ' + (profile()?.userName ?? 'current user')"
-    width="120"
-    height="120"
-    class="rounded-circle profile-avatar shadow-sm"
-  />
+<div
+  data-testid="profile-view-content"
+  class="d-flex flex-column flex-sm-row align-items-center gap-4 mb-4"
+>
+  <div class="profile-avatar-wrapper">
+    <img
+      data-testid="profile-view-avatar"
+      [src]="displayedPhotoUrl() ?? 'user.png'"
+      [alt]="'Profile photo of ' + (profile()?.userName ?? 'current user')"
+      width="120"
+      height="120"
+      class="rounded-circle profile-avatar shadow-sm"
+    />
+    @if (displayedPhotoUrl()) {
+      <button
+        #removeBtn
+        data-testid="profile-view-remove-btn"
+        class="btn btn-danger btn-sm rounded-circle profile-avatar-remove"
+        (click)="deletePhoto.emit(); removeBtn.blur()"
+        aria-label="Remove profile photo"
+      >
+        <i class="bi bi-trash"></i>
+      </button>
+    }
+  </div>
 
   <div class="text-center text-sm-start flex-grow-1">
-    <div class="fw-bold fs-5">
+    <div data-testid="profile-view-user-name" class="fw-bold fs-5">
       {{ profile()?.userName || "User" }}
     </div>
-    <div class="text-secondary mb-3">
+
+    <div data-testid="profile-view-email" class="text-secondary mb-3">
       {{ profile()?.emailAddress || "No email" }}
     </div>
+
     <app-storage-quota></app-storage-quota>
   </div>
 </div>

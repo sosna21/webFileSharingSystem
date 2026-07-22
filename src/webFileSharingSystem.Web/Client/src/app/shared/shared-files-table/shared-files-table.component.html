@@ -32,7 +32,7 @@
 >
   <div
     #scrollContainer
-    data-testid="shared-files-drop-area"
+    data-testid="files-drop-area"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
@@ -241,7 +241,11 @@
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
-        [attr.data-testid]="'file-row-' + file.id"
+        [attr.data-testid]="
+          (file.fileStatus === FileStatus.Completed
+            ? 'file-row-'
+            : 'upload-row-') + file.fileName
+        "
         (contextmenu)="
           isSelected(file.id)
             ? contextMenuClick($event, file)
@@ -263,6 +267,10 @@
         (mouseenter)="onRowMouseEnter(file)"
         (mouseup)="onRowMouseUp(file, $event)"
         [class.opacity-50]="
+          filesMarkedForAction()?.type === 1 &&
+          filesMarkedForAction()?.filesIds!.has(file.id)
+        "
+        [attr.data-cut]="
           filesMarkedForAction()?.type === 1 &&
           filesMarkedForAction()?.filesIds!.has(file.id)
         "

@@ -11,6 +11,9 @@ import {
   templateUrl: './profile-photo-dropzone.component.html',
   styleUrl: './profile-photo-dropzone.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    'data-testid': 'profile-photo-dropzone',
+  },
 })
 export class ProfilePhotoDropzoneComponent {
   readonly photoSelected = output<File>();
