@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { FileUploadService } from './file-upload.service';
-import { firstValueFrom } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class FileUploadDragDropService {
@@ -30,7 +30,7 @@ export class FileUploadDragDropService {
       event.dataTransfer.items,
     );
 
-    await firstValueFrom(
+    await lastValueFrom(
       this.uploadService.uploadFiles(directories, files, destinationFolderId),
     );
   }
