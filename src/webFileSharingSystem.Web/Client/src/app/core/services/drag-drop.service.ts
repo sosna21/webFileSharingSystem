@@ -103,10 +103,7 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
 
     if (filesToMove.length === 0) return;
     this.internal.startDrag(filesToMove);
-    event.dataTransfer?.setData(
-      'application/json',
-      JSON.stringify(filesToMove),
-    );
+    event.dataTransfer?.setData('text/plain', 'internal');
     event.dataTransfer && (event.dataTransfer.effectAllowed = 'move');
     if (previewEl) {
       event.dataTransfer?.setDragImage(previewEl, 0, 0);
@@ -192,6 +189,15 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
     let operation: Promise<void> | undefined;
 
     try {
+      console.log(
+    'external',
+    this.external.allowExternalFiles(event)
+);
+
+console.log(
+    'internal',
+    this.internal.allowAppFiles(event)
+);
       // External files upload
       if (this.external.allowExternalFiles(event)) {
         operation = this.external.uploadDraggedFiles(event, destinationId);

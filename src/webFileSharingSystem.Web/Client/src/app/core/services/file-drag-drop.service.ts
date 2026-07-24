@@ -19,7 +19,7 @@ export class FileDragDropService {
    * Check if DataTransfer contains app files
    */
   allowAppFiles(event: DragEvent): boolean {
-    return event.dataTransfer?.types.includes('application/json') ?? false;
+    return this.draggedFiles().length > 0 && event.dataTransfer !== null;
   }
 
   /**

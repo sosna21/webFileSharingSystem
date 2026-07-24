@@ -98,6 +98,7 @@ export class UserFilesTable {
   async selectSingleRow(name: string) {
     const row = this.fileRowByName(name);
     await row.click();
+    await expect(row).toContainClass(selectedRowClass);
   }
 
   async selectRowsCtrl(names: string[]) {
