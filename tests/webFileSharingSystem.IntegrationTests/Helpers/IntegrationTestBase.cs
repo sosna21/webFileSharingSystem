@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -33,6 +34,7 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
 
             await dbFixture.EnsureRespawnerAsync();
             await dbFixture.ResetDatabaseAsync();
+            await EnsureRoleExistsAsync("Member");
         }
 
         public ValueTask DisposeAsync()
@@ -173,6 +175,27 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
         {
             return await WithServiceProviderAsync(provider =>
                 Task.FromResult(provider.GetRequiredService<IOptions<StorageSettings>>().Value.OnPremiseFileLocation));
+        }
+
+        private async Task EnsureRoleExistsAsync(string roleName)
+        {
+            await WithServiceProviderAsync(async provider =>
+            {
+                var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
+
+                if (await roleManager.RoleExistsAsync(roleName))
+                {
+                    return 0;
+                }
+
+                var result = await roleManager.CreateAsync(new IdentityRole(roleName));
+                if (!result.Succeeded && !await roleManager.RoleExistsAsync(roleName))
+                {
+                    throw new InvalidOperationException($"Failed to ensure role exists: {roleName}");
+                }
+
+                return 0;
+            });
         }
 
         private sealed class LoginResponseEnvelope
