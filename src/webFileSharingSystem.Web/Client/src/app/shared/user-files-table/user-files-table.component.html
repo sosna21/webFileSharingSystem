@@ -304,10 +304,11 @@
           !isEditing(file.id)
         "
         (dragstart)="onRowDragStart($event, file)"
+        (dragend)="onRowDragEnd($event)"
         (dragleave)="onRowDragLeave($event, file)"
         (dragenter)="onRowDragEnter($event, file)"
         (dragover)="onRowDragOver($event)"
-        (drop)="onRowDrop($event, file)"
+        (drop)="onRowDrop($event)"
         (mousedown)="onRowMouseDown(file, $event)"
         (mouseenter)="onRowMouseEnter(file)"
         (mouseup)="onRowMouseUp(file, $event)"

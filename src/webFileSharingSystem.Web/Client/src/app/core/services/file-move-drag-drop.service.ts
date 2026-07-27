@@ -3,7 +3,7 @@ import { BaseFile } from '../models/base-file.model';
 import { FileService } from './file.service';
 
 @Injectable()
-export class FileDragDropService {
+export class FileMoveDragDropService {
   readonly draggedFiles = signal<BaseFile[]>([]);
   readonly fileService = inject(FileService);
 
@@ -11,7 +11,7 @@ export class FileDragDropService {
     this.draggedFiles.set(files);
   }
 
-  clearDragedFiles() {
+  clearDragState() {
     this.draggedFiles.set([]);
   }
 
@@ -30,11 +30,7 @@ export class FileDragDropService {
     event.dataTransfer.dropEffect = allowed ? 'move' : 'none';
   }
 
-  async moveDraggedFiles(
-    event: DragEvent,
-    destinationId: number,
-    destinationName: string,
-  ) {
+  async moveDraggedFiles(destinationId: number, destinationName: string) {
     this.fileService.moveFilesWithFeedback(
       this.draggedFiles(),
       destinationId,

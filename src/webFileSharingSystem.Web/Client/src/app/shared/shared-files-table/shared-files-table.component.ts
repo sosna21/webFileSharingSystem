@@ -410,9 +410,11 @@ export class SharedFilesTableComponent {
     this.dragFacade.rowDragLeave(event, file);
   }
 
-  async onRowDrop(event: DragEvent, targetFile: SharedFile) {
-    if (!this.canBeTargetDirectory(targetFile)) return;
+  onRowDragEnd(event: DragEvent) {
+    this.dragFacade.rowDragEnd(event);
+  }
 
+  async onRowDrop(event: DragEvent) {
     await this.dragFacade.rowDrop(event);
   }
 
