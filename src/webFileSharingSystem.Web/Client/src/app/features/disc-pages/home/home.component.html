@@ -5,5 +5,10 @@
     <app-file-actions-strip secondaryContent />
   </app-base-disc-page-header>
   <app-breadcrumb class="mt-n2" />
-  <app-user-files-table data-view />
+
+  @if (viewMode() === "grid") {
+    <app-user-files-grid data-view />
+  } @else {
+    <app-user-files-table data-view />
+  }
 </app-base-disc-page>

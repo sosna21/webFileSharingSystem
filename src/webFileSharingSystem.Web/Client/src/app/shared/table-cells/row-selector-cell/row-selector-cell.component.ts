@@ -7,12 +7,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { BaseFile, FileStatus } from '../../../core/models/base-file.model';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
-import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { BaseCellDirective } from '../base-cell.directive';
+import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-btn.component';
 
 @Component({
   selector: 'app-row-selector-cell',
-  imports: [CommonModule, NgbTooltipModule, ClicableIconDirective],
+  imports: [CommonModule, NgbTooltipModule, UploadCancelBtnComponent],
   templateUrl: './row-selector-cell.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

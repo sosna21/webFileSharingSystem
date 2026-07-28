@@ -1,0 +1,105 @@
+<app-user-files-context-menu
+  [position]="contextMenuPosition()"
+  [selectedFiles]="selectedFiles()"
+  (openFolder)="selectFolder($event.id)"
+  (openLocation)="openLocation($event)"
+  (rename)="renameFile($event)"
+  (toggleFavourite)="changeFavourite(this.selectedFiles(), $event)"
+  (delete)="deleteFiles($event)"
+  (share)="shareFile($event)"
+  (manageShares)="showShareManagementModal($event)"
+  (selectFolder)="selectFolder($event)"
+  (pauseUpload)="stopFilesUpload($event)"
+  (resumeUpload)="continueFilesUpload($event)"
+  (cancelUpload)="cancelFilesUpload($event)"
+  (move)="initFileMove($event)"
+  (copy)="initFileCopy($event)"
+  (download)="downloadFiles($event)"
+  (generateLink)="generateShareLink($event)"
+/>
+
+<app-table-context-menu
+  [position]="contextMenuPosition()"
+  [accessMode]="currentDirectoryAccessMode()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
+  [canPaste]="canPaste()"
+  [(viewMode)]="viewMode"
+  (refresh)="refresh()"
+  (createFolder)="createFolder()"
+  (upload)="uploadFiles($event)"
+  (paste)="pasteFiles()"
+  (sortByColumn)="toggleSort($event)"
+/>
+
+<div
+  class="table-wrapper position-relative h-100 rounded rounded-4 px-3 py-3"
+  data-testid="user-files-table"
+  [class.table-drop-hover]="isHoverTargetATable()"
+  (mouseup)="resetFileSelection($event)"
+  (contextmenu)="tableContextMenuClick($event)"
+>
+  <div
+    #scrollContainer
+    (dragleave)="onTableDragLeave($event)"
+    (dragenter)="onTableDragEnter($event)"
+    (dragover)="onTableDragOver($event)"
+    (drop)="onTableDrop($event)"
+    class="table-scroll-wrapper overflow-auto h-100 px-2"
+  >
+    <div class="file-grid">
+      @for (file of files(); track file.id) {
+        <app-user-file-grid-card
+          [file]="file"
+          [selected]="isSelected(file.id)"
+          [loading]="isLoading(file.id)"
+          [dropTarget]="dragTarget()?.id === file.id"
+          [isUserCreatedFile]="file.createdBy === currentUserId()"
+          (clickCard)="selectFile(file, $event)"
+          (doubleClickCard)="file.isDirectory ? selectFolder(file.id) : null"
+          (mouseDownCard)="onRowMouseDown(file, $event)"
+          (mouseEnterCard)="onRowMouseEnter(file)"
+          (mouseUpCard)="onRowMouseUp(file, $event)"
+          (dragStartCard)="onRowDragStart($event, file)"
+          (dragEndCard)="onRowDragEnd($event)"
+          (dragEnterCard)="onRowDragEnter($event, file)"
+          (dragLeaveCard)="onRowDragLeave($event, file)"
+          (dragOverCard)="onRowDragOver($event)"
+          (dropCard)="onRowDrop($event)"
+          (stopUpload)="stopFilesUpload([file])"
+          (continueUpload)="continueFilesUpload([file])"
+          (canceUpload)="stopFilesUpload([file])"
+          (contextMenuClick)="contextMenuClick($event.event, $event.file)"
+          [class.opacity-50]="
+            filesMarkedForAction()?.type === 1 &&
+            filesMarkedForAction()?.filesIds!.has(file.id)
+          "
+        />
+      }
+
+      @if (files().length === 0) {
+        <div
+          class="text-center fs-5 w-100 position-absolute translate-middle start-50 mt-2 pb-2 border-bottom"
+        >
+          Empty directory
+        </div>
+        <div
+          class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
+        >
+          <i class="bi bi-upload" style="font-size: 5rem"></i>
+          <div class="fs-3">Drop files here to upload</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (dragTarget() && !isInternalHover()) {
+    <app-upload-overlay />
+  }
+</div>
+
+<!-- Do not remove this -->
+<!-- Invisible drag preview component, necessary for drag preview view snapshot -->
+<div style="position: absolute; top: -9999px; left: -9999px">
+  <app-drag-preview [files]="selectedFiles()" />
+</div>

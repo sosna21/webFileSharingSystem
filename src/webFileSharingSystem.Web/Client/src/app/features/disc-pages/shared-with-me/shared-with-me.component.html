@@ -5,5 +5,9 @@
     <app-file-actions-strip secondaryContent />
   </app-base-disc-page-header>
   <app-breadcrumb class="mt-n2" />
-  <app-shared-files-table data-view />
+  @if (viewMode() === "grid") {
+    <app-shared-files-grid data-view />
+  } @else {
+    <app-shared-files-table data-view />
+  }
 </app-base-disc-page>

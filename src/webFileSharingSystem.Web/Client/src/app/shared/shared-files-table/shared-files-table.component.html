@@ -16,6 +16,7 @@
   [sortableColumns]="sortableColumns()"
   [sortOption]="sortOption()"
   [canPaste]="canPaste()"
+  [(viewMode)]="viewMode"
   (refresh)="refresh()"
   (createFolder)="createFolder()"
   (upload)="uploadFiles($event)"
@@ -155,7 +156,6 @@
           <app-access-mode-cell
             [file]="file"
             [accessModeName]="getAccessModeName(file.accessMode)"
-            [accessModeIconClass]="getAccessModeIconClass(file.accessMode)"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
           />
         </td>

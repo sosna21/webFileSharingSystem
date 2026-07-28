@@ -1,12 +1,5 @@
 @if (file().fileStatus === FileStatus.Incomplete) {
-  <i
-    class="bi bi-x-octagon text-danger"
-    style="-webkit-text-stroke: 1px; font-size: large"
-    (click)="onCancelFilesUpload(file())"
-    appClicableIcon
-    ngbTooltip="Cancel upload"
-    [openDelay]="300"
-  ></i>
+  <app-upload-cancel-btn (click)="onCancelFilesUpload(file())" />
 } @else if (isLoading()) {
   <span class="spinner-border spinner-border-sm"></span>
 }

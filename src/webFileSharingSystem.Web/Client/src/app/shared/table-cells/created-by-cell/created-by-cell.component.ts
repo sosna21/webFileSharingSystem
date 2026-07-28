@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   inject,
+  input,
 } from '@angular/core';
 import { BaseFile } from '../../../core/models/base-file.model';
 import { BaseCellDirective } from '../base-cell.directive';
@@ -30,6 +31,18 @@ export class CreatedByCellComponent<
   readonly userPhotoUrl = computed(() =>
     this.userPhotoService.getPhotoUrl(this.file().createdByPhotoUrl),
   );
+  readonly alignTextBottom = input<boolean>(false);
+  readonly photoTextGap = input<'lg' | 'md' | 'sm'>('md');
+  readonly photoTextGapClass = computed(() => {
+    switch (this.photoTextGap()) {
+      case 'lg':
+        return 'me-3';
+      case 'md':
+        return 'me-2';
+      case 'sm':
+        return 'me-1';
+    }
+  });
 
   constructor() {
     super();

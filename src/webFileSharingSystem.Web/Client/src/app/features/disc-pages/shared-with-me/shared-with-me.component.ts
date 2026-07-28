@@ -7,6 +7,8 @@ import { FileActionsStripComponent } from '../home/file-actions-strip/file-actio
 import { FileService } from '../../../core/services/file.service';
 import { SharedFile } from '../../../core/models/shared-file.model';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb.component';
+import { StateService } from '../../../core/services/state.service';
+import { SharedFilesGridComponent } from '../../../shared/shared-files-grid/shared-files-grid.component';
 
 @Component({
   selector: 'app-shared-with-me',
@@ -16,6 +18,7 @@ import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb.compo
     SharedFilesTableComponent,
     FileActionsStripComponent,
     BreadcrumbComponent,
+    SharedFilesGridComponent,
   ],
   providers: [SelectionService<SharedFile>],
   templateUrl: './shared-with-me.component.html',
@@ -25,6 +28,7 @@ import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb.compo
 export class SharedWithMeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<SharedFile>);
+  readonly viewMode = inject(StateService).viewMode;
 
   constructor() {
     this.selectionService.init(this.fileService.sharedFiles);

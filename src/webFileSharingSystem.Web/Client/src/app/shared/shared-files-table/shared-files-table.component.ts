@@ -43,6 +43,7 @@ import { MessageSeverity } from '../../core/models/toast-info.model';
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
+import { StateService } from '../../core/services/state.service';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -97,6 +98,7 @@ export class SharedFilesTableComponent {
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
   readonly sortOption = this.fileService.sortOption;
+  readonly viewMode = inject(StateService).viewMode;
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
@@ -473,19 +475,6 @@ export class SharedFilesTableComponent {
         return 'Full control';
       default:
         return 'Read only';
-    }
-  }
-
-  getAccessModeIconClass(accessMode: ShareAccessMode) {
-    switch (accessMode) {
-      case ShareAccessMode.ReadOnly:
-        return 'bi-eye';
-      case ShareAccessMode.ReadWrite:
-        return 'bi-pencil-fill text-warning-emphasis';
-      case ShareAccessMode.FullAccess:
-        return 'bi-unlock-fill text-success';
-      default:
-        return 'bi-eye';
     }
   }
 

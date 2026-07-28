@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   inject,
+  input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedFile } from '../../../core/models/shared-file.model';
@@ -33,6 +34,18 @@ export class SharedUserNameCellComponent extends BaseCellDirective<SharedFile> {
   readonly userPhotoUrl = computed(() =>
     this.userPhotoService.getPhotoUrl(this.sharedUserPhotoKey()),
   );
+  readonly alignTextBottom = input<boolean>(false);
+  readonly photoTextGap = input<'lg' | 'md' | 'sm'>('md');
+  readonly photoTextGapClass = computed(() => {
+    switch (this.photoTextGap()) {
+      case 'lg':
+        return 'me-3';
+      case 'md':
+        return 'me-2';
+      case 'sm':
+        return 'me-1';
+    }
+  });
 
   constructor() {
     super();

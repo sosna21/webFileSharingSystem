@@ -13,4 +13,7 @@
   <div class="d-flex fs-2">
     <ng-content select="[secondaryContent]"></ng-content>
   </div>
+  <div class="ms-auto align-self-end me-4">
+    <app-view-toogle [(selectedView)]="viewMode" />
+  </div>
 </header>

@@ -3,8 +3,12 @@
   [alt]="'Profile photo of ' + file().sharedUserName"
   width="32"
   height="32"
-  class="rounded-circle me-2"
+  [class]="'rounded-circle ' + photoTextGapClass()"
 />
-<span class="text-truncate" [appTooltipOnOverflow]="file().sharedUserName">
+<span
+  class="text-truncate"
+  [class.mt-auto]="alignTextBottom()"
+  [appTooltipOnOverflow]="file().sharedUserName"
+>
   {{ file().sharedUserName }}
 </span>

@@ -10,7 +10,7 @@ import { Directive, computed, input, signal } from '@angular/core';
 })
 export class HoverClassDirective {
   readonly hover = signal(false);
-  readonly appHoverClass = input.required<string>();
+  readonly appHoverClass = input<string>('bg-secondary');
 
   readonly classMap = computed(() =>
     this.hover() ? this.appHoverClass() : '',

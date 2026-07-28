@@ -31,6 +31,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     const list = this.filesSig ? this.filesSig() : [];
     return list.filter((f) => ids.has(f.id));
   });
+  readonly dragActive = computed(() => this.dragging() !== null);
 
   private fileSelectionAnchorId = signal<number | null>(null);
   private dragSelectionAnchorId = signal<number | null>(null);

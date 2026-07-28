@@ -1,0 +1,112 @@
+<div
+  class="file-card position-relative px-2 my-1 no-select"
+  [class.selected]="selected()"
+  [class.drop-hover]="
+    canShowDropOverlay() && file().accessMode! >= ShareAccessMode.ReadWrite
+  "
+  [class.drop-hover-denied]="
+    canShowDropOverlay() && file().accessMode! < ShareAccessMode.ReadWrite
+  "
+  [class.incomplete]="file().fileStatus === FileStatus.Incomplete"
+  [draggable]="canMove()"
+  (click)="clickCard.emit($event)"
+  (dblclick)="doubleClickCard.emit($event)"
+  (mousedown)="mouseDownCard.emit($event)"
+  (mouseenter)="mouseEnterCard.emit()"
+  (mouseup)="mouseUpCard.emit($event)"
+  (dragstart)="dragStartCard.emit($event)"
+  (dragend)="dragEndCard.emit($event)"
+  (dragenter)="dragEnterCard.emit($event)"
+  (dragleave)="dragLeaveCard.emit($event)"
+  (dragover)="dragOverCard.emit($event)"
+  (drop)="dropCard.emit($event)"
+  (contextmenu)="onContextMenuClick($event)"
+>
+  <div
+    class="d-flex justify-content-between align-items-start overflow-hidden text-nowrap"
+  >
+    <div class="d-flex gap-2 small">
+      <app-access-mode-cell
+        [file]="file()"
+        [accessModeName]="getAccessModeName(file().accessMode!)"
+      />
+    </div>
+
+    <div appHoverClass="bg-body-tertiary rounded-pill">
+      <button
+        class="btn btn-sm btn-link text-decoration-none dropdown-toggle"
+        (click)="onContextMenuClick($event)"
+      >
+        <i class="bi bi-three-dots-vertical"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="file-preview">
+    <i class="bi display-3" [class]="fileIcon()"></i>
+  </div>
+
+  <div class="text-center mt-1">
+    <div class="file-name">
+      {{ file().fileName }}
+    </div>
+
+    <div class="small mt-1">
+      <app-size-cell [file]="file()" />
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-1">
+    <div
+      class="small text-secondary text-truncate me-1"
+      style="transform: translateY(-3px)"
+    >
+      @if (inRoot()) {
+        <app-created-by-cell
+          [file]="file()"
+          [alignTextBottom]="true"
+          photoTextGap="sm"
+        />
+      } @else {
+        <app-shared-user-name-cell
+          [file]="file()"
+          [alignTextBottom]="true"
+          photoTextGap="sm"
+        />
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div style="transform: translateY(-90%)">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isUploadInProgress()) {
+    <div class="upload-overlay">
+      <app-upload-cancel-btn
+        (click)="cancelUpload.emit()"
+        class="position-absolute top-0 end-0"
+      />
+
+      <div class="w-100 px-3 mt-4">
+        <div class="file-name mb-1" [appTooltipOnOverflow]="file().fileName">
+          {{ file().fileName }}
+        </div>
+        <app-upload-progressbar [file]="file()" />
+        <app-upload-status [file]="file()" />
+        <app-upload-control-btns
+          class="d-flex justify-content-end"
+          [file]="file()"
+          (continue)="continueUpload.emit()"
+          (pause)="stopUpload.emit()"
+        />
+      </div>
+    </div>
+  }
+</div>

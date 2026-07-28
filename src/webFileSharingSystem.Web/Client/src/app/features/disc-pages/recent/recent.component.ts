@@ -6,6 +6,8 @@ import { UserFilesTableComponent } from '../../../shared/user-files-table/user-f
 import { SelectionService } from '../../../core/services/selection.service';
 import { AppFile } from '../../../core/models/app-file.model';
 import { FileActionsStripComponent } from '../home/file-actions-strip/file-actions-strip.component';
+import { StateService } from '../../../core/services/state.service';
+import { UserFilesGridComponent } from '../../../shared/user-files-grid/user-files-grid.component';
 
 @Component({
   selector: 'app-recent',
@@ -14,6 +16,7 @@ import { FileActionsStripComponent } from '../home/file-actions-strip/file-actio
     BaseDiscPageHeaderComponent,
     UserFilesTableComponent,
     FileActionsStripComponent,
+    UserFilesGridComponent,
   ],
   providers: [SelectionService<AppFile>],
   templateUrl: './recent.component.html',
@@ -23,6 +26,7 @@ import { FileActionsStripComponent } from '../home/file-actions-strip/file-actio
 export class RecentComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
+  readonly viewMode = inject(StateService).viewMode;
 
   constructor() {
     this.selectionService.init(this.fileService.userFiles);

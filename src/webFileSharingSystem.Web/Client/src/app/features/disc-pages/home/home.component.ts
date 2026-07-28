@@ -11,6 +11,8 @@ import { FileActionsStripComponent } from './file-actions-strip/file-actions-str
 import { AppFile } from '../../../core/models/app-file.model';
 import { SelectionService } from '../../../core/services/selection.service';
 import { UserFilesTableComponent } from '../../../shared/user-files-table/user-files-table.component';
+import { UserFilesGridComponent } from '../../../shared/user-files-grid/user-files-grid.component';
+import { StateService } from '../../../core/services/state.service';
 
 @Component({
   selector: 'app-home',
@@ -22,6 +24,7 @@ import { UserFilesTableComponent } from '../../../shared/user-files-table/user-f
     BreadcrumbComponent,
     FileActionsStripComponent,
     UserFilesTableComponent,
+    UserFilesGridComponent,
   ],
   providers: [SelectionService<AppFile>],
   templateUrl: './home.component.html',
@@ -31,6 +34,7 @@ import { UserFilesTableComponent } from '../../../shared/user-files-table/user-f
 export class HomeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
+  readonly viewMode = inject(StateService).viewMode;
 
   constructor() {
     this.selectionService.init(this.fileService.userFiles);

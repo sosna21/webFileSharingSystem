@@ -43,6 +43,7 @@ import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-b
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
+import { StateService } from '../../core/services/state.service';
 
 @Component({
   selector: 'app-user-files-table',
@@ -95,6 +96,7 @@ export class UserFilesTableComponent {
   readonly currentDirectoryAccessMode = computed(
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
+  readonly viewMode = inject(StateService).viewMode;
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
