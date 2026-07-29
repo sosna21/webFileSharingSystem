@@ -23,6 +23,7 @@ import { SharedFile } from '../../core/models/shared-file.model';
 import { MessageSeverity } from '../../core/models/toast-info.model';
 import { DownloadService } from '../../core/services/download.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
+import { GridSelectionService } from '../../core/services/grid-selection.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { FileService } from '../../core/services/file.service';
 import { ModalService } from '../../core/services/modal.service';
@@ -51,6 +52,7 @@ import { StateService } from '../../core/services/state.service';
     TableContextMenuComponent,
     SharedFileGridCardComponent,
   ],
+  providers: [GridSelectionService<SharedFile>],
   templateUrl: './shared-files-grid.component.html',
   styleUrl: './shared-files-grid.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,6 +68,7 @@ export class SharedFilesGridComponent {
   private readonly uploadService = inject(FileUploadService);
   private readonly downloadService = inject(DownloadService);
   private readonly selection = inject(SelectionService<SharedFile>);
+  private readonly gridSelection = inject(GridSelectionService<SharedFile>);
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly modalService = inject(ModalService);
   private readonly authService = inject(AuthenticationService);
@@ -196,7 +199,7 @@ export class SharedFilesGridComponent {
       return;
     }
 
-    this.selection.onKeydown(event);
+    this.gridSelection.onKeydown(event, this.files, this.scrollContainer);
   }
 
   checkAllCheckBox(ev: Event) {

@@ -16,6 +16,7 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { FileService } from '../../core/services/file.service';
+import { GridSelectionService } from '../../core/services/grid-selection.service';
 import { SelectionService } from '../../core/services/selection.service';
 import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { UserFileGridCardComponent } from './user-file-grid-card/user-file-grid-card.component';
@@ -55,6 +56,7 @@ import { StateService } from '../../core/services/state.service';
     UploadOverlayComponent,
     TableContextMenuComponent,
   ],
+  providers: [GridSelectionService<AppFile>],
   templateUrl: './user-files-grid.component.html',
   styleUrl: './user-files-grid.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,6 +76,7 @@ export class UserFilesGridComponent {
   private readonly modalService = inject(ModalService);
   private readonly injector = inject(Injector);
   private readonly selection = inject(SelectionService<AppFile>);
+  private readonly gridSelection = inject(GridSelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
@@ -180,7 +183,7 @@ export class UserFilesGridComponent {
       return;
     }
 
-    this.selection.onKeydown(event);
+    this.gridSelection.onKeydown(event, this.files, this.scrollContainer);
   }
 
   checkAllCheckBox(ev: Event) {

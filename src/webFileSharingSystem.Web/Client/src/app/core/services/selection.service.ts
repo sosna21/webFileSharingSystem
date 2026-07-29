@@ -16,8 +16,8 @@ type DragKind = null | 'standard' | 'ctrl' | 'shift';
 @Injectable()
 export class SelectionService<T extends SelectableItem = SelectableItem> {
   // Host supplies live files list
-  private filesSig!: Signal<T[]>;
-  private scrollContainerSig?: Signal<ElementRef<HTMLElement> | undefined>;
+  protected filesSig!: Signal<T[]>;
+  protected scrollContainerSig?: Signal<ElementRef<HTMLElement> | undefined>;
 
   readonly selectedIds: WritableSignal<Set<number>> = signal(new Set());
   readonly areAllChecked = computed(
@@ -34,6 +34,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   readonly dragActive = computed(() => this.dragging() !== null);
 
   private fileSelectionAnchorId = signal<number | null>(null);
+  private keyboardFocusId = signal<number | null>(null);
   private dragSelectionAnchorId = signal<number | null>(null);
   private dragging = signal<DragKind>(null);
   private beforeDragIds = signal<Set<number>>(new Set());
@@ -46,10 +47,10 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     const files = this.filesSig ? this.filesSig() : [];
     const index = files.findIndex((f) => f.id === id);
     if (index !== -1) {
-      this.fileSelectionAnchorId.set(id);
+      this.keyboardFocusId.set(id);
       setTimeout(() => {
         const container = this.scrollContainerSig?.()?.nativeElement;
-        this.handleTableScroll(container, index);
+        this.handleScrollToIndex(container, index);
       });
     }
   }
@@ -62,6 +63,24 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     this.scrollContainerSig = container;
   }
 
+  getKeyboardFocusId() {
+    return this.keyboardFocusId();
+  }
+
+  getKeyboardAnchorId() {
+    return this.fileSelectionAnchorId();
+  }
+
+  setKeyboardNavigationState(anchorId: number | null, focusId: number | null) {
+    this.fileSelectionAnchorId.set(anchorId);
+    this.keyboardFocusId.set(focusId);
+  }
+
+  clearKeyboardNavigationState() {
+    this.fileSelectionAnchorId.set(null);
+    this.keyboardFocusId.set(null);
+  }
+
   onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
@@ -70,9 +89,12 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
       event.preventDefault();
       const all = new Set(this.filesSig().map((f) => f.id));
       this.selectedIds.set(all);
+      this.keyboardFocusId.set(this.filesSig()[0]?.id ?? null);
+      this.fileSelectionAnchorId.set(null);
     } else if (this.selectedIds().size > 0 || this.filesSig().length > 0) {
       if (event.key === 'Escape') {
         this.selectedIds.set(new Set());
+        this.clearKeyboardNavigationState();
       } else if (
         event.key === 'ArrowUp' ||
         event.key === 'ArrowDown' ||
@@ -83,12 +105,9 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         const files = this.filesSig();
         if (files.length === 0) return;
 
-        const selectedIds = this.selectedIds();
-        let anchorId = this.fileSelectionAnchorId();
-        if (anchorId === null && selectedIds.size > 0) {
-          anchorId = selectedIds.values().next().value!;
-        }
-        const anchorIndex = files.findIndex((f) => f.id === anchorId);
+        const currentFocusId =
+          this.keyboardFocusId() ?? this.selectedItems()[0]?.id ?? files[0].id;
+        const currentIndex = files.findIndex((f) => f.id === currentFocusId);
         let newIndex: number;
 
         if (event.key === 'Home') {
@@ -96,27 +115,35 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         } else if (event.key === 'End') {
           newIndex = files.length - 1;
         } else if (event.key === 'ArrowUp') {
-          newIndex = Math.max(0, anchorIndex - 1);
+          newIndex = Math.max(0, currentIndex - 1);
         } else {
-          newIndex = Math.min(files.length - 1, anchorIndex + 1);
+          newIndex = Math.min(files.length - 1, currentIndex + 1);
         }
 
-        const newAnchorId = files[newIndex].id;
-        this.fileSelectionAnchorId.set(newAnchorId);
+        const nextFocusedId = files[newIndex].id;
+        const anchorId =
+          this.fileSelectionAnchorId() ?? currentFocusId ?? nextFocusedId;
 
         if (event.shiftKey) {
+          const anchorIndex = files.findIndex((f) => f.id === anchorId);
           const startIndex = Math.min(Math.max(anchorIndex, 0), newIndex);
           const endIndex = Math.max(Math.max(anchorIndex, 0), newIndex);
           const rangeIds = files
             .filter((_, idx) => idx >= startIndex && idx <= endIndex)
             .map((f) => f.id);
-          this.selectedIds.update((prev) => new Set([...prev, ...rangeIds]));
+          this.selectedIds.set(new Set(rangeIds));
+          if (this.fileSelectionAnchorId() === null) {
+            this.fileSelectionAnchorId.set(anchorId);
+          }
         } else {
-          this.selectedIds.set(new Set([newAnchorId]));
+          this.selectedIds.set(new Set([nextFocusedId]));
+          this.fileSelectionAnchorId.set(nextFocusedId);
         }
 
+        this.keyboardFocusId.set(nextFocusedId);
+
         const container = this.scrollContainerSig?.()?.nativeElement;
-        this.handleTableScroll(
+        this.handleScrollToIndex(
           container,
           newIndex,
           event.key as 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
@@ -125,7 +152,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     }
   }
 
-  handleTableScroll(
+  handleScrollToIndex(
     container: HTMLElement | undefined,
     index: number,
     key?: 'Home' | 'End' | 'ArrowUp' | 'ArrowDown',
@@ -142,26 +169,44 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
       return;
     }
 
-    const rows = Array.from(container.querySelectorAll('tr[cdk-row]'));
-    if (!rows || index >= rows.length) return;
+    const tableRows = Array.from(
+      container.querySelectorAll('tr[cdk-row]'),
+    ) as HTMLElement[];
+    if (tableRows.length > 0) {
+      if (index >= tableRows.length) return;
 
-    const row = rows[index] as HTMLElement;
-    const header = container.querySelector(
-      'tr[cdk-header-row]',
-    ) as HTMLElement | null;
-    const headerHeight = header ? header.offsetHeight : 0;
+      const row = tableRows[index];
+      const header = container.querySelector(
+        'tr[cdk-header-row]',
+      ) as HTMLElement | null;
+      const headerHeight = header ? header.offsetHeight : 0;
 
-    const rowTop = row.offsetTop;
-    const rowBottom = rowTop + row.offsetHeight;
+      const rowTop = row.offsetTop;
+      const rowBottom = rowTop + row.offsetHeight;
 
-    const viewTop = container.scrollTop + headerHeight;
-    const viewBottom = container.scrollTop + container.clientHeight;
+      const viewTop = container.scrollTop + headerHeight;
+      const viewBottom = container.scrollTop + container.clientHeight;
 
-    if (rowTop < viewTop) {
-      container.scrollTop = rowTop - headerHeight;
-    } else if (rowBottom > viewBottom) {
-      container.scrollTop = Math.max(0, rowBottom - container.clientHeight);
+      if (rowTop < viewTop) {
+        container.scrollTop = rowTop - headerHeight;
+      } else if (rowBottom > viewBottom) {
+        container.scrollTop = Math.max(0, rowBottom - container.clientHeight);
+      }
+      return;
     }
+
+    const gridItems = Array.from(
+      container.querySelectorAll(
+        'app-user-file-grid-card, app-shared-file-grid-card',
+      ),
+    ) as HTMLElement[];
+
+    if (index >= gridItems.length) return;
+
+    gridItems[index]?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    });
   }
 
   toggleAll(checked: boolean) {
@@ -172,19 +217,14 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
 
   clear() {
     this.selectedIds.set(new Set());
+    this.clearKeyboardNavigationState();
   }
 
   selectRow(file: T, event: MouseEvent) {
     const isCtrl = event.ctrlKey || event.metaKey;
     const isShift = event.shiftKey;
 
-    if (this.fileSelectionAnchorId() === null && this.filesSig().length > 0) {
-      this.fileSelectionAnchorId.set(this.filesSig()[0].id);
-    }
-
-    const localAnchor = this.fileSelectionAnchorId();
-
-    if (!isShift) this.fileSelectionAnchorId.set(file.id);
+    const localAnchor = this.fileSelectionAnchorId() ?? file.id;
 
     if (isShift && localAnchor != null) {
       const newIndex = this.filesSig().findIndex((f) => f.id === file.id);
@@ -197,6 +237,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         .filter((_, idx) => idx >= startIndex && idx <= endIndex)
         .map((f) => f.id);
       this.selectedIds.set(new Set(rangeIds));
+      this.setKeyboardNavigationState(localAnchor, file.id);
       return;
     }
 
@@ -207,10 +248,12 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
         else next.add(file.id);
         return next;
       });
+      this.setKeyboardNavigationState(file.id, file.id);
       return;
     }
 
     this.selectedIds.set(new Set([file.id]));
+    this.setKeyboardNavigationState(file.id, file.id);
   }
 
   // Drag-select support
