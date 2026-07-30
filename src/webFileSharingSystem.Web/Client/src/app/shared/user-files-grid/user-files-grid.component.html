@@ -68,7 +68,7 @@
           (dropCard)="onRowDrop($event)"
           (stopUpload)="stopFilesUpload([file])"
           (continueUpload)="continueFilesUpload([file])"
-          (canceUpload)="stopFilesUpload([file])"
+          (cancelUpload)="cancelFilesUpload([file])"
           (contextMenuClick)="contextMenuClick($event.event, $event.file)"
           [class.opacity-50]="
             filesMarkedForAction()?.type === 1 &&

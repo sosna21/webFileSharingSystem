@@ -19,7 +19,6 @@ import { TimeagoModule } from 'ngx-timeago';
 import { SizeCellComponent } from '../../table-cells/size-cell/size-cell.component';
 import { CreatedByCellComponent } from '../../table-cells/created-by-cell/created-by-cell.component';
 import { HoverClassDirective } from '../../../core/directives/hover-class.directive';
-import { UploadStatusComponent } from '../../table-cells/file-name-cell/upload-status/upload-status.component';
 import { UploadProgressbarComponent } from '../../table-cells/file-name-cell/upload-progressbar/upload-progressbar.component';
 import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upload-control-btns/upload-control-btns.component';
 import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-overflow.directive';
@@ -34,7 +33,6 @@ import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-
     SizeCellComponent,
     CreatedByCellComponent,
     HoverClassDirective,
-    UploadStatusComponent,
     UploadProgressbarComponent,
     UploadControlBtnsComponent,
     TooltipOnOverflowDirective,
