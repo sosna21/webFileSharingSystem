@@ -21,9 +21,7 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
 import { SharedUserNameCellComponent } from '../../table-cells/shared-user-name-cell/shared-user-name-cell.component';
 import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-btn.component';
 import { UploadProgressbarComponent } from '../../table-cells/file-name-cell/upload-progressbar/upload-progressbar.component';
-import { UploadStatusComponent } from '../../table-cells/file-name-cell/upload-status/upload-status.component';
 import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upload-control-btns/upload-control-btns.component';
-import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-overflow.directive';
 
 @Component({
   selector: 'app-shared-file-grid-card',
@@ -38,9 +36,7 @@ import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-
     SharedUserNameCellComponent,
     UploadCancelBtnComponent,
     UploadProgressbarComponent,
-    UploadStatusComponent,
     UploadControlBtnsComponent,
-    TooltipOnOverflowDirective,
   ],
   templateUrl: './shared-file-grid-card.component.html',
   styleUrl: './shared-file-grid-card.component.scss',

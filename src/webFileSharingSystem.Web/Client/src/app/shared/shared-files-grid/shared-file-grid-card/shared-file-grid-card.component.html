@@ -1,5 +1,5 @@
 <div
-  class="file-card position-relative px-2 my-1 no-select"
+  class="file-card position-relative px-2 my-1 pb-1 no-select d-flex flex-column"
   [class.selected]="selected()"
   [class.drop-hover]="
     canShowDropOverlay() && file().accessMode! >= ShareAccessMode.ReadWrite
@@ -26,10 +26,14 @@
     class="d-flex justify-content-between align-items-start overflow-hidden text-nowrap"
   >
     <div class="d-flex gap-2 small">
-      <app-access-mode-cell
-        [file]="file()"
-        [accessModeName]="getAccessModeName(file().accessMode!)"
-      />
+      @if (isUploadInProgress()) {
+        <app-upload-cancel-btn (click)="cancelUpload.emit()" />
+      } @else {
+        <app-access-mode-cell
+          [file]="file()"
+          [accessModeName]="getAccessModeName(file().accessMode!)"
+        />
+      }
     </div>
 
     <div appHoverClass="bg-body-tertiary rounded-pill">
@@ -43,20 +47,43 @@
   </div>
 
   <div class="file-preview">
-    <i class="bi display-3" [class]="fileIcon()"></i>
+    <i class="bi display-3 position-relative" [class]="fileIcon()">
+      @if (isUploadInProgress()) {
+        <span class="upload-badge">
+          <i class="bi bi-arrow-up"></i>
+        </span>
+      }
+    </i>
   </div>
 
   <div class="text-center mt-1">
-    <div class="file-name">
+    <div class="file-name" [class.uploading]="isUploadInProgress()">
       {{ file().fileName }}
     </div>
 
-    <div class="small mt-1">
-      <app-size-cell [file]="file()" />
-    </div>
+    @if (isUploadInProgress()) {
+      <div class="w-100 d-flex align-items-baseline" style="height: 1.1rem">
+        <app-upload-progressbar [file]="file()" class="flex-grow-1" />
+      </div>
+    }
+
+    @if (isUploadInProgress()) {
+      <div class="d-flex justify-content-end">
+        <app-upload-control-btns
+          style="margin-bottom: -10px"
+          [file]="file()"
+          (continue)="continueUpload.emit()"
+          (pause)="stopUpload.emit()"
+        />
+      </div>
+    } @else {
+      <div class="small mt-1">
+        <app-size-cell [file]="file()" />
+      </div>
+    }
   </div>
 
-  <div class="d-flex justify-content-between align-items-center mt-1">
+  <div class="d-flex justify-content-between align-items-center mt-auto">
     <div
       class="small text-secondary text-truncate me-1"
       style="transform: translateY(-3px)"
@@ -83,29 +110,6 @@
         <div class="spinner-border" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-      </div>
-    </div>
-  }
-
-  @if (isUploadInProgress()) {
-    <div class="upload-overlay">
-      <app-upload-cancel-btn
-        (click)="cancelUpload.emit()"
-        class="position-absolute top-0 end-0"
-      />
-
-      <div class="w-100 px-3 mt-4">
-        <div class="file-name mb-1" [appTooltipOnOverflow]="file().fileName">
-          {{ file().fileName }}
-        </div>
-        <app-upload-progressbar [file]="file()" />
-        <app-upload-status class="small" [file]="file()" />
-        <app-upload-control-btns
-          class="d-flex justify-content-end"
-          [file]="file()"
-          (continue)="continueUpload.emit()"
-          (pause)="stopUpload.emit()"
-        />
       </div>
     </div>
   }

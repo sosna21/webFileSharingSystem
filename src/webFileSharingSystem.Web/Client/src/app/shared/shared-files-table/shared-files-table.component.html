@@ -8,6 +8,9 @@
   (move)="initFileMove($event)"
   (copy)="initFileCopy($event)"
   (delete)="deleteFiles($event)"
+  (pauseUpload)="stopFilesUpload($event)"
+  (resumeUpload)="continueFilesUpload($event)"
+  (cancelUpload)="cancelFilesUpload($event)"
 ></app-shared-files-context-menu>
 
 <app-table-context-menu
