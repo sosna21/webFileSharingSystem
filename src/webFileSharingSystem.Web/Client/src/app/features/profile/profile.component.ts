@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 import { UserApiService } from '../../core/services/api/user-api.service';
@@ -29,7 +23,6 @@ import { ProfilePhotoDropzoneComponent } from './profile-photo-dropzone/profile-
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-testid': 'profile-component' },
 })
 export class ProfileComponent {

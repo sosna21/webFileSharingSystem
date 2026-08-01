@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
+import { Component, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppFile } from '../../../core/models/app-file.model';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -10,7 +10,6 @@ import { FileStatus } from '../../../core/models/base-file.model';
   selector: 'app-favourite-cell',
   imports: [CommonModule, NgbTooltipModule, ClicableIconDirective],
   templateUrl: './favourite-cell.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FavouriteCellComponent extends BaseCellDirective<AppFile> {
   FileStatus = FileStatus;

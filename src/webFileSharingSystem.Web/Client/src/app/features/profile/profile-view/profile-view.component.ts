@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { StorageQuotaComponent } from '../../../shared/storage-quota/storage-quota.component';
 import { AppUserResponse } from '../../../core/models/app-user-response.model';
 
@@ -12,7 +7,6 @@ import { AppUserResponse } from '../../../core/models/app-user-response.model';
   imports: [StorageQuotaComponent],
   templateUrl: './profile-view.component.html',
   styleUrl: './profile-view.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'data-testid': 'profile-view',
   },

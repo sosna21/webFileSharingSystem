@@ -9,7 +9,7 @@ export const noAuthGuard: CanActivateFn = (route, state) => {
   if (authService.isAuthenticated()) {
     router.navigate(['/disc/home']);
     return false;
-  } 
+  }
 
   return true;
 };

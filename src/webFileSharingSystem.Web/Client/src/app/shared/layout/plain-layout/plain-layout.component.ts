@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { NavbarComponent } from "../navbar/navbar.component";
+import { Component } from '@angular/core';
+import { NavbarComponent } from '../navbar/navbar.component';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -7,8 +7,5 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet, NavbarComponent],
   templateUrl: './plain-layout.component.html',
   styleUrl: './plain-layout.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PlainLayoutComponent {
-
-}
+export class PlainLayoutComponent {}

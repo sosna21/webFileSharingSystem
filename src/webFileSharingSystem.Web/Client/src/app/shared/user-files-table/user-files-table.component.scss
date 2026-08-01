@@ -14,10 +14,6 @@ tr.selectable {
   cursor: pointer;
 }
 
-// tr.selected-row[draggable] {
-//   cursor: grab;
-// }
-
 table {
   @include media-breakpoint-down(md) {
     font-size: 0.85rem;

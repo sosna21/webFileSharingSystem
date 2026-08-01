@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FileService } from '../../../core/services/file.service';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
@@ -21,7 +21,6 @@ import { UserFilesGridComponent } from '../../../shared/user-files-grid/user-fil
   providers: [SelectionService<AppFile>],
   templateUrl: './recent.component.html',
   styleUrl: './recent.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecentComponent {
   private readonly fileService = inject(FileService);

@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-} from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthenticationService } from '../../../../core/services/authentication.service';
 import { Router, RouterLink } from '@angular/router';
@@ -17,7 +11,6 @@ import { UserPhotoService } from '../../../../core/services/user-photo.service';
   imports: [NgbDropdownModule, RouterLink, HoverClassDirective],
   templateUrl: './profile-dropdown.component.html',
   styleUrl: './profile-dropdown.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileDropdownComponent {
   private readonly authService = inject(AuthenticationService);

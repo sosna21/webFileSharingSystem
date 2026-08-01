@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   NgbCollapseModule,
   NgbPaginationModule,
@@ -29,7 +29,6 @@ import { StateService } from '../../../core/services/state.service';
   providers: [SelectionService<AppFile>],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
   private readonly fileService = inject(FileService);

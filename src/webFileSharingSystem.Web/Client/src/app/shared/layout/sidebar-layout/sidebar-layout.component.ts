@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { RouterOutlet } from '@angular/router';
@@ -9,7 +9,6 @@ import { ModalService } from '../../../core/services/modal.service';
   imports: [RouterOutlet, NavbarComponent, SidebarComponent],
   templateUrl: './sidebar-layout.component.html',
   styleUrl: './sidebar-layout.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(window:keydown)': 'onKeydown($event)',
     '(window:keyup)': 'onKeyup($event)',

@@ -1,7 +1,6 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   ElementRef,
@@ -70,7 +69,6 @@ import { StateService } from '../../core/services/state.service';
   ],
   templateUrl: './shared-files-table.component.html',
   styleUrl: './shared-files-table.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'h-100',
     style: 'max-height: 100%; min-height: 400px',

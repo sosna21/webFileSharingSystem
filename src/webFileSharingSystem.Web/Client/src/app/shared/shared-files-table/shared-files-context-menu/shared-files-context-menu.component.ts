@@ -24,15 +24,14 @@ import { FileService } from '../../../core/services/file.service';
   styleUrl: './shared-files-context-menu.component.scss',
 })
 export class SharedFilesContextMenuComponent {
+  readonly ShareAccessMode = ShareAccessMode;
+  readonly ProgressStatus = ProgressStatus;
+
   private readonly fileService = inject(FileService);
-
-  readonly dropdown = viewChild(NgbDropdown);
-
   readonly position = input.required<{ x: number; y: number }>();
   readonly selectedFiles = input.required<SharedFile[]>();
 
-  readonly ShareAccessMode = ShareAccessMode;
-  readonly ProgressStatus = ProgressStatus;
+  readonly dropdown = viewChild(NgbDropdown);
 
   readonly inSearchView = computed(
     () => !!this.fileService.searchedPhrase()?.trim(),

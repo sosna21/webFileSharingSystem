@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
+import { Component, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseFile } from '../../../core/models/base-file.model';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -9,7 +9,6 @@ import { BaseCellDirective } from '../base-cell.directive';
   selector: 'app-actions-cell',
   imports: [CommonModule, NgbTooltipModule, ClicableIconDirective],
   templateUrl: './actions-cell.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActionsCellComponent<
   T extends BaseFile,

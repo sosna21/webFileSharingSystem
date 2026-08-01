@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-} from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { FileToIconPipe } from '../../core/pipes/file-to-icon.pipe';
 import { BaseFile } from '../../core/models/base-file.model';
 
@@ -12,7 +7,6 @@ import { BaseFile } from '../../core/models/base-file.model';
   imports: [FileToIconPipe],
   templateUrl: './drag-preview.component.html',
   styleUrl: './drag-preview.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DragPreviewComponent {
   files = input.required<BaseFile[]>();

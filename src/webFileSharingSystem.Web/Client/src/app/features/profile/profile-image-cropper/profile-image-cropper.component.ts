@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import {
   ImageCropperComponent,
   type ImageCroppedEvent,
@@ -15,7 +9,6 @@ import {
   imports: [ImageCropperComponent],
   templateUrl: './profile-image-cropper.component.html',
   styleUrl: './profile-image-cropper.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'data-testid': 'profile-image-cropper',
   },

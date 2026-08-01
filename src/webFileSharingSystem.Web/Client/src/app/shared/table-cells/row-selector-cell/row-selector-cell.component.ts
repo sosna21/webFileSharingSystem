@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseFile, FileStatus } from '../../../core/models/base-file.model';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -14,7 +9,6 @@ import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-
   selector: 'app-row-selector-cell',
   imports: [CommonModule, NgbTooltipModule, UploadCancelBtnComponent],
   templateUrl: './row-selector-cell.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RowSelectorCellComponent<
   T extends BaseFile,

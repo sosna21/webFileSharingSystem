@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { FileSizePipe } from '../../../../core/pipes/file-size.pipe';
 import {
   BaseFile,
@@ -11,7 +11,6 @@ import { DecimalPipe } from '@angular/common';
   imports: [FileSizePipe, DecimalPipe],
   templateUrl: './upload-status.component.html',
   styles: ``,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UploadStatusComponent {
   readonly ProgressStatus = ProgressStatus;

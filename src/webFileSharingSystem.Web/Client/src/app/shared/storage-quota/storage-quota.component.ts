@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { StorageService } from '../../core/services/storage.service';
 import { FileSizePipe } from '../../core/pipes/file-size.pipe';
 
@@ -7,7 +7,6 @@ import { FileSizePipe } from '../../core/pipes/file-size.pipe';
   imports: [FileSizePipe],
   templateUrl: './storage-quota.component.html',
   styleUrl: './storage-quota.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StorageQuotaComponent {
   private readonly storageService = inject(StorageService);

@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-} from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { TimeagoModule } from 'ngx-timeago';
 import { HoverClassDirective } from '../../../core/directives/hover-class.directive';
@@ -40,7 +34,6 @@ import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upl
   ],
   templateUrl: './shared-file-grid-card.component.html',
   styleUrl: './shared-file-grid-card.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SharedFileGridCardComponent {
   readonly FileStatus = FileStatus;

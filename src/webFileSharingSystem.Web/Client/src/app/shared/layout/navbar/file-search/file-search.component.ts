@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   ElementRef,
   inject,
@@ -14,7 +13,6 @@ import { retainLastDefined } from '../../../../core/utils/signal-utils';
   imports: [FormsModule],
   templateUrl: './file-search.component.html',
   styleUrl: './file-search.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'flex-grow-1',
     '(window:keydown)': 'onKeydown($event)',

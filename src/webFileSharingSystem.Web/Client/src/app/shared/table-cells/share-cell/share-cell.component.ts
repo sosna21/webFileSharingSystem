@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  output,
-} from '@angular/core';
+import { Component, computed, inject, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppFile } from '../../../core/models/app-file.model';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
@@ -20,7 +14,6 @@ type ShareState = 'not-shared' | 'shared' | 'expiring-soon';
   selector: 'app-share-cell',
   imports: [CommonModule, NgbTooltipModule, ClicableIconDirective],
   templateUrl: './share-cell.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShareCellComponent extends BaseCellDirective<AppFile> {
   readonly FileStatus = FileStatus;

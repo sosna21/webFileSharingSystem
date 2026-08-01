@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { SelectionService } from '../../../core/services/selection.service';
@@ -23,7 +23,6 @@ import { SharedFilesGridComponent } from '../../../shared/shared-files-grid/shar
   providers: [SelectionService<SharedFile>],
   templateUrl: './shared-with-me.component.html',
   styleUrl: './shared-with-me.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SharedWithMeComponent {
   private readonly fileService = inject(FileService);

@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  model,
-} from '@angular/core';
+import { Component, inject, model } from '@angular/core';
 import { AuthenticationService } from '../../../core/services/authentication.service';
 import { ThemeSwitchComponent } from '../../theme-switch/theme-switch.component';
 import { ProfileDropdownComponent } from './profile-dropdown/profile-dropdown.component';
@@ -23,7 +18,6 @@ import { filter, map } from 'rxjs';
   ],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
   private readonly router = inject(Router);

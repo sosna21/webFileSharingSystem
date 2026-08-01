@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { BackButtonComponent } from '../../shared/back-button/back-button.component';
 
 @Component({
@@ -6,6 +6,5 @@ import { BackButtonComponent } from '../../shared/back-button/back-button.compon
   imports: [BackButtonComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsComponent {}

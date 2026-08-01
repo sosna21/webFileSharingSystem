@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import {
   NgbDropdownModule,
   NgbPaginationModule,
@@ -24,7 +19,6 @@ import { CommonModule } from '@angular/common';
   ],
   templateUrl: './base-disc-page.component.html',
   styleUrl: './base-disc-page.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BaseDiscPageComponent {
   private readonly fileService = inject(FileService);

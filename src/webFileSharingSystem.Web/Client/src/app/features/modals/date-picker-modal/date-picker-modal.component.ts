@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  linkedSignal,
-  model,
-} from '@angular/core';
+import { Component, inject, linkedSignal, model } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   NgbActiveModal,
@@ -20,7 +14,6 @@ import { DateUtils } from '../../../core/utils/date-utils';
   imports: [FormsModule, NgbDatepickerModule, NgbTimepicker],
   templateUrl: './date-picker-modal.component.html',
   styleUrl: './date-picker-modal.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(window:keydown.enter)': 'onEnterKey()',
   },

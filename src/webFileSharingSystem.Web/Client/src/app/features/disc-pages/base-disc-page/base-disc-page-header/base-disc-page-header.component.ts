@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FileSearchComponent } from '../../../../shared/layout/navbar/file-search/file-search.component';
 import { ViewToogleComponent } from '../../../../shared/view-toogle/view-toogle.component';
 import { StateService } from '../../../../core/services/state.service';
@@ -8,7 +8,6 @@ import { StateService } from '../../../../core/services/state.service';
   imports: [FileSearchComponent, ViewToogleComponent],
   templateUrl: './base-disc-page-header.component.html',
   styleUrl: './base-disc-page-header.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BaseDiscPageHeaderComponent {
   private readonly stateService = inject(StateService);

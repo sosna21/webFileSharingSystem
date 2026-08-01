@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { FileService } from '../../../core/services/file.service';
@@ -21,7 +21,6 @@ import { StateService } from '../../../core/services/state.service';
   providers: [SelectionService<AppFile>],
   templateUrl: './favourite.component.html',
   styleUrl: './favourite.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FavouriteComponent {
   private readonly fileService = inject(FileService);

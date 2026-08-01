@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { Location } from '@angular/common';
 
 @Component({
@@ -17,7 +12,6 @@ import { Location } from '@angular/common';
       <i class="bi bi-arrow-left me-2"></i> {{ text() }}
     </button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BackButtonComponent {
   private readonly location = inject(Location);

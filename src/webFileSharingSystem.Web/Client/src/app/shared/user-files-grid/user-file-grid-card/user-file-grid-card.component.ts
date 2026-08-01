@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-} from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import {
   NgbDropdownModule,
   NgbTooltipModule,
@@ -41,7 +35,6 @@ import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-
   ],
   templateUrl: './user-file-grid-card.component.html',
   styleUrl: './user-file-grid-card.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserFileGridCardComponent {
   readonly FileStatus = FileStatus;

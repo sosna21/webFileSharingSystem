@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedFile } from '../../../core/models/shared-file.model';
@@ -9,7 +9,6 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
   selector: 'app-access-mode-cell',
   imports: [CommonModule, NgbTooltipModule],
   templateUrl: './access-mode-cell.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccessModeCellComponent extends BaseCellDirective<SharedFile> {
   accessModeName = input.required<string>();

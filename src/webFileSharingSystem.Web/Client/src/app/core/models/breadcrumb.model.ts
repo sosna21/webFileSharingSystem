@@ -1,4 +1,4 @@
-import { ShareAccessMode } from "./share-access-mode.model";
+import { ShareAccessMode } from './share-access-mode.model';
 
 export interface Breadcrumb {
   id: number | null;

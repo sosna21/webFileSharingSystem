@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { BaseFile } from '../../../core/models/base-file.model';
 import { BaseCellDirective } from '../base-cell.directive';
 import { AuthenticationService } from '../../../core/services/authentication.service';
@@ -17,7 +10,6 @@ import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-
   imports: [TooltipOnOverflowDirective],
   templateUrl: './created-by-cell.component.html',
   styleUrl: './created-by-cell.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'd-flex align-items-center',
   },

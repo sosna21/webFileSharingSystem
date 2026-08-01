@@ -1,7 +1,6 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   ElementRef,
@@ -55,7 +54,6 @@ import { StateService } from '../../core/services/state.service';
   providers: [GridSelectionService<SharedFile>],
   templateUrl: './shared-files-grid.component.html',
   styleUrl: './shared-files-grid.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'd-block h-100',
     '(window:keydown)': 'onKeydown($event)',
