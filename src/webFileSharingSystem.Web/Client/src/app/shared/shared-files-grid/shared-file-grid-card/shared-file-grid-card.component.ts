@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input, output } from '@angular/core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
-import { TimeagoModule } from 'ngx-timeago';
 import { HoverClassDirective } from '../../../core/directives/hover-class.directive';
 import {
   FileStatus,
@@ -22,7 +21,6 @@ import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upl
   imports: [
     CommonModule,
     NgbDropdownModule,
-    TimeagoModule,
     SizeCellComponent,
     CreatedByCellComponent,
     HoverClassDirective,

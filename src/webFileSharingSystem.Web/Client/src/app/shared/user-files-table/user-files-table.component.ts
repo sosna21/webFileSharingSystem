@@ -16,7 +16,6 @@ import {
   NgbDropdownModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
-import { TimeagoModule } from 'ngx-timeago';
 import { AppFile } from '../../core/models/app-file.model';
 import { DownloadService } from '../../core/services/download.service';
 import { FileShareService } from '../../core/services/file-share.service';
@@ -50,7 +49,6 @@ import { StateService } from '../../core/services/state.service';
     CommonModule,
     NgbTooltipModule,
     NgbDropdownModule,
-    TimeagoModule,
     UserFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,

@@ -15,7 +15,6 @@ import {
   NgbDropdownModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
-import { TimeagoModule } from 'ngx-timeago';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { SharedFile } from '../../core/models/shared-file.model';
@@ -43,14 +42,13 @@ import { StateService } from '../../core/services/state.service';
     CommonModule,
     NgbTooltipModule,
     NgbDropdownModule,
-    TimeagoModule,
     SharedFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,
     UploadOverlayComponent,
     TableContextMenuComponent,
-    SharedFileGridCardComponent,
-  ],
+    SharedFileGridCardComponent
+],
   providers: [GridSelectionService<SharedFile>],
   templateUrl: './shared-files-grid.component.html',
   styleUrl: './shared-files-grid.component.scss',

@@ -1,6 +1,5 @@
 import {
   ApplicationConfig,
-  importProvidersFrom,
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -11,13 +10,13 @@ import {
   withXhr,
 } from '@angular/common/http';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
-import { TimeagoModule } from 'ngx-timeago';
+import { provideTimeago } from 'ngx-timeago';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(withXhr(), withInterceptors([jwtInterceptor])),
-    importProvidersFrom(TimeagoModule.forRoot()),
+    provideTimeago(),
   ],
 };

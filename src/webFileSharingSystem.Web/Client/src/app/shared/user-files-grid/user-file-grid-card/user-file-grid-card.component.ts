@@ -9,7 +9,6 @@ import {
   FileStatus,
   ProgressStatus,
 } from '../../../core/models/base-file.model';
-import { TimeagoModule } from 'ngx-timeago';
 import { SizeCellComponent } from '../../table-cells/size-cell/size-cell.component';
 import { CreatedByCellComponent } from '../../table-cells/created-by-cell/created-by-cell.component';
 import { HoverClassDirective } from '../../../core/directives/hover-class.directive';
@@ -23,7 +22,6 @@ import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-
   imports: [
     CommonModule,
     NgbDropdownModule,
-    TimeagoModule,
     SizeCellComponent,
     CreatedByCellComponent,
     HoverClassDirective,
