@@ -250,10 +250,8 @@ export class ModalService {
   }
 
   keyboardShortcutsModal(): Promise<boolean> {
-    if (this.modalService.hasOpenModals()) {
-      this.closeAll();
-      return new Promise(() => false);
-    }
+    this.closeAll();
+
     try {
       const modalRef = this.modalService.open(KeyboardShortcutsModalComponent, {
         centered: true,
