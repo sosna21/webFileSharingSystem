@@ -36,16 +36,18 @@
   class="table-wrapper position-relative h-100 rounded rounded-4 px-3 py-3"
   data-testid="user-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
-  (mouseup)="resetFileSelection($event)"
+  (pointerdown)="onRubberBandPointerDown($event)"
+  (pointerup)="viewWrapperClick($event)"
   (contextmenu)="tableContextMenuClick($event)"
 >
   <div
     #scrollContainer
+    (scroll)="onRubberBandScroll()"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper overflow-auto h-100 px-2"
+    class="table-scroll-wrapper position-relative overflow-auto h-100"
   >
     <div class="file-grid">
       @for (file of files(); track file.id) {
@@ -57,9 +59,6 @@
           [isUserCreatedFile]="file.createdBy === currentUserId()"
           (clickCard)="selectFile(file, $event)"
           (doubleClickCard)="file.isDirectory ? selectFolder(file.id) : null"
-          (mouseDownCard)="onRowMouseDown(file, $event)"
-          (mouseEnterCard)="onRowMouseEnter(file)"
-          (mouseUpCard)="onRowMouseUp(file, $event)"
           (dragStartCard)="onRowDragStart($event, file)"
           (dragEndCard)="onRowDragEnd($event)"
           (dragEnterCard)="onRowDragEnter($event, file)"
@@ -90,6 +89,8 @@
           <div class="fs-3">Drop files here to upload</div>
         </div>
       }
+
+      <app-selection-area />
     </div>
   </div>
 

@@ -35,6 +35,7 @@ import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.compone
 import { SharedFileGridCardComponent } from './shared-file-grid-card/shared-file-grid-card.component';
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { StateService } from '../../core/services/state.service';
+import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 
 @Component({
   selector: 'app-shared-files-grid',
@@ -47,14 +48,18 @@ import { StateService } from '../../core/services/state.service';
     CdkTableModule,
     UploadOverlayComponent,
     TableContextMenuComponent,
-    SharedFileGridCardComponent
-],
+    SharedFileGridCardComponent,
+    SelectionAreaComponent,
+  ],
   providers: [GridSelectionService<SharedFile>],
   templateUrl: './shared-files-grid.component.html',
   styleUrl: './shared-files-grid.component.scss',
   host: {
     class: 'd-block h-100',
     '(window:keydown)': 'onKeydown($event)',
+    '(window:pointermove)': 'onRubberBandPointerMove($event)',
+    '(window:pointerup)': 'onRubberBandPointerUp()',
+    '(window:pointercancel)': 'onRubberBandPointerCancel()',
   },
 })
 export class SharedFilesGridComponent {
@@ -81,6 +86,8 @@ export class SharedFilesGridComponent {
   );
   readonly sortOption = this.fileService.sortOption;
   readonly viewMode = inject(StateService).viewMode;
+  readonly rubberBandItemSelector =
+    'app-user-file-grid-card, app-shared-file-grid-card';
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
@@ -198,35 +205,57 @@ export class SharedFilesGridComponent {
     this.gridSelection.onKeydown(event, this.files, this.scrollContainer);
   }
 
+  onRubberBandPointerDown(event: PointerEvent) {
+    const container = this.scrollContainer()?.nativeElement;
+    if (!container) return;
+
+    const started = this.selection.beginRubberBandSelection(
+      event,
+      container,
+      this.rubberBandItemSelector,
+    );
+
+    if (started) {
+      this.closeContextMenus();
+    }
+  }
+
+  onRubberBandPointerMove(event: PointerEvent) {
+    this.selection.updateRubberBandSelection(event);
+  }
+
+  onRubberBandScroll() {
+    this.selection.updateRubberBandSelection();
+  }
+
+  onRubberBandPointerUp() {
+    this.selection.endRubberBandSelection();
+  }
+
+  onRubberBandPointerCancel() {
+    this.selection.endRubberBandSelection();
+  }
+
   checkAllCheckBox(ev: Event) {
     const target = ev.target as HTMLInputElement;
     this.selection.toggleAll(target.checked);
   }
 
   selectFile(file: SharedFile, event: MouseEvent) {
-    this.selection.selectRow(file, event);
+    this.selection.selectFile(file, event);
   }
 
-  resetFileSelection(event: MouseEvent) {
-    if (this.selection.dragActive()) return;
+  viewWrapperClick(event: PointerEvent) {
     const target = event.target as HTMLElement;
-    if (target.closest('app-shared-file-grid-card')) {
-      return;
+
+    if (
+      !target.closest('app-shared-file-grid-card') &&
+      !this.selection.rubberBandActive() &&
+      event.ctrlKey === false &&
+      event.shiftKey === false
+    ) {
+      this.selection.clear();
     }
-
-    this.selection.clear();
-  }
-
-  onRowMouseDown(row: SharedFile, event: MouseEvent) {
-    this.selection.onRowMouseDown(row, event);
-  }
-
-  onRowMouseEnter(row: SharedFile) {
-    this.selection.onRowMouseEnter(row);
-  }
-
-  onRowMouseUp(row: SharedFile, event: MouseEvent) {
-    this.selection.onRowMouseUp(row, event);
   }
 
   selectFolder(folderId: number) {
@@ -335,6 +364,11 @@ export class SharedFilesGridComponent {
     this.tableContextMenu()?.open();
   }
 
+  private closeContextMenus() {
+    this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
+  }
+
   deleteFiles(files: SharedFile[]) {
     this.fileService.deleteFilesWithFeedback(files);
   }
@@ -441,10 +475,6 @@ export class SharedFilesGridComponent {
     );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  }
-
-  getFileSize(fileSize: string) {
-    return +fileSize.split(' ')[0];
   }
 
   canMove(file: SharedFile): boolean {

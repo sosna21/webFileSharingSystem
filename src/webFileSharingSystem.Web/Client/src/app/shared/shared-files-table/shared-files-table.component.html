@@ -31,17 +31,19 @@
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
   data-testid="shared-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
-  (mouseup)="resetFileSelection($event)"
+  (pointerdown)="onRubberBandPointerDown($event)"
+  (pointerup)="viewWrapperClick($event)"
   (contextmenu)="tableContextMenuClick($event)"
 >
   <div
     #scrollContainer
     data-testid="files-drop-area"
+    (scroll)="onRubberBandScroll()"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper overflow-auto h-100 px-1"
+    class="table-scroll-wrapper position-relative overflow-auto h-100 px-1"
   >
     <table
       cdk-table
@@ -267,9 +269,6 @@
         (dragenter)="onRowDragEnter($event, file)"
         (dragover)="onRowDragOver($event)"
         (drop)="onRowDrop($event)"
-        (mousedown)="onRowMouseDown(file, $event)"
-        (mouseenter)="onRowMouseEnter(file)"
-        (mouseup)="onRowMouseUp(file, $event)"
         [class.opacity-50]="
           filesMarkedForAction()?.type === 1 &&
           filesMarkedForAction()?.filesIds!.has(file.id)
@@ -296,6 +295,8 @@
         <div class="fs-3">Drop files here to upload</div>
       </div>
     }
+
+    <app-selection-area />
   </div>
 
   @if (dragTarget() && !isInternalHover()) {

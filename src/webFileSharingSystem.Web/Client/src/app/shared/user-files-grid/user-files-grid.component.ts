@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import {
+  ChangeDetectorRef,
   Component,
   computed,
   ElementRef,
@@ -34,6 +35,7 @@ import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { StateService } from '../../core/services/state.service';
+import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 
 @Component({
   selector: 'app-user-files-grid',
@@ -52,6 +54,7 @@ import { StateService } from '../../core/services/state.service';
     CdkTableModule,
     UploadOverlayComponent,
     TableContextMenuComponent,
+    SelectionAreaComponent,
   ],
   providers: [GridSelectionService<AppFile>],
   templateUrl: './user-files-grid.component.html',
@@ -59,6 +62,9 @@ import { StateService } from '../../core/services/state.service';
   host: {
     class: 'd-block h-100',
     '(window:keydown)': 'onKeydown($event)',
+    '(window:pointermove)': 'onRubberBandPointerMove($event)',
+    '(window:pointerup)': 'onRubberBandPointerUp()',
+    '(window:pointercancel)': 'onRubberBandPointerCancel()',
   },
 })
 export class UserFilesGridComponent {
@@ -82,6 +88,8 @@ export class UserFilesGridComponent {
     () => this.fileService.parentBreadcrumb()?.accessMode,
   );
   readonly viewMode = inject(StateService).viewMode;
+  readonly rubberBandItemSelector =
+    'app-user-file-grid-card, app-shared-file-grid-card';
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
@@ -182,35 +190,57 @@ export class UserFilesGridComponent {
     this.gridSelection.onKeydown(event, this.files, this.scrollContainer);
   }
 
+  onRubberBandPointerDown(event: PointerEvent) {
+    const container = this.scrollContainer()?.nativeElement;
+    if (!container) return;
+
+    const started = this.selection.beginRubberBandSelection(
+      event,
+      container,
+      this.rubberBandItemSelector,
+    );
+
+    if (started) {
+      this.closeContextMenus();
+    }
+  }
+
+  onRubberBandPointerMove(event: PointerEvent) {
+    this.selection.updateRubberBandSelection(event);
+  }
+
+  onRubberBandScroll() {
+    this.selection.updateRubberBandSelection();
+  }
+
+  onRubberBandPointerUp() {
+    this.selection.endRubberBandSelection();
+  }
+
+  onRubberBandPointerCancel() {
+    this.selection.endRubberBandSelection();
+  }
+
   checkAllCheckBox(ev: Event) {
     const target = ev.target as HTMLInputElement;
     this.selection.toggleAll(target.checked);
   }
 
   selectFile(file: AppFile, event: MouseEvent) {
-    this.selection.selectRow(file, event);
+    this.selection.selectFile(file, event);
   }
 
-  resetFileSelection(event: MouseEvent) {
-    if (this.selection.dragActive()) return;
+  viewWrapperClick(event: PointerEvent) {
     const target = event.target as HTMLElement;
-    if (target.closest('app-user-file-grid-card')) {
-      return;
+
+    if (
+      !target.closest('app-user-file-grid-card') &&
+      !this.selection.rubberBandActive() &&
+      event.ctrlKey === false &&
+      event.shiftKey === false
+    ) {
+      this.selection.clear();
     }
-
-    this.selection.clear();
-  }
-
-  onRowMouseDown(row: AppFile, event: MouseEvent) {
-    this.selection.onRowMouseDown(row, event);
-  }
-
-  onRowMouseEnter(row: AppFile) {
-    this.selection.onRowMouseEnter(row);
-  }
-
-  onRowMouseUp(row: AppFile, event: MouseEvent) {
-    this.selection.onRowMouseUp(row, event);
   }
 
   selectFolder(folderId: number) {
@@ -344,6 +374,11 @@ export class UserFilesGridComponent {
     this.tableContextMenu()?.open();
   }
 
+  private closeContextMenus() {
+    this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
+  }
+
   deleteFiles(files: AppFile[]) {
     this.fileService.deleteFilesWithFeedback(files);
   }
@@ -436,9 +471,5 @@ export class UserFilesGridComponent {
     );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  }
-
-  getFileSize(fileSize: string) {
-    return +fileSize.split(' ')[0];
   }
 }

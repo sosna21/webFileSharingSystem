@@ -12,10 +12,25 @@ export interface SelectableItem {
 }
 
 type DragKind = null | 'standard' | 'ctrl' | 'shift';
+type RubberBandMode = 'replace' | 'add' | 'toggle';
+type RubberBandState = 'idle' | 'armed' | 'dragging';
+
+interface RubberBandPoint {
+  x: number;
+  y: number;
+}
+
+interface RubberBandBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
 
 @Injectable()
 export class SelectionService<T extends SelectableItem = SelectableItem> {
-  // Host supplies live files list
+  // Host supplies live files list\
+  private static readonly DRAG_THRESHOLD = 5;
   protected filesSig!: Signal<T[]>;
   protected scrollContainerSig?: Signal<ElementRef<HTMLElement> | undefined>;
 
@@ -35,13 +50,37 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
 
   private fileSelectionAnchorId = signal<number | null>(null);
   private keyboardFocusId = signal<number | null>(null);
-  private dragSelectionAnchorId = signal<number | null>(null);
+  private rubberBandStartPoint = signal<RubberBandPoint | null>(null);
+  private rubberBandCurrentPoint = signal<RubberBandPoint | null>(null);
+  private rubberBandPointerPoint = signal<RubberBandPoint | null>(null);
+  private rubberBandContainer = signal<HTMLElement | null>(null);
+  private rubberBandItemSelector = signal<string>('');
+  private rubberBandBaseSelection = signal<Set<number>>(new Set());
+  private rubberBandMode = signal<RubberBandMode>('replace');
+  private rubberBandState = signal<RubberBandState>('idle');
   private dragging = signal<DragKind>(null);
-  private beforeDragIds = signal<Set<number>>(new Set());
 
-  constructor() {
-    window.addEventListener('mouseup', this.endDragSelection.bind(this));
-  }
+  private readonly rubberBandStarted = computed(
+    () => this.rubberBandState() !== 'idle',
+  );
+
+  readonly rubberBandActive = computed(
+    () => this.rubberBandState() === 'dragging',
+  );
+
+  readonly rubberBandBounds = computed<RubberBandBounds | null>(() => {
+    const start = this.rubberBandStartPoint();
+    const current = this.rubberBandCurrentPoint();
+
+    if (!start || !current) return null;
+
+    return {
+      left: Math.min(start.x, current.x),
+      top: Math.min(start.y, current.y),
+      width: Math.abs(current.x - start.x),
+      height: Math.abs(current.y - start.y),
+    };
+  });
 
   scrollToId(id: number) {
     const files = this.filesSig ? this.filesSig() : [];
@@ -79,6 +118,181 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   clearKeyboardNavigationState() {
     this.fileSelectionAnchorId.set(null);
     this.keyboardFocusId.set(null);
+  }
+
+  beginRubberBandSelection(
+    event: PointerEvent,
+    container: HTMLElement,
+    itemSelector: string,
+  ) {
+    if (event.button !== 0) return false;
+
+    const target = event.target as HTMLElement;
+    if (!this.canStartRubberBandOnTarget(target, itemSelector)) return false;
+
+    const point = this.clientPointToContainerPoint(
+      event.clientX,
+      event.clientY,
+      container,
+    );
+
+    this.rubberBandPointerPoint.set({ x: event.clientX, y: event.clientY });
+    this.rubberBandStartPoint.set(point);
+    this.rubberBandCurrentPoint.set(point);
+    this.rubberBandContainer.set(container);
+    this.rubberBandItemSelector.set(itemSelector);
+    this.rubberBandState.set('armed');
+    return true;
+  }
+
+  updateRubberBandSelection(event?: PointerEvent) {
+    if (this.rubberBandState() === 'idle') return;
+
+    if (event) {
+      // update pointer
+      if (this.rubberBandState() === 'armed') {
+        const dx = event.clientX - this.rubberBandPointerPoint()!.x;
+        const dy = event.clientY - this.rubberBandPointerPoint()!.y;
+
+        const threshold = SelectionService.DRAG_THRESHOLD;
+        if (dx * dx + dy * dy < threshold * threshold) {
+          return;
+        }
+        this.rubberBandMode.set(
+          event.ctrlKey ? 'toggle' : event.shiftKey ? 'add' : 'replace',
+        );
+        this.rubberBandBaseSelection.set(new Set(this.selectedIds()));
+
+        this.rubberBandState.set('dragging');
+      }
+
+      this.rubberBandPointerPoint.set({ x: event.clientX, y: event.clientY });
+    }
+
+    // perform selection
+    const container = this.rubberBandContainer();
+    const selector = this.rubberBandItemSelector();
+    const pointer = this.rubberBandPointerPoint();
+    const files = this.filesSig ? this.filesSig() : [];
+
+    if (!container || !selector || !pointer) return;
+
+    this.rubberBandCurrentPoint.set(
+      this.clientPointToContainerPoint(pointer.x, pointer.y, container),
+    );
+    const bounds = this.rubberBandBounds()!;
+
+    const touchedIds = this.getRubberBandTouchedIds(
+      container,
+      selector,
+      files,
+      bounds,
+    );
+
+    if (this.rubberBandMode() === 'add') {
+      const next = new Set(this.rubberBandBaseSelection());
+      touchedIds.forEach((id) => next.add(id));
+      this.selectedIds.set(next);
+    } else if (this.rubberBandMode() === 'toggle') {
+      const next = new Set(this.rubberBandBaseSelection());
+      touchedIds.forEach((id) => {
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+      });
+      this.selectedIds.set(next);
+    } else {
+      this.selectedIds.set(touchedIds);
+    }
+  }
+
+  endRubberBandSelection() {
+    if (!this.rubberBandStarted()) return;
+
+    this.rubberBandStartPoint.set(null);
+    this.rubberBandCurrentPoint.set(null);
+    this.rubberBandPointerPoint.set(null);
+    this.rubberBandContainer.set(null);
+    this.rubberBandItemSelector.set('');
+    this.rubberBandBaseSelection.set(new Set());
+    this.rubberBandMode.set('replace');
+    this.rubberBandState.set('idle');
+  }
+
+  private clientPointToContainerPoint(
+    clientX: number,
+    clientY: number,
+    container: HTMLElement,
+  ): RubberBandPoint {
+    const rect = container.getBoundingClientRect();
+    return {
+      x: clientX - rect.left + container.scrollLeft,
+      y: clientY - rect.top + container.scrollTop,
+    };
+  }
+
+  private canStartRubberBandOnTarget(
+    target: HTMLElement,
+    itemSelector: string,
+  ) {
+    if (
+      target.closest(
+        'button, input, textarea, select, a, [role="button"], [contenteditable="true"], app-upload-cancel-btn, app-upload-control-btns, app-clicable-icon',
+      )
+    ) {
+      return false;
+    }
+
+    const row = target.closest('tr[cdk-row]');
+    if (row?.classList.contains('selected-row')) {
+      return false;
+    }
+
+    if (target.closest(itemSelector)) {
+      return target.matches('td, th');
+    }
+
+    if (target.closest('tr[cdk-header-row]')) return false;
+    return true;
+  }
+
+  private getRubberBandTouchedIds(
+    container: HTMLElement,
+    itemSelector: string,
+    files: T[],
+    bounds: RubberBandBounds,
+  ) {
+    const elements = Array.from(
+      container.querySelectorAll(itemSelector),
+    ) as HTMLElement[];
+    const ids = new Set<number>();
+    const containerRect = container.getBoundingClientRect();
+
+    elements.forEach((element, index) => {
+      const file = files[index];
+      if (!file) return;
+
+      const rect = element.getBoundingClientRect();
+      const elementBounds = {
+        left: rect.left - containerRect.left + container.scrollLeft,
+        top: rect.top - containerRect.top + container.scrollTop,
+        width: rect.width,
+        height: rect.height,
+      };
+      if (this.rectsIntersect(elementBounds, bounds)) {
+        ids.add(file.id);
+      }
+    });
+
+    return ids;
+  }
+
+  private rectsIntersect(a: RubberBandBounds, b: RubberBandBounds) {
+    return !(
+      a.left + a.width < b.left ||
+      a.left > b.left + b.width ||
+      a.top + a.height < b.top ||
+      a.top > b.top + b.height
+    );
   }
 
   onKeydown(event: KeyboardEvent) {
@@ -218,9 +432,10 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   clear() {
     this.selectedIds.set(new Set());
     this.clearKeyboardNavigationState();
+    this.endRubberBandSelection();
   }
 
-  selectRow(file: T, event: MouseEvent) {
+  selectFile(file: T, event: MouseEvent) {
     const isCtrl = event.ctrlKey || event.metaKey;
     const isShift = event.shiftKey;
 
@@ -254,81 +469,6 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
 
     this.selectedIds.set(new Set([file.id]));
     this.setKeyboardNavigationState(file.id, file.id);
-  }
-
-  // Drag-select support
-  onRowMouseDown(row: T, event: MouseEvent) {
-    if (event.button !== 0) return;
-    if (this.isSelected(row.id) && !(event.ctrlKey || event.shiftKey)) return;
-    this.beforeDragIds.set(new Set(this.selectedIds()));
-    this.dragging.set(
-      event.ctrlKey ? 'ctrl' : event.shiftKey ? 'shift' : 'standard',
-    );
-    this.dragSelectionAnchorId.set(row.id);
-  }
-
-  onRowMouseEnter(row: T) {
-    if (!this.dragging() || !this.dragSelectionAnchorId()) return;
-    this.dragSelectRows(row);
-  }
-
-  onRowMouseUp(row: T, event: MouseEvent) {
-    if (!this.dragging() || !this.dragSelectionAnchorId()) return;
-    if (this.dragSelectionAnchorId() === row.id) {
-      this.endDragSelection();
-      return;
-    }
-    this.dragSelectRows(row);
-    this.endDragSelection();
-  }
-
-  private dragSelectRows(current: T) {
-    const anchorIndex = this.filesSig().findIndex(
-      (f) => f.id === this.dragSelectionAnchorId(),
-    );
-    const currentIndex = this.filesSig().findIndex((f) => f.id === current.id);
-
-    if (this.dragging() === 'shift') {
-      const range = new Set(
-        this.filesSig()
-          .filter(
-            (_, i) =>
-              i >= Math.min(anchorIndex, currentIndex) &&
-              i <= Math.max(anchorIndex, currentIndex),
-          )
-          .map((f) => f.id),
-      );
-      this.selectedIds.update((prev) => new Set([...prev, ...range]));
-    } else if (this.dragging() === 'ctrl') {
-      const startSet = new Set(this.beforeDragIds());
-      const idsInRange = this.filesSig()
-        .filter(
-          (_, i) =>
-            i >= Math.min(anchorIndex, currentIndex) &&
-            i <= Math.max(anchorIndex, currentIndex),
-        )
-        .map((f) => f.id);
-      const next = new Set(startSet);
-      idsInRange.forEach((id) =>
-        next.has(id) ? next.delete(id) : next.add(id),
-      );
-      this.selectedIds.set(next);
-    } else {
-      const rangeIds = this.filesSig()
-        .filter(
-          (_, i) =>
-            i >= Math.min(anchorIndex, currentIndex) &&
-            i <= Math.max(anchorIndex, currentIndex),
-        )
-        .map((f) => f.id);
-      this.selectedIds.set(new Set(rangeIds));
-    }
-  }
-
-  private endDragSelection() {
-    this.dragging.set(null);
-    this.dragSelectionAnchorId.set(null);
-    this.beforeDragIds.set(new Set());
   }
 
   isSelected(id: number) {
