@@ -80,6 +80,7 @@ export class UserFilesGridComponent {
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly gridSelection = inject(GridSelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -201,6 +202,7 @@ export class UserFilesGridComponent {
     );
 
     if (started) {
+      event.stopPropagation();
       this.closeContextMenus();
     }
   }
@@ -407,6 +409,10 @@ export class UserFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: AppFile) {
+    if (!this.isSelected(file.id)) {
+      this.selection.selectedIds.set(new Set([file.id]));
+      this.changeDetectorRef.detectChanges();
+    }
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
     this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);

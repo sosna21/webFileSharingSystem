@@ -1,6 +1,7 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { CommonModule } from '@angular/common';
 import {
+  ChangeDetectorRef,
   Component,
   computed,
   ElementRef,
@@ -88,6 +89,7 @@ export class SharedFilesTableComponent {
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly modalService = inject(ModalService);
   private readonly toast = inject(ToastService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(
@@ -227,6 +229,7 @@ export class SharedFilesTableComponent {
     );
 
     if (started) {
+      event.preventDefault();
       this.closeContextMenus();
     }
   }
@@ -411,6 +414,10 @@ export class SharedFilesTableComponent {
   }
 
   onRowDragStart(event: DragEvent, file: SharedFile) {
+    if (!this.isSelected(file.id)) {
+      this.selection.selectedIds.set(new Set([file.id]));
+      this.changeDetectorRef.detectChanges();
+    }
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
 

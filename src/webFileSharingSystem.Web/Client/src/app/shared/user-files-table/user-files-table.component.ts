@@ -1,6 +1,7 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { CommonModule } from '@angular/common';
 import {
+  ChangeDetectorRef,
   Component,
   computed,
   ElementRef,
@@ -90,6 +91,7 @@ export class UserFilesTableComponent {
   private readonly injector = inject(Injector);
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -221,6 +223,7 @@ export class UserFilesTableComponent {
     );
 
     if (started) {
+      event.preventDefault();
       this.closeContextMenus();
     }
   }
@@ -430,6 +433,10 @@ export class UserFilesTableComponent {
   }
 
   onRowDragStart(event: DragEvent, file: AppFile) {
+    if (!this.isSelected(file.id)) {
+      this.selection.selectedIds.set(new Set([file.id]));
+      this.changeDetectorRef.detectChanges();
+    }
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
     this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
