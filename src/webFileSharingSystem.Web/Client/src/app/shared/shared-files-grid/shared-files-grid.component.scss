@@ -10,13 +10,13 @@
 }
 
 .table-wrapper {
-  background-color: rgba(var(--bs-secondary-rgb), 0.1);
+  background-color: rgba(var(--bs-secondary-rgb), 0.07);
 }
 
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
+  gap: 1.3rem;
   justify-content: start;
   align-content: start;
 }

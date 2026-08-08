@@ -33,6 +33,9 @@ import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-
   ],
   templateUrl: './user-file-grid-card.component.html',
   styleUrl: './user-file-grid-card.component.scss',
+  host: {
+    '[class.is-directory]': 'file().isDirectory',
+  },
 })
 export class UserFileGridCardComponent {
   readonly FileStatus = FileStatus;

@@ -1,5 +1,5 @@
 <div
-  class="file-card position-relative px-2 my-1 pb-1 no-select d-flex flex-column"
+  class="file-card position-relative px-2 py-1 no-select d-flex flex-column h-100"
   [class.selected]="selected()"
   [class.drop-hover]="canShowDropOverlay()"
   [class.incomplete]="file().fileStatus === FileStatus.Incomplete"
@@ -62,7 +62,7 @@
     </div>
 
     @if (isUploadInProgress()) {
-      <div class="w-100 d-flex align-items-baseline" style="height: 1.1rem">
+      <div class="d-flex mt-1" style="height: 1.1rem">
         <app-upload-progressbar [file]="file()" class="flex-grow-1" />
       </div>
     }

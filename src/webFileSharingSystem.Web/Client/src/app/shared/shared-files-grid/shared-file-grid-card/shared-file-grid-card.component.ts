@@ -32,6 +32,9 @@ import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upl
   ],
   templateUrl: './shared-file-grid-card.component.html',
   styleUrl: './shared-file-grid-card.component.scss',
+  host: {
+    '[class.is-directory]': 'file().isDirectory',
+  },
 })
 export class SharedFileGridCardComponent {
   readonly FileStatus = FileStatus;

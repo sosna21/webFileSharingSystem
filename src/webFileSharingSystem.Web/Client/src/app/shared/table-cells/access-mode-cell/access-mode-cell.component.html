@@ -1,12 +1,26 @@
-<span
-  class="d-inline-flex align-items-center d-xl-none"
-  [ngbTooltip]="accessModeName()"
-  [openDelay]="250"
->
-  <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
-  <span>{{ getShortAccessModeName(accessModeName()) }}</span>
-</span>
-<span class="d-none d-xl-inline-flex align-items-center">
-  <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
-  {{ accessModeName() }}
-</span>
+@if (isResponsive()) {
+  <span
+    class="d-inline-flex align-items-center d-xl-none"
+    [ngbTooltip]="accessModeName()"
+    [openDelay]="250"
+  >
+    <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
+    {{ getShortAccessModeName(accessModeName()) }}
+  </span>
+
+  <span class="d-none d-xl-inline-flex align-items-center">
+    <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
+    {{ accessModeName() }}
+  </span>
+} @else {
+  <span
+    class="d-inline-flex align-items-center"
+    [ngbTooltip]="isShort() ? accessModeName() : null"
+    [openDelay]="250"
+  >
+    <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
+    {{
+      isShort() ? getShortAccessModeName(accessModeName()) : accessModeName()
+    }}
+  </span>
+}

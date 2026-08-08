@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedFile } from '../../../core/models/shared-file.model';
@@ -12,6 +12,13 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
 })
 export class AccessModeCellComponent extends BaseCellDirective<SharedFile> {
   accessModeName = input.required<string>();
+  nameDisplayMode = input<'full' | 'short' | 'responsive'>('responsive');
+
+  readonly isResponsive = computed(
+    () => this.nameDisplayMode() === 'responsive',
+  );
+
+  readonly isShort = computed(() => this.nameDisplayMode() === 'short');
 
   getShortAccessModeName(accessModeName: string): string {
     switch (accessModeName) {

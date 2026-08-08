@@ -33,7 +33,7 @@
 />
 
 <div
-  class="table-wrapper position-relative h-100 rounded rounded-4 px-3 py-3"
+  class="table-wrapper position-relative h-100 rounded rounded-4"
   data-testid="user-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
   (pointerdown)="onRubberBandPointerDown($event)"
@@ -47,7 +47,7 @@
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper position-relative overflow-auto h-100"
+    class="table-scroll-wrapper position-relative overflow-auto h-100 p-4"
   >
     <div class="file-grid">
       @for (file of files(); track file.id) {
