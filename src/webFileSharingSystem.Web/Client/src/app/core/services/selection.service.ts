@@ -31,6 +31,10 @@ interface RubberBandBounds {
 export class SelectionService<T extends SelectableItem = SelectableItem> {
   // Host supplies live files list\
   private static readonly DRAG_THRESHOLD = 5;
+  private static readonly AUTO_SCROLL_MIN_SPEED = 120;
+  private static readonly AUTO_SCROLL_MAX_SPEED = 900;
+  private static readonly AUTO_SCROLL_SPEED_PER_PX = 45;
+
   protected filesSig!: Signal<T[]>;
   protected scrollContainerSig?: Signal<ElementRef<HTMLElement> | undefined>;
 
@@ -59,6 +63,9 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   private rubberBandMode = signal<RubberBandMode>('replace');
   private rubberBandState = signal<RubberBandState>('idle');
   private dragging = signal<DragKind>(null);
+  private autoScrollFrameId: number | null = null;
+  private autoScrollLastTimestamp: number | null = null;
+  private autoScrollRemainder = 0;
 
   private readonly rubberBandStarted = computed(
     () => this.rubberBandState() !== 'idle',
@@ -100,6 +107,10 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
 
   setScrollContainer(container: Signal<ElementRef<HTMLElement> | undefined>) {
     this.scrollContainerSig = container;
+  }
+
+  getScrollContainerElement() {
+    return this.scrollContainerSig?.()?.nativeElement ?? null;
   }
 
   getKeyboardFocusId() {
@@ -203,10 +214,14 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     } else {
       this.selectedIds.set(touchedIds);
     }
+
+    this.syncRubberBandAutoScroll();
   }
 
   endRubberBandSelection() {
     if (!this.rubberBandStarted()) return;
+
+    this.stopRubberBandAutoScroll();
 
     this.rubberBandStartPoint.set(null);
     this.rubberBandCurrentPoint.set(null);
@@ -216,6 +231,151 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     this.rubberBandBaseSelection.set(new Set());
     this.rubberBandMode.set('replace');
     this.rubberBandState.set('idle');
+  }
+
+  private syncRubberBandAutoScroll() {
+    if (!this.shouldRubberBandAutoScroll()) {
+      this.stopRubberBandAutoScroll();
+      return;
+    }
+
+    if (this.autoScrollFrameId !== null) return;
+
+    this.autoScrollFrameId = window.requestAnimationFrame(
+      this.stepRubberBandAutoScroll,
+    );
+  }
+
+  private stopRubberBandAutoScroll() {
+    if (this.autoScrollFrameId !== null) {
+      window.cancelAnimationFrame(this.autoScrollFrameId);
+      this.autoScrollFrameId = null;
+    }
+
+    this.autoScrollLastTimestamp = null;
+    this.autoScrollRemainder = 0;
+  }
+
+  private readonly stepRubberBandAutoScroll = (timestamp: number) => {
+    this.autoScrollFrameId = null;
+
+    if (!this.shouldRubberBandAutoScroll()) {
+      return;
+    }
+
+    const container = this.rubberBandContainer();
+    const pointer = this.rubberBandPointerPoint();
+
+    if (!container || !pointer) return;
+
+    const deltaDirection = this.getRubberBandAutoScrollDirection(
+      container,
+      pointer,
+    );
+    if (deltaDirection.sign === 0) return;
+
+    const dt =
+      this.autoScrollLastTimestamp === null
+        ? 16
+        : Math.max(1, timestamp - this.autoScrollLastTimestamp);
+    this.autoScrollLastTimestamp = timestamp;
+
+    const maxScrollTop = Math.max(
+      0,
+      container.scrollHeight - container.clientHeight,
+    );
+
+    const speed = this.getRubberBandAutoScrollSpeed(
+      Math.abs(deltaDirection.distanceOutside),
+    );
+    const deltaPx = (speed * dt) / 1000;
+    this.autoScrollRemainder += deltaPx;
+
+    const scrollDelta =
+      Math.trunc(this.autoScrollRemainder) * deltaDirection.sign;
+    if (scrollDelta === 0) {
+      this.scheduleRubberBandAutoScroll();
+      return;
+    }
+
+    this.autoScrollRemainder -= Math.trunc(this.autoScrollRemainder);
+
+    const nextScrollTop = this.clamp(
+      container.scrollTop + scrollDelta,
+      0,
+      maxScrollTop,
+    );
+
+    if (nextScrollTop === container.scrollTop) {
+      return;
+    }
+
+    container.scrollTop = nextScrollTop;
+    this.updateRubberBandSelection();
+
+    this.scheduleRubberBandAutoScroll();
+  };
+
+  private scheduleRubberBandAutoScroll() {
+    if (!this.shouldRubberBandAutoScroll()) {
+      this.stopRubberBandAutoScroll();
+      return;
+    }
+
+    if (this.autoScrollFrameId !== null) return;
+
+    this.autoScrollFrameId = window.requestAnimationFrame(
+      this.stepRubberBandAutoScroll,
+    );
+  }
+
+  private shouldRubberBandAutoScroll() {
+    if (this.rubberBandState() !== 'dragging') return false;
+    const container = this.rubberBandContainer();
+    const pointer = this.rubberBandPointerPoint();
+    if (!container || !pointer) return false;
+    return this.getRubberBandAutoScrollDirection(container, pointer).sign !== 0;
+  }
+
+  private getRubberBandAutoScrollDirection(
+    container: HTMLElement,
+    pointer: RubberBandPoint,
+  ) {
+    const rect = container.getBoundingClientRect();
+    const topDistance = rect.top - pointer.y;
+    if (topDistance > 0) {
+      if (container.scrollTop <= 0) {
+        return { sign: 0, distanceOutside: topDistance };
+      }
+      return { sign: -1, distanceOutside: topDistance };
+    }
+
+    const bottomDistance = pointer.y - rect.bottom;
+    if (bottomDistance > 0) {
+      const maxScrollTop = Math.max(
+        0,
+        container.scrollHeight - container.clientHeight,
+      );
+      if (container.scrollTop >= maxScrollTop) {
+        return { sign: 0, distanceOutside: bottomDistance };
+      }
+      return { sign: 1, distanceOutside: bottomDistance };
+    }
+
+    return { sign: 0, distanceOutside: 0 };
+  }
+
+  private getRubberBandAutoScrollSpeed(distanceOutside: number) {
+    return this.clamp(
+      SelectionService.AUTO_SCROLL_MIN_SPEED +
+        distanceOutside * SelectionService.AUTO_SCROLL_SPEED_PER_PX,
+      SelectionService.AUTO_SCROLL_MIN_SPEED,
+      SelectionService.AUTO_SCROLL_MAX_SPEED,
+    );
+  }
+
+  private clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value));
   }
 
   private clientPointToContainerPoint(
