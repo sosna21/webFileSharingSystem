@@ -318,10 +318,10 @@ export class SharedFilesTableComponent {
     this.openTableContextMenu(position);
   }
 
-  actionIconClick(event: MouseEvent, icon: HTMLElement, file: SharedFile) {
+  actionIconClick(event: MouseEvent, file: SharedFile) {
     event.stopPropagation();
 
-    const rect = icon.getBoundingClientRect();
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
     this.selectedIds.set(new Set([file.id]));
 

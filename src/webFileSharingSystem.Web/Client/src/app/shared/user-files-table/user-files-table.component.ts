@@ -337,12 +337,12 @@ export class UserFilesTableComponent {
     this.openTableContextMenu(position);
   }
 
-  actionIconClick(event: MouseEvent, icon: HTMLElement, file: AppFile) {
+  actionIconClick(event: MouseEvent, file: AppFile) {
+    this.selectedIds.set(new Set([file.id]));
     event.stopPropagation();
 
-    const rect = icon.getBoundingClientRect();
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
-    this.selectedIds.set(new Set([file.id]));
 
     this.openContextMenu(position);
   }

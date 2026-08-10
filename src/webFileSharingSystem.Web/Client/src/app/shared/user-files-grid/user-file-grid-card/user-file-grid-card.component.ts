@@ -49,6 +49,7 @@ export class UserFileGridCardComponent {
 
   readonly clickCard = output<MouseEvent>();
   readonly doubleClickCard = output<MouseEvent>();
+  readonly clickActions = output<MouseEvent>();
   readonly mouseDownCard = output<MouseEvent>();
   readonly mouseEnterCard = output<void>();
   readonly mouseUpCard = output<MouseEvent>();

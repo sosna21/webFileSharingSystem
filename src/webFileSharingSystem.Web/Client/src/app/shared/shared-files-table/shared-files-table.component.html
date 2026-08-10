@@ -180,9 +180,7 @@
           <app-actions-cell
             [file]="file"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
-            (actionIconClick)="
-              actionIconClick($event.event, $event.icon, $event.file)
-            "
+            (actionIconClick)="actionIconClick($event.event, $event.file)"
           />
         </td>
       </ng-container>

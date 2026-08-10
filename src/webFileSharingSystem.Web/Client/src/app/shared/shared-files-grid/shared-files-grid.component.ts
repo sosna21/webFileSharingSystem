@@ -304,10 +304,10 @@ export class SharedFilesGridComponent {
     this.openTableContextMenu(position);
   }
 
-  actionIconClick(event: MouseEvent, icon: HTMLElement, file: SharedFile) {
+  actionIconClick(event: MouseEvent, file: SharedFile) {
     event.stopPropagation();
 
-    const rect = icon.getBoundingClientRect();
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
     this.selectedIds.set(new Set([file.id]));
 
@@ -400,7 +400,7 @@ export class SharedFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: SharedFile) {
-    if (!this.isSelected(file.id)) {
+    if (this.selectedFiles().length === 0) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
     }

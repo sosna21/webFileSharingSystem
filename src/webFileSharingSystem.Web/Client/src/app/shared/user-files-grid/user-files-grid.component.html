@@ -59,6 +59,7 @@
           [isUserCreatedFile]="file.createdBy === currentUserId()"
           (clickCard)="selectFile(file, $event)"
           (doubleClickCard)="file.isDirectory ? selectFolder(file.id) : null"
+          (clickActions)="actionIconClick($event, file)"
           (dragStartCard)="onRowDragStart($event, file)"
           (dragEndCard)="onRowDragEnd($event)"
           (dragEnterCard)="onRowDragEnter($event, file)"

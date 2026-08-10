@@ -40,7 +40,7 @@
     <div appHoverClass="bg-body-tertiary rounded-pill">
       <button
         class="btn btn-sm btn-link text-decoration-none dropdown-toggle"
-        (click)="onContextMenuClick($event)"
+        (click)="clickActions.emit($event)"
       >
         <i class="bi bi-three-dots-vertical"></i>
       </button>

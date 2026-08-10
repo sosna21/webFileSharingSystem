@@ -313,10 +313,10 @@ export class UserFilesGridComponent {
     this.openTableContextMenu(position);
   }
 
-  actionIconClick(event: MouseEvent, icon: HTMLElement, file: AppFile) {
+  actionIconClick(event: MouseEvent, file: AppFile) {
     event.stopPropagation();
 
-    const rect = icon.getBoundingClientRect();
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
     const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
     this.selectedIds.set(new Set([file.id]));
 
@@ -409,7 +409,7 @@ export class UserFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: AppFile) {
-    if (!this.isSelected(file.id)) {
+    if (this.selectedFiles().length === 0) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
     }
