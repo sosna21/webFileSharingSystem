@@ -101,7 +101,7 @@ namespace webFileSharingSystem.Infrastructure
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(
                     options => options.TokenValidationParameters = tokenValidationParameters)
                 .AddScheme<HawkAuthSchemeOptions, HawkAuthHandler>(HawkSettings.Scheme, options =>
-                    options.Credentials = _ => Task.FromResult(hawkCredential));
+                    options.Credentials = _ => hawkCredential);
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();

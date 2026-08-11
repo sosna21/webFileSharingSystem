@@ -7,6 +7,6 @@ namespace webFileSharingSystem.Infrastructure.HawkAuth
 {
     public class HawkAuthSchemeOptions : AuthenticationSchemeOptions
     {
-        public Func<string, Task<HawkCredential>> Credentials { get; set; }
+        public Func<string, HawkCredential> Credentials { get; set; }
     }
 }

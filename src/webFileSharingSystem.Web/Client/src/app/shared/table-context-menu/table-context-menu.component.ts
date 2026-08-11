@@ -1,8 +1,16 @@
 import { NgStyle, NgTemplateOutlet } from '@angular/common';
-import { Component, computed, input, output, viewChild } from '@angular/core';
+import {
+  Component,
+  computed,
+  input,
+  model,
+  output,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
+import { ViewMode } from '../../core/services/state.service';
 
 @Component({
   selector: 'app-table-context-menu',
@@ -20,6 +28,7 @@ export class TableContextMenuComponent {
     column: string;
     direction: 'asc' | 'desc';
   } | null>();
+  readonly viewMode = model.required<ViewMode>();
 
   readonly ShareAccessMode = ShareAccessMode;
   readonly hasMinReadWriteAccess = computed(
@@ -30,9 +39,6 @@ export class TableContextMenuComponent {
   readonly createFolder = output();
   readonly upload = output<File[]>();
   readonly paste = output();
-
-  readonly gridLayout = output();
-  readonly tableLayout = output();
   readonly sortByColumn = output<string>();
 
   open() {

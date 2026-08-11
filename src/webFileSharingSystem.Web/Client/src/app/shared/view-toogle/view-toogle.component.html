@@ -1,0 +1,14 @@
+<div class="btn-group">
+  <app-view-toogle-btn
+    [active]="selectedView() === 'list'"
+    (click)="this.selectedView.set('list')"
+    ><i class="bi bi-list-ul"></i
+  ></app-view-toogle-btn>
+
+  <app-view-toogle-btn
+    [active]="selectedView() === 'grid'"
+    (click)="this.selectedView.set('grid')"
+  >
+    <i class="bi bi-grid-3x3-gap-fill"></i
+  ></app-view-toogle-btn>
+</div>

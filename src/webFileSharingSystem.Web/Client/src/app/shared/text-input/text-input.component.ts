@@ -1,12 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, Self } from '@angular/core';
-import { ReactiveFormsModule, ControlValueAccessor, NgControl } from '@angular/forms';
+import { Component, input, Self } from '@angular/core';
+import {
+  ReactiveFormsModule,
+  ControlValueAccessor,
+  NgControl,
+} from '@angular/forms';
 
 @Component({
   selector: 'app-text-input',
   imports: [ReactiveFormsModule],
   templateUrl: './text-input.component.html',
   styleUrl: './text-input.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TextInputComponent implements ControlValueAccessor {
   label = input<string>('');
@@ -17,13 +20,8 @@ export class TextInputComponent implements ControlValueAccessor {
     this.ngControl.valueAccessor = this;
   }
 
-  writeValue(obj: any): void {
-  }
-  registerOnChange(fn: any): void {
-  }
-  registerOnTouched(fn: any): void {
-  }
-  setDisabledState?(isDisabled: boolean): void {
-  }
-
+  writeValue(obj: any): void {}
+  registerOnChange(fn: any): void {}
+  registerOnTouched(fn: any): void {}
+  setDisabledState?(isDisabled: boolean): void {}
 }

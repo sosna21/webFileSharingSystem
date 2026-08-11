@@ -1,8 +1,8 @@
 <div class="col-12 col-md-11 align-self-center mt-4">
-   <ng-content></ng-content>
-   @if (errorMsg()) {
+  <ng-content></ng-content>
+  @if (errorMsg()) {
     <div class="alert alert-danger mt-3 mb-0">
       {{ errorMsg() }}
     </div>
-    }
+  }
 </div>

@@ -1,11 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  input,
-  output,
-  computed,
-  inject,
-} from '@angular/core';
+import { Component, input, output, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -38,7 +31,6 @@ import { UploadControlBtnsComponent } from './upload-control-btns/upload-control
   ],
   templateUrl: './file-name-cell.component.html',
   styleUrl: './file-name-cell.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileNameCellComponent<
   T extends BaseFile,

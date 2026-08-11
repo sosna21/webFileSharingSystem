@@ -1,15 +1,15 @@
 export interface UploadProgressInfo {
-    status: UploadStatus,
-    parentId?: number | null,
-    fileId: number | null,
-    progress: number | null
+  status: UploadStatus;
+  parentId?: number | null;
+  fileId: number | null;
+  progress: number | null;
 }
 
 export enum UploadStatus {
-    Started,
-    InProgress,
-    Stopping,
-    Stopped,
-    Resumed,
-    Completed,
+  Started,
+  InProgress,
+  Stopping,
+  Stopped,
+  Resumed,
+  Completed,
 }

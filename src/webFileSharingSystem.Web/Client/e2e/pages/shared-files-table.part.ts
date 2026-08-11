@@ -90,6 +90,8 @@ export class SharedFilesTable {
   }
 
   async resetSelection() {
-    await this.table.click();
+    await this.table.hover();
+    await this.table.dispatchEvent('pointerdown');
+    await this.table.dispatchEvent('pointerup');
   }
 }

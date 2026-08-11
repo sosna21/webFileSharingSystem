@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { User } from '../models/user.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class JwtTokenService {
   private token?: string;
@@ -37,14 +37,14 @@ export class JwtTokenService {
 
     user.roles = [];
     const roles = this.decodedToken['role'];
-    Array.isArray(roles) ? user.roles = roles : user.roles.push(roles);
+    Array.isArray(roles) ? (user.roles = roles) : user.roles.push(roles);
     user.token = this.token!;
   }
 
   public isTokenExpired(): boolean {
     const expiryTime: number | null = this.getExpiryTime();
     if (expiryTime) {
-      return ((1000 * expiryTime) - (new Date()).getTime()) < 5000;
+      return 1000 * expiryTime - new Date().getTime() < 5000;
     } else {
       return false;
     }
@@ -59,9 +59,12 @@ export class JwtTokenService {
     if (this.token) {
       const base64Url = this.token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) =>
-        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-      ).join(''));
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(''),
+      );
 
       this.decodedToken = JSON.parse(jsonPayload);
     }

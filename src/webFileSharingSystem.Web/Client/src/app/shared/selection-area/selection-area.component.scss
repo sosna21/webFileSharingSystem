@@ -1,0 +1,7 @@
+.rubber-band-selection {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid rgba(13, 110, 253, 0.9);
+  background: rgba(13, 110, 253, 0.18);
+  pointer-events: none;
+}

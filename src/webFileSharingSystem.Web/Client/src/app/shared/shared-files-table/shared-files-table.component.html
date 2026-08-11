@@ -8,6 +8,9 @@
   (move)="initFileMove($event)"
   (copy)="initFileCopy($event)"
   (delete)="deleteFiles($event)"
+  (pauseUpload)="stopFilesUpload($event)"
+  (resumeUpload)="continueFilesUpload($event)"
+  (cancelUpload)="cancelFilesUpload($event)"
 ></app-shared-files-context-menu>
 
 <app-table-context-menu
@@ -16,6 +19,7 @@
   [sortableColumns]="sortableColumns()"
   [sortOption]="sortOption()"
   [canPaste]="canPaste()"
+  [(viewMode)]="viewMode"
   (refresh)="refresh()"
   (createFolder)="createFolder()"
   (upload)="uploadFiles($event)"
@@ -27,17 +31,19 @@
   class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
   data-testid="shared-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
-  (mouseup)="resetFileSelection($event)"
+  (pointerdown)="onRubberBandPointerDown($event)"
+  (pointerup)="viewWrapperClick($event)"
   (contextmenu)="tableContextMenuClick($event)"
 >
   <div
     #scrollContainer
     data-testid="files-drop-area"
+    (scroll)="onRubberBandScroll()"
     (dragleave)="onTableDragLeave($event)"
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper overflow-auto h-100 px-1"
+    class="table-scroll-wrapper position-relative overflow-auto h-100 px-1"
   >
     <table
       cdk-table
@@ -155,7 +161,6 @@
           <app-access-mode-cell
             [file]="file"
             [accessModeName]="getAccessModeName(file.accessMode)"
-            [accessModeIconClass]="getAccessModeIconClass(file.accessMode)"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
           />
         </td>
@@ -175,9 +180,7 @@
           <app-actions-cell
             [file]="file"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
-            (actionIconClick)="
-              actionIconClick($event.event, $event.icon, $event.file)
-            "
+            (actionIconClick)="actionIconClick($event.event, $event.file)"
           />
         </td>
       </ng-container>
@@ -259,13 +262,11 @@
           canMoveSelected() && !isLoading(file.id) && !isEditing(file.id)
         "
         (dragstart)="onRowDragStart($event, file)"
+        (dragend)="onRowDragEnd($event)"
         (dragleave)="onRowDragLeave($event, file)"
         (dragenter)="onRowDragEnter($event, file)"
         (dragover)="onRowDragOver($event)"
-        (drop)="onRowDrop($event, file)"
-        (mousedown)="onRowMouseDown(file, $event)"
-        (mouseenter)="onRowMouseEnter(file)"
-        (mouseup)="onRowMouseUp(file, $event)"
+        (drop)="onRowDrop($event)"
         [class.opacity-50]="
           filesMarkedForAction()?.type === 1 &&
           filesMarkedForAction()?.filesIds!.has(file.id)
@@ -293,6 +294,8 @@
       </div>
     }
   </div>
+
+  <app-selection-area />
 
   @if (dragTarget() && !isInternalHover()) {
     <app-upload-overlay />

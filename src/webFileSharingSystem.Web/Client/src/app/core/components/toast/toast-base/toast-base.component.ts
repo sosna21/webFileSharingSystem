@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { NgbToastModule } from '@ng-bootstrap/ng-bootstrap';
 import { ToastInfo } from '../../../models/toast-info.model';
 import { ToastService } from '../../../services/toast.service';
@@ -8,7 +8,6 @@ import { ToastService } from '../../../services/toast.service';
   imports: [NgbToastModule],
   templateUrl: './toast-base.component.html',
   styleUrl: './toast-base.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToastBaseComponent {
   private toastService = inject(ToastService);

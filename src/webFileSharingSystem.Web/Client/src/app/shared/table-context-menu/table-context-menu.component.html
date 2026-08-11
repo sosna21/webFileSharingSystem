@@ -91,14 +91,14 @@
 </div>
 
 <ng-template #viewActions>
-  <button ngbDropdownItem (click)="tableLayout.emit(); menu.close()">
+  <button ngbDropdownItem (click)="viewMode.set('list'); menu.close()">
     <i class="bi bi-list me-1 text-primary"></i>
     Table Layout
   </button>
 
-  <button ngbDropdownItem (click)="gridLayout.emit(); menu.close()" disabled>
+  <button ngbDropdownItem (click)="viewMode.set('grid'); menu.close()">
     <i class="bi bi-grid me-1 text-primary"></i>
-    Grid Layout <small>(in development)</small>
+    Grid Layout
   </button>
 </ng-template>
 

@@ -37,12 +37,16 @@
 
         <app-upload-status
           [file]="file()"
-          class="upload-status-inline ms-1 flex-shrink-0"
           [disableColoring]="!isUserCreatedFile()"
+          class="upload-status-inline ms-1 flex-shrink-0 small"
         />
       </div>
 
-      <app-upload-status [file]="file()" class="upload-status-stacked lh-sm" />
+      <app-upload-status
+        [file]="file()"
+        [disableColoring]="!isUserCreatedFile()"
+        class="upload-status-stacked lh-sm small"
+      />
 
       <!-- Progress row -->
       <div

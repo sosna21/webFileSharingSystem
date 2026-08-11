@@ -1,16 +1,10 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, output, signal } from '@angular/core';
 
 @Component({
   selector: 'app-profile-photo-dropzone',
   imports: [],
   templateUrl: './profile-photo-dropzone.component.html',
   styleUrl: './profile-photo-dropzone.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     'data-testid': 'profile-photo-dropzone',
   },

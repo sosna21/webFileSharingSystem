@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-} from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedFile } from '../../../core/models/shared-file.model';
 import { BaseCellDirective } from '../base-cell.directive';
@@ -17,7 +11,6 @@ import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-
   imports: [CommonModule, TooltipOnOverflowDirective],
   templateUrl: './shared-user-name-cell.component.html',
   styleUrl: './shared-user-name-cell.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'd-flex align-items-center',
   },
@@ -33,6 +26,18 @@ export class SharedUserNameCellComponent extends BaseCellDirective<SharedFile> {
   readonly userPhotoUrl = computed(() =>
     this.userPhotoService.getPhotoUrl(this.sharedUserPhotoKey()),
   );
+  readonly alignTextBottom = input<boolean>(false);
+  readonly photoTextGap = input<'lg' | 'md' | 'sm'>('md');
+  readonly photoTextGapClass = computed(() => {
+    switch (this.photoTextGap()) {
+      case 'lg':
+        return 'me-3';
+      case 'md':
+        return 'me-2';
+      case 'sm':
+        return 'me-1';
+    }
+  });
 
   constructor() {
     super();

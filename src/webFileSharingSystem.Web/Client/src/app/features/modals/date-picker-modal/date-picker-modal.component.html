@@ -23,11 +23,13 @@
       [minDate]="minDate()!"
       [maxDate]="maxDate()!"
     />
-    @if (c2.invalid) { @if ("minDate" in c2.control.errors?.["ngbDate"]) {
-    <div class="text-danger small">The selected date is out of range</div>
-    } @else {
-    <div class="text-danger small">Invalid date format</div>
-    } }
+    @if (c2.invalid) {
+      @if ("minDate" in c2.control.errors?.["ngbDate"]) {
+        <div class="text-danger small">The selected date is out of range</div>
+      } @else {
+        <div class="text-danger small">Invalid date format</div>
+      }
+    }
 
     <div class="d-flex justify-content-around align-items-center">
       <ngb-datepicker
@@ -37,8 +39,8 @@
         [minDate]="minDate()!"
         [maxDate]="maxDate()!"
       />
-      @if(pickTime()) {
-      <ngb-timepicker [(ngModel)]="time" [spinners]="true"></ngb-timepicker>
+      @if (pickTime()) {
+        <ngb-timepicker [(ngModel)]="time" [spinners]="true"></ngb-timepicker>
       }
     </div>
   </div>

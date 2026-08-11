@@ -6,6 +6,7 @@
   [disabled]="file().progressStatus !== ProgressStatus.Started"
   (click)="pause.emit()"
   ngbTooltip="Pause upload"
+  container="body"
   [openDelay]="300"
 ></i>
 <i
@@ -16,5 +17,6 @@
   [disabled]="file().progressStatus === ProgressStatus.Started"
   (click)="continue.emit()"
   ngbTooltip="Resume upload"
+  container="body"
   [openDelay]="300"
 ></i>

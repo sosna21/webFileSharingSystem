@@ -14,7 +14,7 @@ namespace webFileSharingSystem.Infrastructure.HawkAuth
 {
     public class HawkAuthHandler : AuthenticationHandler<HawkAuthSchemeOptions>
     {
-        public HawkAuthHandler(IOptionsMonitor<HawkAuthSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock) 
+        public HawkAuthHandler(IOptionsMonitor<HawkAuthSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
             : base(options, logger, encoder, clock)
         {
         }
@@ -23,13 +23,13 @@ namespace webFileSharingSystem.Infrastructure.HawkAuth
         {
             // Hawk authentication for HTTP GET methods using Bewit authentication token
             if (!Request.Method.Equals("GET", StringComparison.InvariantCultureIgnoreCase)
-                || !Request.Query.TryGetValue("bewit", out var bewit) ) 
+                || !Request.Query.TryGetValue("bewit", out var bewit))
                 return AuthenticateResult.Fail("Bewit Not Found.");
-            
+                
             try
             {
                 // authenticate using Hawk
-                var principal = await Hawk.AuthenticateBewitAsync(
+                var principal = Hawk.AuthenticateBewit(
                     bewit.ToString(),
                     Request.Host.Value,
                     new Uri(CurrentUri),
@@ -41,8 +41,8 @@ namespace webFileSharingSystem.Infrastructure.HawkAuth
                     return AuthenticateResult.Fail("Invalid Bewit.");
 
                 // generate identity from hawk principal add user Id as a claim
-                var identity = new ClaimsIdentity(principal.Identity, 
-                    new []{ new Claim(ClaimTypes.NameIdentifier, parts[3]) });
+                var identity = new ClaimsIdentity(principal.Identity,
+                    new[] { new Claim(ClaimTypes.NameIdentifier, parts[3]) });
 
                 // generate AuthenticationTicket from the Principal
                 // and current authentication scheme

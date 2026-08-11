@@ -19,7 +19,6 @@ import {
   Observable,
 } from 'rxjs';
 import { PartialFileInfo } from '../models/partial-file-info.model';
-import { AuthenticationService } from './authentication.service';
 import { ToastService } from './toast.service';
 import {
   UploadProgressInfo,
@@ -38,7 +37,6 @@ export class FileUploadService {
   private readonly numberOfConcurrentFileUploads = 4;
   private readonly numberOfConcurrentChunkUploads = 2;
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(AuthenticationService);
   private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly fileService = inject(FileService);

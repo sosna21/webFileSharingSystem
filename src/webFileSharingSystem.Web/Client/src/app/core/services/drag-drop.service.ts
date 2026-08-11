@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { FileDragDropService } from './file-drag-drop.service';
+import { FileMoveDragDropService } from './file-move-drag-drop.service';
 import { FileUploadDragDropService } from './file-upload-drag-drop.service';
 import { DragDropUtils } from '../utils/drag-drop-utils';
 import { BaseFile } from '../models/base-file.model';
@@ -15,7 +15,7 @@ interface HoverTarget {
 
 @Injectable()
 export class DragDropService<T extends BaseFile | Breadcrumb> {
-  private readonly internal = inject(FileDragDropService);
+  private readonly internal = inject(FileMoveDragDropService);
   private readonly external = inject(FileUploadDragDropService);
   private readonly fileService = inject(FileService);
 
@@ -103,10 +103,7 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
 
     if (filesToMove.length === 0) return;
     this.internal.startDrag(filesToMove);
-    event.dataTransfer?.setData(
-      'application/json',
-      JSON.stringify(filesToMove),
-    );
+    event.dataTransfer?.setData('text/plain', 'internal');
     event.dataTransfer && (event.dataTransfer.effectAllowed = 'move');
     if (previewEl) {
       event.dataTransfer?.setDragImage(previewEl, 0, 0);
@@ -182,16 +179,16 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!this.hasMinWriteAccess()) return;
-
-    const destination = this.dragTarget();
-    if (!destination) return;
-
-    const destinationId = destination.id;
-
     let operation: Promise<void> | undefined;
 
     try {
+      if (!this.hasMinWriteAccess()) return;
+
+      const destination = this.dragTarget();
+      if (!destination) return;
+
+      const destinationId = destination.id;
+
       // External files upload
       if (this.external.allowExternalFiles(event)) {
         operation = this.external.uploadDraggedFiles(event, destinationId);
@@ -202,18 +199,20 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
           return;
 
         operation = this.internal.moveDraggedFiles(
-          event,
           destinationId ?? -1,
           destination.name,
         );
       }
     } finally {
-      // Runs immediately after operation is started
-      this.internal.clearDragedFiles();
-      this.clearHover();
+      this.clearDragState();
     }
 
     await operation;
+  }
+
+  rowDragEnd(event: DragEvent) {
+    event.preventDefault();
+    this.clearDragState();
   }
 
   // Table handlers
@@ -260,5 +259,10 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
   clearHover() {
     this.hoveredTarget.set(null);
     this.filesNb.set(0);
+  }
+
+  private clearDragState() {
+    this.internal.clearDragState();
+    this.clearHover();
   }
 }

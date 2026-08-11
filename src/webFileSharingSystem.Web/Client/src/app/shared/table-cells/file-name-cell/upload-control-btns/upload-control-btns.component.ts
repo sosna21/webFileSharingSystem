@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ClicableIconDirective } from '../../../../core/directives/clicable-icon.directive';
 import {
   BaseFile,
@@ -16,7 +11,6 @@ import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
   imports: [ClicableIconDirective, NgbTooltipModule],
   templateUrl: './upload-control-btns.component.html',
   styles: ``,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'd-flex',
   },

@@ -1,6 +1,5 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { FileService } from '../../../../../core/services/file.service';
 
 @Component({
   selector: 'li[app-nav-link]',

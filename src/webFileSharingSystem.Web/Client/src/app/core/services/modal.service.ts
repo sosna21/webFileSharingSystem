@@ -13,6 +13,7 @@ import { UpdateFileShareRequest } from '../models/update-share-request.model';
 import { CopyToClipboardModalComponent } from '../../features/modals/copy-to-clipboard-modal/copy-to-clipboard-modal.component';
 import { DirectoryCreationModalComponent } from '../../features/modals/directory-creation-modal/directory-creation-modal.component';
 import { KeyboardShortcutsModalComponent } from '../../features/modals/keyboard-shortcuts-modal/keyboard-shortcuts-modal.component';
+import { FileRenameModalComponent } from '../../features/modals/file-rename-modal/file-rename-modal.component';
 
 @Injectable({
   providedIn: 'root',
@@ -228,11 +229,29 @@ export class ModalService {
     }
   }
 
-  keyboardShortcutsModal(): Promise<boolean> {
-    if (this.modalService.hasOpenModals()) {
-      this.closeAll();
-      return new Promise(() => false);
+  getNewFileName(options: {
+    startName?: string;
+    blacklistedNames?: Set<string>;
+  }): Promise<string | null> {
+    try {
+      const modalRef = this.modalService.open(FileRenameModalComponent, {
+        centered: true,
+      });
+      const componentInstance =
+        modalRef.componentInstance as FileRenameModalComponent;
+      if (options.startName)
+        componentInstance.startFileName.set(options.startName);
+      if (options.blacklistedNames)
+        componentInstance.blacklistedNames.set(options.blacklistedNames);
+      return modalRef.result.catch(() => null);
+    } catch {
+      return new Promise(() => null);
     }
+  }
+
+  keyboardShortcutsModal(): Promise<boolean> {
+    this.closeAll();
+
     try {
       const modalRef = this.modalService.open(KeyboardShortcutsModalComponent, {
         centered: true,

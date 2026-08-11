@@ -1,0 +1,9 @@
+@if (rubberBandActive() && rubberBandStyle()) {
+  <div
+    class="rubber-band-selection"
+    [style.left]="rubberBandStyle()?.left"
+    [style.top]="rubberBandStyle()?.top"
+    [style.width]="rubberBandStyle()?.width"
+    [style.height]="rubberBandStyle()?.height"
+  ></div>
+}

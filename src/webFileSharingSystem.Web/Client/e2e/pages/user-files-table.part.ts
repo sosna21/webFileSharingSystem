@@ -98,6 +98,7 @@ export class UserFilesTable {
   async selectSingleRow(name: string) {
     const row = this.fileRowByName(name);
     await row.click();
+    await expect(row).toContainClass(selectedRowClass);
   }
 
   async selectRowsCtrl(names: string[]) {
@@ -125,7 +126,9 @@ export class UserFilesTable {
   }
 
   async resetSelection() {
-    await this.table.click();
+    await this.table.hover();
+    await this.table.dispatchEvent('pointerdown');
+    await this.table.dispatchEvent('pointerup');
   }
 
   async dragAndDropSelectedToRow(directoryName: string) {

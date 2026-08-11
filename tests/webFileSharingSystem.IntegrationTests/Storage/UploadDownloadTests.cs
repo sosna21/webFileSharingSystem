@@ -98,9 +98,15 @@ namespace webFileSharingSystem.IntegrationTests.Storage
 
             Assert.Equal(fileSizeInBytes, totalFileSizeFromChunks);
 
-            Assert.True(
-                (await File.ReadAllBytesAsync(TestFilePath, TestContext.Current.CancellationToken)).SequenceEqual(
-                    await File.ReadAllBytesAsync(savedFilePath, TestContext.Current.CancellationToken)));
+            var originalBytes = await File.ReadAllBytesAsync(
+                TestFilePath,
+                TestContext.Current.CancellationToken);
+            
+            var savedBytes = await File.ReadAllBytesAsync(
+                savedFilePath,
+                TestContext.Current.CancellationToken);
+
+            Assert.True(originalBytes.SequenceEqual(savedBytes));
         }
 
         [Fact]
