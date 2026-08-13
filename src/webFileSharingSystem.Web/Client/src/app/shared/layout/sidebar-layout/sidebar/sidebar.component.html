@@ -4,32 +4,32 @@
 >
   <ul class="nav nav-pills flex-column" (click)="isCollapsed.set(true)">
     <li app-nav-link link="home" data-testid="sidebar-link-home">
-      <i class="bi bi-house"></i>
-      My files
+      <i class="bi bi-house"></i>&nbsp;
+      <ng-container i18n>My files</ng-container>
     </li>
     <li
       app-nav-link
       link="shared-with-me"
       data-testid="sidebar-link-shared-with-me"
     >
-      <i class="bi bi-people"></i>
-      Shared with me
+      <i class="bi bi-people"></i>&nbsp;
+      <ng-container i18n>Shared with me</ng-container>
     </li>
     <li
       app-nav-link
       link="shared-by-me"
       data-testid="sidebar-link-shared-by-me"
     >
-      <i class="bi bi-share"></i>
-      Shared by me
+      <i class="bi bi-share"></i>&nbsp;
+      <ng-container i18n>Shared by me</ng-container>
     </li>
     <li app-nav-link link="favourite" data-testid="sidebar-link-favourite">
-      <i class="bi bi-heart"></i>
-      Favourite
+      <i class="bi bi-heart"></i>&nbsp;
+      <ng-container i18n>Favourite</ng-container>
     </li>
     <li app-nav-link link="recent" data-testid="sidebar-link-recent">
-      <i class="bi bi-hourglass"></i>
-      Recent
+      <i class="bi bi-hourglass"></i>&nbsp;
+      <ng-container i18n>Recent</ng-container>
     </li>
   </ul>
 
@@ -38,10 +38,14 @@
   <div class="mt-auto mb-5">
     <div class="text-muted small fst-italic mb-1">
       @if (canUpload()) {
-        Upload files from here <br />
-        Or drag & drop files onto the table
+        <ng-container i18n>
+          Upload files from here <br />
+          Or drag & drop files onto the table
+        </ng-container>
       } @else {
-        You can't upload files to this directory
+        <ng-container i18n
+          >You can't upload files to this directory
+        </ng-container>
       }
     </div>
     <app-upload-buttons />

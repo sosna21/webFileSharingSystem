@@ -11,8 +11,8 @@
     file().fileStatus === FileStatus.Incomplete
       ? undefined
       : file().isFavourite
-        ? 'Remove from favourites'
-        : 'Add to favourites'
+        ? addToFavourites
+        : removeFromFavourites
   "
   [openDelay]="300"
 ></i>

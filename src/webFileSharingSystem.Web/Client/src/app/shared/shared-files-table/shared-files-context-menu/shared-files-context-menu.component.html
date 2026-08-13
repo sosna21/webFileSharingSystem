@@ -8,8 +8,8 @@
   <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
     @if (mixedFileComplition()) {
       <button ngbDropdownItem disabled class="text-danger">
-        <i class="bi bi-exclamation-triangle me-1"></i>
-        Some files are still uploading
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <ng-container i18n>Some files are still uploading</ng-container>
       </button>
 
       <div class="dropdown-divider"></div>
@@ -22,7 +22,7 @@
           class="d-flex"
           data-testid="context-menu-manage-uploads"
         >
-          Manage uploads
+          <ng-container i18n>Manage uploads</ng-container>
           <span class="ms-auto">→</span>
         </button>
 
@@ -41,7 +41,7 @@
           class="d-flex"
           data-testid="context-menu-manage-files"
         >
-          Manage files
+          <ng-container i18n>Manage files</ng-container>
           <span class="ms-auto">→</span>
         </button>
 
@@ -78,10 +78,10 @@
     data-testid="context-menu-resume-upload"
   >
     <i
-      class="bi bi-play-circle-fill me-1"
+      class="bi bi-play-circle-fill me-2"
       [class.text-success]="!disableResume"
     ></i>
-    Resume Upload
+    <ng-container i18n>Resume Upload</ng-container>
   </button>
 
   <button
@@ -90,8 +90,8 @@
     [disabled]="disablePause"
     data-testid="context-menu-pause-upload"
   >
-    <i class="bi bi-pause-circle me-1" [class.text-warning]="!disablePause"></i>
-    Pause Upload
+    <i class="bi bi-pause-circle me-2" [class.text-warning]="!disablePause"></i>
+    <ng-container i18n>Pause Upload</ng-container>
   </button>
 
   <button
@@ -99,8 +99,8 @@
     (click)="cancelUploadClicked(); menu.close()"
     data-testid="context-menu-cancel-upload"
   >
-    <i class="bi bi-x-circle text-danger me-1"></i>
-    Cancel Upload
+    <i class="bi bi-x-circle me-2 text-danger"></i>
+    <ng-container i18n>Cancel Upload</ng-container>
   </button>
 </ng-template>
 
@@ -111,8 +111,8 @@
       (click)="openLocation.emit(selectedFile); menu.close()"
       data-testid="context-menu-open-directory"
     >
-      <i class="bi bi-box-arrow-in-up-right me-1 text-success"></i>
-      Open Location
+      <i class="bi bi-box-arrow-in-up-right me-2 text-success"></i>
+      <ng-container i18n>Open Location</ng-container>
     </button>
   }
   @if (showOpenFolder()) {
@@ -121,7 +121,8 @@
       (click)="openFolder.emit(selectedFile); menu.close()"
       data-testid="context-menu-open-folder"
     >
-      <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
+      <i class="bi bi-folder2-open me-2 text-warning"></i>
+      <ng-container i18n>Open Folder</ng-container>
     </button>
   }
 
@@ -130,7 +131,8 @@
     (click)="downloadClicked(); menu.close()"
     data-testid="context-menu-download"
   >
-    <i class="bi bi-download me-1 text-primary"></i> Download
+    <i class="bi bi-download me-2 text-primary"></i>
+    <ng-container i18n>Download</ng-container>
   </button>
 
   <button
@@ -139,8 +141,8 @@
     (click)="rename.emit(selectedFile); menu.close()"
     data-testid="context-menu-rename"
   >
-    <i class="bi bi-pencil me-1" [class.text-info-emphasis]="canRename()"></i>
-    Rename
+    <i class="bi bi-pencil me-2" [class.text-info-emphasis]="canRename()"></i>
+    <ng-container i18n>Rename</ng-container>
   </button>
 
   <button
@@ -148,7 +150,8 @@
     (click)="copyClicked(); menu.close()"
     data-testid="context-menu-copy"
   >
-    <i class="bi bi-files me-1 text-warning-emphasis"></i> Copy
+    <i class="bi bi-files me-2 text-warning-emphasis"></i>
+    <ng-container i18n>Copy</ng-container>
   </button>
 
   <button
@@ -158,10 +161,10 @@
     data-testid="context-menu-cut"
   >
     <i
-      class="bi bi-folder-symlink me-1"
+      class="bi bi-folder-symlink me-2"
       [class.text-warning-emphasis]="canCut()"
     ></i>
-    Move
+    <ng-container i18n>Move</ng-container>
   </button>
 
   <button
@@ -170,6 +173,7 @@
     (click)="deleteClicked(); menu.close()"
     data-testid="context-menu-delete"
   >
-    <i class="bi bi-trash me-1" [class.text-danger]="canDelete()"></i> Delete
+    <i class="bi bi-trash me-2" [class.text-danger]="canDelete()"></i>
+    <ng-container i18n>Delete</ng-container>
   </button>
 </ng-template>

@@ -11,29 +11,48 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
   templateUrl: './access-mode-cell.component.html',
 })
 export class AccessModeCellComponent extends BaseCellDirective<SharedFile> {
-  accessModeName = input.required<string>();
-  nameDisplayMode = input<'full' | 'short' | 'responsive'>('responsive');
+  readonly nameDisplayMode = input<'full' | 'short' | 'responsive'>(
+    'responsive',
+  );
 
   readonly isResponsive = computed(
     () => this.nameDisplayMode() === 'responsive',
   );
-
   readonly isShort = computed(() => this.nameDisplayMode() === 'short');
+  readonly accessModeName = computed(() =>
+    this.getAccessModeName(this.file().accessMode),
+  );
+  readonly shortAccessModeName = computed(() =>
+    this.getShortAccessModeName(this.file().accessMode),
+  );
 
-  getShortAccessModeName(accessModeName: string): string {
-    switch (accessModeName) {
-      case 'Read only':
-        return 'R';
-      case 'Read & write':
-        return 'RW';
-      case 'Full control':
-        return 'Full';
+  getAccessModeName(accessMode?: ShareAccessMode) {
+    switch (accessMode) {
+      case ShareAccessMode.ReadOnly:
+        return $localize`Read only`;
+      case ShareAccessMode.ReadWrite:
+        return $localize`Read & write`;
+      case ShareAccessMode.FullAccess:
+        return $localize`Full control`;
       default:
-        return 'R';
+        return $localize`Read only`;
     }
   }
 
-  getAccessModeIconClass(accessMode: ShareAccessMode) {
+  getShortAccessModeName(accessMode?: ShareAccessMode): string {
+    switch (accessMode) {
+      case ShareAccessMode.ReadOnly:
+        return $localize`R`;
+      case ShareAccessMode.ReadWrite:
+        return $localize`RW`;
+      case ShareAccessMode.FullAccess:
+        return $localize`Full`;
+      default:
+        return $localize`R`;
+    }
+  }
+
+  getAccessModeIconClass(accessMode?: ShareAccessMode) {
     switch (accessMode) {
       case ShareAccessMode.ReadOnly:
         return 'bi-eye';

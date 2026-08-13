@@ -1,5 +1,5 @@
 <div class="modal-header bg-primary-subtle d-flex">
-  <h4 class="modal-title">Create New Directory</h4>
+  <h4 class="modal-title" i18n>Create New Directory</h4>
 
   <button
     type="button"
@@ -21,7 +21,7 @@
       [class.is-invalid]="!isNameValid()"
     />
     @if (!isNameValid()) {
-      <div class="invalid-feedback">
+      <div class="invalid-feedback" i18n>
         A directory with this name already exists.
       </div>
     }
@@ -42,6 +42,7 @@
       data-testid="directory-creation-modal-create"
       [disabled]="!isNameValid()"
       (click)="confirm()"
+      i18n
     >
       Create
     </button>

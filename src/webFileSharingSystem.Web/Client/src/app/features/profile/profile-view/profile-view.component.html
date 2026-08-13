@@ -7,6 +7,7 @@
       data-testid="profile-view-avatar"
       [src]="displayedPhotoUrl() ?? 'user.png'"
       [alt]="'Profile photo of ' + (profile()?.userName ?? 'current user')"
+      i18n-alt
       width="120"
       height="120"
       class="rounded-circle profile-avatar shadow-sm"
@@ -26,11 +27,11 @@
 
   <div class="text-center text-sm-start flex-grow-1">
     <div data-testid="profile-view-user-name" class="fw-bold fs-5">
-      {{ profile()?.userName || "User" }}
+      {{ profile()?.userName || defaultUserName }}
     </div>
 
     <div data-testid="profile-view-email" class="text-secondary mb-3">
-      {{ profile()?.emailAddress || "No email" }}
+      {{ profile()?.emailAddress || defaultUserEmail }}
     </div>
 
     <app-storage-quota></app-storage-quota>

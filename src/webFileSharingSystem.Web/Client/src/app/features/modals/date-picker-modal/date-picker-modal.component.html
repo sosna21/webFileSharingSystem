@@ -11,7 +11,7 @@
 
 <div class="modal-body">
   <div class="mb-3 text-center">
-    <label class="text-start w-100">Selected date</label>
+    <label class="text-start w-100" i18n>Selected date</label>
     <input
       class="form-control"
       placeholder="dd/MM/yyyy"
@@ -25,9 +25,11 @@
     />
     @if (c2.invalid) {
       @if ("minDate" in c2.control.errors?.["ngbDate"]) {
-        <div class="text-danger small">The selected date is out of range</div>
+        <div class="text-danger small" i18n>
+          The selected date is out of range
+        </div>
       } @else {
-        <div class="text-danger small">Invalid date format</div>
+        <div class="text-danger small" i18n>Invalid date format</div>
       }
     }
 

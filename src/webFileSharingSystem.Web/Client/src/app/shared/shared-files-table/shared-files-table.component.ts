@@ -123,14 +123,16 @@ export class SharedFilesTableComponent {
   ]);
 
   sortableColumns = computed(() => [
-    { column: 'fileName', displayName: 'File name' },
+    { column: 'fileName', displayName: $localize`File name` },
     {
       column: 'sharedBy/createdBy',
-      displayName: this.currentDirectoryId() ? 'Created By' : 'Shared By',
+      displayName: this.currentDirectoryId()
+        ? $localize`Created By`
+        : $localize`Shared By`,
     },
-    { column: 'accessMode', displayName: 'Access Mode' },
-    { column: 'size', displayName: 'Size' },
-    { column: 'validUntil', displayName: 'Valid Until' },
+    { column: 'accessMode', displayName: $localize`Access Mode` },
+    { column: 'size', displayName: $localize`Size` },
+    { column: 'validUntil', displayName: $localize`Valid Until` },
   ]);
 
   files = this.fileService.sharedFiles;
@@ -426,8 +428,8 @@ export class SharedFilesTableComponent {
     // Unselect files that cannot be moved to avoid confusion during drag
     if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
       this.toast.show(
-        'File move',
-        'Unsellected files that cannot be moved',
+        $localize`File move`,
+        $localize`Unsellected files that cannot be moved`,
         MessageSeverity.info,
       );
 
@@ -496,19 +498,6 @@ export class SharedFilesTableComponent {
     );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  }
-
-  getAccessModeName(accessMode: ShareAccessMode) {
-    switch (accessMode) {
-      case ShareAccessMode.ReadOnly:
-        return 'Read only';
-      case ShareAccessMode.ReadWrite:
-        return 'Read & write';
-      case ShareAccessMode.FullAccess:
-        return 'Full control';
-      default:
-        return 'Read only';
-    }
   }
 
   canMove(file: SharedFile): boolean {

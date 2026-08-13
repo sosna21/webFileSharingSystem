@@ -50,17 +50,17 @@ export class FileShareService {
 
     let confirmText = '';
     if (totalShares === 1) {
-      confirmText = `Are you sure you want to cancel share to user '${sharesToDelete[0].sharedWithUserName}'`;
+      confirmText = $localize`Are you sure you want to cancel share to user '${sharesToDelete[0].sharedWithUserName}'`;
     } else {
-      confirmText = `Are you sure you want to cancel these shares?`;
+      confirmText = $localize`Are you sure you want to cancel these shares?`;
     }
 
     const confirmationResult = await this.modalService.confirmChoice(
       {
-        title: 'Confirm Share Cancellation',
+        title: $localize`Confirm Share Cancellation`,
         message: confirmText,
-        confirmText: 'Cancel Share(s)',
-        cancelText: 'Cancel',
+        confirmText: $localize`Cancel Share(s)`,
+        cancelText: $localize`Cancel`,
         showPermanentWarning: true,
       },
       closeOtherModals,
@@ -73,15 +73,15 @@ export class FileShareService {
       onSuccess: onSuccess ?? (() => {}),
       onError: (_, err) => {
         this.toast.show(
-          'Share cancellation',
+          $localize`Share cancellation`,
           err.error || String(err),
           MessageSeverity.error,
         );
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: (count) => ({
-        title: 'Share Cancellation',
-        message: `Cancelled ${count} share(s) successfully`,
+        title: $localize`Share Cancellation`,
+        message: $localize`Cancelled {count} share(s) successfully`,
       }),
     });
     return true;
@@ -94,7 +94,7 @@ export class FileShareService {
   ) {
     const editedShareData = await this.modalService.editFileShareModal(
       {
-        title: `Edit Share for '${sharedFile.fileName}'`,
+        title: $localize`Edit Share for '${sharedFile.fileName}'`,
         shareToModify: shareToEdit,
       },
       closeOtherModals,
@@ -107,16 +107,16 @@ export class FileShareService {
         this.updateFileShare(shareToEdit.shareId, editedShareData),
       );
       this.toast.show(
-        'File share modified successfully',
-        `Updated share with user '${shareToEdit.sharedWithUserName}'`,
+        $localize`File share modified successfully`,
+        $localize`Updated share with user '${shareToEdit.sharedWithUserName}'`,
         MessageSeverity.success,
       );
       return result;
     } catch (err: any) {
       const error = err.error || String(err);
       this.toast.show(
-        'Failed to modify file share',
-        error || 'Unknown error',
+        $localize`Failed to modify file share`,
+        error || $localize`Unknown error`,
         MessageSeverity.error,
       );
       return null;
@@ -129,8 +129,8 @@ export class FileShareService {
   ) {
     const shareTitle =
       files.length === 1
-        ? `Share '${files[0].fileName}'`
-        : `Share ${files.length} files`;
+        ? $localize`Share '${files[0].fileName}'`
+        : $localize`Share ${files.length} files`;
     const shareResults: AddShareRequest[] | null =
       await this.modalService.addFileShareModal(
         {
@@ -165,7 +165,7 @@ export class FileShareService {
       },
       onError: (item, err) => {
         this.toast.show(
-          `Failed to share file: "${item.file.fileName}"`,
+          $localize`Failed to share file: "${item.file.fileName}"`,
           err.error || String(err),
           MessageSeverity.error,
         );
@@ -175,11 +175,14 @@ export class FileShareService {
       successMessage: (count, updated) => {
         if (count === 1) {
           return {
-            title: 'File Share',
-            message: `Shared '${updated[0].file.fileName}' with ${updated[0].shareRequest.UserNameToShareWith}`,
+            title: $localize`File Share`,
+            message: $localize`Shared '${updated[0].file.fileName}' with ${updated[0].shareRequest.UserNameToShareWith}`,
           };
         }
-        return { title: 'File Share', message: `Files shared successfully` };
+        return {
+          title: $localize`File Share`,
+          message: $localize`Files shared successfully`,
+        };
       },
     });
   }
@@ -192,7 +195,7 @@ export class FileShareService {
       this.downloadService.getDownloadLink(fileIds),
     ).catch((error) => {
       this.toast.show(
-        'Link Generation Failed',
+        $localize`Link Generation Failed`,
         error?.error || String(error),
         MessageSeverity.error,
       );
@@ -203,7 +206,7 @@ export class FileShareService {
     const result = await this.modalService.copyToClipboard(
       {
         textToCopy: downloadLink.url,
-        title: 'Share Link',
+        title: $localize`Share Link`,
       },
       closeOtherModals,
     );
@@ -211,8 +214,8 @@ export class FileShareService {
     if (!result) return;
     this.modalService.closeAll();
     this.toast.show(
-      'Copied to Clipboard',
-      'Share link has been copied to clipboard',
+      $localize`Copied to Clipboard`,
+      $localize`Share link has been copied to clipboard`,
       MessageSeverity.success,
     );
   }

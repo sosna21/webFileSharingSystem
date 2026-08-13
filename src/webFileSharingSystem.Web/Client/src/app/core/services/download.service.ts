@@ -26,14 +26,18 @@ export class DownloadService {
       next: (response) => {
         window.location.href = response.url;
         this.toast.show(
-          'Download Initialized',
-          'Your download will begin shortly.',
+          $localize`Download Initialized`,
+          $localize`Your download will begin shortly.`,
           MessageSeverity.success,
         );
       },
       error: (err) => {
         const errorMessage = err.error || String(err);
-        this.toast.show('Download Failed', errorMessage, MessageSeverity.error);
+        this.toast.show(
+          $localize`Download Failed`,
+          errorMessage,
+          MessageSeverity.error,
+        );
       },
     });
   }

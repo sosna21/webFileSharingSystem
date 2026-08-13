@@ -29,11 +29,7 @@
       @if (isUploadInProgress()) {
         <app-upload-cancel-btn (click)="cancelUpload.emit()" />
       } @else {
-        <app-access-mode-cell
-          [file]="file()"
-          [accessModeName]="getAccessModeName(file().accessMode!)"
-          nameDisplayMode="short"
-        />
+        <app-access-mode-cell [file]="file()" nameDisplayMode="short" />
       }
     </div>
 

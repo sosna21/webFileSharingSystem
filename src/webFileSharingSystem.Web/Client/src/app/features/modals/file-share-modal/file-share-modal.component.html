@@ -16,7 +16,7 @@
 
 <div class="modal-body">
   <div class="mb-2">
-    <label for="shareWith" class="form-label fs-5">Share with</label>
+    <label for="shareWith" class="form-label fs-5" i18n>Share with</label>
     <div class="mx-2">
       <input
         id="shareWith"
@@ -26,10 +26,10 @@
         placeholder="Enter username or email to share the file with"
         [(ngModel)]="shareWith"
       />
-      <div class="invalid-feedback">
+      <div class="invalid-feedback" i18n>
         Please enter a valid username or email.
       </div>
-      <div class="form-text">
+      <div class="form-text" i18n>
         You can share the file with multiple users by separating their emails
         with commas.
       </div>
@@ -37,7 +37,7 @@
   </div>
 
   <div class="mb-2">
-    <label class="form-label fs-5">Permission Level</label>
+    <label class="form-label fs-5" i18n>Permission Level</label>
     <div class="mx-2">
       <div class="form-check">
         <input
@@ -50,8 +50,10 @@
           (change)="setPermission(ShareAccessMode.ReadOnly)"
         />
         <label class="form-check-label" for="readOnly">
-          <strong>Read Only</strong>
-          <div class="text-muted small">Can view and download the file</div>
+          <strong i18n>Read Only</strong>
+          <div class="text-muted small" i18n>
+            Can view and download the file
+          </div>
         </label>
       </div>
       <div class="form-check">
@@ -65,8 +67,8 @@
           (change)="setPermission(ShareAccessMode.ReadWrite)"
         />
         <label class="form-check-label" for="readWrite">
-          <strong>Read and Write</strong>
-          <div class="text-muted small">
+          <strong i18n>Read and Write</strong>
+          <div class="text-muted small" i18n>
             Can view, download, and modify the file
           </div>
         </label>
@@ -82,9 +84,9 @@
           (change)="setPermission(ShareAccessMode.FullAccess)"
         />
         <label class="form-check-label" for="fullControl">
-          <strong>Full Control</strong>
-          <div class="text-muted small">
-            Can view, modify, delete, and share the file
+          <strong i18n>Full Control</strong>
+          <div class="text-muted small" i18n>
+            Can view, modify and delete the file
           </div>
         </label>
       </div>
@@ -92,7 +94,9 @@
   </div>
 
   <div class="mb-2">
-    <label for="shareDuration" class="form-label fs-5">Share Duration</label>
+    <label for="shareDuration" class="form-label fs-5" i18n
+      >Share Duration</label
+    >
     <div class="mx-2">
       <select
         id="shareDuration"
@@ -101,12 +105,12 @@
         [(ngModel)]="shareDuration"
         (change)="onDurationChange($event)"
       >
-        <option [ngValue]="1">1 hour</option>
-        <option [ngValue]="24">24 hours</option>
-        <option [ngValue]="168">1 week</option>
-        <option [ngValue]="720">30 days</option>
-        <option [ngValue]="-1">Indefinite</option>
-        <option [ngValue]="0">
+        <option [ngValue]="1" i18n>1 hour</option>
+        <option [ngValue]="24" i18n>24 hours</option>
+        <option [ngValue]="168" i18n>1 week</option>
+        <option [ngValue]="720" i18n>30 days</option>
+        <option [ngValue]="-1" i18n>Indefinite</option>
+        <option [ngValue]="0" i18n>
           Custom{{
             selectedCustomDurationString() &&
               ": " + selectedCustomDurationString()
@@ -127,10 +131,7 @@
     aria-label="Generate share link"
   >
     <i class="bi bi-link-45deg" aria-hidden="true"></i>
-    <span
-      >Generate share
-      {{ sharingMultipleFiles() ? "links" : "link" }} instead</span
-    >
+    <span i18n>Generate share link instead</span>
     <i class="bi bi-chevron-right chevron" aria-hidden="true"></i>
   </button>
   <button

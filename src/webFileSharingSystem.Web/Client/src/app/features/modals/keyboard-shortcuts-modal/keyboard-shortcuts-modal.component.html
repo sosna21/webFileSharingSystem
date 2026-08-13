@@ -1,7 +1,7 @@
 <div class="modal-header">
   <h4 class="modal-title">
     <i class="bi bi-keyboard text-primary me-2"></i>
-    Keyboard Shortcuts
+    <ng-container i18n>Keyboard Shortcuts</ng-container>
   </h4>
   <button
     type="button"
@@ -36,6 +36,7 @@
     type="button"
     class="btn btn-primary px-4"
     (click)="activeModal.close()"
+    i18n
   >
     Got it
   </button>

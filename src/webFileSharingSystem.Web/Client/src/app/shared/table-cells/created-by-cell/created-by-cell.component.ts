@@ -23,6 +23,7 @@ export class CreatedByCellComponent<
   readonly userPhotoUrl = computed(() =>
     this.userPhotoService.getPhotoUrl(this.file().createdByPhotoUrl),
   );
+  readonly currentUserLabel = $localize`You`;
   readonly alignTextBottom = input<boolean>(false);
   readonly photoTextGap = input<'lg' | 'md' | 'sm'>('md');
   readonly photoTextGapClass = computed(() => {

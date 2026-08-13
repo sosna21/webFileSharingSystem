@@ -5,6 +5,7 @@
     [class.disabled]="!canCreateDirectory()"
     (click)="initDirCreation()"
     ngbTooltip="Create new folder"
+    i18n-ngbTooltip
     [openDelay]="300"
   ></i>
   @if (showDirCreateNameInput()) {
@@ -22,7 +23,7 @@
         (keyup.escape)="cancelRename()"
       />
       @if (isNameForbidden()) {
-        <div class="text-danger fw-lighter fs-6">
+        <div class="text-danger fw-lighter fs-6" i18n>
           "{{ newFolderName() }}" already exists.
         </div>
       }
@@ -36,6 +37,7 @@
     data-testid="cut-files-trigger"
     [class.disabled]="!canFileAction()"
     ngbTooltip="Cut"
+    i18n-ngbTooltip
     [openDelay]="300"
     (click)="onCut()"
   ></i>
@@ -44,6 +46,7 @@
     data-testid="copy-files-trigger"
     [class.disabled]="!canCopyDownload()"
     ngbTooltip="Copy"
+    i18n-ngbTooltip
     [openDelay]="300"
     (click)="onCopy()"
   ></i>
@@ -52,6 +55,7 @@
     data-testid="paste-files-trigger"
     [class.disabled]="!canPaste()"
     ngbTooltip="Paste"
+    i18n-ngbTooltip
     [openDelay]="300"
     (click)="onPaste()"
   ></i>
@@ -61,6 +65,7 @@
     data-testid="download-files-trigger"
     [class.disabled]="!canCopyDownload()"
     ngbTooltip="Download"
+    i18n-ngbTooltip
     [openDelay]="300"
     (click)="onDownload()"
   ></i>
@@ -69,6 +74,7 @@
     data-testid="rename-files-trigger"
     [class.disabled]="!canRename()"
     ngbTooltip="Rename"
+    i18n-ngbTooltip
     [openDelay]="300"
     (click)="onRename()"
   ></i>
@@ -79,6 +85,7 @@
       data-testid="share-files-trigger"
       [class.disabled]="!canFileAction()"
       ngbTooltip="Share"
+      i18n-ngbTooltip
       [openDelay]="300"
       (click)="onShare()"
     ></i>
@@ -89,6 +96,7 @@
     data-testid="delete-files-trigger"
     [class.disabled]="!canDelete()"
     ngbTooltip="Delete"
+    i18n-ngbTooltip
     [openDelay]="300"
     (click)="onDelete()"
   ></i>

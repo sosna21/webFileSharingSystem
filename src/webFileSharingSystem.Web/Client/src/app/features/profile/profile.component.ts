@@ -81,8 +81,8 @@ export class ProfileComponent {
         },
         error: () => {
           this.toastService.show(
-            'Error',
-            'Could not load profile information.',
+            $localize`Error`,
+            $localize`Could not load profile information.`,
             MessageSeverity.error,
           );
         },
@@ -98,8 +98,8 @@ export class ProfileComponent {
     if (!this.allowedPhotoMimeTypes.includes(file.type)) {
       this.clearSelection();
       this.toastService.show(
-        'Invalid format',
-        'Only JPEG and PNG formats are allowed.',
+        $localize`Invalid format`,
+        $localize`Only JPEG and PNG formats are allowed.`,
         MessageSeverity.error,
       );
       return;
@@ -108,8 +108,8 @@ export class ProfileComponent {
     if (file.size > this.maxPhotoSizeBytes) {
       this.clearSelection();
       this.toastService.show(
-        'File too large',
-        'Profile photo cannot be larger than 5 MB.',
+        $localize`File too large`,
+        $localize`Profile photo cannot be larger than 5 MB.`,
         MessageSeverity.error,
       );
       return;
@@ -144,8 +144,8 @@ export class ProfileComponent {
           this.clearSelection();
           this.userPhotoService.clearPhoto(this.currentPhotoUrl());
           this.toastService.show(
-            'Photo Updated',
-            'Profile photo uploaded.',
+            $localize`Photo Updated`,
+            $localize`Profile photo uploaded.`,
             MessageSeverity.success,
           );
 
@@ -153,8 +153,8 @@ export class ProfileComponent {
         },
         error: () => {
           this.toastService.show(
-            'Error',
-            'Could not upload profile photo.',
+            $localize`Error`,
+            $localize`Could not upload profile photo.`,
             MessageSeverity.error,
           );
         },
@@ -171,15 +171,15 @@ export class ProfileComponent {
         this.clearSelection();
         this.loadProfile();
         this.toastService.show(
-          'Photo Deleted',
-          'Profile photo deleted.',
+          $localize`Photo Deleted`,
+          $localize`Profile photo deleted.`,
           MessageSeverity.success,
         );
       },
       error: () => {
         this.toastService.show(
-          'Error',
-          'Could not delete profile photo.',
+          $localize`Error`,
+          $localize`Could not delete profile photo.`,
           MessageSeverity.error,
         );
       },

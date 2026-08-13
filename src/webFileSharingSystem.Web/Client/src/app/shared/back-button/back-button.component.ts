@@ -16,7 +16,7 @@ import { Location } from '@angular/common';
 export class BackButtonComponent {
   private readonly location = inject(Location);
 
-  readonly text = input('Back');
+  readonly text = input($localize`Back`);
 
   backClicked() {
     this.location.back();

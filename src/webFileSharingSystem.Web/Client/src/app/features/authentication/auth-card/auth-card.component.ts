@@ -11,8 +11,8 @@ import { GoogleAccountAuthComponent } from './google-account-auth/google-account
   },
 })
 export class AuthCardComponent {
-  headerText = input('Welcome');
-  subHeaderText = input('Please fill in the form to continue');
+  headerText = input($localize`Welcome`);
+  subHeaderText = input($localize`Please fill in the form to continue`);
   includeExternalLogins = input(true);
   loading = model.required<boolean>();
 

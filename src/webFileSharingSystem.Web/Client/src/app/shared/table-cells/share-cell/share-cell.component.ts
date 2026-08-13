@@ -42,11 +42,11 @@ export class ShareCellComponent extends BaseCellDirective<AppFile> {
 
     switch (this.shareState()) {
       case 'shared':
-        return 'Manage shares';
+        return $localize`Manage shares`;
       case 'expiring-soon':
-        return 'Share expires soon - manage shares';
+        return $localize`Share expires soon - manage shares`;
       default:
-        return 'Share file';
+        return $localize`Share file`;
     }
   });
 

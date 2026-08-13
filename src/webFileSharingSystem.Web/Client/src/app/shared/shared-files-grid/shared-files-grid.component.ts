@@ -112,14 +112,16 @@ export class SharedFilesGridComponent {
   ]);
 
   sortableColumns = computed(() => [
-    { column: 'fileName', displayName: 'File name' },
+    { column: 'fileName', displayName: $localize`File name` },
     {
       column: 'sharedBy/createdBy',
-      displayName: this.currentDirectoryId() ? 'Created By' : 'Shared By',
+      displayName: this.currentDirectoryId()
+        ? $localize`Created By`
+        : $localize`Shared By`,
     },
-    { column: 'accessMode', displayName: 'Access Mode' },
-    { column: 'size', displayName: 'Size' },
-    { column: 'validUntil', displayName: 'Valid Until' },
+    { column: 'accessMode', displayName: $localize`Access Mode` },
+    { column: 'size', displayName: $localize`Size` },
+    { column: 'validUntil', displayName: $localize`Valid Until` },
   ]);
 
   files = this.fileService.sharedFiles;
@@ -413,8 +415,8 @@ export class SharedFilesGridComponent {
     // Unselect files that cannot be moved to avoid confusion during drag
     if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
       this.toast.show(
-        'File move',
-        'Unsellected files that cannot be moved',
+        $localize`File move`,
+        $localize`Unsellected files that cannot be moved`,
         MessageSeverity.info,
       );
 

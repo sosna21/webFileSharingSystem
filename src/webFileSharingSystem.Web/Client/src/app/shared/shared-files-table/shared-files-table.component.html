@@ -85,7 +85,10 @@
           scope="col"
           (click)="toggleSort('fileName')"
         >
-          <app-sortable-header column="fileName" [sortOption]="sortOption()"
+          <app-sortable-header
+            column="fileName"
+            [sortOption]="sortOption()"
+            i18n
             >File Name</app-sortable-header
           >
         </th>
@@ -119,10 +122,13 @@
           <app-sortable-header
             column="sharedBy/createdBy"
             [sortOption]="sortOption()"
-            >{{
-              currentDirectoryId() ? "Created By" : "Shared By"
-            }}</app-sortable-header
           >
+            @if (currentDirectoryId()) {
+              <ng-container i18n>Created By</ng-container>
+            } @else {
+              <ng-container i18n>Shared By</ng-container>
+            }
+          </app-sortable-header>
         </th>
         <td
           cdk-cell
@@ -153,14 +159,13 @@
           (click)="toggleSort('accessMode')"
         >
           <app-sortable-header column="accessMode" [sortOption]="sortOption()">
-            <span class="d-table-cell d-xl-none">Access</span>
-            <span class="d-none d-xl-table-cell">Access Mode</span>
+            <span class="d-table-cell d-xl-none" i18n>Access</span>
+            <span class="d-none d-xl-table-cell" i18n>Access Mode</span>
           </app-sortable-header>
         </th>
         <td cdk-cell *cdkCellDef="let file" class="align-middle">
           <app-access-mode-cell
             [file]="file"
-            [accessModeName]="getAccessModeName(file.accessMode)"
             (contextMenuClick)="contextMenuClick($event.event, $event.file)"
           />
         </td>
@@ -173,6 +178,7 @@
           *cdkHeaderCellDef
           scope="col"
           class="actions-column"
+          i18n
         >
           Actions
         </th>
@@ -194,7 +200,7 @@
           class="size-column"
           (click)="toggleSort('size')"
         >
-          <app-sortable-header column="size" [sortOption]="sortOption()"
+          <app-sortable-header column="size" [sortOption]="sortOption()" i18n
             >Size</app-sortable-header
           >
         </th>
@@ -215,7 +221,10 @@
           class="valid-until-column d-none d-sm-table-cell"
           (click)="toggleSort('validUntil')"
         >
-          <app-sortable-header column="validUntil" [sortOption]="sortOption()"
+          <app-sortable-header
+            column="validUntil"
+            [sortOption]="sortOption()"
+            i18n
             >Valid Until</app-sortable-header
           >
         </th>
@@ -285,12 +294,12 @@
     </table>
 
     @if (files().length === 0) {
-      <div class="text-center fs-5 border ms-1 py-1">Empty directory</div>
+      <div class="text-center fs-5 border ms-1 py-1" i18n>Empty directory</div>
       <div
         class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
       >
         <i class="bi bi-upload" style="font-size: 5rem"></i>
-        <div class="fs-3">Drop files here to upload</div>
+        <div class="fs-3" i18n>Drop files here to upload</div>
       </div>
     }
   </div>

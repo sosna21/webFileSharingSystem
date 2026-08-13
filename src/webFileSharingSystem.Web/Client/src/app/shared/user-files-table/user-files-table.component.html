@@ -58,14 +58,6 @@
       recycleRows
       class="table table-hover table-sm no-select my-0"
     >
-      <!-- File id Definition -->
-      <ng-container cdkColumnDef="id">
-        <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 3%">
-          Id
-        </th>
-        <td cdk-cell *cdkCellDef="let file">{{ file.id }}</td>
-      </ng-container>
-
       <!-- Row Selector Definition -->
       <ng-container cdkColumnDef="rowSelector">
         <th cdk-header-cell *cdkHeaderCellDef scope="col" style="width: 40px">
@@ -99,9 +91,13 @@
           (click)="toggleSort('fileName')"
           data-testid="header-name"
         >
-          <app-sortable-header column="fileName" [sortOption]="sortOption()"
-            >File Name</app-sortable-header
+          <app-sortable-header
+            column="fileName"
+            [sortOption]="sortOption()"
+            i18n
           >
+            File Name
+          </app-sortable-header>
         </th>
         <td
           cdk-cell
@@ -129,7 +125,11 @@
           class="d-none d-xl-table-cell favourite-column"
           (click)="toggleSort('favourite')"
         >
-          <app-sortable-header column="favourite" [sortOption]="sortOption()">
+          <app-sortable-header
+            column="favourite"
+            [sortOption]="sortOption()"
+            i18n
+          >
             Favourite
           </app-sortable-header>
         </th>
@@ -157,9 +157,9 @@
           class="d-none d-xl-table-cell share-column"
           (click)="toggleSort('share')"
         >
-          <app-sortable-header column="share" [sortOption]="sortOption()"
-            >Share</app-sortable-header
-          >
+          <app-sortable-header column="share" [sortOption]="sortOption()" i18n>
+            Share
+          </app-sortable-header>
         </th>
         <td
           cdk-cell
@@ -182,6 +182,7 @@
           *cdkHeaderCellDef
           scope="col"
           class="actions-column"
+          i18n
         >
           Actions
         </th>
@@ -204,9 +205,9 @@
           (click)="toggleSort('size')"
           data-testid="header-size"
         >
-          <app-sortable-header column="size" [sortOption]="sortOption()"
-            >Size</app-sortable-header
-          >
+          <app-sortable-header column="size" [sortOption]="sortOption()" i18n>
+            Size
+          </app-sortable-header>
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-table-cell align-middle">
           <app-size-cell
@@ -229,8 +230,10 @@
           <app-sortable-header
             column="createdByUserName"
             [sortOption]="sortOption()"
-            >Created By</app-sortable-header
+            i18n
           >
+            Created By
+          </app-sortable-header>
         </th>
         <td cdk-cell *cdkCellDef="let file" class="d-none d-sm-table-cell pe-2">
           <app-created-by-cell
@@ -253,8 +256,10 @@
           <app-sortable-header
             column="lastModification"
             [sortOption]="sortOption()"
-            >Last Modification</app-sortable-header
+            i18n
           >
+            Last Modification
+          </app-sortable-header>
         </th>
         <td
           cdk-cell
@@ -325,12 +330,12 @@
     </table>
 
     @if (files().length === 0) {
-      <div class="text-center fs-5 border ms-1 py-1">Empty directory</div>
+      <div class="text-center fs-5 border ms-1 py-1" i18n>Empty directory</div>
       <div
         class="text-center text-secondary position-absolute top-50 start-50 translate-middle"
       >
         <i class="bi bi-upload" style="font-size: 5rem"></i>
-        <div class="fs-3">Drop files here to upload</div>
+        <div class="fs-3" i18n>Drop files here to upload</div>
       </div>
     }
   </div>

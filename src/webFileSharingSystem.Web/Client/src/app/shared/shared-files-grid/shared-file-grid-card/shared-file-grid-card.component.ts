@@ -112,17 +112,4 @@ export class SharedFileGridCardComponent {
     }
     this.contextMenuClick.emit({ event: $event, file: this.file() });
   }
-
-  getAccessModeName(accessMode: ShareAccessMode) {
-    switch (accessMode) {
-      case ShareAccessMode.ReadOnly:
-        return 'Read only';
-      case ShareAccessMode.ReadWrite:
-        return 'Read & write';
-      case ShareAccessMode.FullAccess:
-        return 'Full control';
-      default:
-        return 'Read only';
-    }
-  }
 }

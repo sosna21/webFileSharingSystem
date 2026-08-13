@@ -4,7 +4,7 @@
     class="form-control"
     data-testId="search-input"
     type="search"
-    [placeholder]="`Search in ${currentFolderName()}`"
+    [placeholder]="searchPlaceholder()"
     [ngModel]="searchedPhrase()"
     (ngModelChange)="setSearchPhrase($event)"
   />

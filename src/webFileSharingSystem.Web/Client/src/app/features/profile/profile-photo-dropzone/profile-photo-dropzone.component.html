@@ -21,9 +21,9 @@
 
   <i class="bi bi-cloud-arrow-up fs-2 text-secondary mb-2"></i>
 
-  <p class="mb-1 fw-medium">Drag and drop your new photo here</p>
+  <p class="mb-1 fw-medium" i18n>Drag and drop your new photo here</p>
 
-  <p class="text-secondary small mb-3">
+  <p class="text-secondary small mb-3" i18n>
     or click to browse from your computer (JPEG or PNG, up to 5 MB)
   </p>
 
@@ -31,6 +31,7 @@
     data-testid="profile-photo-dropzone-browse"
     class="btn btn-outline-primary btn-sm"
     (click)="fileInput.click(); $event.stopPropagation()"
+    i18n
   >
     Browse files
   </button>

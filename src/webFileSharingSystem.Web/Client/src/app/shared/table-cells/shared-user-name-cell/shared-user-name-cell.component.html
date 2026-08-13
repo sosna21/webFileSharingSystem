@@ -1,6 +1,7 @@
 <img
   [src]="userPhotoUrl() ?? 'user.png'"
   [alt]="'Profile photo of ' + file().sharedUserName"
+  i18n-alt
   width="32"
   height="32"
   [class]="'rounded-circle ' + photoTextGapClass()"

@@ -1,8 +1,11 @@
 @let formattedCreatedBy =
-  file().createdBy === currentUserId() ? "You" : file().createdByUserName;
+  file().createdBy === currentUserId()
+    ? currentUserLabel
+    : file().createdByUserName;
 <img
   [src]="userPhotoUrl() ?? 'user.png'"
-  [alt]="'Profile photo of ' + formattedCreatedBy"
+  [alt]="`Profile photo of ${formattedCreatedBy}`"
+  i18n-alt
   width="32"
   height="32"
   [class]="'rounded-circle ' + photoTextGapClass()"

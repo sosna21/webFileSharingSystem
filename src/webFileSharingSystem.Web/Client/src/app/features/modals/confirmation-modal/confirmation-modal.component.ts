@@ -10,9 +10,9 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 })
 export class ConfirmationModalComponent {
   readonly activeModal = inject(NgbActiveModal);
-  readonly title = model('Confirm');
-  readonly message = model('Are you sure?');
-  readonly confirmText = model('Yes');
-  readonly cancelText = model('Cancel');
+  readonly title = model($localize`Confirm`);
+  readonly message = model($localize`Are you sure?`);
+  readonly confirmText = model($localize`Yes`);
+  readonly cancelText = model($localize`Cancel`);
   readonly showPermanentWarning = model(false);
 }

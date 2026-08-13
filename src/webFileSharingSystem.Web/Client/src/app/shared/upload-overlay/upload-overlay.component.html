@@ -8,13 +8,19 @@
 >
   <div class="drop-overlay-text">
     @if (!canWriteToDragTarget() && isHoverTargetATable()) {
-      You can't upload files here 😕
+      <ng-container i18n>You can't upload files here 😕</ng-container>
     } @else if (!canWriteToDragTarget()) {
-      You can't upload files to “{{ dragTarget()?.name }}” 😕
+      <ng-container i18n>
+        You can't upload files to “{{ dragTarget()?.name }}” 😕
+      </ng-container>
     } @else if (isHoverTargetATable()) {
-      Upload {{ dragPayloadNb() }} file(s) here
+      <ng-container i18n>
+        Upload {{ dragPayloadNb() }} file(s) here
+      </ng-container>
     } @else {
-      Upload {{ dragPayloadNb() }} file(s) to “{{ dragTarget()?.name }}”
+      <ng-container i18n>
+        Upload {{ dragPayloadNb() }} file(s) to “{{ dragTarget()?.name }}”
+      </ng-container>
     }
   </div>
 </div>

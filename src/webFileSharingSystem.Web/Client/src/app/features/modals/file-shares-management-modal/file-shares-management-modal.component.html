@@ -16,11 +16,12 @@
 
 <div class="modal-body d-grid">
   <div class="d-flex justify-content-center gap-2 align-items-center">
-    Select existing share to edit or
+    <ng-container i18n>Select existing share to edit or</ng-container>
     <button
       class="btn btn-sm btn-primary"
       data-testid="file-shares-management-modal-create-new"
       (click)="openAddShareModal()"
+      i18n
     >
       Create new
     </button>
@@ -53,10 +54,10 @@
           <thead class="sticky-top">
             <tr>
               <th scope="col"></th>
-              <th scope="col">Shared with:</th>
-              <th scope="col">Access mode:</th>
-              <th scope="col">Valid until:</th>
-              <th scope="col" width="25%">Action:</th>
+              <th scope="col" i18n>Shared with:</th>
+              <th scope="col" i18n>Access mode:</th>
+              <th scope="col" i18n>Valid until:</th>
+              <th scope="col" width="25%" i18n>Action:</th>
             </tr>
           </thead>
           <tbody>
@@ -83,10 +84,9 @@
                     "
                     (click)="row.canCancel && deleteShare(row.share)"
                     [ngbTooltip]="
-                      row.canCancel
-                        ? 'Cancel share'
-                        : 'Cannot cancel expired share'
+                      row.canCancel ? cancelShare : cancelExpiredShare
                     "
+                    i18n-ngbTooltip
                     [openDelay]="300"
                   ></i>
                 </td>
@@ -117,11 +117,10 @@
                       row.share.shareId
                     "
                     [disabled]="!row.canEdit"
-                    [ngbTooltip]="
-                      row.canEdit ? 'Edit share' : 'Cannot edit expired share'
-                    "
+                    [ngbTooltip]="row.canEdit ? editShare : editExpiredShare"
                     [openDelay]="300"
                     (click)="openEditShareModal(row.share)"
+                    i18n
                   >
                     Edit
                   </button>
@@ -141,6 +140,7 @@
     class="btn btn-secondary w-25"
     data-testid="file-shares-management-modal-exit"
     (click)="activeModal.close(true)"
+    i18n
   >
     Exit
   </button>

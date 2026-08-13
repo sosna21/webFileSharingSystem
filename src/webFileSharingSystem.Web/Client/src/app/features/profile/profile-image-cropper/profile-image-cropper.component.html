@@ -1,5 +1,5 @@
 <div class="text-center mb-4">
-  <h5 class="mb-3">Adjust your profile picture</h5>
+  <h5 class="mb-3" i18n>Adjust your profile picture</h5>
 
   <div
     data-testid="profile-image-cropper-container"
@@ -25,6 +25,7 @@
     <p
       data-testid="profile-image-cropper-file-name"
       class="small text-secondary mt-2"
+      i18n
     >
       Uploading: {{ selectedPhotoName() }}
     </p>
@@ -38,6 +39,7 @@
     class="btn btn-outline-secondary"
     (click)="onCancel()"
     [disabled]="isUploading()"
+    i18n
   >
     Cancel
   </button>
@@ -55,9 +57,9 @@
         role="status"
         aria-hidden="true"
       ></span>
-      Saving...
+      <ng-container i18n>Saving...</ng-container>
     } @else {
-      Save photo
+      <ng-container i18n>Save photo</ng-container>
     }
   </button>
 </div>

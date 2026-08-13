@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   ElementRef,
   inject,
   viewChild,
@@ -25,6 +26,11 @@ export class FileSearchComponent {
 
   currentFolderName = retainLastDefined(this.fileService.parentName);
   searchedPhrase = this.fileService.searchedPhrase;
+  searchPlaceholder = computed(() =>
+    this.currentFolderName()
+      ? $localize`Search in ${this.currentFolderName()}`
+      : $localize`Search`,
+  );
 
   setSearchPhrase(phrase: string) {
     this.fileService.setSearchPhrase(phrase);

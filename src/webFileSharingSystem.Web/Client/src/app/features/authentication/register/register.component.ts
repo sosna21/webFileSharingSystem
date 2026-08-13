@@ -110,8 +110,8 @@ export class RegisterComponent implements OnInit {
       next: () => {
         this.router.navigate(['/login']);
         this.toast.show(
-          'Account created',
-          'You can now log in and start using the app.',
+          $localize`Account created`,
+          $localize`You can now log in and start using the app.`,
           MessageSeverity.success,
         );
       },

@@ -42,6 +42,11 @@ export class FileSharesManagementModalComponent {
   private readonly injector = inject(Injector);
   private readonly shareClock = inject(ShareClockService);
 
+  readonly cancelShare = $localize`Cancel share`;
+  readonly cancelExpiredShare = $localize`Cannot cancel expired share`;
+  readonly editShare = $localize`Edit share`;
+  readonly editExpiredShare = $localize`Cannot edit expired share`;
+
   private readonly url = computed(() =>
     this.sharedFile()
       ? `${this.shareService.sharesUrl}/GetShares/${this.sharedFile()!.id}`
@@ -59,17 +64,20 @@ export class FileSharesManagementModalComponent {
         return {
           share,
           status,
-          validUntilLabel: 'Already expired',
+          validUntilLabel: $localize`Already expired`,
           canEdit: false,
           canCancel: false,
         };
       }
 
       if (status === 'expiring-soon') {
+        const validUntil =
+          this.getLocalised(share.validUntil) ?? $localize`Unknown`;
+        const validUntilLabel = $localize`Expires soon (${validUntil})`;
         return {
           share,
           status,
-          validUntilLabel: `Expires soon (${this.getLocalised(share.validUntil) ?? 'Unknown'})`,
+          validUntilLabel: validUntilLabel,
           canEdit: true,
           canCancel: true,
         };
@@ -78,7 +86,8 @@ export class FileSharesManagementModalComponent {
       return {
         share,
         status,
-        validUntilLabel: this.getLocalised(share.validUntil) ?? 'No expiration',
+        validUntilLabel:
+          this.getLocalised(share.validUntil) ?? $localize`No expiration`,
         canEdit: true,
         canCancel: true,
       };
@@ -92,7 +101,7 @@ export class FileSharesManagementModalComponent {
     const shareResults: AddShareRequest[] | null =
       await this.modalService.addFileShareModal(
         {
-          title: `Share '${this.sharedFile()!.fileName}'`,
+          title: $localize`Share '${this.sharedFile()!.fileName}'`,
           filesToShare: [this.sharedFile()!],
         },
         false,
@@ -109,15 +118,15 @@ export class FileSharesManagementModalComponent {
             shares ? [share, ...shares] : [share],
           );
           this.toast.show(
-            'File Shared',
-            `File '${this.sharedFile()!.fileName}' shared successfully with user '${share.sharedWithUserName}'.`,
+            $localize`File Shared`,
+            $localize`File “${this.sharedFile()!.fileName}” shared successfully with user “${share.sharedWithUserName}”.`,
             MessageSeverity.success,
           );
         },
         error: (err) => {
           console.error(err);
           this.toast.show(
-            'Failed to share file',
+            $localize`Failed to share file`,
             err.error || String(err),
             MessageSeverity.error,
           );
@@ -197,13 +206,13 @@ export class FileSharesManagementModalComponent {
   getAccessModeName(accessMode: ShareAccessMode) {
     switch (accessMode) {
       case ShareAccessMode.ReadOnly:
-        return 'Read only';
+        return $localize`Read only`;
       case ShareAccessMode.ReadWrite:
-        return 'Read and write';
+        return $localize`Read and write`;
       case ShareAccessMode.FullAccess:
-        return 'Full control';
+        return $localize`Full control`;
       default:
-        return 'Read only';
+        return $localize`Read only`;
     }
   }
 }

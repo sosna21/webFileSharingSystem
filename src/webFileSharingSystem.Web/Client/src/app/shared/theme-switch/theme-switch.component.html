@@ -13,21 +13,24 @@
       [class.active]="theme() === 'auto'"
       (click)="changeTheme('auto')"
     >
-      <span class="bi bi-circle-half me-2"></span>Auto</button
+      <span class="bi bi-circle-half me-2"></span
+      ><ng-container i18n>Auto</ng-container></button
     ><button
       ngbdropdownitem
       class="dropdown-item"
       [class.active]="theme() === 'light'"
       (click)="changeTheme('light')"
     >
-      <span class="bi bi-sun-fill me-2"></span>Light</button
+      <span class="bi bi-sun-fill me-2"></span
+      ><ng-container i18n>Light</ng-container></button
     ><button
       ngbdropdownitem
       class="dropdown-item"
       [class.active]="theme() === 'dark'"
       (click)="changeTheme('dark')"
     >
-      <span class="bi bi-moon-stars-fill me-2"></span>Dark
+      <span class="bi bi-moon-stars-fill me-2"></span
+      ><ng-container i18n>Dark</ng-container>
     </button>
   </div>
 </div>

@@ -173,7 +173,7 @@ export class FileActionsStripComponent {
       this.modalService.manageSharesModal(
         {
           sharedFile: sharedFile,
-          title: `Manage shares for file: '${sharedFile.fileName}'`,
+          title: $localize`Manage shares for: '${sharedFile.fileName}'`,
         },
         this.injector,
       );
