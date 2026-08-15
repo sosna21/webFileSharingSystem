@@ -1,5 +1,8 @@
+using System;
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -78,10 +81,11 @@ namespace webFileSharingSystem.Web
                 app.UseHttpsRedirection();
             }
 
+            app.UseStaticFiles();
+
             app.UseRouting();
 
             app.UseCors("AllowFrontend");
-
             app.UseAuthentication();
 
             app.UseAuthorization();
@@ -90,9 +94,25 @@ namespace webFileSharingSystem.Web
             {
                 endpoints.MapControllers();
                 endpoints.MapHealthChecks("/health");
-            });
 
-            app.UseStaticFiles();
+                endpoints.MapFallback(async context =>
+                {
+                    var path = context.Request.Path;
+
+                    var isPolish =
+                        path.Equals("/pl", StringComparison.OrdinalIgnoreCase) ||
+                        path.StartsWithSegments("/pl");
+
+                    var indexFile = isPolish
+                        ? "pl/index.html"
+                        : "index.html";
+
+                    var filePath = Path.Combine(env.WebRootPath, indexFile);
+
+                    context.Response.ContentType = "text/html";
+                    await context.Response.SendFileAsync(filePath);
+                });
+            });
         }
     }
 }

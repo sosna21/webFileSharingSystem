@@ -1,7 +1,7 @@
 import { inject, Injectable, Injector } from '@angular/core';
 import { AppFile } from '../models/app-file.model';
 import { ModalService } from './modal.service';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { AddShareRequest } from '../models/add-share-request.model';
 import { bulkAction } from '../utils/bulk-action-util';

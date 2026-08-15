@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { catchError, EMPTY, switchMap, timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { UserStorage } from '../models/user-storage.model';
 
 @Injectable()

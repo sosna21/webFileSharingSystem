@@ -10,7 +10,7 @@ import {
   toObservable,
   toSignal,
 } from '@angular/core/rxjs-interop';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
