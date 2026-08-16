@@ -9,28 +9,39 @@
   <div ngbDropdownMenu class="dropdown-menu-end">
     <button
       ngbdropdownitem
-      class="dropdown-item"
+      class="dropdown-item d-flex align-items-center"
       [class.active]="theme() === 'auto'"
       (click)="changeTheme('auto')"
     >
       <span class="bi bi-circle-half me-2"></span
-      ><ng-container i18n>Auto</ng-container></button
-    ><button
+      ><ng-container i18n>Auto</ng-container>
+      @if (theme() === "auto") {
+        <i class="bi bi-check ms-auto"></i>
+      }
+    </button>
+    <button
       ngbdropdownitem
-      class="dropdown-item"
+      class="dropdown-item d-flex align-items-center"
       [class.active]="theme() === 'light'"
       (click)="changeTheme('light')"
     >
       <span class="bi bi-sun-fill me-2"></span
-      ><ng-container i18n>Light</ng-container></button
-    ><button
+      ><ng-container i18n>Light</ng-container>
+      @if (theme() === "light") {
+        <i class="bi bi-check ms-auto"></i>
+      }
+    </button>
+    <button
       ngbdropdownitem
-      class="dropdown-item"
+      class="dropdown-item d-flex align-items-center"
       [class.active]="theme() === 'dark'"
       (click)="changeTheme('dark')"
     >
       <span class="bi bi-moon-stars-fill me-2"></span
       ><ng-container i18n>Dark</ng-container>
+      @if (theme() === "dark") {
+        <i class="bi bi-check ms-auto"></i>
+      }
     </button>
   </div>
 </div>

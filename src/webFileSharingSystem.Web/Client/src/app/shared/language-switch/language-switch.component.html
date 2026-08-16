@@ -1,0 +1,44 @@
+<div
+  ngbDropdown
+  class="nav-item dropdown text-white rounded-pill p-1"
+  appHoverClass="bg-secondary"
+>
+  <a
+    role="button"
+    class="dropdown-toggle nav-link d-flex align-items-center gap-1"
+    ngbDropdownToggle
+  >
+    <span class="language-globe" aria-hidden="true">🌍</span>
+    <span class="fw-medium">{{ currentLanguage.toUpperCase() }}</span>
+  </a>
+
+  <div ngbDropdownMenu class="dropdown-menu-end">
+    <button
+      ngbdropdownitem
+      class="dropdown-item d-flex align-items-center"
+      [class.active]="currentLanguage === 'en'"
+      (click)="changeLanguage('en')"
+    >
+      <span class="language-flag language-flag-en me-2"></span>
+      English
+
+      @if (currentLanguage === "en") {
+        <i class="bi bi-check ms-auto"></i>
+      }
+    </button>
+
+    <button
+      ngbdropdownitem
+      class="dropdown-item d-flex align-items-center"
+      [class.active]="currentLanguage === 'pl'"
+      (click)="changeLanguage('pl')"
+    >
+      <span class="language-flag language-flag-pl me-2"></span>
+      Polski
+
+      @if (currentLanguage === "pl") {
+        <i class="bi bi-check ms-auto"></i>
+      }
+    </button>
+  </div>
+</div>

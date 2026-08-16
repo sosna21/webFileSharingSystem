@@ -7,6 +7,7 @@ import { NavbarBrandComponent } from './navbar-brand/navbar-brand.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { LanguageSwitchComponent } from '../../language-switch/language-switch.component';
 
 @Component({
   selector: 'app-navbar',
@@ -15,6 +16,7 @@ import { filter, map } from 'rxjs';
     ProfileDropdownComponent,
     FileSearchComponent,
     NavbarBrandComponent,
+    LanguageSwitchComponent,
   ],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss',

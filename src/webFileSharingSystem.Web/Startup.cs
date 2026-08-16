@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -80,6 +81,28 @@ namespace webFileSharingSystem.Web
             {
                 app.UseHttpsRedirection();
             }
+            
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/" &&
+                    !context.Request.Cookies.ContainsKey("Language"))
+                {
+                    var preferredLanguage = context.Request.GetTypedHeaders()
+                        .AcceptLanguage?
+                        .OrderByDescending(x => x.Quality ?? 1)
+                        .FirstOrDefault();
+
+                    if (preferredLanguage?.Value.Value.StartsWith(
+                            "pl",
+                            StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        context.Response.Redirect("/pl/");
+                        return;
+                    }
+                }
+
+                await next();
+            });
 
             app.UseStaticFiles();
 

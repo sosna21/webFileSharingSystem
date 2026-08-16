@@ -2,10 +2,14 @@
   <div class="container-fluid flex-wrap flex-md-nowrap">
     <app-navbar-brand class="me-1 me-lg-5" />
     @if (!authenticated()) {
-      <app-theme-switch class="ms-auto" />
+      <div class="d-flex gap-3 ms-auto me-4">
+        <app-language-switch />
+        <app-theme-switch />
+      </div>
     }
     @if (authenticated()) {
       <div class="d-flex d-md-none align-items-center ms-auto me-3">
+        <app-language-switch class="me-2 me-lg-3" />
         <app-theme-switch class="me-2" />
         <app-profile-dropdown />
       </div>
@@ -14,6 +18,7 @@
           <app-file-search class="me-3 me-md-3 me-lg-4" />
         }
         <div class="d-none d-md-flex align-items-center ms-auto">
+          <app-language-switch class="me-2 me-lg-3" />
           <app-theme-switch class="me-2 me-lg-3" />
           <app-profile-dropdown class="ms-md-1" />
         </div>

@@ -5,7 +5,7 @@
 >
   <span
     ngbDropdownToggle
-    class="d-block dropdown-toggle text-white"
+    class="dropdown-toggle text-white d-flex align-items-center gap-1"
     style="cursor: pointer"
     data-testid="profile-dropdown-toggle"
   >
@@ -17,9 +17,11 @@
       height="32"
       class="rounded-circle"
     />
-    {{ userName() }}
+    <span class="text-truncate" style="max-width: 100px">
+      {{ userName() }}
+    </span>
   </span>
-  <ul ngbDropdownMenu class="dropdown-menu text-small">
+  <ul ngbDropdownMenu class="dropdown-menu-end">
     <li ngbDropdownItem>
       <a
         class="dropdown-item user-select-none"
