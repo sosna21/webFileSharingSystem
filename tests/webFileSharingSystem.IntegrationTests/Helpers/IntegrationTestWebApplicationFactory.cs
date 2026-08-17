@@ -32,11 +32,10 @@ namespace webFileSharingSystem.IntegrationTests.Helpers
                 var settings = new Dictionary<string, string?>
                 {
                     ["UseInMemoryDatabase"] = "false",
-                    ["UseDockerDatabase"] = "false",
                     ["UseAzureBlobStorage"] = "false",
                     ["DisableDbSeeding"] = "true",
                     ["DisableHttpsRedirection"] = "true",
-                    ["ConnectionStrings:LocalDbConnection"] = _dbFixture.ConnectionString,
+                    ["ConnectionStrings:DbConnection"] = _dbFixture.ConnectionString,
                     ["JwtSettings:Secret"] = "test-secret-test-secret-test-secret-test-secret-test-secret-test-secret",
                     ["JwtSettings:Issuer"] = "https://localhost",
                     ["JwtSettings:Audience"] = "https://localhost",

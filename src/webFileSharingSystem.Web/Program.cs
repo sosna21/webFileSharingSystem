@@ -28,8 +28,7 @@ namespace webFileSharingSystem.Web
 
                 await e2eContainer.StartAsync();
 
-                Environment.SetEnvironmentVariable("ConnectionStrings__LocalDbConnection", e2eContainer.GetConnectionString());
-                Environment.SetEnvironmentVariable("UseDockerDatabase", "false");
+                Environment.SetEnvironmentVariable("ConnectionStrings__DbConnection", e2eContainer.GetConnectionString());
                 Environment.SetEnvironmentVariable("DisableDbSeeding", "true");
             }
 

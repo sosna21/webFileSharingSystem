@@ -31,10 +31,9 @@ namespace webFileSharingSystem.Infrastructure
             }
             else
             {
-                var useDockerDb = configuration.GetValue<bool>("UseDockerDatabase");
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(
-                        configuration.GetConnectionString(useDockerDb ? "DbConnection" : "LocalDbConnection"),
+                        configuration.GetConnectionString("DbConnection"),
                         b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
             }
 
