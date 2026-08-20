@@ -8,15 +8,15 @@
         <i
           class="bi"
           [class]="
-            files().length > 2
+            dragableFiles().length > 2
               ? 'fs-1 '
-              : 'fs-2 ' + (files()[0] | fileToIcon: false)
+              : 'fs-2 ' + (dragableFiles()[0] | fileToIcon: false)
           "
         ></i>
       } @else {
         <i
           class="bi bi-file-earmark-arrow-up-fill"
-          [class]="files().length > 2 ? 'fs-1' : 'fs-2'"
+          [class]="dragableFiles().length > 2 ? 'fs-1' : 'fs-2'"
         ></i>
       }
     </div>

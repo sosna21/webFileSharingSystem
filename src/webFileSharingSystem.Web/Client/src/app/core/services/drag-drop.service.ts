@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { FileMoveDragDropService } from './file-move-drag-drop.service';
 import { FileUploadDragDropService } from './file-upload-drag-drop.service';
 import { DragDropUtils } from '../utils/drag-drop-utils';
-import { BaseFile } from '../models/base-file.model';
+import { BaseFile, FileStatus } from '../models/base-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 import { Breadcrumb } from '../models/breadcrumb.model';
 import { FileService } from './file.service';
@@ -98,7 +98,9 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
 
     const filesToMove = selectedFiles.filter(
       (f) =>
-        f.accessMode === undefined || f.accessMode >= ShareAccessMode.ReadWrite,
+        f.fileStatus === FileStatus.Completed &&
+        (f.accessMode === undefined ||
+          f.accessMode >= ShareAccessMode.ReadWrite),
     );
 
     if (filesToMove.length === 0) return;
