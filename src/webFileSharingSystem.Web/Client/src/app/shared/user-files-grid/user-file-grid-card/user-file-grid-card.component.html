@@ -18,7 +18,7 @@
   (contextmenu)="onContextMenuClick($event)"
 >
   <div class="d-flex justify-content-between align-items-start">
-    <div class="d-flex gap-2 small">
+    <div data-content class="d-flex gap-2 small">
       @if (isUploadInProgress()) {
         <app-upload-cancel-btn (click)="cancelUpload.emit()" />
       }
@@ -32,7 +32,7 @@
       }
     </div>
 
-    <div appHoverClass="bg-body-tertiary rounded-pill">
+    <div data-content appHoverClass="bg-body-tertiary rounded-pill">
       <button
         class="btn btn-sm btn-link text-decoration-none dropdown-toggle"
         (click)="clickActions.emit($event)"
@@ -43,7 +43,11 @@
   </div>
 
   <div class="file-preview">
-    <i class="bi display-3 position-relative" [class]="fileIcon()">
+    <i
+      data-content
+      class="bi display-3 position-relative d-flex"
+      [class]="fileIcon()"
+    >
       @if (isUploadInProgress()) {
         <span class="upload-badge">
           <i class="bi bi-arrow-up"></i>
@@ -58,7 +62,7 @@
       [class.uploading]="isUploadInProgress() && isUserCreatedFile()"
       [appTooltipOnOverflow]="file().fileName"
     >
-      {{ file().fileName }}
+      <span data-content> {{ file().fileName }}</span>
     </div>
 
     @if (isUploadInProgress()) {

@@ -302,7 +302,7 @@
           file.fileStatus === FileStatus.Incomplete &&
           file.createdBy !== currentUserId()
         "
-        [class.selected-row]="selectedIds().has(file.id)"
+        [class.selected]="selectedIds().has(file.id)"
         [class.selectable]="file.isDirectory"
         [draggable]="
           file.fileStatus === FileStatus.Completed &&

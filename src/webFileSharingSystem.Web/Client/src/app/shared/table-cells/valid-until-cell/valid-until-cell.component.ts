@@ -8,5 +8,8 @@ import { RemainigTimePipe } from '../../../core/pipes/remainig-time.pipe';
   selector: 'app-valid-until-cell',
   imports: [CommonModule, RemainigTimePipe],
   templateUrl: './valid-until-cell.component.html',
+  host: {
+    'data-content': '',
+  },
 })
 export class ValidUntilCellComponent extends BaseCellDirective<SharedFile> {}

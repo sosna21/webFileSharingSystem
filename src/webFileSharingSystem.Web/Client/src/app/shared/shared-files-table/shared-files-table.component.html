@@ -263,7 +263,7 @@
             ? contextMenuClick($event, file)
             : tableContextMenuClick($event)
         "
-        [class.selected-row]="selectedIds().has(file.id)"
+        [class.selected]="selectedIds().has(file.id)"
         (click)="selectFile(file, $event)"
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
         [class.selectable]="file.isDirectory"

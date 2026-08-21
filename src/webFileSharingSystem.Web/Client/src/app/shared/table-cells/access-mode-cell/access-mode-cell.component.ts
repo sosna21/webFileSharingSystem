@@ -9,6 +9,9 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
   selector: 'app-access-mode-cell',
   imports: [CommonModule, NgbTooltipModule],
   templateUrl: './access-mode-cell.component.html',
+  host: {
+    'data-content': '',
+  },
 })
 export class AccessModeCellComponent extends BaseCellDirective<SharedFile> {
   readonly nameDisplayMode = input<'full' | 'short' | 'responsive'>(

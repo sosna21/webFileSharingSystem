@@ -1,24 +1,30 @@
 @if (file().fileStatus === FileStatus.Completed) {
-  <i class="bi fs-4 me-1" [class]="file() | fileToIcon"></i>
+  <span data-content>
+    <i class="bi fs-4 me-1" [class]="file() | fileToIcon"></i>
 
-  @if (editingId() === file().id) {
-    <input
-      appSelectFilename
-      data-testid="rename-input"
-      type="text"
-      style="min-width: 85%"
-      [ngModel]="file().fileName"
-      [placeholder]="file().fileName"
-      (blur)="onRename(file(), $any($event.target).value)"
-      (keydown)="onFileRenameKeyDown($event, file())"
-    />
-  } @else {
-    <span data-testid="file-name">{{ file().fileName }}</span>
-  }
+    @if (editingId() === file().id) {
+      <input
+        appSelectFilename
+        data-testid="rename-input"
+        type="text"
+        style="min-width: 85%"
+        [ngModel]="file().fileName"
+        [placeholder]="file().fileName"
+        (blur)="onRename(file(), $any($event.target).value)"
+        (keydown)="onFileRenameKeyDown($event, file())"
+      />
+    } @else {
+      <span data-testid="file-name">{{ file().fileName }}</span>
+    }
+  </span>
 } @else {
   <div class="d-flex align-items-center gap-3" data-testid="file-upload-data">
     <!-- File icon -->
-    <i class="bi fs-4 flex-shrink-0" [class]="file() | fileToIcon"></i>
+    <i
+      data-content
+      class="bi fs-4 flex-shrink-0"
+      [class]="file() | fileToIcon"
+    ></i>
 
     <!-- Upload content -->
     <div
@@ -28,6 +34,7 @@
       <!-- Filename row -->
       <div class="d-flex align-items-center" style="min-width: 0">
         <span
+          data-content
           class="text-truncate"
           data-testid="file-name"
           [appTooltipOnOverflow]="file().fileName"

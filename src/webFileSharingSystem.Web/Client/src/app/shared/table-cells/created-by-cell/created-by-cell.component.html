@@ -2,7 +2,9 @@
   file().createdBy === currentUserId()
     ? currentUserLabel
     : file().createdByUserName;
+
 <img
+  data-content
   [src]="userPhotoUrl() ?? 'user.png'"
   [alt]="`Profile photo of ${formattedCreatedBy}`"
   i18n-alt
@@ -11,6 +13,7 @@
   [class]="'rounded-circle ' + photoTextGapClass()"
 />
 <span
+  data-content
   class="text-truncate"
   [class.mt-auto]="alignTextBottom()"
   [appTooltipOnOverflow]="formattedCreatedBy"

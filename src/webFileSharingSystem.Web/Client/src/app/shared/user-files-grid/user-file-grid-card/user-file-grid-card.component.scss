@@ -32,10 +32,10 @@
 
 .file-preview {
   height: 55px;
-  transform: translateY(-6px);
+  transform: translateY(1px);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: end;
 }
 
 .file-name {
@@ -59,7 +59,7 @@
 .upload-badge {
   position: absolute;
   right: -6px;
-  bottom: -1px;
+  bottom: -4px;
 
   width: 28px;
   height: 28px;

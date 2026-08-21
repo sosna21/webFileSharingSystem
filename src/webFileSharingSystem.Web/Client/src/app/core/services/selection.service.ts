@@ -139,7 +139,7 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     if (event.button !== 0) return false;
 
     const target = event.target as HTMLElement;
-    if (!this.canStartRubberBandOnTarget(target, itemSelector)) return false;
+    if (!this.canStartRubberBandOnTarget(target)) return false;
 
     const point = this.clientPointToContainerPoint(
       event.clientX,
@@ -390,28 +390,11 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     };
   }
 
-  private canStartRubberBandOnTarget(
-    target: HTMLElement,
-    itemSelector: string,
-  ) {
-    if (
-      target.closest(
-        'button, input, textarea, select, a, [role="button"], [contenteditable="true"], app-upload-cancel-btn, app-upload-control-btns, app-clicable-icon',
-      )
-    ) {
-      return false;
-    }
-
-    const row = target.closest('tr[cdk-row]');
-    if (row?.classList.contains('selected-row')) {
-      return false;
-    }
-
-    if (target.closest(itemSelector)) {
-      return target.matches('td, th');
-    }
-
+  private canStartRubberBandOnTarget(target: HTMLElement) {
+    if (target.closest('[data-content]')) return false;
+    if (target.closest('.selected')) return false;
     if (target.closest('tr[cdk-header-row]')) return false;
+
     return true;
   }
 

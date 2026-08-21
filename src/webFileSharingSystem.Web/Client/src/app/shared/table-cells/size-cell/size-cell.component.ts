@@ -8,6 +8,9 @@ import { BaseCellDirective } from '../base-cell.directive';
   selector: 'app-size-cell',
   imports: [CommonModule, FileSizePipe],
   templateUrl: './size-cell.component.html',
+  host: {
+    'data-content': '',
+  },
 })
 export class SizeCellComponent<
   T extends BaseFile,

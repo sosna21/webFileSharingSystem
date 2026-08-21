@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { UploadRow } from './upload-row.part';
 
-const selectedRowClass = 'selected-row';
+const selectedRowClass = 'selected';
 
 export class SharedFilesTable {
   readonly page: Page;
@@ -51,7 +51,7 @@ export class SharedFilesTable {
   async openContextMenuForSelectedRows() {
     //find first row with selected class, it should have getByTestId starting with `file-row-` then first from that list with selected class
     const row = this.table
-      .locator('[data-testid^="file-row-"].selected-row')
+      .locator('[data-testid^="file-row-"].selected')
       .first();
     await row.click({ button: 'right' });
   }

@@ -1,4 +1,5 @@
 <img
+  data-content
   [src]="userPhotoUrl() ?? 'user.png'"
   [alt]="'Profile photo of ' + file().sharedUserName"
   i18n-alt
@@ -7,6 +8,7 @@
   [class]="'rounded-circle ' + photoTextGapClass()"
 />
 <span
+  data-content
   class="text-truncate"
   [class.mt-auto]="alignTextBottom()"
   [appTooltipOnOverflow]="file().sharedUserName"

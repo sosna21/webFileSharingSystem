@@ -1,5 +1,5 @@
 @if (file().fileStatus === FileStatus.Incomplete) {
   <app-upload-cancel-btn (click)="onCancelFilesUpload(file())" />
 } @else if (isLoading()) {
-  <span class="spinner-border spinner-border-sm"></span>
+  <span data-content class="spinner-border spinner-border-sm"></span>
 }
