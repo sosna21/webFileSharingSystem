@@ -30,8 +30,8 @@ export class DragPreviewComponent {
     return this.fileNames()
       .slice(0, 5)
       .map((name) => {
-        if (name.length > 35) {
-          return name.slice(0, 20) + '...' + name.slice(-10);
+        if (name.length >= 33) {
+          return name.slice(0, 18) + '...' + name.slice(-10);
         }
         return name;
       });
