@@ -2610,18 +2610,6 @@ Przesyłanie anulowane</target>
           <context context-type="linenumber">431</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2565975244719079707" datatype="html">
-        <source>Unsellected files that cannot be moved</source>
-        <target>Odznaczono pliki, których nie można przenieść</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/shared-files-grid/shared-files-grid.component.ts</context>
-          <context context-type="linenumber">417</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/shared-files-table/shared-files-table.component.ts</context>
-          <context context-type="linenumber">432</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="8872995122817242127" datatype="html">
         <source>Some files are still uploading</source>
         <target>Niektóre pliki są nadal przesyłane</target>
@@ -3306,6 +3294,30 @@ Przesyłanie anulowane</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/modals/keyboard-shortcuts-modal/keyboard-shortcuts-modal.component.ts</context>
           <context context-type="linenumber">14</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="451055884289928156" datatype="html">
+        <source>The selected file cannot be moved</source>
+        <target>Wybrany plik nie może zostać przeniesiony</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">136</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8082933984309229917" datatype="html">
+        <source>You can&apos;t move any of the selected files</source>
+        <target>Nie można przenieść żadnego z wybranych plików</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">137</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1195774664104532526" datatype="html">
+        <source>Some of the selected files cannot be moved and will be ignored</source>
+        <target>Niektóre z wybranych plików nie mogą zostać przeniesione i zostaną zignorowane</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">144</context>
         </context-group>
       </trans-unit>
 </body>

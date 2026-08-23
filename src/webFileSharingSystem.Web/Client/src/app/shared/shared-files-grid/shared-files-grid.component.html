@@ -53,7 +53,6 @@
           [dropTarget]="dragTarget()?.id === file.id"
           [currentUserId]="currentUserId()"
           [inRoot]="!!currentDirectoryId()"
-          [canMove]="canMoveSelected()"
           (clickCard)="selectFile(file, $event)"
           (doubleClickCard)="file.isDirectory ? selectFolder(file.id) : null"
           (clickActions)="actionIconClick($event, file)"

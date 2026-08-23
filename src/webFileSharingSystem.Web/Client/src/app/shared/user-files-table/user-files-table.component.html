@@ -304,11 +304,7 @@
         "
         [class.selected]="selectedIds().has(file.id)"
         [class.selectable]="file.isDirectory"
-        [draggable]="
-          file.fileStatus === FileStatus.Completed &&
-          !isLoading(file.id) &&
-          !isEditing(file.id)
-        "
+        [draggable]="!isLoading(file.id) && !isEditing(file.id)"
         (dragstart)="onRowDragStart($event, file)"
         (dragend)="onRowDragEnd($event)"
         (dragleave)="onRowDragLeave($event, file)"

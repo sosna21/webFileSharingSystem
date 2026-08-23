@@ -3,7 +3,7 @@
   [class.selected]="selected()"
   [class.drop-hover]="canShowDropOverlay()"
   [class.incomplete]="file().fileStatus === FileStatus.Incomplete"
-  [draggable]="!loading() && file().fileStatus === FileStatus.Completed"
+  [draggable]="!loading()"
   (click)="clickCard.emit($event)"
   (dblclick)="doubleClickCard.emit($event)"
   (mousedown)="mouseDownCard.emit($event)"

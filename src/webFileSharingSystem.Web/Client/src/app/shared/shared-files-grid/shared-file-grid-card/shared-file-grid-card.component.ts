@@ -47,7 +47,6 @@ export class SharedFileGridCardComponent {
   readonly dropTarget = input(false);
   readonly currentUserId = input<number | undefined>();
   readonly inRoot = input(false);
-  readonly canMove = input(false);
 
   readonly clickCard = output<MouseEvent>();
   readonly doubleClickCard = output<MouseEvent>();

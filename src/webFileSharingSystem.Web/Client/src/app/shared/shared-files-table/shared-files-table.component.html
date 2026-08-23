@@ -267,9 +267,7 @@
         (click)="selectFile(file, $event)"
         (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
         [class.selectable]="file.isDirectory"
-        [draggable]="
-          canMoveSelected() && !isLoading(file.id) && !isEditing(file.id)
-        "
+        [draggable]="!isLoading(file.id) && !isEditing(file.id)"
         (dragstart)="onRowDragStart($event, file)"
         (dragend)="onRowDragEnd($event)"
         (dragleave)="onRowDragLeave($event, file)"
@@ -314,5 +312,5 @@
 <!-- Do not remove this -->
 <!-- Invisible drag preview component, necessary for drag preview view snapshot -->
 <div style="position: absolute; top: -9999px; left: -9999px">
-  <app-drag-preview [files]="movableSelectedFiles()" />
+  <app-drag-preview [files]="selectedFiles()" />
 </div>

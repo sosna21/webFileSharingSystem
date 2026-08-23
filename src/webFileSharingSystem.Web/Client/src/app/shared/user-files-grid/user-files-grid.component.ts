@@ -202,7 +202,7 @@ export class UserFilesGridComponent {
     );
 
     if (started) {
-      event.stopPropagation();
+      event.preventDefault();
       this.closeContextMenus();
     }
   }
@@ -409,7 +409,7 @@ export class UserFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: AppFile) {
-    if (this.selectedFiles().length === 0) {
+    if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
     }

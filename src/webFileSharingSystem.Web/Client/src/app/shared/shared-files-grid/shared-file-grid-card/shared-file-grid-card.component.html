@@ -8,7 +8,7 @@
     canShowDropOverlay() && file().accessMode! < ShareAccessMode.ReadWrite
   "
   [class.incomplete]="file().fileStatus === FileStatus.Incomplete"
-  [draggable]="canMove()"
+  [draggable]="!loading()"
   (click)="clickCard.emit($event)"
   (dblclick)="doubleClickCard.emit($event)"
   (mousedown)="mouseDownCard.emit($event)"

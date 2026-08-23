@@ -6,6 +6,8 @@ import { BaseFile, FileStatus } from '../models/base-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 import { Breadcrumb } from '../models/breadcrumb.model';
 import { FileService } from './file.service';
+import { MessageSeverity } from '../models/toast-info.model';
+import { ToastService } from './toast.service';
 
 interface HoverTarget {
   type: 'directory' | 'breadcrumb' | 'table';
@@ -18,6 +20,7 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
   private readonly internal = inject(FileMoveDragDropService);
   private readonly external = inject(FileUploadDragDropService);
   private readonly fileService = inject(FileService);
+  private readonly toast = inject(ToastService);
 
   /** Currently hovered target for action */
   readonly hoveredTarget = signal<HoverTarget | null>(null);
@@ -103,13 +106,47 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
           f.accessMode >= ShareAccessMode.ReadWrite),
     );
 
-    if (filesToMove.length === 0) return;
+    const areFilesDraggable = this.handleUndraggableFiles(
+      selectedFiles,
+      filesToMove,
+    );
+
+    if (!areFilesDraggable) {
+      event.preventDefault();
+      return;
+    }
+
     this.internal.startDrag(filesToMove);
     event.dataTransfer?.setData('text/plain', 'internal');
     event.dataTransfer && (event.dataTransfer.effectAllowed = 'move');
     if (previewEl) {
       event.dataTransfer?.setDragImage(previewEl, 0, 0);
     }
+  }
+
+  handleUndraggableFiles(
+    allfiles: BaseFile[],
+    draggableFiles: BaseFile[],
+  ): boolean {
+    if (draggableFiles.length !== allfiles.length) {
+      if (draggableFiles.length === 0) {
+        this.toast.show(
+          $localize`File move`,
+          allfiles.length === 1
+            ? $localize`The selected file cannot be moved`
+            : $localize`You can't move any of the selected files`,
+          MessageSeverity.info,
+        );
+        return false;
+      } else {
+        this.toast.show(
+          $localize`File move`,
+          $localize`Some of the selected files cannot be moved and will be ignored`,
+          MessageSeverity.info,
+        );
+      }
+    }
+    return true;
   }
 
   breadcrumbDragEnter(event: DragEvent, breadcrumb: Breadcrumb) {

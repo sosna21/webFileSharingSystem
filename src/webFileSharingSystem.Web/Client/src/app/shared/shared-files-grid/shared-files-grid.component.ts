@@ -136,7 +136,6 @@ export class SharedFilesGridComponent {
   movableSelectedFiles = computed(() =>
     (this.selectedFiles() as SharedFile[]).filter((file) => this.canMove(file)),
   );
-  canMoveSelected = computed(() => this.movableSelectedFiles().length > 0);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
@@ -402,28 +401,14 @@ export class SharedFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: SharedFile) {
-    if (this.selectedFiles().length === 0) {
+    if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
     }
-
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
 
     this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
-
-    // Unselect files that cannot be moved to avoid confusion during drag
-    if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
-      this.toast.show(
-        $localize`File move`,
-        $localize`Unsellected files that cannot be moved`,
-        MessageSeverity.info,
-      );
-
-      this.selectedIds.set(
-        new Set(this.movableSelectedFiles().map((f) => f.id)),
-      );
-    }
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {

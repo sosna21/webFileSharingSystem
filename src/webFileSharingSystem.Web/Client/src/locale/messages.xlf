@@ -350,6 +350,38 @@
           <context context-type="linenumber">37</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="2455445313133907283" datatype="html">
+        <source>File move</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">134</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">143</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="451055884289928156" datatype="html">
+        <source>The selected file cannot be moved</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">136</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8082933984309229917" datatype="html">
+        <source>You can&apos;t move any of the selected files</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">137</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1195774664104532526" datatype="html">
+        <source>Some of the selected files cannot be moved and will be ignored</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/core/services/drag-drop.service.ts</context>
+          <context context-type="linenumber">144</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="6398346950118458726" datatype="html">
         <source>Are you sure you want to cancel share to user &apos;<x id="PH" equiv-text="sharesToDelete[0].sharedWithUserName"/>&apos;</source>
         <context-group purpose="location">
@@ -1358,7 +1390,7 @@ Upload cancelled</source>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/user-files-table/user-files-table.component.ts</context>
-          <context context-type="linenumber">310</context>
+          <context context-type="linenumber">311</context>
         </context-group>
       </trans-unit>
       <trans-unit id="984370172946222957" datatype="html">
@@ -1905,11 +1937,11 @@ Upload cancelled</source>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">32</context>
+          <context context-type="linenumber">35</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">38</context>
+          <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1621993587579675034" datatype="html">
@@ -1927,7 +1959,7 @@ Upload cancelled</source>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">36</context>
+          <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4831075576673859232" datatype="html">
@@ -2261,21 +2293,21 @@ Upload cancelled</source>
         <source>Settings</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/layout/navbar/profile-dropdown/profile-dropdown.component.html</context>
-          <context context-type="linenumber">30</context>
+          <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4915431133669985304" datatype="html">
         <source>Profile</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/layout/navbar/profile-dropdown/profile-dropdown.component.html</context>
-          <context context-type="linenumber">40</context>
+          <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2949848596707725099" datatype="html">
         <source>Sign out</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/layout/navbar/profile-dropdown/profile-dropdown.component.html</context>
-          <context context-type="linenumber">52</context>
+          <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6045493371615628207" datatype="html">
@@ -2338,7 +2370,7 @@ Upload cancelled</source>
         <source> Empty directory </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/shared-files-grid/shared-files-grid.component.html</context>
-          <context context-type="linenumber">82</context>
+          <context context-type="linenumber">81</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/user-files-grid/user-files-grid.component.html</context>
@@ -2349,11 +2381,11 @@ Upload cancelled</source>
         <source>Drop files here to upload</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/shared-files-grid/shared-files-grid.component.html</context>
-          <context context-type="linenumber">88,89</context>
+          <context context-type="linenumber">87,88</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/shared-files-table/shared-files-table.component.html</context>
-          <context context-type="linenumber">302,303</context>
+          <context context-type="linenumber">300,301</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/user-files-grid/user-files-grid.component.html</context>
@@ -2361,7 +2393,7 @@ Upload cancelled</source>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/user-files-table/user-files-table.component.html</context>
-          <context context-type="linenumber">338,339</context>
+          <context context-type="linenumber">334,335</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2300247576851644080" datatype="html">
@@ -2472,28 +2504,6 @@ Upload cancelled</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/shared-files-table/shared-files-table.component.ts</context>
           <context context-type="linenumber">135</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2455445313133907283" datatype="html">
-        <source>File move</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/shared-files-grid/shared-files-grid.component.ts</context>
-          <context context-type="linenumber">418</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/shared-files-table/shared-files-table.component.ts</context>
-          <context context-type="linenumber">431</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2565975244719079707" datatype="html">
-        <source>Unsellected files that cannot be moved</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/shared-files-grid/shared-files-grid.component.ts</context>
-          <context context-type="linenumber">419</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/shared-files-table/shared-files-table.component.ts</context>
-          <context context-type="linenumber">432</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8872995122817242127" datatype="html">
@@ -2624,11 +2634,11 @@ Upload cancelled</source>
         <source>Empty directory</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/shared-files-table/shared-files-table.component.html</context>
-          <context context-type="linenumber">297,298</context>
+          <context context-type="linenumber">295,296</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/user-files-table/user-files-table.component.html</context>
-          <context context-type="linenumber">333,334</context>
+          <context context-type="linenumber">329,330</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5737924837394119345" datatype="html">
@@ -2649,39 +2659,39 @@ Upload cancelled</source>
         <source>Read &amp; write</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">34</context>
+          <context context-type="linenumber">37</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3443551765248926875" datatype="html">
         <source>R</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">45</context>
+          <context context-type="linenumber">48</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">51</context>
+          <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8399406985720406275" datatype="html">
         <source>RW</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">47</context>
+          <context context-type="linenumber">50</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1920513678812261969" datatype="html">
         <source>Full</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/access-mode-cell/access-mode-cell.component.ts</context>
-          <context context-type="linenumber">49</context>
+          <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4104325550214105950" datatype="html">
         <source>Show more actions</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/table-cells/actions-cell/actions-cell.component.html</context>
-          <context context-type="linenumber">6,7</context>
+          <context context-type="linenumber">7,8</context>
         </context-group>
       </trans-unit>
       <trans-unit id="720557322859638078" datatype="html">
@@ -2841,21 +2851,21 @@ Upload cancelled</source>
         <source>Light</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/theme-switch/theme-switch.component.html</context>
-          <context context-type="linenumber">25</context>
+          <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3892161059518616136" datatype="html">
         <source>Dark</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/theme-switch/theme-switch.component.html</context>
-          <context context-type="linenumber">33</context>
+          <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5568209569960932511" datatype="html">
         <source>Cancel upload</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/shared/upload-cancel-btn/upload-cancel-btn.component.html</context>
-          <context context-type="linenumber">6,7</context>
+          <context context-type="linenumber">7,8</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2088835616424243989" datatype="html">
