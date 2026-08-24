@@ -19,7 +19,6 @@ import {
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { SharedFile } from '../../core/models/shared-file.model';
-import { MessageSeverity } from '../../core/models/toast-info.model';
 import { DownloadService } from '../../core/services/download.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { GridSelectionService } from '../../core/services/grid-selection.service';
@@ -221,6 +220,7 @@ export class SharedFilesGridComponent {
     if (started) {
       event.preventDefault();
       this.closeContextMenus();
+      (document.activeElement as HTMLElement | null)?.blur();
     }
   }
 

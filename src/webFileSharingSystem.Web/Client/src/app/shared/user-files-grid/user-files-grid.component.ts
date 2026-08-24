@@ -204,6 +204,7 @@ export class UserFilesGridComponent {
     if (started) {
       event.preventDefault();
       this.closeContextMenus();
+      (document.activeElement as HTMLElement | null)?.blur();
     }
   }
 
