@@ -30,6 +30,11 @@
   transform: scale(1.02);
 }
 
+.file-card.drop-hover-denied {
+  outline: 2px dashed var(--bs-danger);
+  transform: scale(1.02);
+}
+
 .file-preview {
   height: 55px;
   transform: translateY(1px);
