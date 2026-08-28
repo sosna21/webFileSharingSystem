@@ -120,6 +120,20 @@ export class FileActionsStripComponent {
     this.newFolderName.set(generateUniqueDirName(this.names()));
   }
 
+  async modalDirCreation() {
+    const newDirName = await this.modalService.getNewDirectoryName({
+      startName: generateUniqueDirName(this.fileService.names()),
+      blacklistedNames: this.fileService.names(),
+    });
+
+    if (!newDirName) return;
+
+    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+      this.selectionService.selectedIds.set(new Set([id]));
+      this.selectionService.scrollToId(id);
+    });
+  }
+
   onDownload() {
     this.downloadService.downloadFilesWithFeedback(
       this.selectedFiles().filter(

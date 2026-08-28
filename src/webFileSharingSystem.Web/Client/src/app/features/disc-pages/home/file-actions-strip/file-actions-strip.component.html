@@ -1,9 +1,18 @@
 <div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
   <i
-    class="bi bi-folder-plus action-icon action-warning"
+    class="bi bi-folder-plus action-icon action-warning d-none d-xl-block"
     data-testid="directory-create-trigger"
     [class.disabled]="!canCreateDirectory()"
     (click)="initDirCreation()"
+    ngbTooltip="Create new folder"
+    i18n-ngbTooltip
+    [openDelay]="300"
+  ></i>
+  <i
+    class="bi bi-folder-plus action-icon action-warning d-xl-none"
+    data-testid="directory-create-modal-trigger"
+    [class.disabled]="!canCreateDirectory()"
+    (click)="modalDirCreation()"
     ngbTooltip="Create new folder"
     i18n-ngbTooltip
     [openDelay]="300"
