@@ -1,112 +1,110 @@
-<div class="d-flex align-items-center gap-3 mt-2" directoryCreation>
+<i
+  class="bi bi-folder-plus action-icon action-warning d-none d-xl-flex fs-3"
+  data-testid="directory-create-trigger"
+  [class.disabled]="!canCreateDirectory()"
+  (click)="initDirCreation()"
+  ngbTooltip="Create new folder"
+  i18n-ngbTooltip
+  [openDelay]="300"
+></i>
+<i
+  class="bi bi-folder-plus action-icon action-warning d-xl-none fs-3"
+  data-testid="directory-create-modal-trigger"
+  [class.disabled]="!canCreateDirectory()"
+  (click)="modalDirCreation()"
+  ngbTooltip="Create new folder"
+  i18n-ngbTooltip
+  [openDelay]="300"
+></i>
+@if (showDirCreateNameInput()) {
+  <div class="d-grid">
+    <input
+      appSelectFilename
+      type="text"
+      class="form-control"
+      data-testid="directory-create-input"
+      placeholder="New folder"
+      required
+      [(ngModel)]="newFolderName"
+      (keyup.enter)="createDirectory()"
+      (blur)="cancelRename()"
+      (keyup.escape)="cancelRename()"
+    />
+    @if (isNameForbidden()) {
+      <div class="text-danger fw-lighter fs-6" i18n>
+        "{{ newFolderName() }}" already exists.
+      </div>
+    }
+  </div>
+}
+
+<div class="vr"></div>
+
+<i
+  class="bi bi-scissors action-icon action-primary fs-3 disabled"
+  data-testid="cut-files-trigger"
+  [class.disabled]="!canFileAction()"
+  ngbTooltip="Cut"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onCut()"
+></i>
+<i
+  class="bi bi-copy action-icon action-primary fs-3 disabled"
+  data-testid="copy-files-trigger"
+  [class.disabled]="!canCopyDownload()"
+  ngbTooltip="Copy"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onCopy()"
+></i>
+<i
+  class="bi bi-clipboard action-icon action-primary fs-3 disabled"
+  data-testid="paste-files-trigger"
+  [class.disabled]="!canPaste()"
+  ngbTooltip="Paste"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onPaste()"
+></i>
+<div class="vr"></div>
+<i
+  class="bi bi-download action-icon action-primary fs-3 disabled"
+  data-testid="download-files-trigger"
+  [class.disabled]="!canCopyDownload()"
+  ngbTooltip="Download"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onDownload()"
+></i>
+<i
+  class="bi bi-pencil action-icon action-primary fs-3 disabled"
+  data-testid="rename-files-trigger"
+  [class.disabled]="!canRename()"
+  ngbTooltip="Rename"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onRename()"
+></i>
+
+@if (!viewingSharedFiles()) {
   <i
-    class="bi bi-folder-plus action-icon action-warning d-none d-xl-block"
-    data-testid="directory-create-trigger"
-    [class.disabled]="!canCreateDirectory()"
-    (click)="initDirCreation()"
-    ngbTooltip="Create new folder"
-    i18n-ngbTooltip
-    [openDelay]="300"
-  ></i>
-  <i
-    class="bi bi-folder-plus action-icon action-warning d-xl-none"
-    data-testid="directory-create-modal-trigger"
-    [class.disabled]="!canCreateDirectory()"
-    (click)="modalDirCreation()"
-    ngbTooltip="Create new folder"
-    i18n-ngbTooltip
-    [openDelay]="300"
-  ></i>
-  @if (showDirCreateNameInput()) {
-    <div>
-      <input
-        appSelectFilename
-        type="text"
-        class="form-control"
-        data-testid="directory-create-input"
-        placeholder="New folder"
-        required
-        [(ngModel)]="newFolderName"
-        (keyup.enter)="createDirectory()"
-        (blur)="cancelRename()"
-        (keyup.escape)="cancelRename()"
-      />
-      @if (isNameForbidden()) {
-        <div class="text-danger fw-lighter fs-6" i18n>
-          "{{ newFolderName() }}" already exists.
-        </div>
-      }
-    </div>
-  }
-</div>
-<div class="vr h-75 mt-auto"></div>
-<div class="align-self-center d-flex gap-4 h-100 align-items-end">
-  <i
-    class="bi bi-scissors action-icon action-primary disabled"
-    data-testid="cut-files-trigger"
+    class="bi bi-share action-icon action-primary fs-3 disabled"
+    data-testid="share-files-trigger"
     [class.disabled]="!canFileAction()"
-    ngbTooltip="Cut"
+    ngbTooltip="Share"
     i18n-ngbTooltip
     [openDelay]="300"
-    (click)="onCut()"
+    (click)="onShare()"
   ></i>
-  <i
-    class="bi bi-copy action-icon action-primary disabled"
-    data-testid="copy-files-trigger"
-    [class.disabled]="!canCopyDownload()"
-    ngbTooltip="Copy"
-    i18n-ngbTooltip
-    [openDelay]="300"
-    (click)="onCopy()"
-  ></i>
-  <i
-    class="bi bi-clipboard action-icon action-primary disabled"
-    data-testid="paste-files-trigger"
-    [class.disabled]="!canPaste()"
-    ngbTooltip="Paste"
-    i18n-ngbTooltip
-    [openDelay]="300"
-    (click)="onPaste()"
-  ></i>
-  <div class="vr h-75 mt-auto"></div>
-  <i
-    class="bi bi-download action-icon action-primary disabled"
-    data-testid="download-files-trigger"
-    [class.disabled]="!canCopyDownload()"
-    ngbTooltip="Download"
-    i18n-ngbTooltip
-    [openDelay]="300"
-    (click)="onDownload()"
-  ></i>
-  <i
-    class="bi bi-pencil action-icon action-primary disabled"
-    data-testid="rename-files-trigger"
-    [class.disabled]="!canRename()"
-    ngbTooltip="Rename"
-    i18n-ngbTooltip
-    [openDelay]="300"
-    (click)="onRename()"
-  ></i>
+}
 
-  @if (!viewingSharedFiles()) {
-    <i
-      class="bi bi-share action-icon action-primary disabled"
-      data-testid="share-files-trigger"
-      [class.disabled]="!canFileAction()"
-      ngbTooltip="Share"
-      i18n-ngbTooltip
-      [openDelay]="300"
-      (click)="onShare()"
-    ></i>
-  }
-
-  <i
-    class="bi bi-trash action-icon action-danger disabled"
-    data-testid="delete-files-trigger"
-    [class.disabled]="!canDelete()"
-    ngbTooltip="Delete"
-    i18n-ngbTooltip
-    [openDelay]="300"
-    (click)="onDelete()"
-  ></i>
-</div>
+<i
+  class="bi bi-trash action-icon action-danger fs-3 disabled"
+  data-testid="delete-files-trigger"
+  [class.disabled]="!canDelete()"
+  ngbTooltip="Delete"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onDelete()"
+></i>

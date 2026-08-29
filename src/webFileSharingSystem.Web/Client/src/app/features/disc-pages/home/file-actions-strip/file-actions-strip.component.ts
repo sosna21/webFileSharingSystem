@@ -18,7 +18,7 @@ import { ModalService } from '../../../../core/services/modal.service';
   templateUrl: './file-actions-strip.component.html',
   styleUrl: './file-actions-strip.component.scss',
   host: {
-    class: 'd-flex gap-3 align-items-end',
+    class: 'd-flex align-items-center gap-2 gap-sm-3 gap-xl-4',
   },
 })
 export class FileActionsStripComponent {
