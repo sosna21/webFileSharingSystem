@@ -17,42 +17,64 @@
       height="32"
       class="rounded-circle"
     />
-    <span class="text-truncate" style="max-width: 100px">
+    <span class="text-truncate d-none d-sm-block" style="max-width: 100px">
       {{ userName() }}
     </span>
   </span>
-  <ul ngbDropdownMenu class="dropdown-menu-end">
-    <li ngbDropdownItem>
-      <a
-        class="dropdown-item user-select-none"
-        routerLink="/settings"
+  <!-- dropdown-menu-sm-end -->
+  <div ngbDropdownMenu class="dropdown-menu-end">
+    <div
+      ngbdropdownitem
+      class="dropdown-item-text d-sm-none d-flex align-items-center gap-2"
+      draggable="false"
+    >
+      <img
+        [src]="userPhotoUrl() ?? 'user.png'"
+        [alt]="'Profile photo of ' + userName()"
+        i18n-alt
+        width="32"
+        height="32"
+        class="rounded-circle user-select-none"
         draggable="false"
-      >
-        <i class="bi bi-gear me-2"></i>
-        <ng-container i18n>Settings</ng-container>
-      </a>
-    </li>
-    <li ngbDropdownItem>
-      <a
-        class="dropdown-item user-select-none"
-        routerLink="/profile"
-        draggable="false"
-      >
-        <i class="bi bi-person-lines-fill me-2"></i>
-        <ng-container i18n>Profile</ng-container>
-      </a>
-    </li>
-    <li><hr class="dropdown-divider" /></li>
-    <li ngbDropdownItem>
-      <a
-        class="dropdown-item user-select-none"
-        (click)="logout()"
-        draggable="false"
-        data-testid="profile-signout"
-      >
-        <i class="bi bi-power me-2"></i>
-        <ng-container i18n>Sign out</ng-container>
-      </a>
-    </li>
-  </ul>
+      />
+      <div class="text-truncate d-grid lh-sm" style="max-width: 200px">
+        <span>{{ userName() }}</span>
+        <span class="small text-secondary">{{ userEmail() }}</span>
+      </div>
+    </div>
+
+    <hr class="dropdown-divider d-sm-none" />
+
+    <button
+      ngbdropdownitem
+      routerLink="/settings"
+      routerLinkActive="active"
+      class="dropdown-item d-flex align-items-center"
+    >
+      <span class="bi bi-gear me-2"></span>
+      <ng-container i18n>Settings</ng-container>
+    </button>
+
+    <button
+      ngbdropdownitem
+      routerLink="/profile"
+      routerLinkActive="active"
+      class="dropdown-item d-flex align-items-center"
+    >
+      <i class="bi bi-person-lines-fill me-2"></i>
+      <ng-container i18n>Profile</ng-container>
+    </button>
+
+    <hr class="dropdown-divider" />
+
+    <button
+      ngbdropdownitem
+      class="dropdown-item d-flex align-items-center"
+      (click)="logout()"
+      data-testid="profile-signout"
+    >
+      <i class="bi bi-power me-2"></i>
+      <ng-container i18n>Sign out</ng-container>
+    </button>
+  </div>
 </div>
