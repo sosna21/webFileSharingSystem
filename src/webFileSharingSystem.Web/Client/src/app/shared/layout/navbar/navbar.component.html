@@ -1,8 +1,8 @@
 <nav
-  class="navbar navbar-expand-lg navbar-dark bg-dark w-100 px-1 px-md-3 pb-0 pb-md-1"
+  class="navbar navbar-expand-lg navbar-dark bg-dark w-100 px-2 px-sm-4 py-0 pt-md-2 pb-md-1"
 >
-  <div class="container-fluid flex-wrap flex-md-nowrap">
-    <app-navbar-brand class="me-1 me-lg-5" />
+  <div class="container-fluid flex-wrap flex-md-nowrap px-0">
+    <app-navbar-brand class="me-1 me-md-3 me-lg-5" />
     @if (!authenticated()) {
       <div class="d-flex gap-3 ms-auto me-4">
         <app-language-switch />
@@ -10,28 +10,26 @@
       </div>
     }
     @if (authenticated()) {
-      <div class="d-flex d-md-none align-items-center ms-auto me-3">
-        <app-language-switch class="me-2 me-lg-3" />
-        <app-theme-switch class="me-2" />
-        <app-profile-dropdown />
-      </div>
-      <div class="d-none d-md-flex align-items-center flex-grow-1 mx-md-2">
+      <div
+        class="d-flex align-items-center justify-content-end flex-grow-1 gap-3 gap-lg-4 me-md-3"
+      >
         @if (isDiscSubroute()) {
-          <app-file-search class="me-3 me-md-3 me-lg-4" />
+          <app-file-search class="d-none d-md-inline" />
         }
-        <div class="d-none d-md-flex align-items-center ms-auto">
-          <app-language-switch class="me-2 me-lg-3" />
-          <app-theme-switch class="me-2 me-lg-3" />
-          <app-profile-dropdown class="ms-md-1" />
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+          <app-language-switch />
+          <app-theme-switch />
+          <app-profile-dropdown />
+          <button
+            class="navbar-toggler"
+            style="font-size: small"
+            type="button"
+            (click)="toogleCollapse()"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
         </div>
       </div>
-      <button
-        class="navbar-toggler fs-6"
-        type="button"
-        (click)="toogleCollapse()"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
     }
   </div>
 </nav>

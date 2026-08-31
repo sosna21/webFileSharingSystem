@@ -13,11 +13,11 @@
       [src]="userPhotoUrl() ?? 'user.png'"
       [alt]="'Profile photo of ' + userName()"
       i18n-alt
-      width="32"
-      height="32"
+      width="28"
+      height="28"
       class="rounded-circle"
     />
-    <span class="text-truncate d-none d-sm-block" style="max-width: 100px">
+    <span class="text-truncate d-none d-md-block" style="max-width: 100px">
       {{ userName() }}
     </span>
   </span>
@@ -25,7 +25,7 @@
   <div ngbDropdownMenu class="dropdown-menu-end">
     <div
       ngbdropdownitem
-      class="dropdown-item-text d-sm-none d-flex align-items-center gap-2"
+      class="dropdown-item-text d-md-none d-flex align-items-center gap-2"
       draggable="false"
     >
       <img
