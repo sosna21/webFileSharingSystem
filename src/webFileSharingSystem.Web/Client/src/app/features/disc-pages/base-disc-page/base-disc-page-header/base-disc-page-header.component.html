@@ -1,17 +1,19 @@
 <header
-  class="d-flex flex-wrap align-items-end pb-1 mb-4 border-bottom rounded-bottom-2 column-gap-2 column-gap-sm-3 column-gap-lg-4 column-gap-xl-5"
+  class="d-flex flex-column flex-md-row align-items-stretch align-items-md-end pb-1 mb-4 border-bottom rounded-bottom-2 gap-2 gap-md-3 gap-lg-4 gap-xl-5"
 >
-  <div class="d-flex align-items-center text-nowrap flex-grow-1 flex-md-grow-0">
-    <div class="fs-1 me-2">
+  <div class="d-flex align-items-center text-nowrap gap-2">
+    <div class="fs-1">
       <ng-content select="i"></ng-content>
     </div>
-    <span class="fs-2 fw-semibold"><ng-content>Page title</ng-content></span>
-    <app-file-search class="d-block d-md-none ms-3 flex-grow-1" />
+    <span class="d-none d-md-inline fs-2 fw-semibold"
+      ><ng-content>Page title</ng-content></span
+    >
+    <app-file-search class="d-block d-md-none flex-grow-1" />
   </div>
-  <div class="d-flex mt-2 mb-1 mx-auto mx-sm-0">
+  <div
+    class="d-flex flex-wrap flex-grow-1 justify-content-center gap-2 gap-sm-3 mx-auto mx-sm-0"
+  >
     <ng-content select="[secondaryContent]"></ng-content>
-  </div>
-  <div class="ms-auto align-self-end me-1 me-md-3 d-none d-sm-block">
-    <app-view-toogle [(selectedView)]="viewMode" />
+    <app-view-toogle [(selectedView)]="viewMode" class="ms-md-auto" />
   </div>
 </header>
