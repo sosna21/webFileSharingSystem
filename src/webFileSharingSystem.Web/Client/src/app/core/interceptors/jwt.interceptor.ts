@@ -27,7 +27,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 
   const user = authenticationService.currentUser();
   const isLoggedIn = !!user?.token;
-  const isApiUrl = req.url.startsWith(environment.apiUrl);
+  const isApiUrl = isApiRequest(req.url);
 
   if (isLoggedIn && isApiUrl) {
     req = addToken(req, user!.token);
@@ -43,6 +43,24 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 
       return throwError(() => error);
     }),
+  );
+};
+
+const isApiRequest = (requestUrl: string): boolean => {
+  if (requestUrl.startsWith(environment.apiUrl)) {
+    return true;
+  }
+
+  if (!environment.apiUrl.startsWith('/') || typeof location === 'undefined') {
+    return false;
+  }
+
+  const url = new URL(requestUrl, location.origin);
+  const apiPath = environment.apiUrl.replace(/\/$/, '');
+
+  return (
+    url.origin === location.origin &&
+    (url.pathname === apiPath || url.pathname.startsWith(`${apiPath}/`))
   );
 };
 
