@@ -1,4 +1,12 @@
-<div class="btn-group">
+<div class="btn-group d-none d-md-inline-flex">
+  <ng-container *ngTemplateOutlet="content"></ng-container>
+</div>
+
+<div class="btn-group btn-group-sm d-md-none">
+  <ng-container *ngTemplateOutlet="content"></ng-container>
+</div>
+
+<ng-template #content>
   <app-view-toogle-btn
     [active]="selectedView() === 'list'"
     (click)="this.selectedView.set('list')"
@@ -11,4 +19,4 @@
   >
     <i class="bi bi-grid-3x3-gap-fill"></i
   ></app-view-toogle-btn>
-</div>
+</ng-template>

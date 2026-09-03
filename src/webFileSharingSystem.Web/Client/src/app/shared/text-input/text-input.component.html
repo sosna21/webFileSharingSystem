@@ -13,24 +13,26 @@
   />
   <label>{{ label() }}</label>
   @if (control.hasError("required")) {
-    <div class="invalid-feedback text-start">Please enter a {{ label() }}</div>
+    <div class="invalid-feedback text-start" i18n>
+      Please enter a {{ label() }}
+    </div>
   } @else if (control.hasError("isMatching")) {
-    <div class="invalid-feedback text-start">Passwords do not match</div>
+    <div class="invalid-feedback text-start" i18n>Passwords do not match</div>
   }
   @if (control.hasError("minlength")) {
-    <div class="invalid-feedback text-start">
+    <div class="invalid-feedback text-start" i18n>
       {{ label() }} must be at least
       {{ control.errors?.["minlength"].requiredLength }} characters
     </div>
   }
   @if (control.hasError("maxlength")) {
-    <div class="invalid-feedback text-start">
+    <div class="invalid-feedback text-start" i18n>
       {{ label() }} must be at most
       {{ control.errors?.["maxlength"].requiredLength }} characters
     </div>
   }
   @if (control.hasError("passwordConstraintsSatisfied")) {
-    <div class="invalid-feedback text-start">
+    <div class="invalid-feedback text-start" i18n>
       {{ label() }} must have at least one number, one lowercase, one uppercase
       and one non-alphanumeric character.
     </div>

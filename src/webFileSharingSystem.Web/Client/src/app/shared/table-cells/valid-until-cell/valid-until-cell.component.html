@@ -1,5 +1,6 @@
 @if (!file().validUntil) {
-  Indefinitely <i class="bi bi-infinity text-primary"></i>
+  <ng-container i18n>Indefinitely</ng-container>&nbsp;
+  <i class="bi bi-infinity text-primary"></i>
 } @else {
   {{ file().validUntil | remainigTime }}
 }

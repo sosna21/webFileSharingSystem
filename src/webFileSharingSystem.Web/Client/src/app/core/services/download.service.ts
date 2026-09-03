@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { DownloadResponse } from '../models/download-response.model';
 import { ToastService } from './toast.service';
 import { MessageSeverity } from '../models/toast-info.model';
@@ -26,14 +26,18 @@ export class DownloadService {
       next: (response) => {
         window.location.href = response.url;
         this.toast.show(
-          'Download Initialized',
-          'Your download will begin shortly.',
+          $localize`Download Initialized`,
+          $localize`Your download will begin shortly.`,
           MessageSeverity.success,
         );
       },
       error: (err) => {
         const errorMessage = err.error || String(err);
-        this.toast.show('Download Failed', errorMessage, MessageSeverity.error);
+        this.toast.show(
+          $localize`Download Failed`,
+          errorMessage,
+          MessageSeverity.error,
+        );
       },
     });
   }

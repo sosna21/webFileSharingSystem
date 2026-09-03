@@ -15,4 +15,7 @@ export class ProfileViewComponent {
   readonly profile = input<AppUserResponse | null>(null);
   readonly displayedPhotoUrl = input<string | null>(null);
   readonly deletePhoto = output();
+
+  readonly defaultUserName = $localize`User`;
+  readonly defaultUserEmail = $localize`No email address`;
 }

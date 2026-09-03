@@ -47,7 +47,6 @@ export class SharedFileGridCardComponent {
   readonly dropTarget = input(false);
   readonly currentUserId = input<number | undefined>();
   readonly inRoot = input(false);
-  readonly canMove = input(false);
 
   readonly clickCard = output<MouseEvent>();
   readonly doubleClickCard = output<MouseEvent>();
@@ -111,18 +110,5 @@ export class SharedFileGridCardComponent {
       return;
     }
     this.contextMenuClick.emit({ event: $event, file: this.file() });
-  }
-
-  getAccessModeName(accessMode: ShareAccessMode) {
-    switch (accessMode) {
-      case ShareAccessMode.ReadOnly:
-        return 'Read only';
-      case ShareAccessMode.ReadWrite:
-        return 'Read & write';
-      case ShareAccessMode.FullAccess:
-        return 'Full control';
-      default:
-        return 'Read only';
-    }
   }
 }

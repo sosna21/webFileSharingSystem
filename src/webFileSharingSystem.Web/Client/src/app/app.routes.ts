@@ -27,13 +27,13 @@ export const routes: Routes = [
         path: 'login',
         component: LoginComponent,
         canActivate: [noAuthGuard],
-        title: 'SignIn',
+        title: $localize`SignIn`,
       },
       {
         path: 'register',
         component: RegisterComponent,
         canActivate: [noAuthGuard],
-        title: 'SignUp',
+        title: $localize`SignUp`,
       },
     ],
   },
@@ -52,35 +52,39 @@ export const routes: Routes = [
           {
             path: 'home',
             component: HomeComponent,
-            title: 'My files',
+            title: $localize`My files`,
             children: [
               {
                 path: 'folder/:dirId',
                 component: HomeComponent,
-                title: 'My files',
+                title: $localize`My files`,
               },
             ],
           },
           {
             path: 'shared-by-me',
             component: SharedByMeComponent,
-            title: 'Shared by me',
+            title: $localize`Shared by me`,
           },
           {
             path: 'favourite',
             component: FavouriteComponent,
-            title: 'Favourite',
+            title: $localize`Favourite`,
           },
-          { path: 'recent', component: RecentComponent, title: 'Recent' },
+          {
+            path: 'recent',
+            component: RecentComponent,
+            title: $localize`Recent`,
+          },
           {
             path: 'shared-with-me',
             component: SharedWithMeComponent,
-            title: 'Shared with me',
+            title: $localize`Shared with me`,
             children: [
               {
                 path: 'folder/:dirId',
                 component: SharedWithMeComponent,
-                title: 'Shared with me',
+                title: $localize`Shared with me`,
               },
             ],
           },
@@ -93,12 +97,12 @@ export const routes: Routes = [
           {
             path: 'settings',
             component: SettingsComponent,
-            title: 'User settings',
+            title: $localize`User settings`,
           },
           {
             path: 'profile',
             component: ProfileComponent,
-            title: 'User profile',
+            title: $localize`User profile`,
           },
         ],
       },
@@ -110,7 +114,11 @@ export const routes: Routes = [
     path: '**',
     component: PlainLayoutComponent,
     children: [
-      { path: '', component: NotFoundComponent, title: 'Page not found' },
+      {
+        path: '',
+        component: NotFoundComponent,
+        title: $localize`Page not found`,
+      },
     ],
   },
 ];

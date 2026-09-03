@@ -20,9 +20,9 @@ import { DateUtils } from '../../../core/utils/date-utils';
 })
 export class DatePickerModalComponent {
   readonly activeModal = inject(NgbActiveModal);
-  readonly title = model('Select Date');
-  readonly confirmText = model('Confirm');
-  readonly cancelText = model('Cancel');
+  readonly title = model($localize`Select Date`);
+  readonly confirmText = model($localize`Confirm`);
+  readonly cancelText = model($localize`Cancel`);
   readonly pickTime = model<boolean>(true);
   readonly date = model<NgbDateStruct | null>(null); // linked callendar date
   readonly minDate = model<NgbDateStruct | null>(null);

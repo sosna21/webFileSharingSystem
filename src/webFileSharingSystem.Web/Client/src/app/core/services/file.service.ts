@@ -10,7 +10,7 @@ import {
   toObservable,
   toSignal,
 } from '@angular/core/rxjs-interop';
-import { environment } from '../../../environments/environment.development';
+import { environment } from '../../../environments/environment';
 import { AppFile } from '../models/app-file.model';
 import { httpResource } from '@angular/common/http';
 import { FileResponse } from '../models/file-response.model';
@@ -313,11 +313,6 @@ export class FileService {
       : null,
   );
 
-  // private readonly _debouncedSearchedPhrase = debouncedSignal(
-  //   this.searchedPhrase,
-  //   300,
-  //   '',
-  // );
   private readonly _request = computed(
     () => `${
       this.fileUrl
@@ -485,7 +480,7 @@ export class FileService {
     ) {
       crumbs.push({
         id: -999, // Dummy ID for search result breadcrumb
-        fileName: 'Search result',
+        fileName: $localize`Search result`,
         level: crumbs.length,
         accessMode: ShareAccessMode.ReadOnly,
       });
@@ -554,15 +549,15 @@ export class FileService {
   ) {
     switch (mode) {
       case 'GetAll':
-        return 'Home';
+        return $localize`Home`;
       case 'GetSharedByMe':
-        return 'Shared By Me';
+        return $localize`Shared By Me`;
       case 'GetFavourites':
-        return 'Favourites';
+        return $localize`Favourites`;
       case 'GetRecent':
-        return 'Recent';
+        return $localize`Recent`;
       case 'GetSharedWithMe':
-        return 'Shared With Me';
+        return $localize`Shared With Me`;
     }
   }
 
@@ -586,8 +581,8 @@ export class FileService {
 
     if (newFileName === '') {
       this.toast.show(
-        'File rename',
-        'File name cannot be empty',
+        $localize`File rename`,
+        $localize`File name cannot be empty`,
         MessageSeverity.error,
       );
       return;
@@ -600,8 +595,8 @@ export class FileService {
 
     if (this.currentFiles().some((f) => f.fileName === newFileName)) {
       this.toast.show(
-        'File rename',
-        'File with this name already exists',
+        $localize`File rename`,
+        $localize`File with this name already exists`,
         MessageSeverity.error,
       );
       return;
@@ -615,15 +610,15 @@ export class FileService {
       .subscribe({
         next: () => {
           this.toast.show(
-            'File rename',
-            'File renamed successfully',
+            $localize`File rename`,
+            $localize`File renamed successfully`,
             MessageSeverity.success,
           );
           this.updateFile(file, { fileName: newFileName });
         },
         error: (err) => {
           this.toast.show(
-            'File rename',
+            $localize`File rename`,
             err.error || String(err),
             MessageSeverity.error,
           );
@@ -650,7 +645,7 @@ export class FileService {
       },
       onError: (file, err) => {
         this.toast.show(
-          'Favourite update failed',
+          $localize`Favourite update failed`,
           err.error || String(err),
           MessageSeverity.error,
         );
@@ -661,22 +656,22 @@ export class FileService {
         if (count === 1) {
           return changeTo
             ? {
-                title: 'Favourite Update',
-                message: `Added '${updated[0].fileName}' to favourites`,
+                title: $localize`Favourite Update`,
+                message: $localize`Added '${updated[0].fileName}' to favourites`,
               }
             : {
-                title: 'Favourite Update',
-                message: `Removed '${updated[0].fileName}' from favourites`,
+                title: $localize`Favourite Update`,
+                message: $localize`Removed '${updated[0].fileName}' from favourites`,
               };
         }
         return changeTo
           ? {
-              title: 'Favourite Update',
-              message: `Added ${count} files to favourites`,
+              title: $localize`Favourite Update`,
+              message: $localize`Added ${count} files to favourites`,
             }
           : {
-              title: 'Favourite Update',
-              message: `Removed ${count} files from favourites`,
+              title: $localize`Favourite Update`,
+              message: $localize`Removed ${count} files from favourites`,
             };
       },
     });
@@ -724,14 +719,14 @@ export class FileService {
           this.refreshActiveList();
 
           this.toast.show(
-            'New directory created',
-            `Directory "${response.fileName}" has been created`,
+            $localize`New directory created`,
+            $localize`Directory "${response.fileName}" has been created`,
             MessageSeverity.success,
           );
         },
         error: (error) => {
           this.toast.show(
-            'Error creating directory',
+            $localize`Error creating directory`,
             error?.error,
             MessageSeverity.error,
           );
@@ -742,10 +737,10 @@ export class FileService {
   markFilesToCopyWithFeedback(files: BaseFile[]) {
     this.setFilesMarkedForAction(files, ActionType.Copy);
     this.toast.show(
-      'File Copy Initialized',
+      $localize`File Copy Initialized`,
       files.length === 1
-        ? `Selected '${files[0].fileName}' for copying. Navigate to the target folder and paste the file there.`
-        : `Selected ${files.length} files for copying. Navigate to the target folder and paste the files there.`,
+        ? $localize`Selected '${files[0].fileName}' for copying. Navigate to the target folder and paste the file there.`
+        : $localize`Selected ${files.length} files for copying. Navigate to the target folder and paste the files there.`,
       MessageSeverity.info,
     );
   }
@@ -753,10 +748,10 @@ export class FileService {
   markFilesToMoveWithFeedback(files: BaseFile[]) {
     this.setFilesMarkedForAction(files, ActionType.Move);
     this.toast.show(
-      'File Move Initialized',
+      $localize`File Move Initialized`,
       files.length === 1
-        ? `Selected '${files[0].fileName}' for moving. Navigate to the target folder and paste the file there.`
-        : `Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
+        ? $localize`Selected '${files[0].fileName}' for moving. Navigate to the target folder and paste the file there.`
+        : $localize`Selected ${files.length} files for moving. Navigate to the target folder and paste the files there.`,
       MessageSeverity.info,
     );
   }
@@ -829,8 +824,8 @@ export class FileService {
 
     if (totalFiles === 1) {
       confirmText = areFilesUploaded
-        ? `Are you sure you want to delete '${fileNamesList[0]}' file?`
-        : `Are you sure you want to cancel upload for '${fileNamesList[0]}' file?`;
+        ? $localize`Are you sure you want to delete '${fileNamesList[0]}' file?`
+        : $localize`Are you sure you want to cancel upload for '${fileNamesList[0]}' file?`;
     } else {
       let displayNames: string[] = [];
       if (totalFiles > maxLines) {
@@ -839,7 +834,7 @@ export class FileService {
         const remainingCount = totalFiles - shownCount;
         displayNames = [
           ...shown.map((name) => `• ${name}`),
-          `...and ${remainingCount} more`,
+          $localize`...and ${remainingCount} more`,
         ];
       } else {
         displayNames = fileNamesList.map((name) => `• ${name}`);
@@ -847,18 +842,18 @@ export class FileService {
 
       confirmText =
         (areFilesUploaded
-          ? 'Are you sure you want to delete these files?'
-          : `Are you sure you want to cancel upload for these files?`) +
+          ? $localize`Are you sure you want to delete these files?`
+          : $localize`Are you sure you want to cancel upload for these files?`) +
         `\n${displayNames.join('\n')}`;
     }
 
     const confirmationResult = await this.modalService.confirmChoice({
       title: areFilesUploaded
-        ? 'Confirm File Deletion'
-        : 'Confirm Upload Cancellation',
+        ? $localize`Confirm File Deletion`
+        : $localize`Confirm Upload Cancellation`,
       message: confirmText,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      confirmText: $localize`Delete`,
+      cancelText: $localize`Cancel`,
       showPermanentWarning: true,
     });
     if (!confirmationResult) return false;
@@ -882,7 +877,7 @@ export class FileService {
       },
       onError: (file, err) => {
         this.toast.show(
-          'File deletion',
+          $localize`File deletion`,
           err instanceof Error ? err.message : String(err),
           MessageSeverity.error,
         );
@@ -892,17 +887,23 @@ export class FileService {
       successMessage: (count) => {
         if (count === 1) {
           return {
-            title: areFilesUploaded ? 'File Deletion' : 'Upload Cancellation',
+            title: areFilesUploaded
+              ? $localize`File Deletion`
+              : $localize`Upload Cancellation`,
+
             message: areFilesUploaded
-              ? `Deleted '${filesToDelete[0].fileName}' successfully`
-              : `Cancelled upload for '${filesToDelete[0].fileName}' successfully`,
+              ? $localize`Deleted '${filesToDelete[0].fileName}' successfully`
+              : $localize`Cancelled upload for '${filesToDelete[0].fileName}' successfully`,
           };
         } else {
           return {
-            title: areFilesUploaded ? 'File Deletion' : 'Upload Cancellation',
+            title: areFilesUploaded
+              ? $localize`File Deletion`
+              : $localize`Upload Cancellation`,
+
             message: areFilesUploaded
-              ? `Deleted ${count} files successfully`
-              : `Cancelled upload for ${count} files successfully`,
+              ? $localize`Deleted ${count} files successfully`
+              : $localize`Cancelled upload for ${count} files successfully`,
           };
         }
       },
@@ -978,14 +979,16 @@ export class FileService {
 
           this.refreshActiveList();
 
-          this.toast.show(
-            'Success',
-            `File${
-              isPlural ? 's' : ''
-            } ${operationName === 'copy' ? 'copied' : 'moved'} to '${targetDirectoryName}'.`,
-            MessageSeverity.success,
-          );
+          const message =
+            operationName === 'copy'
+              ? isPlural
+                ? $localize`Files copied to '${targetDirectoryName}'.`
+                : $localize`File copied to '${targetDirectoryName}'.`
+              : isPlural
+                ? $localize`Files moved to '${targetDirectoryName}'.`
+                : $localize`File moved to '${targetDirectoryName}'.`;
 
+          this.toast.show($localize`Success`, message, MessageSeverity.success);
           this.clearActionContext();
 
           if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
@@ -995,12 +998,21 @@ export class FileService {
           }
         },
         error: (err) => {
-          this.toast.show(
-            `${operationName[0].toUpperCase() + operationName.slice(1)} failed`,
-            err?.error ??
-              `Could not ${operationName} file${isPlural ? 's' : ''}.`,
-            MessageSeverity.error,
-          );
+          const title =
+            operationName === 'copy'
+              ? $localize`Copy failed`
+              : $localize`Move failed`;
+          const message = err?.error
+            ? err.error
+            : operationName === 'copy'
+              ? isPlural
+                ? $localize`Could not copy files.`
+                : $localize`Could not copy file.`
+              : isPlural
+                ? $localize`Could not move files.`
+                : $localize`Could not move file.`;
+
+          this.toast.show(title, message, MessageSeverity.error);
         },
       })
       .add(() => {

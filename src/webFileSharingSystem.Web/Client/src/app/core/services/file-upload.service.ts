@@ -104,8 +104,8 @@ export class FileUploadService {
               }),
               catchError((err) => {
                 this.toast.show(
-                  'Upload error',
-                  `Failed to create folder '${dir.path}'\nUpload cancelled`,
+                  $localize`Upload error`,
+                  $localize`Failed to create folder '${dir.path}'\nUpload cancelled`,
                   MessageSeverity.error,
                 );
                 return EMPTY;
@@ -129,11 +129,11 @@ export class FileUploadService {
                     var errorMessage =
                       err.error[0] ===
                       'File does not exist or you do not have access'
-                        ? 'Upload was cancelled by directory owner'
+                        ? $localize`Upload was cancelled by directory owner`
                         : '';
                     this.toast.show(
-                      'Upload error',
-                      `Failed to upload file '${file.name}'${errorMessage ? `. ${errorMessage}` : ''}`,
+                      $localize`Upload error`,
+                      $localize`Failed to upload file '${file.name}'${errorMessage ? `. ${errorMessage}` : ''}`,
                       MessageSeverity.error,
                     );
                     return EMPTY;
@@ -144,22 +144,34 @@ export class FileUploadService {
                 const totalFiles = files.length;
 
                 if (successCount > 0) {
-                  const successMsg =
-                    failCount > 0
-                      ? `${successCount} file(s) uploaded successfully, ${failCount} failed.`
-                      : `${successCount} file(s) uploaded successfully.`;
+                  let successMsg: string;
 
+                  if (failCount > 0) {
+                    if (successCount === 1 && failCount === 1) {
+                      successMsg = $localize`1 file uploaded successfully, 1 file failed.`;
+                    } else if (successCount === 1) {
+                      successMsg = $localize`1 file uploaded successfully, ${failCount} files failed.`;
+                    } else if (failCount === 1) {
+                      successMsg = $localize`${successCount} files uploaded successfully, 1 file failed.`;
+                    } else {
+                      successMsg = $localize`${successCount} files uploaded successfully, ${failCount} files failed.`;
+                    }
+                  } else if (successCount === 1) {
+                    successMsg = $localize`1 file uploaded successfully.`;
+                  } else {
+                    successMsg = $localize`${successCount} files uploaded successfully.`;
+                  }
                   this.toast.show(
-                    'Upload complete',
+                    $localize`Upload complete`,
                     successMsg,
-                    failCount > 0
-                      ? MessageSeverity.info
-                      : MessageSeverity.success,
+                    MessageSeverity.success,
                   );
                 } else if (failCount > 0) {
                   this.toast.show(
-                    'Upload failed',
-                    `All ${totalFiles} file(s) failed to upload.`,
+                    $localize`Upload failed`,
+                    totalFiles === 1
+                      ? $localize`The file failed to upload.`
+                      : $localize`All ${totalFiles} files failed to upload.`,
                     MessageSeverity.error,
                   );
                 }
@@ -220,8 +232,8 @@ export class FileUploadService {
             }
 
             this.toast.show(
-              'Upload error',
-              `"${file.name}" failed`,
+              $localize`Upload error`,
+              $localize`"${file.name}" failed`,
               MessageSeverity.error,
             );
             console.error(err);
@@ -302,8 +314,8 @@ export class FileUploadService {
       input.onchange = () => {
         if (!input.files || input.files.length === 0) {
           this.toast.show(
-            'Cancellation',
-            'No file selected for resuming upload',
+            $localize`Cancellation`,
+            $localize`No file selected for resuming upload`,
             MessageSeverity.info,
           );
           return;
@@ -314,8 +326,8 @@ export class FileUploadService {
 
       input.oncancel = () => {
         this.toast.show(
-          'Cancellation',
-          'File selection cancelled',
+          $localize`Cancellation`,
+          $localize`File selection cancelled`,
           MessageSeverity.info,
         );
         document.body.removeChild(input);
@@ -344,8 +356,8 @@ export class FileUploadService {
           file.mimeType !== fileInfo.file.type
         ) {
           this.toast.show(
-            'File mismatch',
-            'The selected file does not match the original file for resuming upload.',
+            $localize`File mismatch`,
+            $localize`The selected file does not match the original file for resuming upload.`,
             MessageSeverity.error,
           );
           return;
@@ -354,8 +366,8 @@ export class FileUploadService {
         this.filesInfo[fileId] = fileInfo;
       } catch (err) {
         this.toast.show(
-          'Cancellation',
-          'File selection cancelled',
+          $localize`Cancellation`,
+          $localize`File selection cancelled`,
           MessageSeverity.info,
         );
         return;
@@ -412,8 +424,8 @@ export class FileUploadService {
               }
 
               this.toast.show(
-                'Upload error',
-                `"${fileInfo.file.name}" failed during resume`,
+                $localize`Upload error`,
+                $localize`"${fileInfo.file.name}" failed during resume`,
                 MessageSeverity.error,
               );
               console.error(err);

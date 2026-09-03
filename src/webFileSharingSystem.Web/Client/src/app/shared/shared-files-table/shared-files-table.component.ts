@@ -38,7 +38,6 @@ import { ValidUntilCellComponent } from '../table-cells/valid-until-cell/valid-u
 import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cell/shared-user-name-cell.component';
 import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
 import { ToastService } from '../../core/services/toast.service';
-import { MessageSeverity } from '../../core/models/toast-info.model';
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
@@ -123,14 +122,16 @@ export class SharedFilesTableComponent {
   ]);
 
   sortableColumns = computed(() => [
-    { column: 'fileName', displayName: 'File name' },
+    { column: 'fileName', displayName: $localize`File name` },
     {
       column: 'sharedBy/createdBy',
-      displayName: this.currentDirectoryId() ? 'Created By' : 'Shared By',
+      displayName: this.currentDirectoryId()
+        ? $localize`Created By`
+        : $localize`Shared By`,
     },
-    { column: 'accessMode', displayName: 'Access Mode' },
-    { column: 'size', displayName: 'Size' },
-    { column: 'validUntil', displayName: 'Valid Until' },
+    { column: 'accessMode', displayName: $localize`Access Mode` },
+    { column: 'size', displayName: $localize`Size` },
+    { column: 'validUntil', displayName: $localize`Valid Until` },
   ]);
 
   files = this.fileService.sharedFiles;
@@ -142,10 +143,6 @@ export class SharedFilesTableComponent {
       this.files().length > 0 &&
       this.selectedIds().size === this.files().length,
   );
-  movableSelectedFiles = computed(() =>
-    (this.selectedFiles() as SharedFile[]).filter((file) => this.canMove(file)),
-  );
-  canMoveSelected = computed(() => this.movableSelectedFiles().length > 0);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
@@ -231,6 +228,7 @@ export class SharedFilesTableComponent {
     if (started) {
       event.preventDefault();
       this.closeContextMenus();
+      (document.activeElement as HTMLElement | null)?.blur();
     }
   }
 
@@ -422,19 +420,6 @@ export class SharedFilesTableComponent {
       .firstElementChild as HTMLElement | null;
 
     this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
-
-    // Unselect files that cannot be moved to avoid confusion during drag
-    if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
-      this.toast.show(
-        'File move',
-        'Unsellected files that cannot be moved',
-        MessageSeverity.info,
-      );
-
-      this.selectedIds.set(
-        new Set(this.movableSelectedFiles().map((f) => f.id)),
-      );
-    }
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {
@@ -496,19 +481,6 @@ export class SharedFilesTableComponent {
     );
     if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
       incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
-  }
-
-  getAccessModeName(accessMode: ShareAccessMode) {
-    switch (accessMode) {
-      case ShareAccessMode.ReadOnly:
-        return 'Read only';
-      case ShareAccessMode.ReadWrite:
-        return 'Read & write';
-      case ShareAccessMode.FullAccess:
-        return 'Full control';
-      default:
-        return 'Read only';
-    }
   }
 
   canMove(file: SharedFile): boolean {

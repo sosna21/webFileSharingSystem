@@ -8,17 +8,21 @@
     />
     <span class="small">
       <i class="bi bi-device-hdd" class="text-{{ progressStyle() }}"></i>
-      Used space: {{ storage()!.usedSpace | fileSize }} \
+      <ng-container i18n>Used space:</ng-container>&nbsp;
+      {{ storage()!.usedSpace | fileSize }}
+      &nbsp;\&nbsp;
       {{ storage()!.quota | fileSize }}
     </span>
   </div>
   @if (progress() > 90) {
     <div class="alert alert-danger mt-2 p-1">
-      {{
-        progress() >= 100 ? "No free space left." : "Available space is low."
-      }}
+      @if (progress() >= 100) {
+        <ng-container i18n>No free space left.</ng-container>
+      } @else {
+        <ng-container i18n>Available space is low.</ng-container>
+      }
       <br />
-      Consider deleting some files.
+      <ng-container i18n>Consider deleting some files.</ng-container>
     </div>
   }
 }

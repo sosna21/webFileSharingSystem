@@ -1,4 +1,5 @@
 <i
+  data-content
   #favIcon
   appClicableIcon
   [disabled]="file().fileStatus === FileStatus.Incomplete"
@@ -11,8 +12,8 @@
     file().fileStatus === FileStatus.Incomplete
       ? undefined
       : file().isFavourite
-        ? 'Remove from favourites'
-        : 'Add to favourites'
+        ? addToFavourites
+        : removeFromFavourites
   "
   [openDelay]="300"
 ></i>

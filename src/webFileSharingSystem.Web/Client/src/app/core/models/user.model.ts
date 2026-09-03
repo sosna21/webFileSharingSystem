@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   userName: string;
-  email: string;
+  emailAddress: string;
   token: string;
   roles: string[];
   photoUrl: string | null;

@@ -1,5 +1,5 @@
 <div class="modal-header bg-primary-subtle d-flex">
-  <h4 class="modal-title">Rename</h4>
+  <h4 class="modal-title" i18n>Rename</h4>
 
   <button
     type="button"
@@ -19,7 +19,7 @@
       [class.is-invalid]="!isNameValid()"
     />
     @if (!isNameValid()) {
-      <div class="invalid-feedback">
+      <div class="invalid-feedback" i18n>
         There is alteady a file with the same name in this location.
       </div>
     }
@@ -30,6 +30,7 @@
       type="button"
       class="btn btn-outline-secondary"
       (click)="activeModal.dismiss()"
+      i18n
     >
       Cancel
     </button>
@@ -38,6 +39,7 @@
       class="btn btn-success w-25"
       [disabled]="!isNameValid()"
       (click)="confirm()"
+      i18n
     >
       Confirm
     </button>

@@ -1,10 +1,19 @@
 <div role="search">
   <input
     #searchInput
-    class="form-control"
+    class="form-control d-none d-md-block"
     data-testId="search-input"
     type="search"
-    [placeholder]="`Search in ${currentFolderName()}`"
+    [placeholder]="searchPlaceholder()"
+    [ngModel]="searchedPhrase()"
+    (ngModelChange)="setSearchPhrase($event)"
+  />
+  <input
+    #searchInput
+    class="form-control form-control-sm d-md-none"
+    data-testId="search-input"
+    type="search"
+    [placeholder]="searchPlaceholder()"
     [ngModel]="searchedPhrase()"
     (ngModelChange)="setSearchPhrase($event)"
   />

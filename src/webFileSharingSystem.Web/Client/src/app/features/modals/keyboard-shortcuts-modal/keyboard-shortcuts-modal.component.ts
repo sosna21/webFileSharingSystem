@@ -8,27 +8,37 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 })
 export class KeyboardShortcutsModalComponent {
   readonly activeModal = inject(NgbActiveModal);
+  readonly arrows = $localize`Arrow keys`;
+  readonly arrowUp = $localize`Arrow Up`;
+  readonly arrowDown = $localize`Arrow Down`;
+  readonly click = $localize`Click`;
 
   shortcuts = [
     {
-      keys: ['Arrow Up ▲', 'Arrow Down ▼'],
-      description: 'Navigate files list',
+      keys: [`${this.arrowUp} ▲`, `${this.arrowDown} ▼`],
+      description: $localize`Navigate files list`,
     },
-    { keys: ['Home', 'End'], description: 'Jump to top or bottom of the list' },
     {
-      keys: ['Shift', 'Click / Arrows'],
-      description: 'Select a range of files',
+      keys: ['Home', 'End'],
+      description: $localize`Jump to top or bottom of the list`,
     },
-    { keys: ['Ctrl', 'Click'], description: 'Toggle single file selection' },
-    { keys: ['Ctrl', 'A'], description: 'Select all files' },
-    { keys: ['Enter'], description: 'Open selected directory' },
-    { keys: ['F2'], description: 'Rename selected file' },
-    { keys: ['Ctrl', 'Shift', 'N'], description: 'Create new folder' },
     {
-      keys: ['Alt', 'Arrow Up ▲'],
-      description: 'Navigate to parent directory',
+      keys: ['Shift', `${this.click} / ${this.arrows}`],
+      description: $localize`Select a range of files`,
     },
-    { keys: ['Delete'], description: 'Delete selected file(s)' },
-    { keys: ['F3'], description: 'Focus search bar' },
+    {
+      keys: ['Ctrl', `${this.click}`],
+      description: $localize`Toggle single file selection`,
+    },
+    { keys: ['Ctrl', 'A'], description: $localize`Select all files` },
+    { keys: ['Enter'], description: $localize`Open selected directory` },
+    { keys: ['F2'], description: $localize`Rename selected file` },
+    { keys: ['Ctrl', 'Shift', 'N'], description: $localize`Create new folder` },
+    {
+      keys: ['Alt', `${this.arrowUp} ▲`],
+      description: $localize`Navigate to parent directory`,
+    },
+    { keys: ['Delete'], description: $localize`Delete selected file(s)` },
+    { keys: ['F3'], description: $localize`Focus search bar` },
   ];
 }

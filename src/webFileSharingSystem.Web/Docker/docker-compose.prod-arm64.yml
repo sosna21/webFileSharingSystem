@@ -1,0 +1,50 @@
+﻿name: webfilesharing
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge
+    container_name: webfilesharing-db
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "timeout 2 bash -c '</dev/tcp/localhost/1433'"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build:
+      context: ../../..
+      dockerfile: src/webFileSharingSystem.Web/Docker/Dockerfile
+    container_name: webfilesharing-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DbConnection: "Server=db,1433;Database=WebFileSharingSystem;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+    ports:
+      - "5000:8080"
+    volumes:
+      - file-storage:/app/storage
+    networks:
+      - app-network
+
+volumes:
+  sqlserver-data:
+  file-storage:
+
+networks:
+  app-network:

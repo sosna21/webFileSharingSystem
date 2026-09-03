@@ -1,0 +1,48 @@
+.language-flag {
+  display: inline-block;
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.language-flag-en {
+  background: linear-gradient(
+    to bottom,
+    #b22234 0 7.69%,
+    #fff 7.69% 15.38%,
+    #b22234 15.38% 23.07%,
+    #fff 23.07% 30.76%,
+    #b22234 30.76% 38.45%,
+    #fff 38.45% 46.14%,
+    #b22234 46.14% 53.83%,
+    #fff 53.83% 61.52%,
+    #b22234 61.52% 69.21%,
+    #fff 69.21% 76.9%,
+    #b22234 76.9% 84.59%,
+    #fff 84.59% 92.28%,
+    #b22234 92.28% 100%
+  );
+  position: relative;
+}
+
+.language-flag-en::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 45%;
+  height: 54%;
+  background: #3c3b6e;
+}
+
+.language-flag-pl {
+  background: linear-gradient(to bottom, #fff 0 50%, #dc143c 50% 100%);
+}
+
+.language-globe {
+  font-size: 1.05rem;
+  line-height: 1;
+  user-select: none;
+}

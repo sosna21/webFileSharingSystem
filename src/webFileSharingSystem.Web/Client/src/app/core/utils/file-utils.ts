@@ -1,8 +1,9 @@
 export function generateUniqueDirName(currentNames: Set<string>): string {
-  let dirName = 'New folder';
+  const baseName = $localize`New folder`;
+  let dirName = baseName;
   let counter = 0;
   while (currentNames.has(dirName)) {
-    dirName = `New folder (${++counter})`;
+    dirName = `${baseName} (${++counter})`;
   }
   return dirName;
 }

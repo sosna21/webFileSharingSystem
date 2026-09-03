@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { UploadRow } from './upload-row.part';
 
-const selectedRowClass = 'selected-row';
+const selectedRowClass = 'selected';
 
 export class UserFilesTable {
   readonly page: Page;
@@ -138,8 +138,6 @@ export class UserFilesTable {
   }
 
   private getFirstSelectedRow(): Locator {
-    return this.table
-      .locator('[data-testid^="file-row-"].selected-row')
-      .first();
+    return this.table.locator('[data-testid^="file-row-"].selected').first();
   }
 }

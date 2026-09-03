@@ -8,8 +8,8 @@
   <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
     @if (mixedFileComplition()) {
       <button ngbDropdownItem disabled class="text-danger">
-        <i class="bi bi-exclamation-triangle me-1"></i> Some files are still
-        uploading
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <ng-container i18n>Some files are still uploading</ng-container>
       </button>
       <div class="dropdown-divider"></div>
 
@@ -21,7 +21,8 @@
           class="d-flex"
           data-testid="context-menu-manage-uploads"
         >
-          Manage uploads <span class="ms-auto">→</span>
+          <ng-container i18n>Manage uploads</ng-container>
+          <span class="ms-auto">→</span>
         </button>
         <div ngbDropdownMenu>
           <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
@@ -38,7 +39,8 @@
           class="d-flex"
           data-testid="context-menu-manage-files"
         >
-          Manage files <span class="ms-auto">→</span>
+          <ng-container i18n>Manage files</ng-container>
+          <span class="ms-auto">→</span>
         </button>
         <div ngbDropdownMenu>
           <ng-container *ngTemplateOutlet="fileActions"></ng-container>
@@ -71,10 +73,10 @@
     data-testid="context-menu-resume-upload"
   >
     <i
-      class="bi bi-play-circle-fill me-1"
+      class="bi bi-play-circle-fill me-2"
       [class.text-success]="!disableResume"
     ></i>
-    Resume Upload
+    <ng-container i18n>Resume Upload</ng-container>
   </button>
 
   <button
@@ -83,8 +85,8 @@
     [disabled]="disablePause"
     data-testid="context-menu-pause-upload"
   >
-    <i class="bi bi-pause-circle me-1" [class.text-warning]="!disablePause"></i>
-    Pause Upload
+    <i class="bi bi-pause-circle me-2" [class.text-warning]="!disablePause"></i>
+    <ng-container i18n>Pause Upload</ng-container>
   </button>
 
   <button
@@ -92,7 +94,8 @@
     (click)="cancelUploadClicked(); menu.close()"
     data-testid="context-menu-cancel-upload"
   >
-    <i class="bi bi-x-circle text-danger me-1"></i> Cancel Upload
+    <i class="bi bi-x-circle text-danger me-2"></i>
+    <ng-container i18n>Cancel Upload</ng-container>
   </button>
 </ng-template>
 
@@ -103,8 +106,8 @@
       (click)="openLocation.emit(selectedFile); menu.close()"
       data-testid="context-menu-open-directory"
     >
-      <i class="bi bi-box-arrow-in-up-right me-1 text-success"></i>
-      Open Location
+      <i class="bi bi-box-arrow-in-up-right me-2 text-success"></i>
+      <ng-container i18n>Open Location</ng-container>
     </button>
   }
   @if (showOpenFolder()) {
@@ -113,7 +116,8 @@
       (click)="openFolder.emit(selectedFile); menu.close()"
       data-testid="context-menu-open-folder"
     >
-      <i class="bi bi-folder2-open me-1 text-warning"></i> Open Folder
+      <i class="bi bi-folder2-open me-2 text-warning"></i>
+      <ng-container i18n>Open Folder</ng-container>
     </button>
   }
 
@@ -122,7 +126,8 @@
     (click)="downloadClicked(); menu.close()"
     data-testid="context-menu-download"
   >
-    <i class="bi bi-download me-1 text-primary"></i> Download
+    <i class="bi bi-download me-2 text-primary"></i>
+    <ng-container i18n>Download</ng-container>
   </button>
 
   <button
@@ -132,10 +137,10 @@
     data-testid="context-menu-rename"
   >
     <i
-      class="bi bi-pencil me-1"
+      class="bi bi-pencil me-2"
       [class.text-info-emphasis]="selectedFiles().length === 1"
     ></i>
-    Rename
+    <ng-container i18n>Rename</ng-container>
   </button>
 
   <button
@@ -143,14 +148,16 @@
     (click)="copyClicked(); menu.close()"
     data-testid="context-menu-copy"
   >
-    <i class="bi bi-files me-1 text-warning-emphasis"></i> Copy
+    <i class="bi bi-files me-2 text-warning-emphasis"></i>
+    <ng-container i18n>Copy</ng-container>
   </button>
   <button
     ngbDropdownItem
     (click)="moveClicked(); menu.close()"
     data-testid="context-menu-cut"
   >
-    <i class="bi bi-folder-symlink me-1 text-warning-emphasis"></i> Move
+    <i class="bi bi-folder-symlink me-2 text-warning-emphasis"></i>
+    <ng-container i18n>Move</ng-container>
   </button>
 
   <button
@@ -159,19 +166,23 @@
     data-testid="context-menu-favourite"
   >
     <i
-      class="bi bi-star me-1"
+      class="bi bi-star me-2"
       [class.text-warning]="anySelectedFileIsUnFavourite()"
       [class.text-muted]="!anySelectedFileIsUnFavourite()"
     ></i>
-    {{
-      anySelectedFileIsUnFavourite()
-        ? selectedFilesCount > 1
-          ? "Favourite all"
-          : "Add to favourites"
-        : selectedFilesCount > 1
-          ? "Unfavourite all"
-          : "Remove from favourites"
-    }}
+    @if (anySelectedFileIsUnFavourite()) {
+      @if (selectedFilesCount > 1) {
+        <ng-container i18n>Favourite all</ng-container>
+      } @else {
+        <ng-container i18n>Add to favourites</ng-container>
+      }
+    } @else {
+      @if (selectedFilesCount > 1) {
+        <ng-container i18n>Unfavourite all</ng-container>
+      } @else {
+        <ng-container i18n>Remove from favourites</ng-container>
+      }
+    }
   </button>
 
   <div class="dropdown-divider"></div>
@@ -182,7 +193,8 @@
       (click)="manageShares.emit(selectedFile); menu.close()"
       data-testid="context-menu-manage-shares"
     >
-      <i class="bi bi-share me-1 text-primary"></i> Manage shares
+      <i class="bi bi-share me-2 text-primary"></i>
+      <ng-container i18n>Manage shares</ng-container>
     </button>
   } @else {
     <button
@@ -190,7 +202,8 @@
       (click)="shareClicked(); menu.close()"
       data-testid="context-menu-share"
     >
-      <i class="bi bi-share me-1 text-primary"></i> Share
+      <i class="bi bi-share me-2 text-primary"></i>
+      <ng-container i18n>Share</ng-container>
     </button>
   }
 
@@ -199,7 +212,8 @@
     (click)="generateLinkClicked(); menu.close()"
     data-testid="context-menu-share-link"
   >
-    <i class="bi bi-link me-1 text-primary-emphasis"></i> Generate share link
+    <i class="bi bi-link me-2 text-primary-emphasis"></i>
+    <ng-container i18n>Generate share link</ng-container>
   </button>
 
   <div class="dropdown-divider"></div>
@@ -209,6 +223,7 @@
     (click)="deleteClicked(); menu.close()"
     data-testid="context-menu-delete"
   >
-    <i class="bi bi-trash me-1 text-danger"></i> Delete
+    <i class="bi bi-trash me-2 text-danger"></i>
+    <ng-container i18n>Delete</ng-container>
   </button>
 </ng-template>

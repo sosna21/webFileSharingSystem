@@ -22,13 +22,10 @@ export class FileShareModalComponent {
   readonly ShareAccessMode = ShareAccessMode;
 
   readonly filesToShare = model<AppFile[]>([]);
-  readonly title = model('Share file');
-  readonly confirmText = model('Share');
-  readonly cancelText = model('Cancel');
+  readonly title = model($localize`Share file`);
+  readonly confirmText = model($localize`Share`);
+  readonly cancelText = model($localize`Cancel`);
   readonly shareWith = signal<string>('');
-  readonly sharingMultipleFiles = computed(
-    () => this.filesToShare().length > 1,
-  );
   readonly selectedCustomDuration = signal<Date | null>(null);
   readonly selectedCustomDurationString = computed(() =>
     this.selectedCustomDuration()
@@ -77,7 +74,7 @@ export class FileShareModalComponent {
   private async pickCustomDateTime() {
     this.activeModal.update({ modalDialogClass: 'd-none' });
     const result = await this.modalService.pickDateTime({
-      title: 'Select Share Expiration Date and Time',
+      title: $localize`Select Share Expiration Date and Time`,
       pickTime: true,
       initialTime: { hour: 12, minute: 0, second: 0 },
       initialDate: DateUtils.addDays(new Date(), 1),

@@ -5,7 +5,7 @@
     [openDelay]="250"
   >
     <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
-    {{ getShortAccessModeName(accessModeName()) }}
+    {{ shortAccessModeName() }}
   </span>
 
   <span class="d-none d-xl-inline-flex align-items-center">
@@ -19,8 +19,6 @@
     [openDelay]="250"
   >
     <i class="bi me-1" [class]="getAccessModeIconClass(file().accessMode!)"></i>
-    {{
-      isShort() ? getShortAccessModeName(accessModeName()) : accessModeName()
-    }}
+    {{ isShort() ? shortAccessModeName() : accessModeName() }}
   </span>
 }

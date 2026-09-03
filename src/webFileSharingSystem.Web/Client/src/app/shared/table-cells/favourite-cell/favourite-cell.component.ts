@@ -15,6 +15,9 @@ export class FavouriteCellComponent extends BaseCellDirective<AppFile> {
   FileStatus = FileStatus;
   changeFavourite = output<{ files: AppFile[]; isFavourite: boolean }>();
 
+  readonly addToFavourites = $localize`:Favourite action tooltip@@addToFavourites:Add to favourites`;
+  readonly removeFromFavourites = $localize`:Favourite action tooltip@@removeFromFavourites:Remove from favourites`;
+
   onChangeFavourite(file: AppFile, isFavourite: boolean) {
     this.changeFavourite.emit({ files: [file], isFavourite });
   }

@@ -101,12 +101,12 @@ export class UserFilesGridComponent {
   }
 
   sortableColumns = computed(() => [
-    { column: 'fileName', displayName: 'File name' },
-    { column: 'favourite', displayName: 'Favourite' },
-    { column: 'share', displayName: 'Share' },
-    { column: 'size', displayName: 'Size' },
-    { column: 'createdByUserName', displayName: 'Created By' },
-    { column: 'lastModification', displayName: 'Last Modification' },
+    { column: 'fileName', displayName: $localize`File name` },
+    { column: 'favourite', displayName: $localize`Favourite` },
+    { column: 'share', displayName: $localize`Share` },
+    { column: 'size', displayName: $localize`Size` },
+    { column: 'createdByUserName', displayName: $localize`Created By` },
+    { column: 'lastModification', displayName: $localize`Last Modification` },
   ]);
 
   files = this.fileService.userFiles;
@@ -202,8 +202,9 @@ export class UserFilesGridComponent {
     );
 
     if (started) {
-      event.stopPropagation();
+      event.preventDefault();
       this.closeContextMenus();
+      (document.activeElement as HTMLElement | null)?.blur();
     }
   }
 
@@ -283,7 +284,7 @@ export class UserFilesGridComponent {
     this.modalService.manageSharesModal(
       {
         sharedFile: sharedFile,
-        title: `Manage shares for file: '${sharedFile.fileName}'`,
+        title: $localize`Manage shares for: '${sharedFile.fileName}'`,
       },
       this.injector,
     );
@@ -409,7 +410,7 @@ export class UserFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: AppFile) {
-    if (this.selectedFiles().length === 0) {
+    if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
     }

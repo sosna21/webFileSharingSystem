@@ -10,7 +10,7 @@ import { NgbActiveModal, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 })
 export class CopyToClipboardModalComponent {
   readonly activeModal = inject(NgbActiveModal);
-  readonly title = model('Copy to Clipboard');
+  readonly title = model($localize`Copy to Clipboard`);
   readonly textToCopy = model('');
 
   async copyToClipboard() {

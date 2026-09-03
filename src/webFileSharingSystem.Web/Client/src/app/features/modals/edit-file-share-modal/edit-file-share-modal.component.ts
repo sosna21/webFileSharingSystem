@@ -28,7 +28,7 @@ export class EditFileShareModalComponent {
   readonly toast = inject(ToastService);
   readonly ShareAccessMode = ShareAccessMode;
 
-  readonly title = model('Share file');
+  readonly title = model($localize`Share file`);
   readonly shareToModify = model<Share | null>(null);
   readonly shareToModifyDate = computed<Date | null>(() => {
     return this.shareToModify() && this.shareToModify()!.validUntil
@@ -39,7 +39,7 @@ export class EditFileShareModalComponent {
   readonly shareToModifyDateString = computed(() =>
     this.shareToModifyDate()
       ? this.shareToModifyDate()!.toLocaleString()
-      : 'Indefinite',
+      : $localize`Indefinite`,
   );
 
   readonly selectedCustomDuration = signal<Date | null>(null);
@@ -75,7 +75,9 @@ export class EditFileShareModalComponent {
   });
 
   readonly newShareValidToString = computed(() =>
-    this.shareValidTo() ? this.shareValidTo()!.toLocaleString() : 'Indefinite',
+    this.shareValidTo()
+      ? this.shareValidTo()!.toLocaleString()
+      : $localize`Indefinite`,
   );
 
   confirm() {
@@ -98,7 +100,7 @@ export class EditFileShareModalComponent {
     this.activeModal.update({ modalDialogClass: 'd-none' });
 
     const result = await this.modalService.pickDateTime({
-      title: 'Select Share Expiration Date and Time',
+      title: $localize`Select Share Expiration Date and Time`,
       pickTime: true,
       initialTime: this.shareToModifyDate()
         ? {

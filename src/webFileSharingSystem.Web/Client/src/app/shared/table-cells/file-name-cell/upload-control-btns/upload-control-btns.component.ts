@@ -12,6 +12,7 @@ import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
   templateUrl: './upload-control-btns.component.html',
   styles: ``,
   host: {
+    'data-content': '',
     class: 'd-flex',
   },
 })

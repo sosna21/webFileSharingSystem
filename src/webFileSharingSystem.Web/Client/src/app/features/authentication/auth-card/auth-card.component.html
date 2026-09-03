@@ -4,7 +4,7 @@
   <hr class="m-2 p-0" />
   <ng-content></ng-content>
   @if (includeExternalLogins()) {
-    <div class="separator">OR</div>
+    <div class="separator" i18n>OR</div>
     <app-google-account-auth
       class="my-1 mt-md-3 mb-md-4"
       (isLoadingEmitter)="changeLoading($event)"

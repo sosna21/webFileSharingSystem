@@ -1,5 +1,6 @@
 import { ElementRef, Injectable, Signal, signal } from '@angular/core';
-import { SelectionService, SelectableItem } from './selection.service';
+import { SelectionService } from './selection.service';
+import { BaseFile } from '../models/base-file.model';
 
 type GridNavigationKey =
   | 'ArrowUp'
@@ -9,7 +10,7 @@ type GridNavigationKey =
   | 'Home'
   | 'End';
 
-interface GridItem<T extends SelectableItem> {
+interface GridItem<T extends BaseFile> {
   id: number;
   element: HTMLElement;
   top: number;
@@ -18,7 +19,7 @@ interface GridItem<T extends SelectableItem> {
 }
 
 @Injectable()
-export class GridSelectionService<T extends SelectableItem = SelectableItem> {
+export class GridSelectionService<T extends BaseFile = BaseFile> {
   private readonly itemSelector =
     'app-user-file-grid-card, app-shared-file-grid-card';
 

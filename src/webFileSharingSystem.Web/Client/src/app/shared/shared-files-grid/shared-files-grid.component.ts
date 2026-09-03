@@ -19,7 +19,6 @@ import {
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { SharedFile } from '../../core/models/shared-file.model';
-import { MessageSeverity } from '../../core/models/toast-info.model';
 import { DownloadService } from '../../core/services/download.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { GridSelectionService } from '../../core/services/grid-selection.service';
@@ -112,14 +111,16 @@ export class SharedFilesGridComponent {
   ]);
 
   sortableColumns = computed(() => [
-    { column: 'fileName', displayName: 'File name' },
+    { column: 'fileName', displayName: $localize`File name` },
     {
       column: 'sharedBy/createdBy',
-      displayName: this.currentDirectoryId() ? 'Created By' : 'Shared By',
+      displayName: this.currentDirectoryId()
+        ? $localize`Created By`
+        : $localize`Shared By`,
     },
-    { column: 'accessMode', displayName: 'Access Mode' },
-    { column: 'size', displayName: 'Size' },
-    { column: 'validUntil', displayName: 'Valid Until' },
+    { column: 'accessMode', displayName: $localize`Access Mode` },
+    { column: 'size', displayName: $localize`Size` },
+    { column: 'validUntil', displayName: $localize`Valid Until` },
   ]);
 
   files = this.fileService.sharedFiles;
@@ -134,7 +135,6 @@ export class SharedFilesGridComponent {
   movableSelectedFiles = computed(() =>
     (this.selectedFiles() as SharedFile[]).filter((file) => this.canMove(file)),
   );
-  canMoveSelected = computed(() => this.movableSelectedFiles().length > 0);
 
   tooltips = viewChildren(NgbTooltip);
   contextMenu = viewChild(SharedFilesContextMenuComponent);
@@ -220,6 +220,7 @@ export class SharedFilesGridComponent {
     if (started) {
       event.preventDefault();
       this.closeContextMenus();
+      (document.activeElement as HTMLElement | null)?.blur();
     }
   }
 
@@ -400,28 +401,14 @@ export class SharedFilesGridComponent {
   }
 
   onRowDragStart(event: DragEvent, file: SharedFile) {
-    if (this.selectedFiles().length === 0) {
+    if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
     }
-
     const previewEl = this.fileMoveDragPreview()?.nativeElement
       .firstElementChild as HTMLElement | null;
 
     this.dragFacade.rowDragStart(event, file, this.selectedFiles(), previewEl);
-
-    // Unselect files that cannot be moved to avoid confusion during drag
-    if (this.movableSelectedFiles().length !== this.selectedFiles().length) {
-      this.toast.show(
-        'File move',
-        'Unsellected files that cannot be moved',
-        MessageSeverity.info,
-      );
-
-      this.selectedIds.set(
-        new Set(this.movableSelectedFiles().map((f) => f.id)),
-      );
-    }
   }
 
   onRowDragEnter(event: DragEvent, row: SharedFile) {
