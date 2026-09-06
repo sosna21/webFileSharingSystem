@@ -47,9 +47,9 @@
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper position-relative overflow-auto h-100 p-4"
+    class="table-scroll-wrapper position-relative overflow-auto h-100 p-2 p-md-4"
   >
-    <div class="file-grid">
+    <div class="file-grid gap-3 gap-xxl-4">
       @for (file of files(); track file.id) {
         <app-user-file-grid-card
           [file]="file"

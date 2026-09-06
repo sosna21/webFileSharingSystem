@@ -28,7 +28,7 @@
 />
 
 <div
-  class="table-wrapper position-relative h-100 rounded rounded-4 px-2 py-3"
+  class="table-wrapper position-relative h-100 rounded rounded-4 px-sm-2 py-2 py-sm-3"
   data-testid="shared-files-table"
   [class.table-drop-hover]="isHoverTargetATable()"
   (pointerdown)="onRubberBandPointerDown($event)"
@@ -43,7 +43,7 @@
     (dragenter)="onTableDragEnter($event)"
     (dragover)="onTableDragOver($event)"
     (drop)="onTableDrop($event)"
-    class="table-scroll-wrapper position-relative overflow-auto h-100 px-1"
+    class="table-scroll-wrapper position-relative overflow-auto h-100 px-sm-1"
   >
     <table
       cdk-table
