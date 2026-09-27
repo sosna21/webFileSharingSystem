@@ -7,7 +7,9 @@ export class SearchBar {
 
   constructor(page: Page) {
     this.root = page.getByRole('search');
-    this.input = this.root.getByTestId('search-input');
+    this.input = this.root
+      .getByTestId('search-input')
+      .filter({ visible: true });
   }
 
   async expectPlaceholder(text: string) {

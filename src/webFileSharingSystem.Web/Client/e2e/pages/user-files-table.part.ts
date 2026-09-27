@@ -129,6 +129,7 @@ export class UserFilesTable {
     await this.table.hover();
     await this.table.dispatchEvent('pointerdown');
     await this.table.dispatchEvent('pointerup');
+    await this.table.click();
   }
 
   async dragAndDropSelectedToRow(directoryName: string) {
