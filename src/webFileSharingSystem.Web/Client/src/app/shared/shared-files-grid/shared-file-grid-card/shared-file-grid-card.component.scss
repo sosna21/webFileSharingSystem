@@ -19,6 +19,29 @@
   background: rgba(var(--bs-primary-rgb), 0.08);
 }
 
+.grid-action-slot {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-action-slot .lbl-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.grid-action-slot input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
 .file-card.selected {
   border-color: var(--bs-primary);
   background: rgba(var(--bs-primary-rgb), 0.15);

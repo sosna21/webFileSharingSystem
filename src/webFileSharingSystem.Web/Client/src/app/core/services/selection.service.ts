@@ -1,6 +1,7 @@
 import {
   ElementRef,
   Injectable,
+  OnDestroy,
   Signal,
   WritableSignal,
   computed,
@@ -11,9 +12,12 @@ export interface SelectableItem {
   id: number;
 }
 
+export type SelectionMode = 'pointer' | 'touch';
+
 type DragKind = null | 'standard' | 'ctrl' | 'shift';
 type RubberBandMode = 'replace' | 'add' | 'toggle';
 type RubberBandState = 'idle' | 'armed' | 'dragging';
+type TouchRangeMode = 'add' | 'remove';
 
 interface RubberBandPoint {
   x: number;
@@ -28,17 +32,29 @@ interface RubberBandBounds {
 }
 
 @Injectable()
-export class SelectionService<T extends SelectableItem = SelectableItem> {
+export class SelectionService<
+  T extends SelectableItem = SelectableItem,
+> implements OnDestroy {
   // Host supplies live files list\
   private static readonly DRAG_THRESHOLD = 5;
   private static readonly AUTO_SCROLL_MIN_SPEED = 120;
   private static readonly AUTO_SCROLL_MAX_SPEED = 900;
   private static readonly AUTO_SCROLL_SPEED_PER_PX = 45;
+  private static readonly LONG_PRESS_DURATION = 500;
+  private static readonly LONG_PRESS_MOVE_THRESHOLD = 10;
+  private static readonly TOUCH_EDGE_ZONE = 72;
+  private static readonly TOUCH_AUTO_SCROLL_MIN_SPEED = 120;
+  private static readonly TOUCH_AUTO_SCROLL_MAX_SPEED = 720;
+  private static readonly TOUCH_AUTO_SCROLL_SPEED_PER_PX = 12;
 
   protected filesSig!: Signal<T[]>;
   protected scrollContainerSig?: Signal<ElementRef<HTMLElement> | undefined>;
 
   readonly selectedIds: WritableSignal<Set<number>> = signal(new Set());
+  readonly currentSelectionMode = signal<SelectionMode | null>(null);
+  readonly touchMultiSelectionActiveState = signal(false);
+  readonly isTouchMultiSelectionActive =
+    this.touchMultiSelectionActiveState.asReadonly();
   readonly areAllChecked = computed(
     () =>
       this.filesSig?.() &&
@@ -63,9 +79,39 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   private rubberBandMode = signal<RubberBandMode>('replace');
   private rubberBandState = signal<RubberBandState>('idle');
   private dragging = signal<DragKind>(null);
+  private activePointerId: number | null = null;
+  private touchPressedItemId: number | null = null;
+  private touchLongPressTimer: number | null = null;
+  private touchLongPressCompleted = false;
+  private touchGestureCancelled = false;
+  private touchClickSuppressed = false;
+  private touchRangeGestureBlocked = signal(false);
+  private touchRangeCurrentFileId: number | null = null;
+  private touchRangeInitialSelection = new Set<number>();
+  private touchRangeMode: TouchRangeMode = 'add';
+  private touchPointerStart: RubberBandPoint | null = null;
+  private touchPointerPoint: RubberBandPoint | null = null;
+  private touchPointerTarget: HTMLElement | null = null;
+  private touchFileResolver?: (
+    clientX: number,
+    clientY: number,
+  ) => number | undefined;
+  private touchMoveListenerAttached = false;
+  private touchSelectionAnchor: number | null = null;
+  private touchAutoScrollFrameId: number | null = null;
+  private touchAutoScrollLastTimestamp: number | null = null;
   private autoScrollFrameId: number | null = null;
   private autoScrollLastTimestamp: number | null = null;
   private autoScrollRemainder = 0;
+
+  ngOnDestroy() {
+    this.clearTouchLongPressTimer();
+    this.removeTouchMoveListener();
+    this.stopTouchAutoScroll();
+    if (this.activePointerId !== null) {
+      this.releaseTouchPointerCapture(this.activePointerId);
+    }
+  }
 
   private readonly rubberBandStarted = computed(
     () => this.rubberBandState() !== 'idle',
@@ -131,12 +177,95 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     this.keyboardFocusId.set(null);
   }
 
+  getSelectionMode(event: PointerEvent): SelectionMode {
+    return event.pointerType === 'mouse' ? 'pointer' : 'touch';
+  }
+
+  isTouchRangeSelectionActive() {
+    return this.touchRangeGestureBlocked();
+  }
+
+  readonly touchDragDisabled = computed(
+    () =>
+      this.currentSelectionMode() === 'touch' ||
+      this.touchRangeGestureBlocked(),
+  );
+
+  handleFilePointerDown(
+    event: PointerEvent,
+    file: T,
+    fileResolver?: (clientX: number, clientY: number) => number | undefined,
+  ) {
+    if (event.button !== 0) return;
+
+    this.touchClickSuppressed = false;
+    this.touchRangeGestureBlocked.set(false);
+    this.activePointerId = event.pointerId;
+    this.currentSelectionMode.set(this.getSelectionMode(event));
+
+    if (this.currentSelectionMode() !== 'touch') {
+      return;
+    }
+
+    event.stopPropagation();
+    this.touchPressedItemId = file.id;
+    this.touchPointerTarget = event.target as HTMLElement | null;
+    this.touchLongPressCompleted = false;
+    this.touchGestureCancelled = false;
+    this.touchPointerStart = { x: event.clientX, y: event.clientY };
+    this.touchFileResolver = fileResolver;
+    this.addTouchMoveListener();
+
+    if (!this.touchMultiSelectionActiveState()) {
+      this.touchSelectionAnchor = this.fileSelectionAnchorId() ?? file.id;
+    }
+
+    this.clearTouchLongPressTimer();
+    this.touchLongPressTimer = globalThis.setTimeout(() => {
+      if (this.currentSelectionMode() !== 'touch') return;
+      if (this.activePointerId !== event.pointerId) return;
+      if (this.touchPressedItemId === null) return;
+
+      this.touchLongPressCompleted = true;
+      this.touchRangeGestureBlocked.set(true);
+      this.touchMultiSelectionActiveState.set(true);
+      this.touchRangeInitialSelection = new Set(this.selectedIds());
+      this.touchRangeMode = this.touchRangeInitialSelection.has(
+        this.touchPressedItemId,
+      )
+        ? 'remove'
+        : 'add';
+      this.touchSelectionAnchor = this.touchPressedItemId;
+      this.touchRangeCurrentFileId = this.touchPressedItemId;
+      this.selectTouchRange(this.touchPressedItemId);
+      this.touchPointerPoint = { x: event.clientX, y: event.clientY };
+
+      try {
+        this.touchPointerTarget?.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture can fail if the browser has already cancelled it.
+      }
+    }, SelectionService.LONG_PRESS_DURATION);
+  }
+
   beginRubberBandSelection(
     event: PointerEvent,
     container: HTMLElement,
     itemSelector: string,
   ) {
     if (event.button !== 0) return false;
+
+    const mode = this.getSelectionMode(event);
+    this.currentSelectionMode.set(mode);
+    this.activePointerId = event.pointerId;
+
+    if (mode === 'touch') {
+      this.clearTouchLongPressTimer();
+      this.touchLongPressCompleted = false;
+      this.touchPressedItemId = null;
+      this.touchPointerStart = null;
+      return false;
+    }
 
     const target = event.target as HTMLElement;
     if (!this.canStartRubberBandOnTarget(target)) return false;
@@ -231,6 +360,8 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     this.rubberBandBaseSelection.set(new Set());
     this.rubberBandMode.set('replace');
     this.rubberBandState.set('idle');
+    this.currentSelectionMode.set(null);
+    this.activePointerId = null;
   }
 
   private syncRubberBandAutoScroll() {
@@ -438,6 +569,468 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
     );
   }
 
+  handlePointerMove(
+    event: PointerEvent,
+    fileId?: number,
+    fileResolver?: (clientX: number, clientY: number) => number | undefined,
+  ) {
+    if (this.currentSelectionMode() !== 'touch') {
+      this.updateRubberBandSelection(event);
+      return;
+    }
+
+    if (this.activePointerId !== event.pointerId) return;
+    if (!this.touchPointerStart) return;
+
+    if (this.touchLongPressCompleted) {
+      event.preventDefault();
+      this.touchPointerPoint = { x: event.clientX, y: event.clientY };
+      if (fileResolver) this.touchFileResolver = fileResolver;
+
+      if (fileId === undefined || fileId === this.touchRangeCurrentFileId) {
+        this.syncTouchAutoScroll();
+        return;
+      }
+
+      this.touchRangeCurrentFileId = fileId;
+      this.selectTouchRange(fileId);
+      this.syncTouchAutoScroll();
+      return;
+    }
+
+    const dx = Math.abs(event.clientX - this.touchPointerStart.x);
+    const dy = Math.abs(event.clientY - this.touchPointerStart.y);
+    if (dx + dy > SelectionService.LONG_PRESS_MOVE_THRESHOLD) {
+      this.clearTouchLongPressTimer();
+      this.touchGestureCancelled = true;
+    }
+  }
+
+  handlePointerUp(event: PointerEvent) {
+    if (this.currentSelectionMode() !== 'touch') {
+      this.endRubberBandSelection();
+      return;
+    }
+
+    if (
+      this.activePointerId !== null &&
+      this.activePointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    this.clearTouchLongPressTimer();
+    this.stopTouchAutoScroll();
+    this.removeTouchMoveListener();
+
+    if (this.touchLongPressCompleted) {
+      this.releaseTouchPointerCapture(event.pointerId);
+      this.activePointerId = null;
+      this.touchPressedItemId = null;
+      this.touchPointerStart = null;
+      this.touchPointerPoint = null;
+      this.touchFileResolver = undefined;
+      this.resetTouchRangeState();
+    }
+  }
+
+  handlePointerCancel(event: PointerEvent) {
+    if (this.currentSelectionMode() !== 'touch') {
+      this.endRubberBandSelection();
+      return;
+    }
+
+    if (
+      this.activePointerId !== null &&
+      this.activePointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    if (this.touchLongPressCompleted || this.touchMultiSelectionActiveState()) {
+      this.releaseTouchPointerAfterCancel();
+      return;
+    }
+
+    if (this.touchGestureCancelled) {
+      this.clearTouchLongPressTimer();
+      this.touchClickSuppressed = true;
+      this.finishTouchSelection();
+    }
+  }
+
+  private clearTouchLongPressTimer() {
+    if (this.touchLongPressTimer !== null) {
+      globalThis.clearTimeout(this.touchLongPressTimer);
+      this.touchLongPressTimer = null;
+    }
+  }
+
+  private resetTouchRangeState() {
+    this.touchRangeGestureBlocked.set(false);
+    this.touchRangeCurrentFileId = null;
+    this.touchRangeInitialSelection.clear();
+    this.touchRangeMode = 'add';
+    this.touchSelectionAnchor = null;
+  }
+
+  private readonly handleNativeTouchMove = (event: TouchEvent) => {
+    if (
+      this.currentSelectionMode() !== 'touch' &&
+      !this.touchRangeGestureBlocked()
+    ) {
+      return;
+    }
+    const touch = event.touches[0];
+    if (!touch || !this.touchPointerStart) return;
+
+    if (!this.touchRangeGestureBlocked()) {
+      const dx = Math.abs(touch.clientX - this.touchPointerStart.x);
+      const dy = Math.abs(touch.clientY - this.touchPointerStart.y);
+      if (dx + dy > SelectionService.LONG_PRESS_MOVE_THRESHOLD) {
+        this.clearTouchLongPressTimer();
+        this.touchGestureCancelled = true;
+        this.removeTouchMoveListener();
+      }
+      return;
+    }
+
+    event.preventDefault();
+    this.touchPointerPoint = { x: touch.clientX, y: touch.clientY };
+    const fileId = this.touchFileResolver?.(touch.clientX, touch.clientY);
+    if (fileId === undefined || fileId === this.touchRangeCurrentFileId) {
+      return;
+    }
+
+    this.touchRangeCurrentFileId = fileId;
+    this.selectTouchRange(fileId);
+  };
+
+  private readonly handleNativeTouchEnd = () => {
+    this.removeTouchMoveListener();
+    if (!this.touchRangeGestureBlocked()) return;
+
+    this.resetTouchRangeState();
+    this.touchPointerStart = null;
+    this.touchPointerPoint = null;
+    this.touchFileResolver = undefined;
+  };
+
+  private addTouchMoveListener() {
+    if (this.touchMoveListenerAttached) return;
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('touchmove', this.handleNativeTouchMove, {
+      passive: false,
+    });
+    window.addEventListener('touchend', this.handleNativeTouchEnd);
+    this.touchMoveListenerAttached = true;
+  }
+
+  private removeTouchMoveListener() {
+    if (!this.touchMoveListenerAttached) return;
+
+    window.removeEventListener('touchmove', this.handleNativeTouchMove);
+    window.removeEventListener('touchend', this.handleNativeTouchEnd);
+    this.touchMoveListenerAttached = false;
+  }
+
+  private releaseTouchPointerCapture(pointerId: number) {
+    try {
+      if (this.touchPointerTarget?.hasPointerCapture(pointerId)) {
+        this.touchPointerTarget.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // The pointer may already have been cancelled by the browser.
+    }
+    this.touchPointerTarget = null;
+  }
+
+  private syncTouchAutoScroll() {
+    if (
+      !this.touchLongPressCompleted ||
+      !this.touchPointerPoint ||
+      !this.touchFileResolver
+    ) {
+      this.stopTouchAutoScroll();
+      return;
+    }
+
+    const container = this.getScrollContainerElement();
+    if (!container || this.getTouchAutoScrollDirection(container).sign === 0) {
+      this.stopTouchAutoScroll();
+      return;
+    }
+
+    if (this.touchAutoScrollFrameId === null) {
+      this.touchAutoScrollFrameId = window.requestAnimationFrame(
+        this.stepTouchAutoScroll,
+      );
+    }
+  }
+
+  private stopTouchAutoScroll() {
+    if (this.touchAutoScrollFrameId !== null) {
+      window.cancelAnimationFrame(this.touchAutoScrollFrameId);
+      this.touchAutoScrollFrameId = null;
+    }
+    this.touchAutoScrollLastTimestamp = null;
+  }
+
+  private readonly stepTouchAutoScroll = (timestamp: number) => {
+    this.touchAutoScrollFrameId = null;
+
+    if (
+      !this.touchLongPressCompleted ||
+      !this.touchPointerPoint ||
+      !this.touchFileResolver
+    ) {
+      this.stopTouchAutoScroll();
+      return;
+    }
+
+    const container = this.getScrollContainerElement();
+    if (!container) {
+      this.stopTouchAutoScroll();
+      return;
+    }
+
+    const direction = this.getTouchAutoScrollDirection(container);
+    if (direction.sign === 0) {
+      this.stopTouchAutoScroll();
+      return;
+    }
+
+    const dt =
+      this.touchAutoScrollLastTimestamp === null
+        ? 16
+        : Math.max(1, timestamp - this.touchAutoScrollLastTimestamp);
+    this.touchAutoScrollLastTimestamp = timestamp;
+
+    const speed = Math.min(
+      SelectionService.TOUCH_AUTO_SCROLL_MAX_SPEED,
+      SelectionService.TOUCH_AUTO_SCROLL_MIN_SPEED +
+        direction.distance * SelectionService.TOUCH_AUTO_SCROLL_SPEED_PER_PX,
+    );
+    const maxScrollTop = Math.max(
+      0,
+      container.scrollHeight - container.clientHeight,
+    );
+    const nextScrollTop = this.clamp(
+      container.scrollTop + direction.sign * speed * (dt / 1000),
+      0,
+      maxScrollTop,
+    );
+
+    if (nextScrollTop === container.scrollTop) {
+      this.stopTouchAutoScroll();
+      return;
+    }
+
+    container.scrollTop = nextScrollTop;
+    const currentFileId = this.touchFileResolver(
+      this.touchPointerPoint.x,
+      this.touchPointerPoint.y,
+    );
+    if (
+      currentFileId !== undefined &&
+      currentFileId !== this.touchRangeCurrentFileId
+    ) {
+      this.touchRangeCurrentFileId = currentFileId;
+      this.selectTouchRange(currentFileId);
+    }
+
+    this.syncTouchAutoScroll();
+  };
+
+  private getTouchAutoScrollDirection(container: HTMLElement) {
+    if (!this.touchPointerPoint) return { sign: 0, distance: 0 };
+
+    const rect = container.getBoundingClientRect();
+    const topDistance =
+      SelectionService.TOUCH_EDGE_ZONE - (this.touchPointerPoint.y - rect.top);
+    if (topDistance > 0) {
+      return { sign: -1, distance: topDistance };
+    }
+
+    const bottomDistance =
+      SelectionService.TOUCH_EDGE_ZONE -
+      (rect.bottom - this.touchPointerPoint.y);
+    if (bottomDistance > 0) {
+      return { sign: 1, distance: bottomDistance };
+    }
+
+    return { sign: 0, distance: 0 };
+  }
+
+  private selectTouchRange(currentFileId: number) {
+    const files = this.filesSig?.() ?? [];
+    const anchorIndex = files.findIndex(
+      (file) => file.id === this.touchSelectionAnchor,
+    );
+    const currentIndex = files.findIndex((file) => file.id === currentFileId);
+
+    if (anchorIndex < 0 || currentIndex < 0) return;
+
+    const startIndex = Math.min(anchorIndex, currentIndex);
+    const endIndex = Math.max(anchorIndex, currentIndex);
+    const rangeIds = files
+      .slice(startIndex, endIndex + 1)
+      .map((file) => file.id);
+
+    const nextSelection = new Set(this.touchRangeInitialSelection);
+    if (this.touchRangeMode === 'add') {
+      rangeIds.forEach((id) => nextSelection.add(id));
+    } else {
+      rangeIds.forEach((id) => nextSelection.delete(id));
+    }
+
+    this.selectedIds.set(nextSelection);
+    this.setKeyboardNavigationState(this.touchSelectionAnchor, currentFileId);
+  }
+
+  private handleTouchTap(file: T) {
+    const selected = this.selectedIds();
+
+    if (!this.touchMultiSelectionActiveState()) {
+      this.selectedIds.set(new Set([file.id]));
+      this.setKeyboardNavigationState(file.id, file.id);
+      return;
+    }
+
+    if (selected.has(file.id)) {
+      const next = new Set(selected);
+      next.delete(file.id);
+      this.selectedIds.set(next);
+      this.setKeyboardNavigationState(file.id, file.id);
+      return;
+    }
+
+    const next = new Set(selected);
+    next.add(file.id);
+    this.selectedIds.set(next);
+    this.setKeyboardNavigationState(file.id, file.id);
+  }
+
+  private finishTouchSelection(keepTouchMultiSelection = false) {
+    this.clearTouchLongPressTimer();
+    this.activePointerId = null;
+    this.touchPressedItemId = null;
+    this.touchPointerStart = null;
+    this.touchLongPressCompleted = false;
+    this.resetTouchRangeState();
+    this.touchGestureCancelled = false;
+    this.currentSelectionMode.set(null);
+
+    if (!keepTouchMultiSelection || !this.touchMultiSelectionActiveState()) {
+      this.touchMultiSelectionActiveState.set(false);
+    } else {
+      this.touchMultiSelectionActiveState.set(true);
+    }
+  }
+
+  private releaseTouchPointer() {
+    this.stopTouchAutoScroll();
+    if (this.activePointerId !== null) {
+      this.releaseTouchPointerCapture(this.activePointerId);
+    }
+    this.activePointerId = null;
+    this.touchPressedItemId = null;
+    this.touchPointerStart = null;
+    this.touchLongPressCompleted = false;
+    this.resetTouchRangeState();
+    this.touchGestureCancelled = false;
+    this.touchClickSuppressed = true;
+    this.currentSelectionMode.set(null);
+  }
+
+  private releaseTouchPointerAfterCancel() {
+    this.stopTouchAutoScroll();
+    if (this.activePointerId !== null) {
+      this.releaseTouchPointerCapture(this.activePointerId);
+    }
+    this.activePointerId = null;
+    this.touchPressedItemId = null;
+    this.touchLongPressCompleted = false;
+    this.touchGestureCancelled = false;
+    this.touchClickSuppressed = true;
+    this.currentSelectionMode.set(null);
+  }
+
+  handleClick(file: T, event?: MouseEvent) {
+    if (this.touchClickSuppressed) {
+      this.touchClickSuppressed = false;
+      event?.preventDefault();
+      event?.stopPropagation();
+      return;
+    }
+
+    if (this.currentSelectionMode() === 'touch') {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      if (this.touchLongPressCompleted) {
+        this.finishTouchSelection(true);
+        return;
+      }
+
+      if (this.touchGestureCancelled) {
+        if (this.touchMultiSelectionActiveState()) {
+          this.releaseTouchPointer();
+          return;
+        }
+
+        this.finishTouchSelection(false);
+        return;
+      }
+
+      if (this.touchMultiSelectionActiveState()) {
+        this.handleTouchTap(file);
+      } else {
+        this.selectedIds.set(new Set([file.id]));
+        this.setKeyboardNavigationState(file.id, file.id);
+      }
+
+      this.finishTouchSelection(true);
+      return;
+    }
+
+    const isCtrl = event?.ctrlKey || event?.metaKey;
+    const isShift = event?.shiftKey;
+    const localAnchor = this.fileSelectionAnchorId() ?? file.id;
+
+    if (isShift && localAnchor != null) {
+      const newIndex = this.filesSig().findIndex((f) => f.id === file.id);
+      const anchorIndex = this.filesSig().findIndex(
+        (f) => f.id === localAnchor,
+      );
+      const startIndex = Math.min(newIndex, anchorIndex);
+      const endIndex = Math.max(newIndex, anchorIndex);
+      const rangeIds = this.filesSig()
+        .filter((_, idx) => idx >= startIndex && idx <= endIndex)
+        .map((f) => f.id);
+      this.selectedIds.set(new Set(rangeIds));
+      this.setKeyboardNavigationState(localAnchor, file.id);
+      return;
+    }
+
+    if (isCtrl) {
+      this.selectedIds.update((prev) => {
+        const next = new Set(prev);
+        if (next.has(file.id)) next.delete(file.id);
+        else next.add(file.id);
+        return next;
+      });
+      this.setKeyboardNavigationState(file.id, file.id);
+      return;
+    }
+
+    this.selectedIds.set(new Set([file.id]));
+    this.setKeyboardNavigationState(file.id, file.id);
+  }
+
   onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
@@ -575,6 +1168,17 @@ export class SelectionService<T extends SelectableItem = SelectableItem> {
   clear() {
     this.selectedIds.set(new Set());
     this.clearKeyboardNavigationState();
+    this.clearTouchLongPressTimer();
+    this.removeTouchMoveListener();
+    this.touchLongPressCompleted = false;
+    this.touchClickSuppressed = false;
+    this.resetTouchRangeState();
+    this.touchGestureCancelled = false;
+    this.touchPressedItemId = null;
+    this.touchPointerStart = null;
+    this.touchMultiSelectionActiveState.set(false);
+    this.activePointerId = null;
+    this.currentSelectionMode.set(null);
     this.endRubberBandSelection();
   }
 

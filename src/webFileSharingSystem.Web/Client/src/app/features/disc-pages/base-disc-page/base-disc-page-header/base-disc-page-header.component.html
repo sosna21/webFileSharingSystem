@@ -1,19 +1,46 @@
-<header
-  class="d-flex flex-column flex-md-row align-items-stretch align-items-md-end pb-1 mb-4 border-bottom rounded-bottom-2 gap-2 gap-md-3 gap-lg-4 gap-xl-5"
->
-  <div class="d-flex align-items-center text-nowrap gap-2">
-    <div class="fs-1">
-      <ng-content select="i"></ng-content>
-    </div>
-    <span class="d-none d-md-inline fs-2 fw-semibold"
-      ><ng-content>Page title</ng-content></span
-    >
-    <app-file-search class="d-block d-md-none flex-grow-1" />
-  </div>
-  <div
-    class="d-flex flex-wrap flex-grow-1 justify-content-center gap-2 gap-sm-3 mx-auto mx-sm-0"
+<ng-template #secondaryContent
+  ><ng-content select="[secondaryContent]"></ng-content
+></ng-template>
+@if (!isTouchMultiSelectionActive()) {
+  <header
+    class="d-flex flex-column flex-md-row align-items-stretch align-items-md-end pb-1 mb-4 border-bottom rounded-bottom-2 gap-2 gap-md-3 gap-lg-4 gap-xl-5"
   >
-    <ng-content select="[secondaryContent]"></ng-content>
-    <app-view-toogle [(selectedView)]="viewMode" class="ms-md-auto" />
-  </div>
-</header>
+    <div class="d-flex align-items-center text-nowrap gap-2">
+      <div class="fs-1">
+        <ng-content select="i"></ng-content>
+      </div>
+      <span class="d-none d-md-inline fs-2 fw-semibold"
+        ><ng-content>Page title</ng-content></span
+      >
+      <app-file-search class="d-block d-md-none flex-grow-1" />
+    </div>
+    <div
+      class="d-flex flex-wrap flex-grow-1 justify-content-center gap-2 gap-sm-3 mx-auto mx-sm-0"
+    >
+      <ng-container *ngTemplateOutlet="secondaryContent"></ng-container>
+      <app-view-toogle [(selectedView)]="viewMode" class="ms-md-auto" />
+    </div>
+  </header>
+} @else {
+  <header
+    class="d-flex flex-wrap align-items-center pb-1 mb-4 border-bottom rounded-bottom-2 column-gap-2 column-gap-sm-3"
+  >
+    <button
+      type="button"
+      class="btn btn-link p-0 text-body d-flex align-items-center"
+      aria-label="Clear selection"
+      (click)="clearSelection()"
+    >
+      <i class="bi bi-x-lg fs-4"></i>
+    </button>
+
+    <span class="fs-2 fw-semibold me-2">
+      {{ selectedCount() }}
+      {{ selectedCount() === 1 ? "selected" : "selected" }}
+    </span>
+
+    <div class="d-flex mt-2 mb-1 mx-auto mx-sm-0 ms-sm-auto">
+      <ng-container *ngTemplateOutlet="secondaryContent"></ng-container>
+    </div>
+  </header>
+}

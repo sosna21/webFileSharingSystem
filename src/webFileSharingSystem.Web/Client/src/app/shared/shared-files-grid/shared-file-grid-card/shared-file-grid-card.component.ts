@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { HoverClassDirective } from '../../../core/directives/hover-class.directive';
 import {
@@ -14,6 +14,7 @@ import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
 import { SharedUserNameCellComponent } from '../../table-cells/shared-user-name-cell/shared-user-name-cell.component';
 import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-btn.component';
 import { UploadProgressbarComponent } from '../../table-cells/file-name-cell/upload-progressbar/upload-progressbar.component';
+import { SelectionService } from '../../../core/services/selection.service';
 import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upload-control-btns/upload-control-btns.component';
 
 @Component({
@@ -40,6 +41,7 @@ export class SharedFileGridCardComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   readonly ShareAccessMode = ShareAccessMode;
+  readonly selection = inject(SelectionService<SharedFile>);
 
   readonly file = input.required<SharedFile>();
   readonly selected = input(false);
@@ -60,7 +62,10 @@ export class SharedFileGridCardComponent {
   readonly dragLeaveCard = output<DragEvent>();
   readonly dragOverCard = output<DragEvent>();
   readonly dropCard = output<DragEvent>();
-  readonly contextMenuClick = output<{ event: MouseEvent; file: SharedFile }>();
+  readonly contextMenuClick = output<{
+    event: PointerEvent;
+    file: SharedFile;
+  }>();
   readonly stopUpload = output();
   readonly continueUpload = output();
   readonly cancelUpload = output();
@@ -68,6 +73,8 @@ export class SharedFileGridCardComponent {
   readonly isUploadInProgress = computed(
     () => this.file().fileStatus === FileStatus.Incomplete,
   );
+  readonly touchMultiSelectionActive =
+    this.selection.isTouchMultiSelectionActive;
 
   readonly canShowDropOverlay = computed(
     () =>

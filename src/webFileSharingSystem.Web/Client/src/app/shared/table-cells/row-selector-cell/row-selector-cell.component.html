@@ -1,4 +1,13 @@
-@if (file().fileStatus === FileStatus.Incomplete) {
+@if (isTouchMultiSelectionActive()) {
+  <label class="lbl-checkbox">
+    <input
+      type="checkbox"
+      [checked]="selection.selectedIds().has(file().id)"
+      disabled
+      aria-label="Select file"
+    />
+  </label>
+} @else if (file().fileStatus === FileStatus.Incomplete) {
   <app-upload-cancel-btn (click)="onCancelFilesUpload(file())" />
 } @else if (isLoading()) {
   <span data-content class="spinner-border spinner-border-sm"></span>

@@ -74,8 +74,8 @@ import { SelectionAreaComponent } from '../selection-area/selection-area.compone
     style: 'max-height: 100%; min-height: 400px',
     '(window:keydown)': 'onKeydown($event)',
     '(window:pointermove)': 'onRubberBandPointerMove($event)',
-    '(window:pointerup)': 'onRubberBandPointerUp()',
-    '(window:pointercancel)': 'onRubberBandPointerCancel()',
+    '(window:pointerup)': 'onRubberBandPointerUp($event)',
+    '(window:pointercancel)': 'onRubberBandPointerCancel($event)',
   },
 })
 export class SharedFilesTableComponent {
@@ -233,19 +233,35 @@ export class SharedFilesTableComponent {
   }
 
   onRubberBandPointerMove(event: PointerEvent) {
-    this.selection.updateRubberBandSelection(event);
+    this.selection.handlePointerMove(
+      event,
+      this.getFileIdAtPointer(event),
+      (clientX, clientY) => this.getFileIdAtPoint(clientX, clientY),
+    );
+  }
+
+  private getFileIdAtPointer(event: PointerEvent) {
+    return this.getFileIdAtPoint(event.clientX, event.clientY);
+  }
+
+  private getFileIdAtPoint(clientX: number, clientY: number) {
+    const element = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>('[data-file-id]');
+    const fileId = element?.dataset['fileId'];
+    return fileId === undefined ? undefined : Number(fileId);
   }
 
   onRubberBandScroll() {
     this.selection.updateRubberBandSelection();
   }
 
-  onRubberBandPointerUp() {
-    this.selection.endRubberBandSelection();
+  onRubberBandPointerUp(event: PointerEvent) {
+    this.selection.handlePointerUp(event);
   }
 
-  onRubberBandPointerCancel() {
-    this.selection.endRubberBandSelection();
+  onRubberBandPointerCancel(event: PointerEvent) {
+    this.selection.handlePointerCancel(event);
   }
 
   checkAllCheckBox(ev: Event) {
@@ -253,8 +269,14 @@ export class SharedFilesTableComponent {
     this.selection.toggleAll(target.checked);
   }
 
+  onFilePointerDown(file: SharedFile, event: PointerEvent) {
+    this.selection.handleFilePointerDown(event, file, (clientX, clientY) =>
+      this.getFileIdAtPoint(clientX, clientY),
+    );
+  }
+
   selectFile(file: SharedFile, event: MouseEvent) {
-    this.selection.selectFile(file, event);
+    this.selection.handleClick(file, event);
   }
 
   viewWrapperClick(event: PointerEvent) {
@@ -296,9 +318,11 @@ export class SharedFilesTableComponent {
     this.downloadService.downloadFilesWithFeedback(files);
   }
 
-  contextMenuClick(event: MouseEvent, file: SharedFile) {
+  contextMenuClick(event: PointerEvent, file: SharedFile) {
     event.preventDefault();
     event.stopPropagation();
+    if (event.pointerType != 'mouse') return;
+
     const position = { x: event.clientX, y: event.clientY };
     if (!this.selectedFiles().includes(file)) {
       this.selectedIds.set(new Set([file.id]));
@@ -406,12 +430,21 @@ export class SharedFilesTableComponent {
   readonly canWriteToDragTarget = this.dragFacade.hasMinWriteAccess;
   readonly dragPayloadNb = this.dragFacade.filesNb;
   readonly isHoverTargetATable = this.dragFacade.isHoverTargetATable;
+  readonly touchDragDisabled = this.selection.touchDragDisabled;
+  readonly touchMultiSelectionActive =
+    this.selection.isTouchMultiSelectionActive;
 
   canBeTargetDirectory(file: SharedFile) {
     return file.isDirectory && !this.isSelected(file.id);
   }
 
   onRowDragStart(event: DragEvent, file: SharedFile) {
+    if (this.selection.isTouchRangeSelectionActive()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();

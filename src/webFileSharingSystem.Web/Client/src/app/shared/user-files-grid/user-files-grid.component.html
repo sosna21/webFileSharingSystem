@@ -52,13 +52,19 @@
     <div class="file-grid gap-3 gap-xxl-4">
       @for (file of files(); track file.id) {
         <app-user-file-grid-card
+          [attr.data-file-id]="file.id"
           [file]="file"
           [selected]="isSelected(file.id)"
           [loading]="isLoading(file.id)"
           [dropTarget]="dragTarget()?.id === file.id"
           [isUserCreatedFile]="file.createdBy === currentUserId()"
           (clickCard)="selectFile(file, $event)"
-          (doubleClickCard)="file.isDirectory ? selectFolder(file.id) : null"
+          (pointerdown)="onFilePointerDown(file, $event)"
+          (doubleClickCard)="
+            file.isDirectory && !touchMultiSelectionActive()
+              ? selectFolder(file.id)
+              : null
+          "
           (clickActions)="actionIconClick($event, file)"
           (dragStartCard)="onRowDragStart($event, file)"
           (dragEndCard)="onRowDragEnd($event)"

@@ -3,7 +3,7 @@
   [class.selected]="selected()"
   [class.drop-hover]="canShowDropOverlay()"
   [class.incomplete]="file().fileStatus === FileStatus.Incomplete"
-  [draggable]="!loading()"
+  [draggable]="!loading() && !selection.touchDragDisabled()"
   (click)="clickCard.emit($event)"
   (dblclick)="doubleClickCard.emit($event)"
   (mousedown)="mouseDownCard.emit($event)"
@@ -32,13 +32,30 @@
       }
     </div>
 
-    <div data-content appHoverClass="bg-body-tertiary rounded-pill">
-      <button
-        class="btn btn-sm btn-link text-decoration-none dropdown-toggle"
-        (click)="clickActions.emit($event)"
-      >
-        <i class="bi bi-three-dots-vertical"></i>
-      </button>
+    <div
+      data-content
+      appHoverClass="bg-body-tertiary rounded-pill"
+      class="grid-action-slot"
+    >
+      @if (touchMultiSelectionActive()) {
+        <label
+          class="lbl-checkbox mb-0 d-flex align-items-center justify-content-center"
+        >
+          <input
+            type="checkbox"
+            [checked]="selection.selectedIds().has(file().id)"
+            disabled
+            aria-label="Select file"
+          />
+        </label>
+      } @else {
+        <button
+          class="btn btn-sm btn-link text-decoration-none dropdown-toggle"
+          (click)="clickActions.emit($event)"
+        >
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+      }
     </div>
   </div>
 

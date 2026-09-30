@@ -9,9 +9,9 @@ import { BaseFile } from '../../core/models/base-file.model';
 export class BaseCellDirective<T extends BaseFile> {
   file = input.required<T>();
 
-  contextMenuClick = output<{ event: MouseEvent; file: T }>();
+  contextMenuClick = output<{ event: PointerEvent; file: T }>();
 
-  onContextMenuClick(event: MouseEvent, file: T) {
+  onContextMenuClick(event: PointerEvent, file: T) {
     this.contextMenuClick.emit({ event, file });
   }
 }

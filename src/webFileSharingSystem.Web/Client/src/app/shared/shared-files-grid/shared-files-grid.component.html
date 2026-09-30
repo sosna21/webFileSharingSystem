@@ -47,6 +47,7 @@
     <div class="file-grid gap-3 gap-xxl-4">
       @for (file of files(); track file.id) {
         <app-shared-file-grid-card
+          [attr.data-file-id]="file.id"
           [file]="file"
           [selected]="isSelected(file.id)"
           [loading]="isLoading(file.id)"
@@ -54,7 +55,12 @@
           [currentUserId]="currentUserId()"
           [inRoot]="!!currentDirectoryId()"
           (clickCard)="selectFile(file, $event)"
-          (doubleClickCard)="file.isDirectory ? selectFolder(file.id) : null"
+          (pointerdown)="onFilePointerDown(file, $event)"
+          (doubleClickCard)="
+            file.isDirectory && !touchMultiSelectionActive()
+              ? selectFolder(file.id)
+              : null
+          "
           (clickActions)="actionIconClick($event, file)"
           (dragStartCard)="onRowDragStart($event, file)"
           (dragEndCard)="onRowDragEnd($event)"

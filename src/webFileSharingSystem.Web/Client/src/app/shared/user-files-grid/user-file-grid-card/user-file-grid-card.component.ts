@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import {
   NgbDropdownModule,
   NgbTooltipModule,
@@ -16,6 +16,7 @@ import { UploadProgressbarComponent } from '../../table-cells/file-name-cell/upl
 import { UploadControlBtnsComponent } from '../../table-cells/file-name-cell/upload-control-btns/upload-control-btns.component';
 import { TooltipOnOverflowDirective } from '../../../core/directives/tooltip-on-overflow.directive';
 import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-btn.component';
+import { SelectionService } from '../../../core/services/selection.service';
 
 @Component({
   selector: 'app-user-file-grid-card',
@@ -40,6 +41,7 @@ import { UploadCancelBtnComponent } from '../../upload-cancel-btn/upload-cancel-
 export class UserFileGridCardComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
+  readonly selection = inject(SelectionService<AppFile>);
 
   readonly file = input.required<AppFile>();
   readonly selected = input(false);
@@ -63,11 +65,13 @@ export class UserFileGridCardComponent {
   readonly continueUpload = output();
   readonly cancelUpload = output();
 
-  contextMenuClick = output<{ event: MouseEvent; file: AppFile }>();
+  contextMenuClick = output<{ event: PointerEvent; file: AppFile }>();
 
   readonly isUploadInProgress = computed(
     () => this.file().fileStatus === FileStatus.Incomplete,
   );
+  readonly touchMultiSelectionActive =
+    this.selection.isTouchMultiSelectionActive;
 
   readonly canShowDropOverlay = computed(
     () =>

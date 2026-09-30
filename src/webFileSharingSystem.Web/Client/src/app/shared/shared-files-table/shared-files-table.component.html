@@ -253,6 +253,7 @@
       <tr
         cdk-row
         *cdkRowDef="let file; columns: columnsToDisplay()"
+        [attr.data-file-id]="file.id"
         [attr.data-testid]="
           (file.fileStatus === FileStatus.Completed
             ? 'file-row-'
@@ -264,10 +265,17 @@
             : tableContextMenuClick($event)
         "
         [class.selected]="selectedIds().has(file.id)"
+        (pointerdown)="onFilePointerDown(file, $event)"
         (click)="selectFile(file, $event)"
-        (dblclick)="file.isDirectory ? selectFolder(file.id) : null"
+        (dblclick)="
+          file.isDirectory && !touchMultiSelectionActive()
+            ? selectFolder(file.id)
+            : null
+        "
         [class.selectable]="file.isDirectory"
-        [draggable]="!isLoading(file.id) && !isEditing(file.id)"
+        [draggable]="
+          !isLoading(file.id) && !isEditing(file.id) && !touchDragDisabled()
+        "
         (dragstart)="onRowDragStart($event, file)"
         (dragend)="onRowDragEnd($event)"
         (dragleave)="onRowDragLeave($event, file)"
