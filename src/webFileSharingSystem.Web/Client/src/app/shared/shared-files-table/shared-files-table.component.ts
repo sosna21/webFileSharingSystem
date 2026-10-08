@@ -331,9 +331,13 @@ export class SharedFilesTableComponent {
     this.openContextMenu(position);
   }
 
-  tableContextMenuClick(event: MouseEvent) {
+  tableContextMenuClick(event: PointerEvent) {
     event.preventDefault();
     event.stopPropagation();
+    if ('pointerType' in event && event.pointerType !== 'mouse') {
+      return;
+    }
+
     this.selection.clear();
     const position = { x: event.clientX, y: event.clientY };
 
@@ -400,6 +404,12 @@ export class SharedFilesTableComponent {
     this.contextMenu()?.close();
     this.tableContextMenu()?.close();
     this.contextMenuPosition.set(position);
+    this.tableContextMenu()?.open();
+  }
+
+  openTableContextMenuFromHeader() {
+    this.contextMenu()?.close();
+    this.tableContextMenu()?.close();
     this.tableContextMenu()?.open();
   }
 

@@ -1,5 +1,5 @@
 <app-base-disc-page>
-  <app-base-disc-page-header>
+  <app-base-disc-page-header (tableMenuRequested)="openTableContextMenu()">
     <i class="bi bi-hourglass-split d-flex text-warning-emphasis"></i>
     <ng-container i18n>Recent files</ng-container>
     <app-file-actions-strip secondaryContent />

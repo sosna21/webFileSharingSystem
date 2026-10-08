@@ -1,4 +1,4 @@
-import { NgStyle, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -7,19 +7,21 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { ViewMode } from '../../core/services/state.service';
+import { MobileContextMenuComponent } from '../mobile-context-menu/mobile-context-menu.component';
 
 @Component({
   selector: 'app-table-context-menu',
-  imports: [NgbDropdownModule, NgStyle, FormsModule, NgTemplateOutlet],
+  imports: [NgbDropdownModule, NgTemplateOutlet, MobileContextMenuComponent],
   templateUrl: './table-context-menu.component.html',
   styleUrl: './table-context-menu.component.scss',
 })
 export class TableContextMenuComponent {
   readonly dropdown = viewChild(NgbDropdown);
+  readonly mobileMenu = viewChild(MobileContextMenuComponent);
+  readonly mobileActionsTitle = $localize`View actions`;
   readonly position = input.required<{ x: number; y: number }>();
   readonly accessMode = input.required<ShareAccessMode | undefined>();
   readonly canPaste = input.required<boolean>();
@@ -43,12 +45,14 @@ export class TableContextMenuComponent {
 
   open() {
     this.dropdown()?.open();
+    this.mobileMenu()?.open();
   }
 
   close() {
     if (this.dropdown()?.isOpen()) {
       this.dropdown()?.close();
     }
+    this.mobileMenu()?.close();
   }
 
   uploadClicked($event: Event) {

@@ -1,6 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export class UserFilesContextMenu {
+  readonly desktopMenu: Locator;
+  readonly mobileMenu: Locator;
+
   readonly openDirectoryTrigger: Locator;
   readonly openContainingFolderTrigger: Locator;
 
@@ -21,26 +24,50 @@ export class UserFilesContextMenu {
   readonly manageUploadsTrigger: Locator;
   readonly manageFilesTrigger: Locator;
 
-  constructor(page: Page) {
-    this.openDirectoryTrigger = page.getByTestId('context-menu-open-folder');
-    this.openContainingFolderTrigger = page.getByTestId('context-menu-open-directory');
+  constructor(page: Page, menuType: 'desktop' | 'mobile' = 'desktop') {
+    this.desktopMenu = page.getByTestId('desktop-context-menu');
+    this.mobileMenu = page.getByTestId('mobile-context-menu');
 
-    this.downloadTrigger = page.getByTestId('context-menu-download');
-    this.renameTrigger = page.getByTestId('context-menu-rename');
-    this.copyTrigger = page.getByTestId('context-menu-copy');
-    this.moveTrigger = page.getByTestId('context-menu-cut');
-    this.favouriteTrigger = page.getByTestId('context-menu-favourite');
-    this.shareTrigger = page.getByTestId('context-menu-share');
-    this.manageSharesTrigger = page.getByTestId('context-menu-manage-shares');
-    this.generateShareLinkTrigger = page.getByTestId('context-menu-share-link');
-    this.deleteTrigger = page.getByTestId('context-menu-delete');
+    const container =
+      menuType === 'desktop' ? this.desktopMenu : this.mobileMenu;
 
-    this.pauseUploadTrigger = page.getByTestId('context-menu-pause-upload');
-    this.resumeUploadTrigger = page.getByTestId('context-menu-resume-upload');
-    this.cancelUploadTrigger = page.getByTestId('context-menu-cancel-upload');
+    this.openDirectoryTrigger = container.getByTestId(
+      'context-menu-open-folder',
+    );
+    this.openContainingFolderTrigger = container.getByTestId(
+      'context-menu-open-directory',
+    );
 
-    this.manageUploadsTrigger = page.getByTestId('context-menu-manage-uploads');
-    this.manageFilesTrigger = page.getByTestId('context-menu-manage-files');
+    this.downloadTrigger = container.getByTestId('context-menu-download');
+    this.renameTrigger = container.getByTestId('context-menu-rename');
+    this.copyTrigger = container.getByTestId('context-menu-copy');
+    this.moveTrigger = container.getByTestId('context-menu-cut');
+    this.favouriteTrigger = container.getByTestId('context-menu-favourite');
+    this.shareTrigger = container.getByTestId('context-menu-share');
+    this.manageSharesTrigger = container.getByTestId(
+      'context-menu-manage-shares',
+    );
+    this.generateShareLinkTrigger = container.getByTestId(
+      'context-menu-share-link',
+    );
+    this.deleteTrigger = container.getByTestId('context-menu-delete');
+
+    this.pauseUploadTrigger = container.getByTestId(
+      'context-menu-pause-upload',
+    );
+    this.resumeUploadTrigger = container.getByTestId(
+      'context-menu-resume-upload',
+    );
+    this.cancelUploadTrigger = container.getByTestId(
+      'context-menu-cancel-upload',
+    );
+
+    this.manageUploadsTrigger = container.getByTestId(
+      'context-menu-manage-uploads',
+    );
+    this.manageFilesTrigger = container.getByTestId(
+      'context-menu-manage-files',
+    );
   }
 
   async waitForVisible() {

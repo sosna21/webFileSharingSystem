@@ -1,67 +1,105 @@
-<div ngbDropdown container="body" #menu="ngbDropdown" [autoClose]="'outside'">
-  <div
-    class="position-fixed"
-    ngbDropdownToggle
-    [ngStyle]="{ left: `${position().x}px`, top: `${position().y}px` }"
-  ></div>
+<div class="d-none d-sm-block">
+  <div ngbDropdown container="body" #menu="ngbDropdown" [autoClose]="'outside'">
+    <div
+      class="position-fixed"
+      ngbDropdownToggle
+      [style.left.px]="position().x"
+      [style.top.px]="position().y"
+    ></div>
 
-  <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
-    @if (mixedFileComplition()) {
-      <button ngbDropdownItem disabled class="text-danger">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <ng-container i18n>Some files are still uploading</ng-container>
-      </button>
-
-      <div class="dropdown-divider"></div>
-
-      <div ngbDropdown #uploadsSubmenu="ngbDropdown" placement="right-top">
-        <button
-          ngbDropdownItem
-          ngbDropdownAnchor
-          (click)="uploadsSubmenu.toggle()"
-          class="d-flex"
-          data-testid="context-menu-manage-uploads"
-        >
-          <ng-container i18n>Manage uploads</ng-container>
-          <span class="ms-auto">→</span>
+    <div
+      ngbDropdownMenu
+      class="desktop-context-menu"
+      (contextmenu)="$event.preventDefault()"
+      data-testid="desktop-context-menu"
+    >
+      @if (mixedFileComplition()) {
+        <button ngbDropdownItem disabled class="text-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <ng-container i18n>Some files are still uploading</ng-container>
         </button>
 
-        <div ngbDropdownMenu>
-          <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+        <div class="dropdown-divider"></div>
+
+        <div ngbDropdown #uploadsSubmenu="ngbDropdown" placement="right-top">
+          <button
+            ngbDropdownItem
+            ngbDropdownAnchor
+            (click)="uploadsSubmenu.toggle()"
+            class="d-flex"
+            data-testid="context-menu-manage-uploads"
+          >
+            <ng-container i18n>Manage uploads</ng-container>
+            <span class="ms-auto">→</span>
+          </button>
+
+          <div ngbDropdownMenu>
+            <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+          </div>
         </div>
-      </div>
 
-      <div class="dropdown-divider"></div>
+        <div class="dropdown-divider"></div>
 
-      <div ngbDropdown #fileSubmenu="ngbDropdown" placement="right-top">
-        <button
-          ngbDropdownItem
-          ngbDropdownAnchor
-          (click)="fileSubmenu.toggle()"
-          class="d-flex"
-          data-testid="context-menu-manage-files"
-        >
-          <ng-container i18n>Manage files</ng-container>
-          <span class="ms-auto">→</span>
-        </button>
+        <div ngbDropdown #fileSubmenu="ngbDropdown" placement="right-top">
+          <button
+            ngbDropdownItem
+            ngbDropdownAnchor
+            (click)="fileSubmenu.toggle()"
+            class="d-flex"
+            data-testid="context-menu-manage-files"
+          >
+            <ng-container i18n>Manage files</ng-container>
+            <span class="ms-auto">→</span>
+          </button>
 
-        <div ngbDropdownMenu>
-          <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+          <div ngbDropdownMenu>
+            <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+          </div>
         </div>
-      </div>
-    }
+      }
 
-    @if (areAllFilesIncomplete()) {
-      <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
-    }
+      @if (areAllFilesIncomplete()) {
+        <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+      }
 
-    @if (areAllFilesComplete()) {
-      <ng-container *ngTemplateOutlet="fileActions"></ng-container>
-    }
+      @if (areAllFilesComplete()) {
+        <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+      }
+    </div>
   </div>
 </div>
 
 @let selectedFile = selectedFiles()[0];
+
+<app-mobile-context-menu #mobileMenu [title]="mobileActionsTitle">
+  <div class="mobile-context-menu-scroll p-3">
+    @if (mixedFileComplition()) {
+      <button class="btn btn-link text-danger text-start w-100" disabled>
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <ng-container i18n>Some files are still uploading</ng-container>
+      </button>
+      <div class="dropdown-divider"></div>
+      <div class="d-grid gap-0">
+        <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+      </div>
+      <div class="dropdown-divider"></div>
+      <div class="d-grid gap-0">
+        <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+      </div>
+    }
+    @if (areAllFilesIncomplete()) {
+      <div class="d-grid gap-0">
+        <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
+      </div>
+    }
+    @if (areAllFilesComplete()) {
+      <div class="d-grid gap-0">
+        <ng-container *ngTemplateOutlet="fileActions"></ng-container>
+      </div>
+    }
+  </div>
+</app-mobile-context-menu>
+
 <ng-template #uploadActions>
   @let disablePause =
     allFilesHaveSameUploadStatus() &&
@@ -73,7 +111,7 @@
 
   <button
     ngbDropdownItem
-    (click)="resumeUploadClicked(); menu.close()"
+    (click)="resumeUploadClicked(); close()"
     [disabled]="disableResume"
     data-testid="context-menu-resume-upload"
   >
@@ -86,7 +124,7 @@
 
   <button
     ngbDropdownItem
-    (click)="pauseUploadClicked(); menu.close()"
+    (click)="pauseUploadClicked(); close()"
     [disabled]="disablePause"
     data-testid="context-menu-pause-upload"
   >
@@ -96,7 +134,7 @@
 
   <button
     ngbDropdownItem
-    (click)="cancelUploadClicked(); menu.close()"
+    (click)="cancelUploadClicked(); close()"
     data-testid="context-menu-cancel-upload"
   >
     <i class="bi bi-x-circle me-2 text-danger"></i>
@@ -108,7 +146,7 @@
   @if (inSearchView() && selectedFiles().length === 1) {
     <button
       ngbDropdownItem
-      (click)="openLocation.emit(selectedFile); menu.close()"
+      (click)="openLocation.emit(selectedFile); close()"
       data-testid="context-menu-open-directory"
     >
       <i class="bi bi-box-arrow-in-up-right me-2 text-success"></i>
@@ -118,7 +156,7 @@
   @if (showOpenFolder()) {
     <button
       ngbDropdownItem
-      (click)="openFolder.emit(selectedFile); menu.close()"
+      (click)="openFolder.emit(selectedFile); close()"
       data-testid="context-menu-open-folder"
     >
       <i class="bi bi-folder2-open me-2 text-warning"></i>
@@ -128,7 +166,7 @@
 
   <button
     ngbDropdownItem
-    (click)="downloadClicked(); menu.close()"
+    (click)="downloadClicked(); close()"
     data-testid="context-menu-download"
   >
     <i class="bi bi-download me-2 text-primary"></i>
@@ -138,7 +176,7 @@
   <button
     ngbDropdownItem
     [disabled]="!canRename()"
-    (click)="rename.emit(selectedFile); menu.close()"
+    (click)="rename.emit(selectedFile); close()"
     data-testid="context-menu-rename"
   >
     <i class="bi bi-pencil me-2" [class.text-info-emphasis]="canRename()"></i>
@@ -147,7 +185,7 @@
 
   <button
     ngbDropdownItem
-    (click)="copyClicked(); menu.close()"
+    (click)="copyClicked(); close()"
     data-testid="context-menu-copy"
   >
     <i class="bi bi-files me-2 text-warning-emphasis"></i>
@@ -157,7 +195,7 @@
   <button
     ngbDropdownItem
     [disabled]="!canCut()"
-    (click)="moveClicked(); menu.close()"
+    (click)="moveClicked(); close()"
     data-testid="context-menu-cut"
   >
     <i
@@ -170,7 +208,7 @@
   <button
     ngbDropdownItem
     [disabled]="!canDelete()"
-    (click)="deleteClicked(); menu.close()"
+    (click)="deleteClicked(); close()"
     data-testid="context-menu-delete"
   >
     <i class="bi bi-trash me-2" [class.text-danger]="canDelete()"></i>

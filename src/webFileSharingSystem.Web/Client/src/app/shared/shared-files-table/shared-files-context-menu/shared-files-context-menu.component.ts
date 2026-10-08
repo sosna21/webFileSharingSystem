@@ -1,4 +1,4 @@
-import { NgStyle, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -7,7 +7,6 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { NgbDropdown, NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedFile } from '../../../core/models/shared-file.model';
 import { ShareAccessMode } from '../../../core/models/share-access-mode.model';
@@ -16,10 +15,11 @@ import {
   ProgressStatus,
 } from '../../../core/models/base-file.model';
 import { FileService } from '../../../core/services/file.service';
+import { MobileContextMenuComponent } from '../../mobile-context-menu/mobile-context-menu.component';
 
 @Component({
   selector: 'app-shared-files-context-menu',
-  imports: [NgbDropdownModule, NgStyle, FormsModule, NgTemplateOutlet],
+  imports: [NgbDropdownModule, NgTemplateOutlet, MobileContextMenuComponent],
   templateUrl: './shared-files-context-menu.component.html',
   styleUrl: './shared-files-context-menu.component.scss',
 })
@@ -32,6 +32,8 @@ export class SharedFilesContextMenuComponent {
   readonly selectedFiles = input.required<SharedFile[]>();
 
   readonly dropdown = viewChild(NgbDropdown);
+  readonly mobileMenu = viewChild(MobileContextMenuComponent);
+  readonly mobileActionsTitle = $localize`File actions`;
 
   readonly inSearchView = computed(
     () => !!this.fileService.searchedPhrase()?.trim(),
@@ -119,12 +121,14 @@ export class SharedFilesContextMenuComponent {
 
   open() {
     this.dropdown()?.open();
+    this.mobileMenu()?.open();
   }
 
   close() {
     if (this.dropdown()?.isOpen()) {
       this.dropdown()?.close();
     }
+    this.mobileMenu()?.close();
   }
 
   pauseUploadClicked() {

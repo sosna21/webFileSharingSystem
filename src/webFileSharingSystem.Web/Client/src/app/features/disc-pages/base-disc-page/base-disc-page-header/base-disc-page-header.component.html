@@ -9,16 +9,26 @@
       <div class="fs-1">
         <ng-content select="i"></ng-content>
       </div>
-      <span class="d-none d-md-inline fs-2 fw-semibold"
+      <span class="d-none d-sm-inline fs-2 fw-semibold"
         ><ng-content>Page title</ng-content></span
       >
       <app-file-search class="d-block d-md-none flex-grow-1" />
+      <button
+        type="button"
+        class="btn btn-link text-body p-1 d-inline-flex d-sm-none align-items-center"
+        aria-label="Open view actions"
+        aria-haspopup="dialog"
+        i18n-aria-label
+        (click)="tableMenuRequested.emit()"
+      >
+        <i class="bi bi-three-dots-vertical fs-4" aria-hidden="true"></i>
+      </button>
     </div>
     <div
-      class="d-flex flex-wrap flex-grow-1 justify-content-center gap-2 gap-sm-3 mx-auto mx-sm-0"
+      class="d-none d-sm-flex flex-wrap flex-grow-1 justify-content-center gap-2 gap-sm-3 mx-auto mx-sm-0"
     >
       <ng-container *ngTemplateOutlet="secondaryContent"></ng-container>
-      <app-view-toogle [(selectedView)]="viewMode" class="ms-md-auto" />
+      <app-view-toogle [(selectedView)]="viewMode" class="ms-sm-auto" />
     </div>
   </header>
 } @else {
@@ -39,7 +49,7 @@
       {{ selectedCount() === 1 ? "selected" : "selected" }}
     </span>
 
-    <div class="d-flex mt-2 mb-1 mx-auto mx-sm-0 ms-sm-auto">
+    <div class="d-none d-sm-flex mt-2 mb-1 mx-auto mx-sm-0 ms-sm-auto">
       <ng-container *ngTemplateOutlet="secondaryContent"></ng-container>
     </div>
   </header>

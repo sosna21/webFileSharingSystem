@@ -1,4 +1,4 @@
-import { NgStyle, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -7,7 +7,6 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { NgbDropdownModule, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
 import { AppFile } from '../../../core/models/app-file.model';
 import {
@@ -15,18 +14,21 @@ import {
   FileStatus,
 } from '../../../core/models/base-file.model';
 import { FileService } from '../../../core/services/file.service';
+import { MobileContextMenuComponent } from '../../mobile-context-menu/mobile-context-menu.component';
 
 @Component({
   selector: 'app-user-files-context-menu',
-  imports: [NgbDropdownModule, NgStyle, FormsModule, NgTemplateOutlet],
+  imports: [NgbDropdownModule, NgTemplateOutlet, MobileContextMenuComponent],
   templateUrl: './user-files-context-menu.component.html',
   styleUrl: './user-files-context-menu.component.scss',
 })
 export class UserFilesContextMenuComponent {
   private readonly fileService = inject(FileService);
   readonly dropdown = viewChild(NgbDropdown);
+  readonly mobileMenu = viewChild(MobileContextMenuComponent);
   readonly position = input.required<{ x: number; y: number }>();
   readonly selectedFiles = input.required<AppFile[]>();
+  readonly mobileActionsTitle = $localize`File actions`;
 
   readonly inSearchView = computed(
     () => !!this.fileService.searchedPhrase()?.trim(),
@@ -96,6 +98,7 @@ export class UserFilesContextMenuComponent {
 
   open() {
     this.dropdown()?.open();
+    this.mobileMenu()?.open();
   }
 
   private isFileShared(file: AppFile): boolean {
@@ -119,6 +122,7 @@ export class UserFilesContextMenuComponent {
     if (this.dropdown()?.isOpen()) {
       this.dropdown()?.close();
     }
+    this.mobileMenu()?.close();
   }
 
   pauseUploadClicked() {

@@ -6,100 +6,146 @@
   (change)="uploadClicked($event); fileInput.value = ''"
 />
 
-<div ngbDropdown container="body" #menu="ngbDropdown" [autoClose]="'outside'">
-  <div
-    class="position-fixed"
-    ngbDropdownToggle
-    [ngStyle]="{ left: `${position().x}px`, top: `${position().y}px` }"
-  ></div>
+<div class="d-none d-sm-block">
+  <div ngbDropdown container="body" #menu="ngbDropdown" [autoClose]="'outside'">
+    <div
+      class="position-fixed"
+      ngbDropdownToggle
+      [style.left.px]="position().x"
+      [style.top.px]="position().y"
+    ></div>
 
-  <div ngbDropdownMenu (contextmenu)="$event.preventDefault()">
-    <div ngbDropdown #viewSubmenu="ngbDropdown" placement="right-top">
-      <button
-        ngbDropdownItem
-        ngbDropdownAnchor
-        (click)="viewSubmenu.toggle()"
-        class="d-flex"
-      >
-        <i class="bi bi-eye me-2 text-secondary"></i>
-        <ng-container i18n>View</ng-container>
-        <span class="ms-auto">→</span>
-      </button>
-      <div ngbDropdownMenu>
-        <ng-container *ngTemplateOutlet="viewActions"></ng-container>
-      </div>
-    </div>
-
-    @if (sortableColumns() && sortableColumns()!.length > 0) {
-      <div ngbDropdown #sortBySubmenu="ngbDropdown" placement="right-top">
+    <div
+      ngbDropdownMenu
+      class="desktop-context-menu"
+      (contextmenu)="$event.preventDefault()"
+      data-testid="desktop-context-menu"
+    >
+      <div ngbDropdown #viewSubmenu="ngbDropdown" placement="right-top">
         <button
           ngbDropdownItem
           ngbDropdownAnchor
-          (click)="sortBySubmenu.toggle()"
+          (click)="viewSubmenu.toggle()"
           class="d-flex"
         >
-          <i class="bi bi-sort-down me-2 text-secondary"></i>
-          <ng-container i18n>Sort By</ng-container>
+          <i class="bi bi-eye me-2 text-secondary"></i>
+          <ng-container i18n>View</ng-container>
           <span class="ms-auto">→</span>
         </button>
         <div ngbDropdownMenu>
-          <ng-container *ngTemplateOutlet="sortByActions"></ng-container>
+          <ng-container *ngTemplateOutlet="viewActions"></ng-container>
         </div>
       </div>
-    }
 
-    <button ngbDropdownItem (click)="refresh.emit(); menu.close()">
-      <i class="bi bi-arrow-repeat me-2 text-primary"></i>
-      <ng-container i18n>Refresh</ng-container>
-    </button>
+      @if (sortableColumns() && sortableColumns()!.length > 0) {
+        <div ngbDropdown #sortBySubmenu="ngbDropdown" placement="right-top">
+          <button
+            ngbDropdownItem
+            ngbDropdownAnchor
+            (click)="sortBySubmenu.toggle()"
+            class="d-flex"
+          >
+            <i class="bi bi-sort-down me-2 text-secondary"></i>
+            <ng-container i18n>Sort By</ng-container>
+            <span class="ms-auto">→</span>
+          </button>
+          <div ngbDropdownMenu>
+            <ng-container *ngTemplateOutlet="sortByActions"></ng-container>
+          </div>
+        </div>
+      }
 
-    <button
-      ngbDropdownItem
-      data-testid="table-context-menu-create-folder"
-      (click)="createFolder.emit(); menu.close()"
-      [disabled]="!hasMinReadWriteAccess()"
-    >
-      <i
-        class="bi bi-folder-plus me-2"
-        [class.text-warning]="hasMinReadWriteAccess()"
-      ></i>
-      <ng-container i18n>Create Folder</ng-container>
-    </button>
-
-    <button
-      ngbDropdownItem
-      (click)="paste.emit(); menu.close()"
-      [disabled]="!hasMinReadWriteAccess() || !canPaste()"
-      data-testid="table-context-menu-paste"
-    >
-      <i
-        class="bi bi-clipboard me-2"
-        [class.text-secondary]="hasMinReadWriteAccess() && canPaste()"
-      ></i>
-      <ng-container i18n>Paste</ng-container>
-    </button>
-
-    <button
-      ngbDropdownItem
-      (click)="fileInput.click(); menu.close()"
-      [disabled]="!hasMinReadWriteAccess()"
-    >
-      <i
-        class="bi bi-upload me-2"
-        [class.text-primary]="hasMinReadWriteAccess()"
-      ></i>
-      <ng-container i18n>Upload Files</ng-container>
-    </button>
+      <ng-container *ngTemplateOutlet="tableActions"></ng-container>
+    </div>
   </div>
 </div>
 
+<app-mobile-context-menu #mobileMenu [title]="mobileActionsTitle">
+  <div class="mobile-context-menu-scroll p-3">
+    <h3 class="small text-uppercase text-secondary fw-semibold mb-2" i18n>
+      View
+    </h3>
+    <div class="d-grid gap-0">
+      <ng-container *ngTemplateOutlet="viewActions"></ng-container>
+    </div>
+    <div class="dropdown-divider"></div>
+    <h3 class="small text-uppercase text-secondary fw-semibold mb-2" i18n>
+      Actions
+    </h3>
+    <div class="d-grid gap-0">
+      <ng-container *ngTemplateOutlet="tableActions"></ng-container>
+    </div>
+    @if (sortableColumns() && sortableColumns()!.length > 0) {
+      <div class="dropdown-divider"></div>
+      <h3 class="small text-uppercase text-secondary fw-semibold mb-2" i18n>
+        Sort By
+      </h3>
+      <div class="d-grid gap-0">
+        <ng-container *ngTemplateOutlet="sortByActions"></ng-container>
+      </div>
+    }
+  </div>
+</app-mobile-context-menu>
+
+<ng-template #tableActions>
+  <button
+    ngbDropdownItem
+    class="d-flex align-items-center"
+    (click)="refresh.emit(); close()"
+  >
+    <i class="bi bi-arrow-repeat me-2 text-primary"></i>
+    <ng-container i18n>Refresh</ng-container>
+  </button>
+
+  <button
+    ngbDropdownItem
+    class="d-flex align-items-center"
+    data-testid="table-context-menu-create-folder"
+    (click)="createFolder.emit(); close()"
+    [disabled]="!hasMinReadWriteAccess()"
+  >
+    <i
+      class="bi bi-folder-plus me-2"
+      [class.text-warning]="hasMinReadWriteAccess()"
+    ></i>
+    <ng-container i18n>Create Folder</ng-container>
+  </button>
+
+  <button
+    ngbDropdownItem
+    class="d-flex align-items-center"
+    (click)="paste.emit(); close()"
+    [disabled]="!hasMinReadWriteAccess() || !canPaste()"
+    data-testid="table-context-menu-paste"
+  >
+    <i
+      class="bi bi-clipboard me-2"
+      [class.text-secondary]="hasMinReadWriteAccess() && canPaste()"
+    ></i>
+    <ng-container i18n>Paste</ng-container>
+  </button>
+
+  <button
+    ngbDropdownItem
+    class="d-flex align-items-center"
+    (click)="fileInput.click(); close()"
+    [disabled]="!hasMinReadWriteAccess()"
+  >
+    <i
+      class="bi bi-upload me-2"
+      [class.text-primary]="hasMinReadWriteAccess()"
+    ></i>
+    <ng-container i18n>Upload Files</ng-container>
+  </button>
+</ng-template>
+
 <ng-template #viewActions>
-  <button ngbDropdownItem (click)="viewMode.set('list'); menu.close()">
+  <button ngbDropdownItem (click)="viewMode.set('list'); close()">
     <i class="bi bi-list me-2 text-primary"></i>
     <ng-container i18n>Table Layout</ng-container>
   </button>
 
-  <button ngbDropdownItem (click)="viewMode.set('grid'); menu.close()">
+  <button ngbDropdownItem (click)="viewMode.set('grid'); close()">
     <i class="bi bi-grid me-2 text-primary"></i>
     <ng-container i18n>Grid Layout</ng-container>
   </button>
@@ -109,7 +155,7 @@
   @for (col of sortableColumns()!; track $index) {
     <button
       ngbDropdownItem
-      (click)="sortByColumn.emit(col.column); menu.close()"
+      (click)="sortByColumn.emit(col.column); close()"
       class="text-capitalize d-flex align-items-center gap-1"
     >
       {{ col.displayName }}

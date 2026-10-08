@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, viewChild } from '@angular/core';
 import {
   NgbCollapseModule,
   NgbPaginationModule,
@@ -34,8 +34,18 @@ export class HomeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
   readonly viewMode = inject(StateService).viewMode;
+  readonly userFilesGrid = viewChild(UserFilesGridComponent);
+  readonly userFilesTable = viewChild(UserFilesTableComponent);
 
   constructor() {
     this.selectionService.init(this.fileService.userFiles);
+  }
+
+  openTableContextMenu() {
+    if (this.viewMode() === 'grid') {
+      this.userFilesGrid()?.openTableContextMenuFromHeader();
+    } else {
+      this.userFilesTable()?.openTableContextMenuFromHeader();
+    }
   }
 }

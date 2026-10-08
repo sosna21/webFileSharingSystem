@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, output } from '@angular/core';
 import { FileSearchComponent } from '../../../../shared/layout/navbar/file-search/file-search.component';
 import { ViewToogleComponent } from '../../../../shared/view-toogle/view-toogle.component';
 import { StateService } from '../../../../core/services/state.service';
@@ -21,6 +21,7 @@ export class BaseDiscPageHeaderComponent {
   readonly selectedCount = computed(
     () => this.selection.selectedItems().length,
   );
+  readonly tableMenuRequested = output<void>();
 
   clearSelection() {
     this.selection.clear();

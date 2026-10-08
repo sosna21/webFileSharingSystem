@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, viewChild } from '@angular/core';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { SelectionService } from '../../../core/services/selection.service';
@@ -28,8 +28,18 @@ export class SharedWithMeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<SharedFile>);
   readonly viewMode = inject(StateService).viewMode;
+  readonly sharedFilesGrid = viewChild(SharedFilesGridComponent);
+  readonly sharedFilesTable = viewChild(SharedFilesTableComponent);
 
   constructor() {
     this.selectionService.init(this.fileService.sharedFiles);
+  }
+
+  openTableContextMenu() {
+    if (this.viewMode() === 'grid') {
+      this.sharedFilesGrid()?.openTableContextMenuFromHeader();
+    } else {
+      this.sharedFilesTable()?.openTableContextMenuFromHeader();
+    }
   }
 }

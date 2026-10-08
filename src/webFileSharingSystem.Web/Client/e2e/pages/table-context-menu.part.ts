@@ -1,16 +1,23 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export class TableContextMenu {
-  readonly page: Page;
+  readonly desktopMenu: Locator;
+  readonly mobileMenu: Locator;
+
   readonly createFolderItem: Locator;
   readonly pasteItem: Locator;
 
-  constructor(page: Page) {
-    this.page = page;
-    this.createFolderItem = page.getByTestId(
+  constructor(page: Page, menuType: 'desktop' | 'mobile' = 'desktop') {
+    this.desktopMenu = page.getByTestId('desktop-context-menu');
+    this.mobileMenu = page.getByTestId('mobile-context-menu');
+
+    const container =
+      menuType === 'desktop' ? this.desktopMenu : this.mobileMenu;
+
+    this.createFolderItem = container.getByTestId(
       'table-context-menu-create-folder',
     );
-    this.pasteItem = page.getByTestId('table-context-menu-paste');
+    this.pasteItem = container.getByTestId('table-context-menu-paste');
   }
 
   async clickCreateFolder() {
