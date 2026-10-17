@@ -3,7 +3,7 @@
 ></ng-template>
 @if (!isTouchMultiSelectionActive()) {
   <header
-    class="d-flex flex-column flex-md-row align-items-stretch align-items-md-end pb-1 mb-4 border-bottom rounded-bottom-2 gap-2 gap-md-3 gap-lg-4 gap-xl-5"
+    class="d-flex flex-column flex-md-row align-items-stretch align-items-md-end pb-2 mb-4 border-bottom rounded-bottom-2 gap-2 gap-md-3 gap-lg-4 gap-xl-5"
   >
     <div class="d-flex align-items-center text-nowrap gap-2">
       <div class="fs-1">
@@ -13,15 +13,14 @@
         ><ng-content>Page title</ng-content></span
       >
       <app-file-search class="d-block d-md-none flex-grow-1" />
+
       <button
-        type="button"
-        class="btn btn-link text-body p-1 d-inline-flex d-sm-none align-items-center"
+        class="btn border text-body d-sm-none shadow-sm p-1 rounded-2"
         aria-label="Open view actions"
-        aria-haspopup="dialog"
         i18n-aria-label
         (click)="tableMenuRequested.emit()"
       >
-        <i class="bi bi-three-dots-vertical fs-4" aria-hidden="true"></i>
+        <i class="bi bi-three-dots-vertical d-flex fs-4" aria-hidden="true"></i>
       </button>
     </div>
     <div
@@ -36,7 +35,6 @@
     class="d-flex flex-wrap align-items-center pb-1 mb-4 border-bottom rounded-bottom-2 column-gap-2 column-gap-sm-3"
   >
     <button
-      type="button"
       class="btn btn-link p-0 text-body d-flex align-items-center"
       aria-label="Clear selection"
       (click)="clearSelection()"
@@ -51,6 +49,33 @@
 
     <div class="d-none d-sm-flex mt-2 mb-1 mx-auto mx-sm-0 ms-sm-auto">
       <ng-container *ngTemplateOutlet="secondaryContent"></ng-container>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      @if (allFilesSelected()) {
+        <i
+          appClicableIcon
+          class="bi bi-check2-square fs-3"
+          (click)="toggleAllFiles()"
+        ></i>
+      } @else {
+        <i
+          appClicableIcon
+          class="bi bi-square fs-5"
+          (click)="toggleAllFiles()"
+        ></i>
+      }
+
+      <button
+        class="btn btn-sm border shadow-sm p-1 d-inline-flex align-items-center rounded-2"
+        aria-label="Open file actions"
+        aria-haspopup="dialog"
+        i18n-aria-label
+        [disabled]="selectedCount() === 0"
+        (click)="fileMenuRequested.emit()"
+      >
+        <i class="bi bi-three-dots-vertical d-flex fs-5" aria-hidden="true"></i>
+      </button>
     </div>
   </header>
 }

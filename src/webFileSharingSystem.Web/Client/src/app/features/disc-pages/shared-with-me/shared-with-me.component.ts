@@ -42,4 +42,12 @@ export class SharedWithMeComponent {
       this.sharedFilesTable()?.openTableContextMenuFromHeader();
     }
   }
+
+  openFileContextMenu() {
+    if (this.viewMode() === 'grid') {
+      this.sharedFilesGrid()?.openFileContextMenuFromHeader();
+    } else {
+      this.sharedFilesTable()?.openFileContextMenuFromHeader();
+    }
+  }
 }

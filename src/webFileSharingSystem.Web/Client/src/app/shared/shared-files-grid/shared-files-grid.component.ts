@@ -402,6 +402,11 @@ export class SharedFilesGridComponent {
     this.tableContextMenu()?.open();
   }
 
+  openFileContextMenuFromHeader() {
+    this.tableContextMenu()?.close();
+    this.contextMenu()?.open();
+  }
+
   private closeContextMenus() {
     this.contextMenu()?.close();
     this.tableContextMenu()?.close();

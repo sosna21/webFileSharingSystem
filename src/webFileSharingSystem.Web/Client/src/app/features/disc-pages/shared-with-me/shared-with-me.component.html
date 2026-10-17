@@ -1,5 +1,8 @@
 <app-base-disc-page>
-  <app-base-disc-page-header (tableMenuRequested)="openTableContextMenu()">
+  <app-base-disc-page-header
+    (tableMenuRequested)="openTableContextMenu()"
+    (fileMenuRequested)="openFileContextMenu()"
+  >
     <i class="bi bi-people-fill d-flex text-primary-emphasis"></i>
     <ng-container i18n>Shared with me</ng-container>
     <app-file-actions-strip secondaryContent />

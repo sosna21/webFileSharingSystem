@@ -40,4 +40,12 @@ export class FavouriteComponent {
       this.userFilesTable()?.openTableContextMenuFromHeader();
     }
   }
+
+  openFileContextMenu() {
+    if (this.viewMode() === 'grid') {
+      this.userFilesGrid()?.openFileContextMenuFromHeader();
+    } else {
+      this.userFilesTable()?.openFileContextMenuFromHeader();
+    }
+  }
 }
