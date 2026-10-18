@@ -67,18 +67,24 @@
 @let selectedFile = selectedFiles()[0];
 @let selectedFilesCount = selectedFiles().length;
 
-<app-mobile-context-menu #mobileMenu [title]="mobileActionsTitle">
+<app-mobile-context-menu
+  #mobileMenu
+  [title]="
+    mixedFileComplition() ? mobileActionsTitleTemplate : mobileActionsTitle
+  "
+>
   <div class="mobile-context-menu-scroll p-3">
     @if (mixedFileComplition()) {
-      <button class="btn btn-link text-danger text-start w-100" disabled>
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <ng-container i18n>Some files are still uploading</ng-container>
-      </button>
-      <div class="dropdown-divider"></div>
+      <h3 class="small text-uppercase text-secondary fw-semibold mb-2" i18n>
+        Uploading files
+      </h3>
       <div class="d-grid gap-0">
         <ng-container *ngTemplateOutlet="uploadActions"></ng-container>
       </div>
       <div class="dropdown-divider"></div>
+      <h3 class="small text-uppercase text-secondary fw-semibold mb-2" i18n>
+        Completed files
+      </h3>
       <div class="d-grid gap-0">
         <ng-container *ngTemplateOutlet="fileActions"></ng-container>
       </div>
@@ -95,6 +101,15 @@
     }
   </div>
 </app-mobile-context-menu>
+
+<ng-template #mobileActionsTitleTemplate>
+  <span class="d-flex flex-wrap justify-content-start align-items-center">
+    <span class="text-nowrap me-2">{{ mobileActionsTitle }}</span>
+    <span class="text-nowrap text-muted fs-6" i18n>
+      (Some files are still uploading)
+    </span>
+  </span>
+</ng-template>
 
 <ng-template #uploadActions>
   @let disablePause =

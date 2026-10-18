@@ -1,5 +1,7 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
+  computed,
   inject,
   input,
   TemplateRef,
@@ -9,7 +11,7 @@ import { NgbOffcanvas, NgbOffcanvasRef } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-mobile-context-menu',
-  imports: [],
+  imports: [NgTemplateOutlet],
   template: `
     <ng-template #offcanvasContent>
       <div
@@ -17,17 +19,18 @@ import { NgbOffcanvas, NgbOffcanvasRef } from '@ng-bootstrap/ng-bootstrap';
         data-testid="mobile-context-menu"
       >
         <div
-          class="mobile-context-menu-header d-flex align-items-center justify-content-between p-3 bg-body-tertiary border-bottom"
+          class="mobile-context-menu-header d-flex align-items-center justify-content-between p-3 bg-body-tertiary border-bottom gap-2"
         >
           <h2
             id="mobile-context-menu-title"
-            class="h5 mb-0 fw-semibold text-body-emphasis d-flex align-items-center"
+            class="h5 mb-0 fw-semibold text-body-emphasis d-flex align-items-center gap-2"
           >
-            <i
-              class="bi bi-list-check me-2 text-primary"
-              aria-hidden="true"
-            ></i>
-            {{ title() }}
+            <i class="bi bi-list-check text-primary" aria-hidden="true"></i>
+            @if (titleIsTemplate()) {
+              <ng-container *ngTemplateOutlet="templateRef()"></ng-container>
+            } @else {
+              {{ title() }}
+            }
           </h2>
           <button
             type="button"
@@ -45,7 +48,13 @@ import { NgbOffcanvas, NgbOffcanvasRef } from '@ng-bootstrap/ng-bootstrap';
 })
 export class MobileContextMenuComponent {
   private readonly offcanvas = inject(NgbOffcanvas);
-  readonly title = input.required<string>();
+  readonly title = input.required<string | TemplateRef<unknown>>();
+  protected readonly titleIsTemplate = computed(
+    () => this.title() instanceof TemplateRef,
+  );
+  protected readonly templateRef = computed(() =>
+    this.titleIsTemplate() ? (this.title() as TemplateRef<unknown>) : null,
+  );
   readonly offcanvasContent =
     viewChild.required<TemplateRef<unknown>>('offcanvasContent');
   private offcanvasRef?: NgbOffcanvasRef;
