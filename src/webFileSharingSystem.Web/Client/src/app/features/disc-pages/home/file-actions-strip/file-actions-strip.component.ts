@@ -11,6 +11,7 @@ import { ShareAccessMode } from '../../../../core/models/share-access-mode.model
 import { generateUniqueDirName } from '../../../../core/utils/file-utils';
 import { AppFile } from '../../../../core/models/app-file.model';
 import { ModalService } from '../../../../core/services/modal.service';
+import { StateService } from '../../../../core/services/state.service';
 
 @Component({
   selector: 'app-file-actions-strip',
@@ -23,12 +24,16 @@ import { ModalService } from '../../../../core/services/modal.service';
 })
 export class FileActionsStripComponent {
   private readonly fileService = inject(FileService);
-  private readonly selectionService = inject(SelectionService<BaseFile>);
+  private readonly selectionService: SelectionService<BaseFile> = inject(
+    SelectionService<BaseFile>,
+  );
 
   private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
   private readonly downloadService = inject(DownloadService);
   private readonly injector = inject(Injector);
+  private readonly viewMode = inject(StateService).viewMode;
+
   private readonly names = this.fileService.names;
   readonly showDirCreateNameInput = signal(false);
   readonly newFolderName = signal('');
@@ -79,7 +84,7 @@ export class FileActionsStripComponent {
       this.selectedFiles().length === 1 &&
       this.selectedFiles()[0].fileStatus === FileStatus.Completed &&
       (this.selectedFiles()[0].accessMode === undefined ||
-        this.selectedFiles()[0].accessMode >= ShareAccessMode.ReadWrite),
+        this.selectedFiles()[0].accessMode! >= ShareAccessMode.ReadWrite),
   );
 
   readonly canDelete = computed(
@@ -91,7 +96,7 @@ export class FileActionsStripComponent {
       (this.selectedFiles() as BaseFile[]).every(
         (file) =>
           file.accessMode === undefined ||
-          file.accessMode >= ShareAccessMode.FullAccess,
+          file.accessMode! >= ShareAccessMode.FullAccess,
       ),
   );
 
@@ -170,9 +175,30 @@ export class FileActionsStripComponent {
     });
   }
 
-  onRename() {
+  async onRename() {
     if (!this.canRename()) return;
-    this.fileService.editingId.set(this.selectedFiles()[0].id);
+
+    const file = this.selectedFiles().at(0);
+    if (!file) return;
+
+    //Grid does not support inline rename, so we use modal
+    if (this.viewMode() === 'grid') {
+      const newFileName = await this.modalService.getNewFileName({
+        startName: file.fileName,
+        blacklistedNames: new Set(
+          [...this.fileService.names()].filter(
+            (name) => name !== file.fileName,
+          ),
+        ),
+      });
+
+      if (!newFileName) return;
+      if (newFileName === file.fileName) return;
+
+      this.fileService.renameFileWithFeedback(file, newFileName);
+    } else {
+      this.fileService.editingId.set(this.selectedFiles()[0].id);
+    }
   }
 
   onShare() {
