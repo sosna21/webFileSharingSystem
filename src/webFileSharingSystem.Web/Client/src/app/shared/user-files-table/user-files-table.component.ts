@@ -5,6 +5,7 @@ import {
   Component,
   computed,
   ElementRef,
+  effect,
   inject,
   Injector,
   signal,
@@ -104,6 +105,10 @@ export class UserFilesTableComponent {
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
+    effect(() => {
+      this.fileService.parentId();
+      this.scrollContainer()?.nativeElement.scrollTo({ top: 0 });
+    });
   }
 
   toggleSort(column: string) {

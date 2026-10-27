@@ -5,6 +5,7 @@ import {
   Component,
   computed,
   ElementRef,
+  effect,
   inject,
   signal,
   TrackByFunction,
@@ -105,6 +106,10 @@ export class SharedFilesTableComponent {
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
+    effect(() => {
+      this.fileService.parentId();
+      this.scrollContainer()?.nativeElement.scrollTo({ top: 0 });
+    });
   }
 
   toggleSort(column: string) {
