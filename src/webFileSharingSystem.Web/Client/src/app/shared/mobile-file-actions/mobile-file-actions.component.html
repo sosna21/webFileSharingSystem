@@ -1,0 +1,84 @@
+<div
+  class="mobile-action-group d-flex flex-column"
+  [class.actions-hidden]="actionsHidden()"
+  [attr.aria-hidden]="actionsHidden()"
+  [attr.inert]="actionsHidden() ? '' : null"
+  role="group"
+  aria-label="File actions"
+  i18n-aria-label
+  (pointerdown)="$event.stopPropagation()"
+>
+  @if (canDownload()) {
+    <div class="action-item">
+      <button
+        type="button"
+        class="btn btn-primary rounded-circle shadow"
+        aria-label="Download"
+        i18n-aria-label
+        (pointerup)="$event.stopPropagation()"
+        (click)="downloadFiles()"
+      >
+        <i class="bi bi-download" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+
+  @if (canCreateDirectory()) {
+    <div class="action-item">
+      <button
+        type="button"
+        class="btn btn-warning rounded-circle shadow"
+        aria-label="Create folder"
+        i18n-aria-label
+        (click)="createFolder()"
+      >
+        <i class="bi bi-folder-plus" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+
+  @if (canPaste()) {
+    <div class="action-item paste-action-wrapper position-relative">
+      <button
+        type="button"
+        class="btn btn-secondary rounded-circle shadow"
+        aria-label="Paste"
+        i18n-aria-label
+        (click)="pasteFiles()"
+      >
+        <i class="bi bi-clipboard" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="clear-action btn btn-danger rounded-circle shadow-sm"
+        aria-label="Clear pending copy or move"
+        i18n-aria-label
+        (click)="clearPendingAction()"
+      >
+        <i class="bi bi-x" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+
+  @if (canUpload()) {
+    <div class="action-item">
+      <button
+        type="button"
+        class="btn btn-info rounded-circle shadow"
+        aria-label="Upload files"
+        i18n-aria-label
+        (click)="openUploadPicker()"
+      >
+        <i class="bi bi-upload" aria-hidden="true"></i>
+      </button>
+      <input
+        #uploadInput
+        type="file"
+        class="d-none"
+        multiple
+        (change)="uploadFiles($event)"
+        aria-hidden="true"
+      />
+    </div>
+  }
+</div>

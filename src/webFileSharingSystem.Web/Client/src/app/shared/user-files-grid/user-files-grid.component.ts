@@ -37,6 +37,7 @@ import { ModalService } from '../../core/services/modal.service';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
+import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
 
 @Component({
   selector: 'app-user-files-grid',
@@ -56,6 +57,7 @@ import { SelectionAreaComponent } from '../selection-area/selection-area.compone
     UploadOverlayComponent,
     TableContextMenuComponent,
     SelectionAreaComponent,
+    MobileFileActionsComponent,
   ],
   providers: [GridSelectionService<AppFile>],
   templateUrl: './user-files-grid.component.html',

@@ -37,6 +37,7 @@ import { SharedFileGridCardComponent } from './shared-file-grid-card/shared-file
 import { AuthenticationService } from '../../core/services/authentication.service';
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
+import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
 
 @Component({
   selector: 'app-shared-files-grid',
@@ -51,6 +52,7 @@ import { SelectionAreaComponent } from '../selection-area/selection-area.compone
     TableContextMenuComponent,
     SharedFileGridCardComponent,
     SelectionAreaComponent,
+    MobileFileActionsComponent,
   ],
   providers: [GridSelectionService<SharedFile>],
   templateUrl: './shared-files-grid.component.html',

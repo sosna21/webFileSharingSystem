@@ -35,6 +35,7 @@
   (pointerup)="viewWrapperClick($event)"
   (contextmenu)="tableContextMenuClick($event)"
 >
+  <app-mobile-file-actions [scrollContainer]="scrollContainer" />
   <div
     #scrollContainer
     data-testid="files-drop-area"

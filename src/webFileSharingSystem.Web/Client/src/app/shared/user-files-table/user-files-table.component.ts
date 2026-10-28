@@ -45,6 +45,7 @@ import { SortableHeaderComponent } from '../sortable-header/sortable-header.comp
 import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
+import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
 
 @Component({
   selector: 'app-user-files-table',
@@ -68,6 +69,7 @@ import { SelectionAreaComponent } from '../selection-area/selection-area.compone
     SortableHeaderComponent,
     TooltipOnOverflowDirective,
     SelectionAreaComponent,
+    MobileFileActionsComponent,
   ],
   templateUrl: './user-files-table.component.html',
   styleUrl: './user-files-table.component.scss',
