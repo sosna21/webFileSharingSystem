@@ -1,0 +1,46 @@
+.share-list-shell {
+  min-height: 30dvh;
+  max-height: 55dvh;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
+}
+
+.table-responsive {
+  min-height: 30dvh;
+}
+
+.share-cards {
+  min-width: 0;
+}
+
+.share-card {
+  min-width: 0;
+}
+
+.share-edit-action {
+  color: var(--bs-dark);
+  background-color: var(--bs-warning);
+  border-color: var(--bs-warning);
+}
+
+.share-revoke-action {
+  color: var(--bs-white);
+  background-color: var(--bs-danger);
+  border-color: var(--bs-danger);
+}
+
+:host-context([data-bs-theme="dark"]) {
+  .share-edit-action {
+    color: var(--bs-warning);
+    background-color: transparent;
+    border-color: var(--bs-warning);
+  }
+
+  .share-revoke-action {
+    color: var(--bs-danger);
+    background-color: transparent;
+    border-color: var(--bs-danger);
+  }
+}

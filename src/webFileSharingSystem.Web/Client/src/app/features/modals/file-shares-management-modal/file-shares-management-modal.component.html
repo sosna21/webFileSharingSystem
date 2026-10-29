@@ -27,110 +27,182 @@
     </button>
   </div>
   <hr />
-  <div
-    class="table-responsive p-3 rounded"
-    data-testid="file-shares-management-modal-table-wrapper"
-    style="
-      min-height: 30dvh;
-      background-color: rgba(var(--bs-secondary-rgb), 0.1);
-    "
-  >
-    <div class="table-scroll-container overflow-auto h-100">
-      @if (sharesResource.isLoading()) {
-        <div class="d-grid h-100 justify-content-center align-items-center">
-          <div
-            class="spinner-border ms-aut"
-            role="status"
-            data-testid="file-shares-management-modal-loading"
-          >
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      } @else if (sharesResource.hasValue()) {
-        <table
-          class="table table-sm table-hover mb-0"
-          data-testid="file-shares-management-modal-table"
+  <div class="share-list-shell">
+    @if (sharesResource.isLoading()) {
+      <div class="d-grid h-100 justify-content-center align-items-center">
+        <div
+          class="spinner-border ms-aut"
+          role="status"
+          data-testid="file-shares-management-modal-loading"
         >
-          <thead class="sticky-top">
-            <tr>
-              <th scope="col"></th>
-              <th scope="col" i18n>Shared with:</th>
-              <th scope="col" i18n>Access mode:</th>
-              <th scope="col" i18n>Valid until:</th>
-              <th scope="col" width="25%" i18n>Action:</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of shareRows(); track row.share.shareId) {
-              <tr
-                class="align-bottom"
-                [attr.data-testid]="
-                  'file-shares-management-modal-row-' + row.share.shareId
-                "
-              >
-                <td>
-                  <i
-                    appClicableIcon
-                    [class]="
-                      row.canCancel
-                        ? 'bi bi-x-circle text-danger fs-5'
-                        : 'bi bi-x-circle text-secondary fs-5 opacity-50'
-                    "
-                    [attr.aria-disabled]="!row.canCancel"
-                    [attr.tabindex]="row.canCancel ? 0 : -1"
-                    [attr.data-testid]="
-                      'file-shares-management-modal-cancel-share-' +
-                      row.share.shareId
-                    "
-                    (click)="row.canCancel && deleteShare(row.share)"
-                    [ngbTooltip]="
-                      row.canCancel ? cancelShare : cancelExpiredShare
-                    "
-                    i18n-ngbTooltip
-                    [openDelay]="300"
-                  ></i>
-                </td>
-                <td>
-                  {{ row.share.sharedWithUserName }}
-                </td>
-                <td>
-                  {{ getAccessModeName(row.share.accessMode) }}
-                </td>
-                <td>
-                  <span
-                    [class]="
-                      row.status === 'expired'
-                        ? 'text-danger fw-semibold'
-                        : row.status === 'expiring-soon'
-                          ? 'text-warning fw-semibold'
-                          : ''
-                    "
-                  >
-                    {{ row.validUntilLabel }}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    class="btn btn-sm btn-outline-warning w-100"
-                    [attr.data-testid]="
-                      'file-shares-management-modal-edit-share-' +
-                      row.share.shareId
-                    "
-                    [disabled]="!row.canEdit"
-                    [ngbTooltip]="row.canEdit ? editShare : editExpiredShare"
-                    [openDelay]="300"
-                    (click)="openEditShareModal(row.share)"
-                    i18n
-                  >
-                    Edit
-                  </button>
-                </td>
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    } @else if (sharesResource.hasValue()) {
+      <div
+        class="table-responsive p-3 rounded d-none d-lg-block"
+        data-testid="file-shares-management-modal-table-wrapper"
+      >
+        <div class="table-scroll-container overflow-auto h-100">
+          <table
+            class="table table-sm table-hover mb-0"
+            data-testid="file-shares-management-modal-table"
+          >
+            <thead class="sticky-top">
+              <tr>
+                <th scope="col"></th>
+                <th scope="col" i18n>Shared with:</th>
+                <th scope="col" i18n>Access mode:</th>
+                <th scope="col" i18n>Valid until:</th>
+                <th scope="col" width="25%" i18n>Action:</th>
               </tr>
-            }
-          </tbody>
-        </table>
-      }
-    </div>
+            </thead>
+            <tbody>
+              @for (row of shareRows(); track row.share.shareId) {
+                <tr
+                  class="align-bottom"
+                  [attr.data-testid]="
+                    'file-shares-management-modal-row-' + row.share.shareId
+                  "
+                >
+                  <td>
+                    <i
+                      appClicableIcon
+                      [class]="
+                        row.canCancel
+                          ? 'bi bi-x-circle text-danger fs-5'
+                          : 'bi bi-x-circle text-secondary fs-5 opacity-50'
+                      "
+                      [attr.aria-disabled]="!row.canCancel"
+                      [attr.tabindex]="row.canCancel ? 0 : -1"
+                      [attr.data-testid]="
+                        'file-shares-management-modal-cancel-share-' +
+                        row.share.shareId
+                      "
+                      (click)="row.canCancel && deleteShare(row.share)"
+                      [ngbTooltip]="
+                        row.canCancel ? cancelShare : cancelExpiredShare
+                      "
+                      i18n-ngbTooltip
+                      [openDelay]="300"
+                    ></i>
+                  </td>
+                  <td>
+                    {{ row.share.sharedWithUserName }}
+                  </td>
+                  <td>
+                    {{ getAccessModeName(row.share.accessMode) }}
+                  </td>
+                  <td>
+                    <span
+                      [class]="
+                        row.status === 'expired'
+                          ? 'text-danger fw-semibold'
+                          : row.status === 'expiring-soon'
+                            ? 'text-warning fw-semibold'
+                            : ''
+                      "
+                    >
+                      {{ row.validUntilLabel }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-sm share-edit-action w-100"
+                      [attr.data-testid]="
+                        'file-shares-management-modal-edit-share-' +
+                        row.share.shareId
+                      "
+                      [disabled]="!row.canEdit"
+                      (click)="openEditShareModal(row.share)"
+                      i18n
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div
+        class="share-cards d-lg-none d-grid gap-3 p-2 rounded"
+        data-testid="file-shares-management-modal-cards"
+      >
+        @for (row of shareRows(); track row.share.shareId) {
+          <article
+            class="share-card p-3 border rounded bg-body"
+            [attr.data-testid]="
+              'file-shares-management-modal-card-' + row.share.shareId
+            "
+          >
+            <div class="mb-3">
+              <div class="small text-secondary" i18n>Recipient</div>
+              <div class="fw-semibold text-break">
+                {{ row.share.sharedWithUserName }}
+              </div>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <div class="small text-secondary" i18n>Permission</div>
+                <div class="text-break">
+                  {{ getAccessModeName(row.share.accessMode) }}
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="small text-secondary" i18n>Expiration</div>
+                <div
+                  class="text-break"
+                  [class]="
+                    row.status === 'expired'
+                      ? 'text-danger fw-semibold'
+                      : row.status === 'expiring-soon'
+                        ? 'text-warning fw-semibold'
+                        : ''
+                  "
+                >
+                  {{ row.validUntilLabel }}
+                </div>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="btn btn-sm share-edit-action flex-fill"
+                [attr.data-testid]="
+                  'file-shares-management-modal-mobile-edit-share-' +
+                  row.share.shareId
+                "
+                [disabled]="!row.canEdit"
+                [attr.aria-label]="row.canEdit ? editShare : editExpiredShare"
+                (click)="openEditShareModal(row.share)"
+                i18n
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm share-revoke-action flex-fill"
+                [attr.data-testid]="
+                  'file-shares-management-modal-mobile-cancel-share-' +
+                  row.share.shareId
+                "
+                [disabled]="!row.canCancel"
+                [attr.aria-label]="
+                  row.canCancel ? cancelShare : cancelExpiredShare
+                "
+                (click)="row.canCancel && deleteShare(row.share)"
+                i18n
+              >
+                Revoke
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
   </div>
 </div>
 <div class="modal-footer" data-testid="file-shares-management-modal-footer">
