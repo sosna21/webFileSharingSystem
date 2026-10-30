@@ -1,10 +1,10 @@
-<nav aria-label="breadcrumb">
+<nav #breadcrumbContainer aria-label="breadcrumb">
   <ol class="breadcrumb m-0">
-    @for (breadcrumb of breadCrumbs(); track breadcrumb.id) {
+    @for (breadcrumb of visibleBreadCrumbs(); track breadcrumb.id ?? "root") {
       <li class="breadcrumb-item my-1" data-testid="breadcrumb-item">
         @if (!$last) {
           <a
-            class="px-2 py-1"
+            class="breadcrumb-link px-2 py-1"
             (drop)="onDrop($event, breadcrumb)"
             (dragenter)="onDragEnter($event, breadcrumb)"
             (dragover)="onDragOver($event)"
@@ -17,15 +17,98 @@
             [routerLink]="['/disc/home/folder', breadcrumb.id]"
             (click)="selectFolder(breadcrumb.id)"
           >
-            <ng-container
-              *ngTemplateOutlet="
-                breadCrumbCore;
-                context: { $implicit: breadcrumb, first: $first }
-              "
-            ></ng-container>
+            <span class="breadcrumb-text">
+              <ng-container
+                *ngTemplateOutlet="
+                  breadCrumbCore;
+                  context: { $implicit: breadcrumb, first: $first }
+                "
+              ></ng-container>
+            </span>
           </a>
         } @else {
-          <span class="px-2 py-1 text-warning-emphasis">
+          <span class="breadcrumb-link px-2 py-1 text-warning-emphasis">
+            <span class="breadcrumb-text">
+              <ng-container
+                *ngTemplateOutlet="
+                  breadCrumbCore;
+                  context: { $implicit: breadcrumb, first: $first }
+                "
+              ></ng-container>
+            </span>
+          </span>
+        }
+      </li>
+      @if ($first && hasHiddenBreadCrumbs()) {
+        <li class="breadcrumb-item breadcrumb-ellipsis-item my-1">
+          <div
+            #hiddenFoldersDropdown="ngbDropdown"
+            ngbDropdown
+            container="body"
+            [autoClose]="'outside'"
+          >
+            <button
+              type="button"
+              class="breadcrumb-link breadcrumb-ellipsis px-2 py-1"
+              ngbDropdownToggle
+              (dragenter)="
+                onHiddenDropdownDragEnter($event, hiddenFoldersDropdown)
+              "
+              (dragover)="onDragOver($event)"
+              aria-label="Show hidden folders"
+            >
+              …
+            </button>
+            <div ngbDropdownMenu class="breadcrumb-dropdown-menu">
+              @for (
+                hiddenBreadcrumb of hiddenBreadCrumbs();
+                track hiddenBreadcrumb.id ?? "root"
+              ) {
+                <button
+                  type="button"
+                  ngbDropdownItem
+                  class="breadcrumb-link breadcrumb-dropdown-item"
+                  [class.bg-secondary]="
+                    dragOverBreadcrumbId() === hiddenBreadcrumb.id
+                  "
+                  [class.bg-opacity-25]="
+                    dragOverBreadcrumbId() === hiddenBreadcrumb.id
+                  "
+                  [class.rounded-pill]="
+                    dragOverBreadcrumbId() === hiddenBreadcrumb.id
+                  "
+                  (drop)="onDrop($event, hiddenBreadcrumb)"
+                  (dragenter)="onDragEnter($event, hiddenBreadcrumb)"
+                  (dragover)="onDragOver($event)"
+                  (dragleave)="onDragLeave($event, hiddenBreadcrumb)"
+                  (click)="
+                    selectHiddenFolder(hiddenBreadcrumb, hiddenFoldersDropdown)
+                  "
+                >
+                  <span class="breadcrumb-text">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        breadCrumbCore;
+                        context: { $implicit: hiddenBreadcrumb, first: false }
+                      "
+                    ></ng-container>
+                  </span>
+                </button>
+              }
+            </div>
+          </div>
+        </li>
+      }
+    }
+  </ol>
+</nav>
+
+<div #measurementContainer class="breadcrumb-measurement" aria-hidden="true">
+  <ol class="breadcrumb m-0">
+    @for (breadcrumb of breadCrumbs(); track breadcrumb.id ?? "root") {
+      <li class="breadcrumb-item my-1" data-breadcrumb-measurement-item>
+        <span class="breadcrumb-link px-2 py-1">
+          <span class="breadcrumb-text">
             <ng-container
               *ngTemplateOutlet="
                 breadCrumbCore;
@@ -33,11 +116,14 @@
               "
             ></ng-container>
           </span>
-        }
+        </span>
       </li>
     }
+    <li class="breadcrumb-item my-1" data-breadcrumb-measurement-ellipsis>
+      <span class="breadcrumb-link breadcrumb-ellipsis px-2 py-1">…</span>
+    </li>
   </ol>
-</nav>
+</div>
 
 <ng-template #breadCrumbCore let-breadcrumb let-first="first">
   @if (first) {

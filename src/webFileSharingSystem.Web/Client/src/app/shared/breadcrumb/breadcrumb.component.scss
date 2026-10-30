@@ -1,0 +1,130 @@
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+
+:host {
+  min-width: 0;
+  overflow: hidden;
+}
+
+nav {
+  min-width: 0;
+  width: 100%;
+}
+
+.breadcrumb {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  flex-wrap: nowrap;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  flex: 0 1 auto;
+}
+
+.breadcrumb-ellipsis-item {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.breadcrumb-link {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}
+
+.breadcrumb-dropdown-item {
+  color: var(--bs-link-color) !important;
+  text-decoration: underline;
+  width: 100%;
+  overflow: hidden;
+}
+
+.breadcrumb-dropdown-menu {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 95vw;
+}
+
+.breadcrumb-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-ellipsis {
+  flex: 0 0 auto;
+  min-width: 2rem;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.breadcrumb-measurement {
+  position: absolute;
+  z-index: -1;
+  width: max-content;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.breadcrumb-measurement .breadcrumb {
+  overflow: visible;
+  flex-wrap: nowrap;
+}
+
+.breadcrumb-measurement .breadcrumb-item {
+  flex: 0 0 auto;
+  max-width: none;
+}
+
+.breadcrumb-measurement .breadcrumb-link,
+.breadcrumb-measurement .breadcrumb-text {
+  max-width: none;
+}
+
+@include media-breakpoint-down(sm) {
+  :host {
+    padding: 0.25rem !important;
+    min-height: 0 !important;
+  }
+
+  .breadcrumb {
+    font-size: 0.9rem;
+  }
+
+  .breadcrumb-dropdown-menu {
+    font-size: 0.9rem;
+  }
+
+  .breadcrumb-item {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .breadcrumb-link {
+    padding: 0.25rem 0.4rem !important;
+  }
+
+  .breadcrumb-item + .breadcrumb-item::before {
+    padding-right: 0.25rem;
+    padding-left: 0.25rem;
+  }
+
+  .breadcrumb-item + .breadcrumb-item {
+    padding-left: 0;
+  }
+}
