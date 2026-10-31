@@ -681,14 +681,22 @@ export class FileService {
     directoryName: string,
     onSuccess?: (id: number) => void,
   ) {
+    const requestMode = this.mode();
+    const requestParentId = this.parentId();
+
     this.fileApiService
-      .createDirectory(directoryName, this.parentId())
+      .createDirectory(directoryName, requestParentId)
       .subscribe({
         next: (response) => {
-          // Optimistic update: add the new directory to the local list immediately
-          const currentMode = this.mode();
+          if (
+            this.mode() !== requestMode ||
+            this.parentId() !== requestParentId
+          ) {
+            return;
+          }
 
-          if (currentMode === 'GetSharedWithMe') {
+          // Optimistic update: add the new directory to the local list immediately
+          if (requestMode === 'GetSharedWithMe') {
             const optimisticSharedFile: SharedFile = {
               ...(response as SharedFile),
               fileStatus: FileStatus.Completed,
@@ -922,6 +930,9 @@ export class FileService {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
 
+    const requestMode = this.mode();
+    const requestParentId = this.parentId();
+
     files.forEach((file) => this.setLoading(file.id, true));
 
     const fileIds = files.map((f) => f.id);
@@ -930,11 +941,17 @@ export class FileService {
     operation(fileIds, targetDirectoryId)
       .subscribe({
         next: (result) => {
+          if (
+            this.mode() !== requestMode ||
+            this.parentId() !== requestParentId
+          ) {
+            return;
+          }
+
           const resultFiles = result as unknown as (AppFile | SharedFile)[];
 
-          if (targetDirectoryId === this.parentId()) {
-            const currentMode = this.mode();
-            if (currentMode === 'GetSharedWithMe') {
+          if (targetDirectoryId === requestParentId) {
+            if (requestMode === 'GetSharedWithMe') {
               const optimisticSharedFiles: SharedFile[] = resultFiles.map(
                 (r) => ({
                   ...(r as SharedFile),
@@ -962,7 +979,7 @@ export class FileService {
               ]);
             }
           } else if (operationName === 'move') {
-            if (this.mode() === 'GetSharedWithMe') {
+            if (requestMode === 'GetSharedWithMe') {
               this._sharedFiles.update((list) =>
                 list.filter((f) => !fileIds.includes(f.id)),
               );
@@ -973,7 +990,7 @@ export class FileService {
             }
           }
 
-          if (onSuccess && targetDirectoryId === this.parentId()) {
+          if (onSuccess && targetDirectoryId === requestParentId) {
             onSuccess(new Set(resultFiles.map((f) => f.id)));
           }
 
@@ -991,7 +1008,7 @@ export class FileService {
           this.toast.show($localize`Success`, message, MessageSeverity.success);
           this.clearActionContext();
 
-          if (operationName === 'copy' && this.mode() !== 'GetSharedWithMe') {
+          if (operationName === 'copy' && requestMode !== 'GetSharedWithMe') {
             this.storage.updateCurrentUserUsedSpace(
               resultFiles.reduce((acc, file) => acc + file.size, 0),
             );
