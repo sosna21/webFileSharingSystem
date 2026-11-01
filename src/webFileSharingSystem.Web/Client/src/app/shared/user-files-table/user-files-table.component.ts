@@ -46,6 +46,7 @@ import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-ove
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
+import { StorageService } from '../../core/services/storage.service';
 
 @Component({
   selector: 'app-user-files-table',
@@ -95,6 +96,7 @@ export class UserFilesTableComponent {
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly storageService = inject(StorageService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -388,7 +390,8 @@ export class UserFilesTableComponent {
   }
 
   refresh() {
-    location.reload();
+    this.fileService.currentResource().reload();
+    this.storageService.refresh();
   }
 
   pasteFiles() {

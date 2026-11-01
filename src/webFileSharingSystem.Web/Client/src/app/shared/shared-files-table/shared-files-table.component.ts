@@ -45,6 +45,7 @@ import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-ove
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
+import { StorageService } from '../../core/services/storage.service';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -92,6 +93,7 @@ export class SharedFilesTableComponent {
   private readonly modalService = inject(ModalService);
   private readonly toast = inject(ToastService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly storageService = inject(StorageService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(
@@ -362,7 +364,8 @@ export class SharedFilesTableComponent {
   }
 
   refresh() {
-    location.reload();
+    this.fileService.currentResource().reload();
+    this.storageService.refresh();
   }
 
   pasteFiles() {

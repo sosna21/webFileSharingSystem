@@ -34,5 +34,5 @@ export class BaseDiscPageComponent {
 
   fileResource = this.fileService.currentResource;
 
-  loadingData = computed(() => this.fileResource().status() === 'loading');
+  loadingData = computed(() => this.fileResource().isLoading());
 }
