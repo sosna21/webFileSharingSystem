@@ -154,16 +154,19 @@ export class FileService {
     direction: 'asc' | 'desc';
   } | null>(null);
 
-  public toggleSort(column: string) {
+  public toggleSort(column: string, descendingFirst = false) {
     this.sortOption.update((current) => {
       if (current?.column === column) {
-        if (current.direction === 'asc') {
-          return { column, direction: 'desc' };
-        } else {
-          return null;
+        if (descendingFirst) {
+          return current.direction === 'desc'
+            ? { column, direction: 'asc' }
+            : null;
         }
+        return current.direction === 'asc'
+          ? { column, direction: 'desc' }
+          : null;
       }
-      return { column, direction: 'asc' };
+      return { column, direction: descendingFirst ? 'desc' : 'asc' };
     });
   }
 

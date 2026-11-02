@@ -48,6 +48,8 @@ import { SelectionAreaComponent } from '../selection-area/selection-area.compone
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
 import { StorageService } from '../../core/services/storage.service';
 
+const descendingFirstSortColumns = new Set(['favourite', 'share', 'size']);
+
 @Component({
   selector: 'app-user-files-table',
   imports: [
@@ -116,7 +118,10 @@ export class UserFilesTableComponent {
   }
 
   toggleSort(column: string) {
-    this.fileService.toggleSort(column);
+    this.fileService.toggleSort(
+      column,
+      descendingFirstSortColumns.has(column),
+    );
   }
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([

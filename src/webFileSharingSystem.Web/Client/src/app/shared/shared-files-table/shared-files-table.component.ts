@@ -47,6 +47,8 @@ import { SelectionAreaComponent } from '../selection-area/selection-area.compone
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
 import { StorageService } from '../../core/services/storage.service';
 
+const descendingFirstSortColumns = new Set(['size']);
+
 @Component({
   selector: 'app-shared-files-table',
   imports: [
@@ -117,7 +119,10 @@ export class SharedFilesTableComponent {
   }
 
   toggleSort(column: string) {
-    this.fileService.toggleSort(column);
+    this.fileService.toggleSort(
+      column,
+      descendingFirstSortColumns.has(column),
+    );
   }
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
