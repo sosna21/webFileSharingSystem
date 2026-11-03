@@ -7,6 +7,23 @@
   background-color: rgba(var(--bs-secondary-rgb), 0.1);
 }
 
+.empty-share-state {
+  min-height: 30dvh;
+}
+
+.empty-share-icon {
+  font-size: 3rem;
+}
+
+.empty-share-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.empty-share-description {
+  font-size: 0.875rem;
+}
+
 .table-responsive {
   min-height: 30dvh;
 }

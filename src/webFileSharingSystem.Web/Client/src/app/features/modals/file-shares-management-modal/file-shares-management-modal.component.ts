@@ -11,6 +11,7 @@ import { AddShareRequest } from '../../../core/models/add-share-request.model';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { ShareClockService } from '../../../core/services/share-clock.service';
+import { FileService } from '../../../core/services/file.service';
 
 const EXPIRING_SOON_THRESHOLD_MS = 10 * 60 * 1000;
 
@@ -41,6 +42,7 @@ export class FileSharesManagementModalComponent {
   private readonly toast = inject(ToastService);
   private readonly injector = inject(Injector);
   private readonly shareClock = inject(ShareClockService);
+  private readonly fileService = inject(FileService);
 
   readonly cancelShare = $localize`Cancel share`;
   readonly cancelExpiredShare = $localize`Cannot cancel expired share`;
@@ -117,6 +119,13 @@ export class FileSharesManagementModalComponent {
           this.sharesResource.value.update((shares) =>
             shares ? [share, ...shares] : [share],
           );
+          this.updateSharedFileMetadata([
+            share,
+            ...(this.sharesResource.value() ?? []).filter(
+              (existingShare) =>
+                String(existingShare.shareId) !== String(share.shareId),
+            ),
+          ]);
           this.toast.show(
             $localize`File Shared`,
             $localize`File “${this.sharedFile()!.fileName}” shared successfully with user “${share.sharedWithUserName}”.`,
@@ -149,6 +158,7 @@ export class FileSharesManagementModalComponent {
     this.activeModal.update({ modalDialogClass: '' });
     if (!editedShare) return;
     this.updateShareIfExists(editedShare);
+    this.updateSharedFileMetadata(this.sharesResource.value() ?? []);
   }
 
   deleteShare(share: Share) {
@@ -164,16 +174,45 @@ export class FileSharesManagementModalComponent {
   }
 
   private deleteFromShareDataIfExists(share: Share) {
-    this.sharesResource.value.update((shares) =>
-      shares ? shares.filter((s) => s.shareId !== share.shareId) : [],
+    const remainingShares = (this.sharesResource.value() ?? []).filter(
+      (existingShare) =>
+        String(existingShare.shareId) !== String(share.shareId),
     );
+    this.sharesResource.value.set(remainingShares);
+    this.updateSharedFileMetadata(remainingShares);
+  }
+
+  private updateSharedFileMetadata(shares: Share[]) {
+    const sharedFile = this.sharedFile();
+    if (!sharedFile) return;
+
+    const indefiniteShareExists = shares.some(
+      (share) => share.validUntil === null,
+    );
+    const latestValidUntil = shares.reduce<string | null>((latest, share) => {
+      if (!share.validUntil) return latest;
+      if (!latest || Date.parse(share.validUntil) > Date.parse(latest)) {
+        return share.validUntil;
+      }
+      return latest;
+    }, null);
+
+    const updates = {
+      isShared: shares.length > 0,
+      sharedUntil: indefiniteShareExists ? null : latestValidUntil,
+    };
+
+    this.sharedFile.set({ ...sharedFile, ...updates });
+    this.fileService.updateFile(sharedFile, updates);
   }
 
   private updateShareIfExists(updatedShare: Share) {
     this.sharesResource.value.update((shares) =>
       shares
         ? shares.map((share) =>
-            share.shareId === updatedShare.shareId ? updatedShare : share,
+            String(share.shareId) === String(updatedShare.shareId)
+              ? updatedShare
+              : share,
           )
         : [],
     );
