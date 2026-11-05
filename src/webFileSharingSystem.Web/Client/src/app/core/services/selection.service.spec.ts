@@ -219,6 +219,66 @@ describe('SelectionService touch interactions', () => {
     expect(service.selectedIds()).toEqual(new Set([2]));
   });
 
+  it('does not start rubber-band selection from a scrollbar', () => {
+    const container = {
+      clientLeft: 0,
+      clientTop: 0,
+      clientWidth: 280,
+      clientHeight: 180,
+      scrollWidth: 280,
+      scrollHeight: 360,
+      getBoundingClientRect: () =>
+        ({
+          left: 10,
+          top: 20,
+          right: 310,
+          bottom: 220,
+          width: 300,
+          height: 200,
+        }) as DOMRect,
+    } as HTMLElement;
+
+    const event = createPointerEvent('pointerdown', {
+      clientX: 300,
+      clientY: 100,
+    });
+    Object.defineProperty(event, 'target', { value: container });
+
+    expect(service.beginRubberBandSelection(event, container, '[data-file-id]'))
+      .toBe(false);
+    expect(service.rubberBandActive()).toBe(false);
+  });
+
+  it('does not start rubber-band selection from an overlay scrollbar', () => {
+    const container = {
+      clientLeft: 0,
+      clientTop: 0,
+      clientWidth: 300,
+      clientHeight: 200,
+      scrollWidth: 300,
+      scrollHeight: 400,
+      getBoundingClientRect: () =>
+        ({
+          left: 10,
+          top: 20,
+          right: 310,
+          bottom: 220,
+          width: 300,
+          height: 200,
+        }) as DOMRect,
+    } as HTMLElement;
+
+    const event = createPointerEvent('pointerdown', {
+      clientX: 305,
+      clientY: 100,
+    });
+    Object.defineProperty(event, 'target', { value: container });
+
+    expect(service.beginRubberBandSelection(event, container, '[data-file-id]'))
+      .toBe(false);
+    expect(service.rubberBandActive()).toBe(false);
+  });
+
   it('supports mouse Ctrl toggling and Shift range selection', () => {
     service.handleClick(
       { id: 2 },

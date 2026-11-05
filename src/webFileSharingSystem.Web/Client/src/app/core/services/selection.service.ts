@@ -37,6 +37,7 @@ export class SelectionService<
 > implements OnDestroy {
   // Host supplies live files list\
   private static readonly DRAG_THRESHOLD = 5;
+  private static readonly OVERLAY_SCROLLBAR_HIT_SIZE = 20;
   private static readonly AUTO_SCROLL_MIN_SPEED = 120;
   private static readonly AUTO_SCROLL_MAX_SPEED = 900;
   private static readonly AUTO_SCROLL_SPEED_PER_PX = 45;
@@ -268,6 +269,10 @@ export class SelectionService<
     }
 
     const target = event.target as HTMLElement;
+    if (target === container && this.isScrollBarPointer(event, container)) {
+      return false;
+    }
+
     if (!this.canStartRubberBandOnTarget(target)) return false;
 
     const point = this.clientPointToContainerPoint(
@@ -527,6 +532,24 @@ export class SelectionService<
     if (target.closest('tr[cdk-header-row]')) return false;
 
     return true;
+  }
+
+  private isScrollBarPointer(event: PointerEvent, container: HTMLElement) {
+    const rect = container.getBoundingClientRect();
+    const contentRight = rect.left + container.clientLeft + container.clientWidth;
+    const contentBottom =
+      rect.top + container.clientTop + container.clientHeight;
+
+    return (
+      event.clientX >= contentRight ||
+      event.clientY >= contentBottom ||
+      (container.scrollHeight > container.clientHeight &&
+        event.clientX >=
+          rect.right - SelectionService.OVERLAY_SCROLLBAR_HIT_SIZE) ||
+      (container.scrollWidth > container.clientWidth &&
+        event.clientY >=
+          rect.bottom - SelectionService.OVERLAY_SCROLLBAR_HIT_SIZE)
+    );
   }
 
   private getRubberBandTouchedIds(
