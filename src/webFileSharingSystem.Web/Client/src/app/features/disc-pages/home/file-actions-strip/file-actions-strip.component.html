@@ -78,13 +78,22 @@
   (click)="onDownload()"
 ></i>
 <i
-  class="bi bi-pencil action-icon action-primary fs-3 disabled"
+  class="bi bi-pencil action-icon action-primary fs-3 disabled d-none d-md-inline"
   data-testid="rename-files-trigger"
   [class.disabled]="!canRename()"
   ngbTooltip="Rename"
   i18n-ngbTooltip
   [openDelay]="300"
   (click)="onRename()"
+></i>
+<i
+  class="bi bi-pencil action-icon action-primary fs-3 disabled d-md-none"
+  data-testid="rename-files-modal-trigger"
+  [class.disabled]="!canRename()"
+  ngbTooltip="Rename"
+  i18n-ngbTooltip
+  [openDelay]="300"
+  (click)="onRenameModal()"
 ></i>
 
 @if (!viewingSharedFiles()) {

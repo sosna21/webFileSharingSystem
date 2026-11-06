@@ -175,30 +175,35 @@ export class FileActionsStripComponent {
     });
   }
 
-  async onRename() {
+  async onRenameModal() {
     if (!this.canRename()) return;
 
     const file = this.selectedFiles().at(0);
     if (!file) return;
 
-    //Grid does not support inline rename, so we use modal
-    if (this.viewMode() === 'grid') {
-      const newFileName = await this.modalService.getNewFileName({
-        startName: file.fileName,
-        blacklistedNames: new Set(
-          [...this.fileService.names()].filter(
-            (name) => name !== file.fileName,
-          ),
+    const newFileName = await this.modalService.getNewFileName({
+      startName: file.fileName,
+      blacklistedNames: new Set(
+        [...this.fileService.names()].filter(
+          (name) => name !== file.fileName,
         ),
-      });
+      ),
+    });
 
-      if (!newFileName) return;
-      if (newFileName === file.fileName) return;
+    if (!newFileName || newFileName === file.fileName) return;
 
-      this.fileService.renameFileWithFeedback(file, newFileName);
-    } else {
-      this.fileService.editingId.set(this.selectedFiles()[0].id);
+    this.fileService.renameFileWithFeedback(file, newFileName);
+  }
+
+  async onRename() {
+    if (!this.canRename()) return;
+
+    if (this.viewMode() === 'grid') {
+      await this.onRenameModal();
+      return;
     }
+
+    this.fileService.editingId.set(this.selectedFiles()[0].id);
   }
 
   onShare() {

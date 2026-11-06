@@ -315,6 +315,19 @@ export class SharedFilesTableComponent {
     this.editingId.set(file.id);
   }
 
+  async renameFile(file: SharedFile) {
+    const newFileName = await this.modalService.getNewFileName({
+      startName: file.fileName,
+      blacklistedNames: new Set(
+        [...this.fileService.names()].filter((name) => name !== file.fileName),
+      ),
+    });
+
+    if (!newFileName || newFileName === file.fileName) return;
+
+    this.fileService.renameFileWithFeedback(file, newFileName);
+  }
+
   rename(file: SharedFile, newFileName: string) {
     this.fileService.renameFileWithFeedback(file, newFileName);
   }

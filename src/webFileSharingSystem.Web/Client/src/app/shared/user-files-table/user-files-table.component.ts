@@ -316,6 +316,19 @@ export class UserFilesTableComponent {
     this.editingId.set(file.id);
   }
 
+  async renameFile(file: AppFile) {
+    const newFileName = await this.modalService.getNewFileName({
+      startName: file.fileName,
+      blacklistedNames: new Set(
+        [...this.fileService.names()].filter((name) => name !== file.fileName),
+      ),
+    });
+
+    if (!newFileName || newFileName === file.fileName) return;
+
+    this.fileService.renameFileWithFeedback(file, newFileName);
+  }
+
   rename(file: AppFile, newFileName: string) {
     this.fileService.renameFileWithFeedback(file, newFileName);
   }
