@@ -1,20 +1,30 @@
 @if (file().fileStatus === FileStatus.Completed) {
-  <span data-content>
-    <i class="bi fs-4 me-1" [class]="file() | fileToIcon"></i>
+  <span
+    class="file-name-content"
+    [class.editing]="editingId() === file().id"
+  >
+    <i
+      data-content
+      class="bi fs-4 me-1 flex-shrink-0"
+      [class]="file() | fileToIcon"
+    ></i>
 
     @if (editingId() === file().id) {
       <input
         appSelectFilename
+        class="rename-input"
+        data-content
         data-testid="rename-input"
         type="text"
-        style="min-width: 85%"
         [ngModel]="file().fileName"
         [placeholder]="file().fileName"
         (blur)="onRename(file(), $any($event.target).value)"
         (keydown)="onFileRenameKeyDown($event, file())"
       />
     } @else {
-      <span data-testid="file-name">{{ file().fileName }}</span>
+      <span class="file-name-text" data-content data-testid="file-name">
+        {{ file().fileName }}
+      </span>
     }
   </span>
 } @else {

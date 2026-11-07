@@ -1,3 +1,34 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.file-name-content {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.file-name-content.editing {
+  display: flex;
+  width: 100%;
+}
+
+.rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 0;
+  max-width: 100%;
+}
+
+.file-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .upload-content {
   container-type: inline-size;
 }
