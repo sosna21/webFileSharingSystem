@@ -1,0 +1,16 @@
+.context-menu-button {
+  transition:
+    transform 100ms ease,
+    box-shadow 100ms ease;
+
+  &:active {
+    transform: scale(0.94);
+    box-shadow: var(--bs-box-shadow-sm) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .context-menu-button {
+    transition: none;
+  }
+}
