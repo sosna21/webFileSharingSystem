@@ -1,4 +1,4 @@
-import { Component, inject, viewChild } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   NgbCollapseModule,
   NgbPaginationModule,
@@ -10,8 +10,7 @@ import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb.compo
 import { FileActionsStripComponent } from './file-actions-strip/file-actions-strip.component';
 import { AppFile } from '../../../core/models/app-file.model';
 import { SelectionService } from '../../../core/services/selection.service';
-import { UserFilesTableComponent } from '../../../shared/user-files-table/user-files-table.component';
-import { UserFilesGridComponent } from '../../../shared/user-files-grid/user-files-grid.component';
+import { UserFilesViewComponent } from '../../../shared/user-files-view/user-files-view.component';
 import { StateService } from '../../../core/services/state.service';
 
 @Component({
@@ -23,8 +22,7 @@ import { StateService } from '../../../core/services/state.service';
     BaseDiscPageComponent,
     BreadcrumbComponent,
     FileActionsStripComponent,
-    UserFilesTableComponent,
-    UserFilesGridComponent,
+    UserFilesViewComponent,
   ],
   providers: [SelectionService<AppFile>],
   templateUrl: './home.component.html',
@@ -34,26 +32,7 @@ export class HomeComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
   readonly viewMode = inject(StateService).viewMode;
-  readonly userFilesGrid = viewChild(UserFilesGridComponent);
-  readonly userFilesTable = viewChild(UserFilesTableComponent);
-
   constructor() {
     this.selectionService.init(this.fileService.userFiles);
-  }
-
-  openTableContextMenu() {
-    if (this.viewMode() === 'grid') {
-      this.userFilesGrid()?.openTableContextMenuFromHeader();
-    } else {
-      this.userFilesTable()?.openTableContextMenuFromHeader();
-    }
-  }
-
-  openFileContextMenu() {
-    if (this.viewMode() === 'grid') {
-      this.userFilesGrid()?.openFileContextMenuFromHeader();
-    } else {
-      this.userFilesTable()?.openFileContextMenuFromHeader();
-    }
   }
 }

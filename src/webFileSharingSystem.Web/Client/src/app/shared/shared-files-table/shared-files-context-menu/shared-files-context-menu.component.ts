@@ -107,7 +107,6 @@ export class SharedFilesContextMenuComponent {
   });
 
   readonly rename = output<SharedFile>();
-  readonly renameModal = output<SharedFile>();
   readonly download = output<SharedFile[]>();
   readonly delete = output<SharedFile[]>();
   readonly copy = output<SharedFile[]>();

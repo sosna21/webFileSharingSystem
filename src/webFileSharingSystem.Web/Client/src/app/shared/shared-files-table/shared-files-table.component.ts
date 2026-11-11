@@ -7,6 +7,7 @@ import {
   ElementRef,
   effect,
   inject,
+  output,
   signal,
   TrackByFunction,
   viewChild,
@@ -17,19 +18,15 @@ import {
   NgbDropdownModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
-import { DownloadService } from '../../core/services/download.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
-import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { SharedFile } from '../../core/models/shared-file.model';
-import { SharedFilesContextMenuComponent } from './shared-files-context-menu/shared-files-context-menu.component';
 import { ShareAccessMode } from '../../core/models/share-access-mode.model';
 import { FileService } from '../../core/services/file.service';
+import { ModalService } from '../../core/services/modal.service';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
-import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
-import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
 import { RowSelectorCellComponent } from '../table-cells/row-selector-cell/row-selector-cell.component';
@@ -38,16 +35,17 @@ import { SizeCellComponent } from '../table-cells/size-cell/size-cell.component'
 import { ValidUntilCellComponent } from '../table-cells/valid-until-cell/valid-until-cell.component';
 import { SharedUserNameCellComponent } from '../table-cells/shared-user-name-cell/shared-user-name-cell.component';
 import { AccessModeCellComponent } from '../table-cells/access-mode-cell/access-mode-cell.component';
-import { ToastService } from '../../core/services/toast.service';
 import { CreatedByCellComponent } from '../table-cells/created-by-cell/created-by-cell.component';
 import { SortableHeaderComponent } from '../sortable-header/sortable-header.component';
 import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-overflow.directive';
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
-import { StorageService } from '../../core/services/storage.service';
-
-const descendingFirstSortColumns = new Set(['size']);
+import {
+  SharedFilesContextMenuRequest,
+  SharedFilesDirectoryMenuRequest,
+  SharedFilesOperation,
+} from '../shared-files-view/shared-files-view.types';
 
 @Component({
   selector: 'app-shared-files-table',
@@ -55,11 +53,8 @@ const descendingFirstSortColumns = new Set(['size']);
     CommonModule,
     NgbTooltipModule,
     NgbDropdownModule,
-    SharedFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,
-    UploadOverlayComponent,
-    TableContextMenuComponent,
     FileNameCellComponent,
     RowSelectorCellComponent,
     ActionsCellComponent,
@@ -88,14 +83,11 @@ export class SharedFilesTableComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
+  private readonly modalService = inject(ModalService);
   private readonly uploadService = inject(FileUploadService);
-  private readonly downloadService = inject(DownloadService);
   private readonly selection = inject(SelectionService<SharedFile>);
   private readonly dragFacade = inject(DragDropService<SharedFile>);
-  private readonly modalService = inject(ModalService);
-  private readonly toast = inject(ToastService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly storageService = inject(StorageService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(
@@ -119,10 +111,7 @@ export class SharedFilesTableComponent {
   }
 
   toggleSort(column: string) {
-    this.fileService.toggleSort(
-      column,
-      descendingFirstSortColumns.has(column),
-    );
+    this.operationRequested.emit({ type: 'sort', column });
   }
 
   columnsToDisplay = signal<(keyof SharedFile | (string & {}))[]>([
@@ -159,10 +148,11 @@ export class SharedFilesTableComponent {
   );
 
   tooltips = viewChildren(NgbTooltip);
-  contextMenu = viewChild(SharedFilesContextMenuComponent);
-  tableContextMenu = viewChild(TableContextMenuComponent);
   scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
-  contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly fileContextMenuRequested = output<SharedFilesContextMenuRequest>();
+  readonly directoryContextMenuRequested =
+    output<SharedFilesDirectoryMenuRequest>();
+  readonly operationRequested = output<SharedFilesOperation>();
 
   currentDirectoryId = this.fileService.parentId;
   trackByFileId: TrackByFunction<SharedFile> = (_, file) => file.id;
@@ -241,7 +231,6 @@ export class SharedFilesTableComponent {
 
     if (started) {
       event.preventDefault();
-      this.closeContextMenus();
       (document.activeElement as HTMLElement | null)?.blur();
     }
   }
@@ -315,21 +304,12 @@ export class SharedFilesTableComponent {
     this.editingId.set(file.id);
   }
 
-  async renameFile(file: SharedFile) {
-    const newFileName = await this.modalService.getNewFileName({
-      startName: file.fileName,
-      blacklistedNames: new Set(
-        [...this.fileService.names()].filter((name) => name !== file.fileName),
-      ),
-    });
-
-    if (!newFileName || newFileName === file.fileName) return;
-
-    this.fileService.renameFileWithFeedback(file, newFileName);
-  }
-
   rename(file: SharedFile, newFileName: string) {
-    this.fileService.renameFileWithFeedback(file, newFileName);
+    this.operationRequested.emit({
+      type: 'rename-inline',
+      file,
+      name: newFileName,
+    });
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: SharedFile) {
@@ -342,7 +322,7 @@ export class SharedFilesTableComponent {
   }
 
   downloadFiles(files: SharedFile[]) {
-    this.downloadService.downloadFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'download', files });
   }
 
   contextMenuClick(event: PointerEvent, file: SharedFile) {
@@ -350,12 +330,10 @@ export class SharedFilesTableComponent {
     event.stopPropagation();
     if (event.pointerType != 'mouse') return;
 
-    const position = { x: event.clientX, y: event.clientY };
     if (!this.selectedFiles().includes(file)) {
       this.selectedIds.set(new Set([file.id]));
     }
-
-    this.openContextMenu(position);
+    this.fileContextMenuRequested.emit({ event, file });
   }
 
   tableContextMenuClick(event: PointerEvent) {
@@ -365,25 +343,21 @@ export class SharedFilesTableComponent {
       return;
     }
 
-    this.selection.clear();
-    const position = { x: event.clientX, y: event.clientY };
-
-    this.openTableContextMenu(position);
+    this.directoryContextMenuRequested.emit({ event });
   }
 
   actionIconClick(event: MouseEvent, file: SharedFile) {
     event.stopPropagation();
 
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
     this.selectedIds.set(new Set([file.id]));
-
-    this.openContextMenu(position);
-  }
-
-  refresh() {
-    this.fileService.currentResource().reload();
-    this.storageService.refresh();
+    this.fileContextMenuRequested.emit({
+      event: new PointerEvent('contextmenu', {
+        clientX: (event.target as HTMLElement).getBoundingClientRect().right,
+        clientY: (event.target as HTMLElement).getBoundingClientRect().bottom,
+        pointerType: 'mouse',
+      }),
+      file,
+    });
   }
 
   pasteFiles() {
@@ -421,46 +395,16 @@ export class SharedFilesTableComponent {
     });
   }
 
-  private openContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.contextMenu()?.open();
-  }
-
-  private openTableContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.tableContextMenu()?.open();
-  }
-
-  openTableContextMenuFromHeader() {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.tableContextMenu()?.open();
-  }
-
-  openFileContextMenuFromHeader() {
-    this.tableContextMenu()?.close();
-    this.contextMenu()?.open();
-  }
-
-  private closeContextMenus() {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-  }
-
   deleteFiles(files: SharedFile[]) {
-    this.fileService.deleteFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'delete', files });
   }
 
   initFileMove(files: SharedFile[]) {
-    this.fileService.markFilesToMoveWithFeedback(files);
+    this.operationRequested.emit({ type: 'move', files });
   }
 
   initFileCopy(files: SharedFile[]) {
-    this.fileService.markFilesToCopyWithFeedback(files);
+    this.operationRequested.emit({ type: 'copy', files });
   }
 
   // Drag and drop logic for moving and uploading files
@@ -469,7 +413,6 @@ export class SharedFilesTableComponent {
   });
 
   readonly dragTarget = this.dragFacade.dragTarget;
-  readonly isInternalHover = this.dragFacade.isInternalHover;
   readonly canWriteToDragTarget = this.dragFacade.hasMinWriteAccess;
   readonly dragPayloadNb = this.dragFacade.filesNb;
   readonly isHoverTargetATable = this.dragFacade.isHoverTargetATable;
@@ -536,27 +479,15 @@ export class SharedFilesTableComponent {
 
   // File upload controls
   stopFilesUpload(files: SharedFile[]) {
-    const uploadingFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Started,
-    );
-    uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
+    this.operationRequested.emit({ type: 'pause-upload', files });
   }
 
   continueFilesUpload(files: SharedFile[]) {
-    const stoppedFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Stopped,
-    );
-    stoppedFiles.forEach((file) =>
-      this.uploadService.resume(file, this.currentDirectoryId()),
-    );
+    this.operationRequested.emit({ type: 'resume-upload', files });
   }
 
   async cancelFilesUpload(files: SharedFile[]) {
-    const incompleteFiles = files.filter(
-      (file) => file.fileStatus === FileStatus.Incomplete,
-    );
-    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
+    this.operationRequested.emit({ type: 'cancel-upload', files });
   }
 
   canMove(file: SharedFile): boolean {

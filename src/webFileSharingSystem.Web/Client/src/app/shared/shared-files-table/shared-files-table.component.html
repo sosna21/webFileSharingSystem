@@ -1,33 +1,3 @@
-<app-shared-files-context-menu
-  [position]="contextMenuPosition()"
-  [selectedFiles]="selectedFiles()"
-  (openFolder)="selectFolder($event.id)"
-  (openLocation)="openLocation($event)"
-  (download)="downloadFiles($event)"
-  (rename)="initRename($event)"
-  (renameModal)="renameFile($event)"
-  (move)="initFileMove($event)"
-  (copy)="initFileCopy($event)"
-  (delete)="deleteFiles($event)"
-  (pauseUpload)="stopFilesUpload($event)"
-  (resumeUpload)="continueFilesUpload($event)"
-  (cancelUpload)="cancelFilesUpload($event)"
-></app-shared-files-context-menu>
-
-<app-table-context-menu
-  [position]="contextMenuPosition()"
-  [accessMode]="currentDirectoryAccessMode()"
-  [sortableColumns]="sortableColumns()"
-  [sortOption]="sortOption()"
-  [canPaste]="canPaste()"
-  [(viewMode)]="viewMode"
-  (refresh)="refresh()"
-  (createFolder)="createFolder()"
-  (upload)="uploadFiles($event)"
-  (paste)="pasteFiles()"
-  (sortByColumn)="toggleSort($event)"
-/>
-
 <div
   class="table-wrapper position-relative h-100 rounded rounded-4 px-sm-2 py-2 py-sm-3"
   data-testid="shared-files-table"
@@ -313,10 +283,6 @@
   </div>
 
   <app-selection-area />
-
-  @if (dragTarget() && !isInternalHover()) {
-    <app-upload-overlay />
-  }
 </div>
 
 <!-- Do not remove this -->

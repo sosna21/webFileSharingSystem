@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { UploadRow } from './upload-row.part';
 
 const selectedRowClass = 'selected';
+const fileNameTestId = 'file-name';
 
 export class SharedFilesTable {
   readonly page: Page;
@@ -24,6 +25,11 @@ export class SharedFilesTable {
     return this.table.getByTestId(`file-row-${name}`);
   }
 
+  private async clickRow(row: Locator) {
+    //Ensure click are on the name text, not random place inside the row (which contain other buttons)
+    await row.getByTestId(fileNameTestId).click();
+  }
+
   uploadRowByName(name: string): UploadRow {
     const row = this.table.getByTestId(`upload-row-${name}`);
 
@@ -39,12 +45,12 @@ export class SharedFilesTable {
   }
 
   async openFolder(name: string) {
-    await this.fileRowByName(name).dblclick();
+    await this.fileRowByName(name).getByTestId(fileNameTestId).dblclick();
   }
 
   async openContextMenuForRow(name: string) {
     const row = this.fileRowByName(name);
-    await row.click(); // ensure selected
+    await this.clickRow(row); // ensure selected
     await row.click({ button: 'right' });
   }
 
@@ -62,13 +68,14 @@ export class SharedFilesTable {
 
   async selectSingleRow(name: string) {
     const row = this.fileRowByName(name);
-    await row.click();
+    await this.clickRow(row);
   }
 
   async selectRowsCtrl(names: string[]) {
     await this.page.keyboard.down('Control');
     for (const n of names) {
-      await this.fileRowByName(n).click();
+      await this.clickRow(this.fileRowByName(n));
+
     }
     await this.page.keyboard.up('Control');
   }
@@ -77,9 +84,9 @@ export class SharedFilesTable {
     const start = this.fileRowByName(startName);
     const end = this.fileRowByName(endName);
 
-    await start.click();
+    await this.clickRow(start);
     await this.page.keyboard.down('Shift');
-    await end.click();
+    await this.clickRow(end);
     await this.page.keyboard.up('Shift');
   }
 

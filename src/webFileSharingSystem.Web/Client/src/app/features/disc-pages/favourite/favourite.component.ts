@@ -1,12 +1,11 @@
-import { Component, inject, viewChild } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { FileService } from '../../../core/services/file.service';
 import { AppFile } from '../../../core/models/app-file.model';
 import { SelectionService } from '../../../core/services/selection.service';
-import { UserFilesTableComponent } from '../../../shared/user-files-table/user-files-table.component';
+import { UserFilesViewComponent } from '../../../shared/user-files-view/user-files-view.component';
 import { FileActionsStripComponent } from '../home/file-actions-strip/file-actions-strip.component';
-import { UserFilesGridComponent } from '../../../shared/user-files-grid/user-files-grid.component';
 import { StateService } from '../../../core/services/state.service';
 
 @Component({
@@ -14,9 +13,8 @@ import { StateService } from '../../../core/services/state.service';
   imports: [
     BaseDiscPageComponent,
     BaseDiscPageHeaderComponent,
-    UserFilesTableComponent,
+    UserFilesViewComponent,
     FileActionsStripComponent,
-    UserFilesGridComponent,
   ],
   providers: [SelectionService<AppFile>],
   templateUrl: './favourite.component.html',
@@ -26,26 +24,7 @@ export class FavouriteComponent {
   private readonly fileService = inject(FileService);
   private readonly selectionService = inject(SelectionService<AppFile>);
   readonly viewMode = inject(StateService).viewMode;
-  readonly userFilesGrid = viewChild(UserFilesGridComponent);
-  readonly userFilesTable = viewChild(UserFilesTableComponent);
-
   constructor() {
     this.selectionService.init(this.fileService.userFiles);
-  }
-
-  openTableContextMenu() {
-    if (this.viewMode() === 'grid') {
-      this.userFilesGrid()?.openTableContextMenuFromHeader();
-    } else {
-      this.userFilesTable()?.openTableContextMenuFromHeader();
-    }
-  }
-
-  openFileContextMenu() {
-    if (this.viewMode() === 'grid') {
-      this.userFilesGrid()?.openFileContextMenuFromHeader();
-    } else {
-      this.userFilesTable()?.openFileContextMenuFromHeader();
-    }
   }
 }

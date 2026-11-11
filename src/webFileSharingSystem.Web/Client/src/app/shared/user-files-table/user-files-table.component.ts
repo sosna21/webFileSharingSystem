@@ -7,11 +7,11 @@ import {
   ElementRef,
   effect,
   inject,
-  Injector,
   signal,
   TrackByFunction,
   viewChild,
   viewChildren,
+  output,
 } from '@angular/core';
 import {
   NgbTooltipModule,
@@ -19,18 +19,13 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { AppFile } from '../../core/models/app-file.model';
-import { DownloadService } from '../../core/services/download.service';
-import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { FileService } from '../../core/services/file.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
-import { UserFilesContextMenuComponent } from './user-files-context-menu/user-files-context-menu.component';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
-import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
-import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { FileNameCellComponent } from '../table-cells/file-name-cell/file-name-cell.component';
 import { RowSelectorCellComponent } from '../table-cells/row-selector-cell/row-selector-cell.component';
@@ -46,9 +41,11 @@ import { TooltipOnOverflowDirective } from '../../core/directives/tooltip-on-ove
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
-import { StorageService } from '../../core/services/storage.service';
-
-const descendingFirstSortColumns = new Set(['favourite', 'share', 'size']);
+import {
+  UserFilesContextMenuRequest,
+  UserFilesDirectoryMenuRequest,
+  UserFilesOperation,
+} from '../user-files-view/user-files-view.types';
 
 @Component({
   selector: 'app-user-files-table',
@@ -56,11 +53,8 @@ const descendingFirstSortColumns = new Set(['favourite', 'share', 'size']);
     CommonModule,
     NgbTooltipModule,
     NgbDropdownModule,
-    UserFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,
-    UploadOverlayComponent,
-    TableContextMenuComponent,
     FileNameCellComponent,
     RowSelectorCellComponent,
     ActionsCellComponent,
@@ -90,15 +84,11 @@ export class UserFilesTableComponent {
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
-  private readonly downloadService = inject(DownloadService);
   private readonly authService = inject(AuthenticationService);
-  private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
-  private readonly injector = inject(Injector);
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly storageService = inject(StorageService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -108,6 +98,10 @@ export class UserFilesTableComponent {
   );
   readonly viewMode = inject(StateService).viewMode;
   readonly rubberBandItemSelector = 'tr[cdk-row]';
+  readonly fileContextMenuRequested = output<UserFilesContextMenuRequest>();
+  readonly directoryContextMenuRequested =
+    output<UserFilesDirectoryMenuRequest>();
+  readonly operationRequested = output<UserFilesOperation>();
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
@@ -118,10 +112,7 @@ export class UserFilesTableComponent {
   }
 
   toggleSort(column: string) {
-    this.fileService.toggleSort(
-      column,
-      descendingFirstSortColumns.has(column),
-    );
+    this.operationRequested.emit({ type: 'sort', column });
   }
 
   columnsToDisplay = signal<(keyof AppFile | (string & {}))[]>([
@@ -156,10 +147,7 @@ export class UserFilesTableComponent {
   currentUserId = computed(() => this.authService.currentUser()?.id);
 
   tooltips = viewChildren(NgbTooltip);
-  contextMenu = viewChild(UserFilesContextMenuComponent);
-  tableContextMenu = viewChild(TableContextMenuComponent);
   scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
-  contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
   trackByFileId: TrackByFunction<AppFile> = (_, file) => file.id;
@@ -316,21 +304,12 @@ export class UserFilesTableComponent {
     this.editingId.set(file.id);
   }
 
-  async renameFile(file: AppFile) {
-    const newFileName = await this.modalService.getNewFileName({
-      startName: file.fileName,
-      blacklistedNames: new Set(
-        [...this.fileService.names()].filter((name) => name !== file.fileName),
-      ),
-    });
-
-    if (!newFileName || newFileName === file.fileName) return;
-
-    this.fileService.renameFileWithFeedback(file, newFileName);
-  }
-
   rename(file: AppFile, newFileName: string) {
-    this.fileService.renameFileWithFeedback(file, newFileName);
+    this.operationRequested.emit({
+      type: 'rename-inline',
+      file,
+      name: newFileName,
+    });
   }
 
   fileRenameKeyDown($event: KeyboardEvent, file: AppFile) {
@@ -343,32 +322,28 @@ export class UserFilesTableComponent {
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
-    this.fileService.changeFilesFavouriteWithFeedback(files, changeTo);
+    this.operationRequested.emit({
+      type: 'toggle-favourite',
+      files,
+      value: changeTo,
+    });
     this.tooltips().forEach((t) => t.close());
   }
 
   downloadFiles(files: AppFile[]) {
-    this.downloadService.downloadFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'download', files });
   }
 
   async generateShareLink(files: AppFile[]) {
-    await this.shareService.generateShareLinkWithFeedback(
-      files.map((f) => f.id),
-    );
+    this.operationRequested.emit({ type: 'generate-link', files });
   }
 
   showShareManagementModal(sharedFile: AppFile) {
-    this.modalService.manageSharesModal(
-      {
-        sharedFile: sharedFile,
-        title: $localize`Manage shares for: '${sharedFile.fileName}'`,
-      },
-      this.injector,
-    );
+    this.operationRequested.emit({ type: 'manage-shares', file: sharedFile });
   }
 
   shareFile(files: AppFile[]) {
-    this.shareService.shareFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'share', files });
   }
 
   contextMenuClick(event: PointerEvent, file: AppFile) {
@@ -376,12 +351,10 @@ export class UserFilesTableComponent {
     event.stopPropagation();
     if (event.pointerType != 'mouse') return;
 
-    const position = { x: event.clientX, y: event.clientY };
     if (file && !this.selectedFiles().includes(file)) {
       this.selectedIds.set(new Set([file.id]));
     }
-
-    this.openContextMenu(position);
+    this.fileContextMenuRequested.emit({ event, file });
   }
 
   tableContextMenuClick(event: PointerEvent) {
@@ -391,25 +364,21 @@ export class UserFilesTableComponent {
       return;
     }
 
-    this.selection.clear();
-    const position = { x: event.clientX, y: event.clientY };
-
-    this.openTableContextMenu(position);
+    this.directoryContextMenuRequested.emit({ event });
   }
 
   actionIconClick(event: MouseEvent, file: AppFile) {
     this.selectedIds.set(new Set([file.id]));
     event.stopPropagation();
 
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
-
-    this.openContextMenu(position);
-  }
-
-  refresh() {
-    this.fileService.currentResource().reload();
-    this.storageService.refresh();
+    this.fileContextMenuRequested.emit({
+      event: new PointerEvent('contextmenu', {
+        clientX: (event.target as HTMLElement).getBoundingClientRect().right,
+        clientY: (event.target as HTMLElement).getBoundingClientRect().bottom,
+        pointerType: 'mouse',
+      }),
+      file,
+    });
   }
 
   pasteFiles() {
@@ -447,46 +416,20 @@ export class UserFilesTableComponent {
     });
   }
 
-  private openContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.contextMenu()?.open();
-  }
-
-  private openTableContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.tableContextMenu()?.open();
-  }
-
-  openTableContextMenuFromHeader() {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.tableContextMenu()?.open();
-  }
-
-  openFileContextMenuFromHeader() {
-    this.tableContextMenu()?.close();
-    this.contextMenu()?.open();
-  }
-
   private closeContextMenus() {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
+    return;
   }
 
   deleteFiles(files: AppFile[]) {
-    this.fileService.deleteFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'delete', files });
   }
 
   initFileMove(files: AppFile[]) {
-    this.fileService.markFilesToMoveWithFeedback(files);
+    this.operationRequested.emit({ type: 'move', files });
   }
 
   initFileCopy(files: AppFile[]) {
-    this.fileService.markFilesToCopyWithFeedback(files);
+    this.operationRequested.emit({ type: 'copy', files });
   }
 
   // Drag and drop logic for moving and uploading files
@@ -495,8 +438,6 @@ export class UserFilesTableComponent {
   });
 
   readonly dragTarget = this.dragFacade.dragTarget;
-  readonly isInternalHover = this.dragFacade.isInternalHover;
-  readonly canWriteToDragTarget = this.dragFacade.hasMinWriteAccess;
   readonly dragPayloadNb = this.dragFacade.filesNb;
   readonly isHoverTargetATable = this.dragFacade.isHoverTargetATable;
   readonly touchDragDisabled = this.selection.touchDragDisabled;
@@ -561,26 +502,14 @@ export class UserFilesTableComponent {
 
   // File upload controls
   stopFilesUpload(files: AppFile[]) {
-    const uploadingFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Started,
-    );
-    uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
+    this.operationRequested.emit({ type: 'pause-upload', files });
   }
 
   continueFilesUpload(files: AppFile[]) {
-    const stoppedFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Stopped,
-    );
-    stoppedFiles.forEach((file) =>
-      this.uploadService.resume(file, this.currentDirectoryId()),
-    );
+    this.operationRequested.emit({ type: 'resume-upload', files });
   }
 
   async cancelFilesUpload(files: AppFile[]) {
-    const incompleteFiles = files.filter(
-      (file) => file.fileStatus === FileStatus.Incomplete,
-    );
-    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
+    this.operationRequested.emit({ type: 'cancel-upload', files });
   }
 }

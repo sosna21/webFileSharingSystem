@@ -1,0 +1,48 @@
+<app-shared-files-context-menu
+  [position]="contextMenuPosition()"
+  [selectedFiles]="selectedFiles()"
+  (openFolder)="onOperation({ type: 'open-folder', file: $event })"
+  (openLocation)="onOperation({ type: 'open-location', file: $event })"
+  (download)="onOperation({ type: 'download', files: $event })"
+  (rename)="onOperation({ type: 'rename', file: $event })"
+  (move)="onOperation({ type: 'move', files: $event })"
+  (copy)="onOperation({ type: 'copy', files: $event })"
+  (delete)="onOperation({ type: 'delete', files: $event })"
+  (pauseUpload)="onOperation({ type: 'pause-upload', files: $event })"
+  (resumeUpload)="onOperation({ type: 'resume-upload', files: $event })"
+  (cancelUpload)="onOperation({ type: 'cancel-upload', files: $event })"
+/>
+
+<app-table-context-menu
+  [position]="contextMenuPosition()"
+  [accessMode]="currentDirectoryAccessMode()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
+  [canPaste]="canPaste()"
+  [(viewMode)]="viewMode"
+  (refresh)="onTableMenuAction('refresh')"
+  (createFolder)="onTableMenuAction('create')"
+  (upload)="onTableMenuAction('upload', $event)"
+  (paste)="onTableMenuAction('paste')"
+  (sortByColumn)="toggleSort($event)"
+/>
+
+<div class="position-relative h-100">
+  @if (dragTarget() && !isInternalHover()) {
+    <app-upload-overlay />
+  }
+
+  @if (viewMode() === "grid") {
+    <app-shared-files-grid
+      (fileContextMenuRequested)="onFileContextMenu($event)"
+      (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (operationRequested)="onOperation($event)"
+    />
+  } @else {
+    <app-shared-files-table
+      (fileContextMenuRequested)="onFileContextMenu($event)"
+      (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (operationRequested)="onOperation($event)"
+    />
+  }
+</div>

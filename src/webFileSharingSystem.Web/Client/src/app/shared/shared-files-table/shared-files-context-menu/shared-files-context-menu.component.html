@@ -175,20 +175,9 @@
 
   <button
     ngbDropdownItem
-    class="d-none d-md-block"
     [disabled]="!canRename()"
     (click)="rename.emit(selectedFile); close()"
     data-testid="context-menu-rename"
-  >
-    <i class="bi bi-pencil me-2" [class.text-info-emphasis]="canRename()"></i>
-    <ng-container i18n>Rename</ng-container>
-  </button>
-  <button
-    ngbDropdownItem
-    class="d-md-none"
-    [disabled]="!canRename()"
-    (click)="renameModal.emit(selectedFile); close()"
-    data-testid="context-menu-rename-modal"
   >
     <i class="bi bi-pencil me-2" [class.text-info-emphasis]="canRename()"></i>
     <ng-container i18n>Rename</ng-container>

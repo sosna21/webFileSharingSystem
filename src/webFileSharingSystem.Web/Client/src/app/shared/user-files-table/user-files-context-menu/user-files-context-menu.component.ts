@@ -81,7 +81,6 @@ export class UserFilesContextMenuComponent {
   );
 
   readonly rename = output<AppFile>();
-  readonly renameModal = output<AppFile>();
   readonly toggleFavourite = output<boolean>();
   readonly selectFolder = output<number>();
   readonly download = output<AppFile[]>();

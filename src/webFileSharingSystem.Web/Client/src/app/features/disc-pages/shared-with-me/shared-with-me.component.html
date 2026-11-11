@@ -1,16 +1,12 @@
 <app-base-disc-page>
   <app-base-disc-page-header
-    (tableMenuRequested)="openTableContextMenu()"
-    (fileMenuRequested)="openFileContextMenu()"
+    (tableMenuRequested)="sharedFilesView.openTableContextMenu()"
+    (fileMenuRequested)="sharedFilesView.openFileContextMenu()"
   >
     <i class="bi bi-people-fill d-flex text-primary-emphasis"></i>
     <ng-container i18n>Shared with me</ng-container>
     <app-file-actions-strip secondaryContent />
   </app-base-disc-page-header>
   <app-breadcrumb class="mt-n2" />
-  @if (viewMode() === "grid") {
-    <app-shared-files-grid data-view />
-  } @else {
-    <app-shared-files-table data-view />
-  }
+  <app-shared-files-view #sharedFilesView data-view />
 </app-base-disc-page>

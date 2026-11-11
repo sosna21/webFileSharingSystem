@@ -377,6 +377,10 @@ export class FileService {
     }
   }
 
+  reloadCurrentList() {
+    this.refreshActiveList();
+  }
+
   readonly _fileResource = httpResource<FileResponse<AppFile>>(() =>
     this.mode() !== 'GetSharedWithMe' ? this._request() : undefined,
   );

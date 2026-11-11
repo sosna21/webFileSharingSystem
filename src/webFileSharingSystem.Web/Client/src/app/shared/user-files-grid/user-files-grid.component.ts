@@ -6,11 +6,10 @@ import {
   ElementRef,
   effect,
   inject,
-  Injector,
-  signal,
   TrackByFunction,
   viewChild,
   viewChildren,
+  output,
 } from '@angular/core';
 import { AppFile } from '../../core/models/app-file.model';
 import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
@@ -19,10 +18,7 @@ import { DragDropService } from '../../core/services/drag-drop.service';
 import { FileService } from '../../core/services/file.service';
 import { GridSelectionService } from '../../core/services/grid-selection.service';
 import { SelectionService } from '../../core/services/selection.service';
-import { UploadOverlayComponent } from '../upload-overlay/upload-overlay.component';
 import { UserFileGridCardComponent } from './user-file-grid-card/user-file-grid-card.component';
-import { UserFilesContextMenuComponent } from '../user-files-table/user-files-context-menu/user-files-context-menu.component';
-import { TableContextMenuComponent } from '../table-context-menu/table-context-menu.component';
 import { DragPreviewComponent } from '../drag-preview/drag-preview.component';
 import { CdkTableModule } from '@angular/cdk/table';
 import {
@@ -30,35 +26,29 @@ import {
   NgbDropdownModule,
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
-import { DownloadService } from '../../core/services/download.service';
-import { FileShareService } from '../../core/services/file-share.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
 import { StateService } from '../../core/services/state.service';
 import { SelectionAreaComponent } from '../selection-area/selection-area.component';
 import { MobileFileActionsComponent } from '../mobile-file-actions/mobile-file-actions.component';
-import { StorageService } from '../../core/services/storage.service';
-
-const descendingFirstSortColumns = new Set(['favourite', 'share', 'size']);
+import {
+  UserFilesContextMenuRequest,
+  UserFilesDirectoryMenuRequest,
+  UserFilesOperation,
+} from '../user-files-view/user-files-view.types';
 
 @Component({
   selector: 'app-user-files-grid',
   imports: [
     CommonModule,
     UserFileGridCardComponent,
-    UploadOverlayComponent,
-    UserFilesContextMenuComponent,
-    TableContextMenuComponent,
     DragPreviewComponent,
     CommonModule,
     NgbTooltipModule,
     NgbDropdownModule,
-    UserFilesContextMenuComponent,
     DragPreviewComponent,
     CdkTableModule,
-    UploadOverlayComponent,
-    TableContextMenuComponent,
     SelectionAreaComponent,
     MobileFileActionsComponent,
   ],
@@ -78,16 +68,12 @@ export class UserFilesGridComponent {
   readonly ProgressStatus = ProgressStatus;
   private readonly fileService = inject(FileService);
   private readonly uploadService = inject(FileUploadService);
-  private readonly downloadService = inject(DownloadService);
-  private readonly authService = inject(AuthenticationService);
-  private readonly shareService = inject(FileShareService);
   private readonly modalService = inject(ModalService);
-  private readonly injector = inject(Injector);
+  private readonly authService = inject(AuthenticationService);
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly gridSelection = inject(GridSelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly storageService = inject(StorageService);
   readonly editingId = this.fileService.editingId;
   readonly loadingIds = this.fileService.loadingIds;
   readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
@@ -98,6 +84,10 @@ export class UserFilesGridComponent {
   readonly viewMode = inject(StateService).viewMode;
   readonly rubberBandItemSelector =
     'app-user-file-grid-card, app-shared-file-grid-card';
+  readonly fileContextMenuRequested = output<UserFilesContextMenuRequest>();
+  readonly directoryContextMenuRequested =
+    output<UserFilesDirectoryMenuRequest>();
+  readonly operationRequested = output<UserFilesOperation>();
 
   constructor() {
     this.selection.setScrollContainer(this.scrollContainer);
@@ -108,10 +98,7 @@ export class UserFilesGridComponent {
   }
 
   toggleSort(column: string) {
-    this.fileService.toggleSort(
-      column,
-      descendingFirstSortColumns.has(column),
-    );
+    this.operationRequested.emit({ type: 'sort', column });
   }
 
   sortableColumns = computed(() => [
@@ -135,10 +122,7 @@ export class UserFilesGridComponent {
   currentUserId = computed(() => this.authService.currentUser()?.id);
 
   tooltips = viewChildren(NgbTooltip);
-  contextMenu = viewChild(UserFilesContextMenuComponent);
-  tableContextMenu = viewChild(TableContextMenuComponent);
   scrollContainer = viewChild<ElementRef<HTMLElement>>('scrollContainer');
-  contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDirectoryId = this.fileService.parentId;
   trackByFileId: TrackByFunction<AppFile> = (_, file) => file.id;
@@ -288,46 +272,32 @@ export class UserFilesGridComponent {
 
   // Rename file
   async renameFile(file: AppFile) {
-    const newFileName = await this.modalService.getNewFileName({
-      startName: file.fileName,
-      blacklistedNames: new Set(
-        [...this.fileService.names()].filter((name) => name !== file.fileName),
-      ),
-    });
-
-    if (!newFileName) return;
-    if (newFileName === file.fileName) return;
-
-    this.fileService.renameFileWithFeedback(file, newFileName);
+    this.operationRequested.emit({ type: 'rename', file });
   }
 
   changeFavourite(files: AppFile[], changeTo: boolean) {
-    this.fileService.changeFilesFavouriteWithFeedback(files, changeTo);
+    this.operationRequested.emit({
+      type: 'toggle-favourite',
+      files,
+      value: changeTo,
+    });
     this.tooltips().forEach((t) => t.close());
   }
 
   downloadFiles(files: AppFile[]) {
-    this.downloadService.downloadFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'download', files });
   }
 
   async generateShareLink(files: AppFile[]) {
-    await this.shareService.generateShareLinkWithFeedback(
-      files.map((f) => f.id),
-    );
+    this.operationRequested.emit({ type: 'generate-link', files });
   }
 
   showShareManagementModal(sharedFile: AppFile) {
-    this.modalService.manageSharesModal(
-      {
-        sharedFile: sharedFile,
-        title: $localize`Manage shares for: '${sharedFile.fileName}'`,
-      },
-      this.injector,
-    );
+    this.operationRequested.emit({ type: 'manage-shares', file: sharedFile });
   }
 
   shareFile(files: AppFile[]) {
-    this.shareService.shareFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'share', files });
   }
 
   contextMenuClick(event: PointerEvent, file: AppFile) {
@@ -335,12 +305,10 @@ export class UserFilesGridComponent {
     event.stopPropagation();
     if (event.pointerType != 'mouse') return;
 
-    const position = { x: event.clientX, y: event.clientY };
     if (file && !this.selectedFiles().includes(file)) {
       this.selectedIds.set(new Set([file.id]));
     }
-
-    this.openContextMenu(position);
+    this.fileContextMenuRequested.emit({ event, file });
   }
 
   tableContextMenuClick(event: PointerEvent) {
@@ -350,25 +318,21 @@ export class UserFilesGridComponent {
       return;
     }
 
-    this.selection.clear();
-    const position = { x: event.clientX, y: event.clientY };
-
-    this.openTableContextMenu(position);
+    this.directoryContextMenuRequested.emit({ event });
   }
 
   actionIconClick(event: MouseEvent, file: AppFile) {
     event.stopPropagation();
 
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    const position = { x: rect.right, y: rect.bottom - rect.height / 4 };
     this.selectedIds.set(new Set([file.id]));
-
-    this.openContextMenu(position);
-  }
-
-  refresh() {
-    this.fileService.currentResource().reload();
-    this.storageService.refresh();
+    this.fileContextMenuRequested.emit({
+      event: new PointerEvent('contextmenu', {
+        clientX: (event.target as HTMLElement).getBoundingClientRect().right,
+        clientY: (event.target as HTMLElement).getBoundingClientRect().bottom,
+        pointerType: 'mouse',
+      }),
+      file,
+    });
   }
 
   pasteFiles() {
@@ -406,46 +370,20 @@ export class UserFilesGridComponent {
     });
   }
 
-  private openContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.contextMenu()?.open();
-  }
-
-  private openTableContextMenu(position: { x: number; y: number }) {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.contextMenuPosition.set(position);
-    this.tableContextMenu()?.open();
-  }
-
-  openTableContextMenuFromHeader() {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
-    this.tableContextMenu()?.open();
-  }
-
-  openFileContextMenuFromHeader() {
-    this.tableContextMenu()?.close();
-    this.contextMenu()?.open();
-  }
-
   private closeContextMenus() {
-    this.contextMenu()?.close();
-    this.tableContextMenu()?.close();
+    return;
   }
 
   deleteFiles(files: AppFile[]) {
-    this.fileService.deleteFilesWithFeedback(files);
+    this.operationRequested.emit({ type: 'delete', files });
   }
 
   initFileMove(files: AppFile[]) {
-    this.fileService.markFilesToMoveWithFeedback(files);
+    this.operationRequested.emit({ type: 'move', files });
   }
 
   initFileCopy(files: AppFile[]) {
-    this.fileService.markFilesToCopyWithFeedback(files);
+    this.operationRequested.emit({ type: 'copy', files });
   }
 
   // Drag and drop logic for moving and uploading files
@@ -454,8 +392,6 @@ export class UserFilesGridComponent {
   });
 
   readonly dragTarget = this.dragFacade.dragTarget;
-  readonly isInternalHover = this.dragFacade.isInternalHover;
-  readonly canWriteToDragTarget = this.dragFacade.hasMinWriteAccess;
   readonly dragPayloadNb = this.dragFacade.filesNb;
   readonly isHoverTargetATable = this.dragFacade.isHoverTargetATable;
   readonly touchDragDisabled = this.selection.touchDragDisabled;
@@ -520,26 +456,14 @@ export class UserFilesGridComponent {
 
   // File upload controls
   stopFilesUpload(files: AppFile[]) {
-    const uploadingFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Started,
-    );
-    uploadingFiles.forEach((file) => this.uploadService.pause(file.id));
+    this.operationRequested.emit({ type: 'pause-upload', files });
   }
 
   continueFilesUpload(files: AppFile[]) {
-    const stoppedFiles = files.filter(
-      (file) => file.progressStatus === ProgressStatus.Stopped,
-    );
-    stoppedFiles.forEach((file) =>
-      this.uploadService.resume(file, this.currentDirectoryId()),
-    );
+    this.operationRequested.emit({ type: 'resume-upload', files });
   }
 
   async cancelFilesUpload(files: AppFile[]) {
-    const incompleteFiles = files.filter(
-      (file) => file.fileStatus === FileStatus.Incomplete,
-    );
-    if (await this.fileService.deleteFilesWithFeedback(incompleteFiles))
-      incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
+    this.operationRequested.emit({ type: 'cancel-upload', files });
   }
 }

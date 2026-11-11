@@ -1,0 +1,59 @@
+<app-user-files-context-menu
+  [position]="contextMenuPosition()"
+  [selectedFiles]="selectedFiles()"
+  (openFolder)="onOperation({ type: 'open-folder', file: $event })"
+  (openLocation)="onOperation({ type: 'open-location', file: $event })"
+  (rename)="onOperation({ type: 'rename', file: $event })"
+  (toggleFavourite)="
+    onOperation({
+      type: 'toggle-favourite',
+      files: selectedFiles(),
+      value: $event,
+    })
+  "
+  (delete)="onOperation({ type: 'delete', files: $event })"
+  (share)="onOperation({ type: 'share', files: $event })"
+  (manageShares)="onOperation({ type: 'manage-shares', file: $event })"
+  (selectFolder)="fileService.goToFolder($event)"
+  (pauseUpload)="onOperation({ type: 'pause-upload', files: $event })"
+  (resumeUpload)="onOperation({ type: 'resume-upload', files: $event })"
+  (cancelUpload)="onOperation({ type: 'cancel-upload', files: $event })"
+  (move)="onOperation({ type: 'move', files: $event })"
+  (copy)="onOperation({ type: 'copy', files: $event })"
+  (download)="onOperation({ type: 'download', files: $event })"
+  (generateLink)="onOperation({ type: 'generate-link', files: $event })"
+/>
+
+<app-table-context-menu
+  [position]="contextMenuPosition()"
+  [accessMode]="currentDirectoryAccessMode()"
+  [sortableColumns]="sortableColumns()"
+  [sortOption]="sortOption()"
+  [canPaste]="canPaste()"
+  [(viewMode)]="viewMode"
+  (refresh)="onTableMenuAction('refresh')"
+  (createFolder)="onTableMenuAction('create')"
+  (upload)="onTableMenuAction('upload', $event)"
+  (paste)="onTableMenuAction('paste')"
+  (sortByColumn)="toggleSort($event)"
+/>
+
+<div class="position-relative h-100">
+  @if (dragTarget() && !isInternalHover()) {
+    <app-upload-overlay />
+  }
+
+  @if (viewMode() === "grid") {
+    <app-user-files-grid
+      (fileContextMenuRequested)="onFileContextMenu($event)"
+      (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (operationRequested)="onOperation($event)"
+    />
+  } @else {
+    <app-user-files-table
+      (fileContextMenuRequested)="onFileContextMenu($event)"
+      (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (operationRequested)="onOperation($event)"
+    />
+  }
+</div>
