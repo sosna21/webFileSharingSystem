@@ -192,6 +192,11 @@ export class SharedFilesViewComponent {
     this.fileContextMenu()?.open();
   }
 
+  closeContextMenus() {
+    this.fileContextMenu()?.close();
+    this.directoryContextMenu()?.close();
+  }
+
   private openDirectoryMenu(position: { x: number; y: number }) {
     this.fileContextMenu()?.close();
     this.contextMenuPosition.set(position);

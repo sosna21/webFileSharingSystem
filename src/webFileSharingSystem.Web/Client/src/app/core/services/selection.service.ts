@@ -72,6 +72,8 @@ export class SelectionService<
   private fileSelectionAnchorId = signal<number | null>(null);
   private keyboardFocusId = signal<number | null>(null);
   private rubberBandStartPoint = signal<RubberBandPoint | null>(null);
+  private rubberBandStartPointerPoint = signal<RubberBandPoint | null>(null);
+  private rubberBandStartScrollPoint = signal<RubberBandPoint | null>(null);
   private rubberBandCurrentPoint = signal<RubberBandPoint | null>(null);
   private rubberBandPointerPoint = signal<RubberBandPoint | null>(null);
   private rubberBandContainer = signal<HTMLElement | null>(null);
@@ -282,6 +284,14 @@ export class SelectionService<
     );
 
     this.rubberBandPointerPoint.set({ x: event.clientX, y: event.clientY });
+    this.rubberBandStartPointerPoint.set({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    this.rubberBandStartScrollPoint.set({
+      x: container.scrollLeft,
+      y: container.scrollTop,
+    });
     this.rubberBandStartPoint.set(point);
     this.rubberBandCurrentPoint.set(point);
     this.rubberBandContainer.set(container);
@@ -322,6 +332,16 @@ export class SelectionService<
 
     if (!container || !selector || !pointer) return;
 
+    const startPointer = this.rubberBandStartPointerPoint();
+    const startScroll = this.rubberBandStartScrollPoint();
+    if (startPointer && startScroll) {
+      const rect = container.getBoundingClientRect();
+      this.rubberBandStartPoint.set({
+        x: startPointer.x - rect.left + startScroll.x,
+        y: startPointer.y - rect.top + startScroll.y,
+      });
+    }
+
     this.rubberBandCurrentPoint.set(
       this.clientPointToContainerPoint(pointer.x, pointer.y, container),
     );
@@ -358,6 +378,8 @@ export class SelectionService<
     this.stopRubberBandAutoScroll();
 
     this.rubberBandStartPoint.set(null);
+    this.rubberBandStartPointerPoint.set(null);
+    this.rubberBandStartScrollPoint.set(null);
     this.rubberBandCurrentPoint.set(null);
     this.rubberBandPointerPoint.set(null);
     this.rubberBandContainer.set(null);
@@ -536,7 +558,8 @@ export class SelectionService<
 
   private isScrollBarPointer(event: PointerEvent, container: HTMLElement) {
     const rect = container.getBoundingClientRect();
-    const contentRight = rect.left + container.clientLeft + container.clientWidth;
+    const contentRight =
+      rect.left + container.clientLeft + container.clientWidth;
     const contentBottom =
       rect.top + container.clientTop + container.clientHeight;
 

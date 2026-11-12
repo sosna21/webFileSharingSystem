@@ -101,6 +101,7 @@ export class UserFilesTableComponent {
   readonly fileContextMenuRequested = output<UserFilesContextMenuRequest>();
   readonly directoryContextMenuRequested =
     output<UserFilesDirectoryMenuRequest>();
+  readonly selectionInteractionStarted = output();
   readonly operationRequested = output<UserFilesOperation>();
 
   constructor() {
@@ -226,7 +227,7 @@ export class UserFilesTableComponent {
 
     if (started) {
       event.preventDefault();
-      this.closeContextMenus();
+      this.selectionInteractionStarted.emit();
       (document.activeElement as HTMLElement | null)?.blur();
     }
   }
@@ -269,6 +270,7 @@ export class UserFilesTableComponent {
   }
 
   onFilePointerDown(file: AppFile, event: PointerEvent) {
+    this.selectionInteractionStarted.emit();
     this.selection.handleFilePointerDown(event, file, (clientX, clientY) =>
       this.getFileIdAtPoint(clientX, clientY),
     );
@@ -414,10 +416,6 @@ export class UserFilesTableComponent {
       this.selection.selectedIds.set(new Set([id]));
       this.selection.scrollToId(id);
     });
-  }
-
-  private closeContextMenus() {
-    return;
   }
 
   deleteFiles(files: AppFile[]) {

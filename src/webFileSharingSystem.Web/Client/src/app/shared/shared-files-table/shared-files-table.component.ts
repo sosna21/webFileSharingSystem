@@ -152,6 +152,7 @@ export class SharedFilesTableComponent {
   readonly fileContextMenuRequested = output<SharedFilesContextMenuRequest>();
   readonly directoryContextMenuRequested =
     output<SharedFilesDirectoryMenuRequest>();
+  readonly selectionInteractionStarted = output();
   readonly operationRequested = output<SharedFilesOperation>();
 
   currentDirectoryId = this.fileService.parentId;
@@ -231,6 +232,7 @@ export class SharedFilesTableComponent {
 
     if (started) {
       event.preventDefault();
+      this.selectionInteractionStarted.emit();
       (document.activeElement as HTMLElement | null)?.blur();
     }
   }
@@ -273,6 +275,7 @@ export class SharedFilesTableComponent {
   }
 
   onFilePointerDown(file: SharedFile, event: PointerEvent) {
+    this.selectionInteractionStarted.emit();
     this.selection.handleFilePointerDown(event, file, (clientX, clientY) =>
       this.getFileIdAtPoint(clientX, clientY),
     );

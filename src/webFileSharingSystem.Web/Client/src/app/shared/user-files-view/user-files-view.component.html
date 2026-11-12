@@ -47,12 +47,14 @@
     <app-user-files-grid
       (fileContextMenuRequested)="onFileContextMenu($event)"
       (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (selectionInteractionStarted)="closeContextMenus()"
       (operationRequested)="onOperation($event)"
     />
   } @else {
     <app-user-files-table
       (fileContextMenuRequested)="onFileContextMenu($event)"
       (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (selectionInteractionStarted)="closeContextMenus()"
       (operationRequested)="onOperation($event)"
     />
   }

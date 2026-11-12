@@ -36,12 +36,14 @@
     <app-shared-files-grid
       (fileContextMenuRequested)="onFileContextMenu($event)"
       (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (selectionInteractionStarted)="closeContextMenus()"
       (operationRequested)="onOperation($event)"
     />
   } @else {
     <app-shared-files-table
       (fileContextMenuRequested)="onFileContextMenu($event)"
       (directoryContextMenuRequested)="onDirectoryContextMenu($event)"
+      (selectionInteractionStarted)="closeContextMenus()"
       (operationRequested)="onOperation($event)"
     />
   }
