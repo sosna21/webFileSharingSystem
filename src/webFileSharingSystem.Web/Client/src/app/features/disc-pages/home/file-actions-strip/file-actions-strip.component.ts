@@ -1,6 +1,7 @@
 import { Component, computed, inject, Injector, signal } from '@angular/core';
 import { SelectFilenameDirective } from '../../../../core/directives/select-filename.directive';
-import { FileService } from '../../../../core/services/file.service';
+import { FileViewService } from '../../../../core/services/file-view.service';
+import { FileOperationsService } from '../../../../core/services/file-operations.service';
 import { FormsModule } from '@angular/forms';
 import { NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 import { DownloadService } from '../../../../core/services/download.service';
@@ -23,7 +24,8 @@ import { StateService } from '../../../../core/services/state.service';
   },
 })
 export class FileActionsStripComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
+  private readonly fileOperations = inject(FileOperationsService);
   private readonly selectionService: SelectionService<BaseFile> = inject(
     SelectionService<BaseFile>,
   );
@@ -52,7 +54,7 @@ export class FileActionsStripComponent {
   );
   readonly canPaste = computed(
     () =>
-      !!this.fileService.awaitingActionState() &&
+      !!this.fileOperations.awaitingActionState() &&
       this.fileService.isParentMinWriteAccess(),
   );
   readonly canCopyDownload = computed(
@@ -106,7 +108,7 @@ export class FileActionsStripComponent {
 
   createDirectory() {
     if (this.isNameForbidden()) return;
-    this.fileService.createDirectoryWithFeedback(this.newFolderName(), (id) => {
+    this.fileOperations.createDirectoryWithFeedback(this.newFolderName(), (id) => {
       this.selectionService.selectedIds.set(new Set([id]));
       this.selectionService.scrollToId(id);
     });
@@ -133,7 +135,7 @@ export class FileActionsStripComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+    this.fileOperations.createDirectoryWithFeedback(newDirName, (id) => {
       this.selectionService.selectedIds.set(new Set([id]));
       this.selectionService.scrollToId(id);
     });
@@ -149,7 +151,7 @@ export class FileActionsStripComponent {
 
   onCut() {
     if (!this.canFileAction()) return;
-    this.fileService.markFilesToMoveWithFeedback(
+    this.fileOperations.markFilesToMoveWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed,
       ),
@@ -158,7 +160,7 @@ export class FileActionsStripComponent {
 
   onCopy() {
     if (!this.canCopyDownload()) return;
-    this.fileService.markFilesToCopyWithFeedback(
+    this.fileOperations.markFilesToCopyWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed,
       ),
@@ -167,7 +169,7 @@ export class FileActionsStripComponent {
 
   onPaste() {
     if (!this.canPaste()) return;
-    this.fileService.pasteFilesWithFeedback((ids) => {
+    this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selectionService.selectedIds.set(ids);
       if (ids.size > 0) {
         this.selectionService.scrollToId(Array.from(ids).pop()!);
@@ -192,7 +194,7 @@ export class FileActionsStripComponent {
 
     if (!newFileName || newFileName === file.fileName) return;
 
-    this.fileService.renameFileWithFeedback(file, newFileName);
+    this.fileOperations.renameFileWithFeedback(file, newFileName);
   }
 
   async onRename() {
@@ -203,7 +205,7 @@ export class FileActionsStripComponent {
       return;
     }
 
-    this.fileService.editingId.set(this.selectedFiles()[0].id);
+    this.fileOperations.editingId.set(this.selectedFiles()[0].id);
   }
 
   onShare() {
@@ -230,7 +232,7 @@ export class FileActionsStripComponent {
 
   onDelete() {
     if (!this.canFileAction()) return;
-    this.fileService.deleteFilesWithFeedback(
+    this.fileOperations.deleteFilesWithFeedback(
       this.selectedFiles().filter(
         (file) => file.fileStatus === FileStatus.Completed,
       ),

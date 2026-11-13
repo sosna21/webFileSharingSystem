@@ -14,7 +14,7 @@ import {
   FileStatus,
   ProgressStatus,
 } from '../../../core/models/base-file.model';
-import { FileService } from '../../../core/services/file.service';
+import { FileViewService } from '../../../core/services/file-view.service';
 import { MobileContextMenuComponent } from '../../mobile-context-menu/mobile-context-menu.component';
 
 @Component({
@@ -27,7 +27,7 @@ export class SharedFilesContextMenuComponent {
   readonly ShareAccessMode = ShareAccessMode;
   readonly ProgressStatus = ProgressStatus;
 
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   readonly position = input.required<{ x: number; y: number }>();
   readonly selectedFiles = input.required<SharedFile[]>();
 

@@ -4,7 +4,7 @@ import {
   NgbPaginationModule,
   NgbTooltipModule,
 } from '@ng-bootstrap/ng-bootstrap';
-import { FileService } from '../../../core/services/file.service';
+import { FileViewService } from '../../../core/services/file-view.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
@@ -21,7 +21,7 @@ import { CommonModule } from '@angular/common';
   styleUrl: './base-disc-page.component.scss',
 })
 export class BaseDiscPageComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   readonly showPagination = computed(
     () => this.totalItems() > this.itemsPerPage(),
   );

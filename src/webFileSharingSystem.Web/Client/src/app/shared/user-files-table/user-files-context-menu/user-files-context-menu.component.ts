@@ -13,7 +13,7 @@ import {
   ProgressStatus,
   FileStatus,
 } from '../../../core/models/base-file.model';
-import { FileService } from '../../../core/services/file.service';
+import { FileViewService } from '../../../core/services/file-view.service';
 import { MobileContextMenuComponent } from '../../mobile-context-menu/mobile-context-menu.component';
 
 @Component({
@@ -23,7 +23,7 @@ import { MobileContextMenuComponent } from '../../mobile-context-menu/mobile-con
   styleUrl: './user-files-context-menu.component.scss',
 })
 export class UserFilesContextMenuComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   readonly dropdown = viewChild(NgbDropdown);
   readonly mobileMenu = viewChild(MobileContextMenuComponent);
   readonly position = input.required<{ x: number; y: number }>();

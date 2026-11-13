@@ -1,15 +1,19 @@
-import { forkJoin, of, Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { defer, forkJoin, of, Observable } from 'rxjs';
+import { catchError, finalize, map } from 'rxjs/operators';
 import { MessageSeverity } from '../models/toast-info.model';
 
 export interface BulkActionOptions<T> {
   items: T[];
-  action: (item: T) => Observable<any>;
-  updateItem?: (item: T, changes: Partial<T>) => void;
+  action: (item: T) => Observable<unknown>;
   onSuccess?: (item: T) => void;
-  onError?: (item: T, error: any) => void;
+  onError?: (item: T, error: unknown) => void;
+  afterComplete?: (item: T) => void;
   beforeStart?: (item: T) => void;
-  toast: (title: string, message: string, severity: any) => void;
+  toast: (
+    title: string,
+    message: string,
+    severity: MessageSeverity,
+  ) => void;
   successMessage: (
     count: number,
     items: T[],
@@ -24,12 +28,13 @@ export function bulkAction<T>(opts: BulkActionOptions<T>) {
   });
 
   const tasks = opts.items.map((item) =>
-    opts.action(item).pipe(
+    defer(() => opts.action(item)).pipe(
       map(() => ({ item, success: true })),
       catchError((err) => {
         opts.onError?.(item, err);
         return of({ item, success: false });
       }),
+      finalize(() => opts.afterComplete?.(item)),
     ),
   );
 

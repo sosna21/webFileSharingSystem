@@ -5,14 +5,16 @@ import { FileUploadDragDropService } from '../../services/file-upload-drag-drop.
 import { DragDropService } from '../../services/drag-drop.service';
 import { FileMoveDragDropService } from '../../services/file-move-drag-drop.service';
 import { FileShareService } from '../../services/file-share.service';
-import { FileService } from '../../services/file.service';
+import { FileOperationsService } from '../../services/file-operations.service';
+import { FileViewService } from '../../services/file-view.service';
 import { StorageService } from '../../services/storage.service';
 
 @Component({
   selector: 'app-authenticated-shell',
   imports: [RouterOutlet],
   providers: [
-    FileService,
+    FileViewService,
+    FileOperationsService,
     DragDropService,
     FileMoveDragDropService,
     FileShareService,

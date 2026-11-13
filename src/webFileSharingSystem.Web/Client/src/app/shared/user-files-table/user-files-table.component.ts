@@ -20,7 +20,8 @@ import {
 } from '@ng-bootstrap/ng-bootstrap';
 import { AppFile } from '../../core/models/app-file.model';
 import { FileUploadService } from '../../core/services/file-upload.service';
-import { FileService } from '../../core/services/file.service';
+import { FileViewService } from '../../core/services/file-view.service';
+import { FileOperationsService } from '../../core/services/file-operations.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
@@ -82,16 +83,17 @@ import {
 export class UserFilesTableComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
+  private readonly fileOperations = inject(FileOperationsService);
   private readonly uploadService = inject(FileUploadService);
   private readonly authService = inject(AuthenticationService);
   private readonly modalService = inject(ModalService);
   private readonly selection = inject(SelectionService<AppFile>);
   private readonly dragFacade = inject(DragDropService<AppFile>);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  readonly editingId = this.fileService.editingId;
-  readonly loadingIds = this.fileService.loadingIds;
-  readonly canPaste = computed(() => !!this.fileService.awaitingActionState());
+  readonly editingId = this.fileOperations.editingId;
+  readonly loadingIds = this.fileOperations.loadingIds;
+  readonly canPaste = computed(() => !!this.fileOperations.awaitingActionState());
   readonly sortOption = this.fileService.sortOption;
   readonly currentDirectoryAccessMode = computed(
     () => this.fileService.parentBreadcrumb()?.accessMode,
@@ -139,7 +141,7 @@ export class UserFilesTableComponent {
   files = this.fileService.userFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
-  filesMarkedForAction = this.fileService.awaitingActionState;
+  filesMarkedForAction = this.fileOperations.awaitingActionState;
   areAllCheckboxesChecked = computed(
     () =>
       this.files().length > 0 &&
@@ -384,7 +386,7 @@ export class UserFilesTableComponent {
   }
 
   pasteFiles() {
-    this.fileService.pasteFilesWithFeedback((ids) => {
+    this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selection.selectedIds.set(ids);
       if (ids.size > 0) {
         this.selection.scrollToId(Array.from(ids).pop()!);
@@ -412,7 +414,7 @@ export class UserFilesTableComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+    this.fileOperations.createDirectoryWithFeedback(newDirName, (id) => {
       this.selection.selectedIds.set(new Set([id]));
       this.selection.scrollToId(id);
     });

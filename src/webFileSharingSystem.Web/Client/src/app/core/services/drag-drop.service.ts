@@ -5,7 +5,7 @@ import { DragDropUtils } from '../utils/drag-drop-utils';
 import { BaseFile, FileStatus } from '../models/base-file.model';
 import { ShareAccessMode } from '../models/share-access-mode.model';
 import { Breadcrumb } from '../models/breadcrumb.model';
-import { FileService } from './file.service';
+import { FileViewService } from './file-view.service';
 import { MessageSeverity } from '../models/toast-info.model';
 import { ToastService } from './toast.service';
 
@@ -19,7 +19,7 @@ interface HoverTarget {
 export class DragDropService<T extends BaseFile | Breadcrumb> {
   private readonly internal = inject(FileMoveDragDropService);
   private readonly external = inject(FileUploadDragDropService);
-  private readonly fileService = inject(FileService);
+  private readonly fileView = inject(FileViewService);
   private readonly toast = inject(ToastService);
 
   /** Currently hovered target for action */
@@ -57,7 +57,7 @@ export class DragDropService<T extends BaseFile | Breadcrumb> {
       };
     }
 
-    const parentBreadcrumb = this.fileService.parentBreadcrumb();
+    const parentBreadcrumb = this.fileView.parentBreadcrumb();
     if (!parentBreadcrumb) return null;
     return {
       id: parentBreadcrumb.id,

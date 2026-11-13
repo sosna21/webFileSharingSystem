@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { AddShareRequest } from '../models/add-share-request.model';
 import { bulkAction } from '../utils/bulk-action-util';
 import { MessageSeverity } from '../models/toast-info.model';
-import { FileService } from './file.service';
+import { FileOperationsService } from './file-operations.service';
 import { ToastService } from './toast.service';
 import { Share } from '../models/share.model';
 import { UpdateFileShareRequest } from '../models/update-share-request.model';
@@ -17,7 +17,7 @@ import { DownloadService } from './download.service';
 export class FileShareService {
   readonly sharesUrl = `${environment.apiUrl}/Share`;
   private readonly http = inject(HttpClient);
-  private readonly fileService = inject(FileService);
+  private readonly fileOperations = inject(FileOperationsService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private readonly downloadService = inject(DownloadService);
@@ -72,9 +72,16 @@ export class FileShareService {
       action: (share) => this.deleteFileShare(share.shareId),
       onSuccess: onSuccess ?? (() => {}),
       onError: (_, err) => {
+        const errorMessage =
+          err &&
+          typeof err === 'object' &&
+          'error' in err &&
+          err.error
+            ? String(err.error)
+            : String(err);
         this.toast.show(
           $localize`Share cancellation`,
-          err.error || String(err),
+          errorMessage,
           MessageSeverity.error,
         );
       },
@@ -151,9 +158,9 @@ export class FileShareService {
     bulkAction<{ file: AppFile; shareRequest: AddShareRequest }>({
       items: shareRequests,
       action: (item) => this.shareFile(item.file, item.shareRequest),
-      beforeStart: (item) => this.fileService.setLoading(item.file.id, true),
+      beforeStart: (item) => this.fileOperations.setLoading(item.file.id, true),
       onSuccess: (item) => {
-        this.fileService.updateFile(item.file, {
+        this.fileOperations.updateUserFile(item.file.id, {
           isShared: true,
           sharedUntil: this.mergeSharedTo(
             item.file.sharedUntil,
@@ -161,15 +168,22 @@ export class FileShareService {
             item.file.isShared,
           ),
         });
-        this.fileService.setLoading(item.file.id, false);
+        this.fileOperations.setLoading(item.file.id, false);
       },
       onError: (item, err) => {
+        const errorMessage =
+          err &&
+          typeof err === 'object' &&
+          'error' in err &&
+          err.error
+            ? String(err.error)
+            : String(err);
         this.toast.show(
           $localize`Failed to share file: "${item.file.fileName}"`,
-          err.error || String(err),
+          errorMessage,
           MessageSeverity.error,
         );
-        this.fileService.setLoading(item.file.id, false);
+        this.fileOperations.setLoading(item.file.id, false);
       },
       toast: (title, msg, severity) => this.toast.show(title, msg, severity),
       successMessage: (count, updated) => {

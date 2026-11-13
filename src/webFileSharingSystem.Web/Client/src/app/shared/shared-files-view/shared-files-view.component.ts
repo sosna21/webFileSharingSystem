@@ -11,7 +11,8 @@ import { FileStatus, ProgressStatus } from '../../core/models/base-file.model';
 import { SharedFile } from '../../core/models/shared-file.model';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { DownloadService } from '../../core/services/download.service';
-import { FileService } from '../../core/services/file.service';
+import { FileOperationsService } from '../../core/services/file-operations.service';
+import { FileViewService } from '../../core/services/file-view.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
@@ -46,7 +47,8 @@ const descendingFirstSortColumns = new Set(['size']);
 })
 export class SharedFilesViewComponent {
   readonly storageService = inject(StorageService);
-  readonly fileService = inject(FileService);
+  readonly fileView = inject(FileViewService);
+  readonly fileOperations = inject(FileOperationsService);
   readonly viewMode = inject(StateService).viewMode;
   readonly selectedFiles = inject(SelectionService<SharedFile>).selectedItems;
   readonly dragTarget = inject(DragDropService<SharedFile>).dragTarget;
@@ -54,19 +56,19 @@ export class SharedFilesViewComponent {
     .isInternalHover;
   readonly contextMenuPosition = signal({ x: 0, y: 0 });
   readonly currentDirectoryAccessMode = computed(
-    () => this.fileService.parentBreadcrumb()?.accessMode,
+    () => this.fileView.parentBreadcrumb()?.accessMode,
   );
   readonly canPaste = computed(
     () =>
-      !!this.fileService.awaitingActionState() &&
-      this.fileService.isParentMinWriteAccess(),
+      !!this.fileOperations.awaitingActionState() &&
+      this.fileView.isParentMinWriteAccess(),
   );
-  readonly sortOption = this.fileService.sortOption;
+  readonly sortOption = this.fileView.sortOption;
   readonly sortableColumns = computed(() => [
     { column: 'fileName', displayName: $localize`File name` },
     {
       column: 'sharedBy/createdBy',
-      displayName: this.fileService.parentId()
+      displayName: this.fileView.parentId()
         ? $localize`Created By`
         : $localize`Shared By`,
     },
@@ -121,7 +123,7 @@ export class SharedFilesViewComponent {
   onOperation(operation: SharedFilesOperation) {
     switch (operation.type) {
       case 'open-folder':
-        this.fileService.goToFolder(operation.file.id);
+        this.fileView.goToFolder(operation.file.id);
         break;
       case 'open-location':
         this.openLocation(operation.file);
@@ -130,7 +132,7 @@ export class SharedFilesViewComponent {
         this.renameSharedFile(operation.file);
         break;
       case 'rename-inline':
-        this.fileService.renameFileWithFeedback(operation.file, operation.name);
+        this.fileOperations.renameFileWithFeedback(operation.file, operation.name);
         break;
       case 'delete':
       case 'cancel-upload':
@@ -140,10 +142,10 @@ export class SharedFilesViewComponent {
         );
         break;
       case 'move':
-        this.fileService.markFilesToMoveWithFeedback(operation.files);
+        this.fileOperations.markFilesToMoveWithFeedback(operation.files);
         break;
       case 'copy':
-        this.fileService.markFilesToCopyWithFeedback(operation.files);
+        this.fileOperations.markFilesToCopyWithFeedback(operation.files);
         break;
       case 'download':
         this.downloadService.downloadFilesWithFeedback(operation.files);
@@ -157,7 +159,7 @@ export class SharedFilesViewComponent {
         operation.files
           .filter((file) => file.progressStatus === ProgressStatus.Stopped)
           .forEach((file) =>
-            this.uploadService.resume(file, this.fileService.parentId()),
+            this.uploadService.resume(file, this.fileView.parentId()),
           );
         break;
       case 'sort':
@@ -171,7 +173,7 @@ export class SharedFilesViewComponent {
     files?: File[],
   ) {
     if (action === 'refresh') {
-      this.fileService.reloadCurrentList();
+      this.fileView.reloadCurrentList();
       this.storageService.refresh();
     } else if (action === 'create') {
       this.createFolder();
@@ -183,7 +185,7 @@ export class SharedFilesViewComponent {
   }
 
   toggleSort(column: string) {
-    this.fileService.toggleSort(column, descendingFirstSortColumns.has(column));
+    this.fileView.toggleSort(column, descendingFirstSortColumns.has(column));
   }
 
   private openFileMenu(position: { x: number; y: number }) {
@@ -204,8 +206,8 @@ export class SharedFilesViewComponent {
   }
 
   private async openLocation(file: SharedFile) {
-    this.fileService.goToFolder(file.parentId);
-    await this.fileService.waitForNextCurrentReload();
+    this.fileView.goToFolder(file.parentId);
+    await this.fileView.waitForNextCurrentReload();
     this.selection.scrollToId(file.id);
   }
 
@@ -213,11 +215,11 @@ export class SharedFilesViewComponent {
     const newFileName = await this.modalService.getNewFileName({
       startName: file.fileName,
       blacklistedNames: new Set(
-        [...this.fileService.names()].filter((name) => name !== file.fileName),
+        [...this.fileView.names()].filter((name) => name !== file.fileName),
       ),
     });
     if (newFileName && newFileName !== file.fileName) {
-      this.fileService.renameFileWithFeedback(file, newFileName);
+      this.fileOperations.renameFileWithFeedback(file, newFileName);
     }
   }
 
@@ -226,7 +228,7 @@ export class SharedFilesViewComponent {
       this.viewMode() === 'list' &&
       window.matchMedia('(min-width: 576px)').matches
     ) {
-      this.fileService.editingId.set(file.id);
+      this.fileOperations.editingId.set(file.id);
       return;
     }
 
@@ -234,7 +236,7 @@ export class SharedFilesViewComponent {
   }
 
   private pasteFiles() {
-    this.fileService.pasteFilesWithFeedback((ids) => {
+    this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selection.selectedIds.set(ids);
       if (ids.size > 0) this.selection.scrollToId(Array.from(ids).pop()!);
     });
@@ -243,17 +245,17 @@ export class SharedFilesViewComponent {
   private uploadFiles(files: File[]) {
     const filesWithPath = files.map((file) => ({ file, path: '' }));
     this.uploadService
-      .uploadFiles([], filesWithPath, this.fileService.parentId())
+      .uploadFiles([], filesWithPath, this.fileView.parentId())
       .subscribe();
   }
 
   private async createFolder() {
     const newDirName = await this.modalService.getNewDirectoryName({
-      startName: generateUniqueDirName(this.fileService.names()),
-      blacklistedNames: this.fileService.names(),
+      startName: generateUniqueDirName(this.fileView.names()),
+      blacklistedNames: this.fileView.names(),
     });
     if (!newDirName) return;
-    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+    this.fileOperations.createDirectoryWithFeedback(newDirName, (id) => {
       this.selection.selectedIds.set(new Set([id]));
       this.selection.scrollToId(id);
     });
@@ -264,11 +266,11 @@ export class SharedFilesViewComponent {
       const incompleteFiles = files.filter(
         (file) => file.fileStatus === FileStatus.Incomplete,
       );
-      if (await this.fileService.deleteFilesWithFeedback(incompleteFiles)) {
+      if (await this.fileOperations.deleteFilesWithFeedback(incompleteFiles)) {
         incompleteFiles.forEach((file) => this.uploadService.cancel(file.id));
       }
       return;
     }
-    this.fileService.deleteFilesWithFeedback(files);
+    this.fileOperations.deleteFilesWithFeedback(files);
   }
 }

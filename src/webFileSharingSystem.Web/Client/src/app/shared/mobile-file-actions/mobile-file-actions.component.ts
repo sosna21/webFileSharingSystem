@@ -8,7 +8,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FileService } from '../../core/services/file.service';
+import { FileViewService } from '../../core/services/file-view.service';
+import { FileOperationsService } from '../../core/services/file-operations.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
@@ -31,7 +32,8 @@ export class MobileFileActionsComponent {
   readonly scrollContainer = input<HTMLElement | null>(null);
   readonly actionsHidden = signal(false);
 
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
+  private readonly fileOperations = inject(FileOperationsService);
   private readonly fileUploadService = inject(FileUploadService);
   private readonly modalService = inject(ModalService);
   private readonly downloadService = inject(DownloadService);
@@ -119,7 +121,7 @@ export class MobileFileActionsComponent {
   );
   readonly canPaste = computed(
     () =>
-      !!this.fileService.awaitingActionState() &&
+      !!this.fileOperations.awaitingActionState() &&
       !!this.parentBreadcrumb() &&
       this.parentBreadcrumb()?.accessMode !== ShareAccessMode.ReadOnly,
   );
@@ -139,7 +141,7 @@ export class MobileFileActionsComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+    this.fileOperations.createDirectoryWithFeedback(newDirName, (id) => {
       this.selectionService.selectedIds.set(new Set([id]));
       this.selectionService.scrollToId(id);
     });
@@ -155,7 +157,7 @@ export class MobileFileActionsComponent {
   pasteFiles() {
     if (!this.canPaste()) return;
 
-    this.fileService.pasteFilesWithFeedback((ids) => {
+    this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selectionService.selectedIds.set(ids);
       if (ids.size > 0) {
         this.selectionService.scrollToId(Array.from(ids).pop()!);
@@ -164,7 +166,7 @@ export class MobileFileActionsComponent {
   }
 
   clearPendingAction() {
-    this.fileService.clearActionContext();
+    this.fileOperations.clearActionContext();
   }
 
   openUploadPicker() {

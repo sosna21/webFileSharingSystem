@@ -3,7 +3,7 @@ import {
   NgbCollapseModule,
   NgbPaginationModule,
 } from '@ng-bootstrap/ng-bootstrap';
-import { FileService } from '../../../core/services/file.service';
+import { FileViewService } from '../../../core/services/file-view.service';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb.component';
@@ -29,7 +29,7 @@ import { StateService } from '../../../core/services/state.service';
   styleUrl: './home.component.scss',
 })
 export class HomeComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   private readonly selectionService = inject(SelectionService<AppFile>);
   readonly viewMode = inject(StateService).viewMode;
   constructor() {

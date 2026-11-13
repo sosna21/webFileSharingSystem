@@ -5,7 +5,7 @@ import {
   inject,
   viewChild,
 } from '@angular/core';
-import { FileService } from '../../../../core/services/file.service';
+import { FileViewService } from '../../../../core/services/file-view.service';
 import { FormsModule } from '@angular/forms';
 import { retainLastDefined } from '../../../../core/utils/signal-utils';
 
@@ -20,7 +20,7 @@ import { retainLastDefined } from '../../../../core/utils/signal-utils';
   },
 })
 export class FileSearchComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   private readonly searchInput =
     viewChild<ElementRef<HTMLInputElement>>('searchInput');
 

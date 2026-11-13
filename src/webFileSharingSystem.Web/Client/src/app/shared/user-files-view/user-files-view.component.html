@@ -14,7 +14,7 @@
   (delete)="onOperation({ type: 'delete', files: $event })"
   (share)="onOperation({ type: 'share', files: $event })"
   (manageShares)="onOperation({ type: 'manage-shares', file: $event })"
-  (selectFolder)="fileService.goToFolder($event)"
+  (selectFolder)="fileView.goToFolder($event)"
   (pauseUpload)="onOperation({ type: 'pause-upload', files: $event })"
   (resumeUpload)="onOperation({ type: 'resume-upload', files: $event })"
   (cancelUpload)="onOperation({ type: 'cancel-upload', files: $event })"

@@ -3,7 +3,7 @@ import { NavLinkComponent } from './nav-link/nav-link.component';
 import { NgbProgressbarModule } from '@ng-bootstrap/ng-bootstrap';
 import { SpaceUsageBarComponent } from './space-usage-bar/space-usage-bar.component';
 import { UploadButtonsComponent } from './upload-buttons/upload-buttons.component';
-import { FileService } from '../../../../core/services/file.service';
+import { FileViewService } from '../../../../core/services/file-view.service';
 import { debouncedSignal } from '../../../../core/utils/signal-utils';
 
 @Component({
@@ -18,7 +18,7 @@ import { debouncedSignal } from '../../../../core/utils/signal-utils';
   styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   readonly canUpload = debouncedSignal(
     this.fileService.isParentMinWriteAccess,
     100,

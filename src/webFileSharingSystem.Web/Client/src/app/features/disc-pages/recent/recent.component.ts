@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { FileService } from '../../../core/services/file.service';
+import { FileViewService } from '../../../core/services/file-view.service';
 import { BaseDiscPageComponent } from '../base-disc-page/base-disc-page.component';
 import { BaseDiscPageHeaderComponent } from '../base-disc-page/base-disc-page-header/base-disc-page-header.component';
 import { UserFilesViewComponent } from '../../../shared/user-files-view/user-files-view.component';
@@ -21,7 +21,7 @@ import { StateService } from '../../../core/services/state.service';
   styleUrl: './recent.component.scss',
 })
 export class RecentComponent {
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   private readonly selectionService = inject(SelectionService<AppFile>);
   readonly viewMode = inject(StateService).viewMode;
   constructor() {

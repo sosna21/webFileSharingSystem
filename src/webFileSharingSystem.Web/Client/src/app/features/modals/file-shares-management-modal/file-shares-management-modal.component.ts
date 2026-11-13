@@ -11,7 +11,7 @@ import { AddShareRequest } from '../../../core/models/add-share-request.model';
 import { MessageSeverity } from '../../../core/models/toast-info.model';
 import { ClicableIconDirective } from '../../../core/directives/clicable-icon.directive';
 import { ShareClockService } from '../../../core/services/share-clock.service';
-import { FileService } from '../../../core/services/file.service';
+import { FileViewService } from '../../../core/services/file-view.service';
 
 const EXPIRING_SOON_THRESHOLD_MS = 10 * 60 * 1000;
 
@@ -42,7 +42,7 @@ export class FileSharesManagementModalComponent {
   private readonly toast = inject(ToastService);
   private readonly injector = inject(Injector);
   private readonly shareClock = inject(ShareClockService);
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
 
   readonly cancelShare = $localize`Cancel share`;
   readonly cancelExpiredShare = $localize`Cannot cancel expired share`;
@@ -203,7 +203,7 @@ export class FileSharesManagementModalComponent {
     };
 
     this.sharedFile.set({ ...sharedFile, ...updates });
-    this.fileService.updateFile(sharedFile, updates);
+    this.fileService.updateUserFile(sharedFile.id, updates);
   }
 
   private updateShareIfExists(updatedShare: Share) {

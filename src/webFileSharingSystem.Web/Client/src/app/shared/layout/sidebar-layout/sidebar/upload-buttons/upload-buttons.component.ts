@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FileUploadService } from '../../../../../core/services/file-upload.service';
-import { FileService } from '../../../../../core/services/file.service';
+import { FileViewService } from '../../../../../core/services/file-view.service';
 import { debouncedSignal } from '../../../../../core/utils/signal-utils';
 
 @Component({
@@ -15,7 +15,7 @@ import { debouncedSignal } from '../../../../../core/utils/signal-utils';
 })
 export class UploadButtonsComponent {
   private readonly fileUploadService = inject(FileUploadService);
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
   readonly canUpload = debouncedSignal(
     this.fileService.isParentMinWriteAccess,
     100,

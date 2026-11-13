@@ -27,7 +27,7 @@ import {
 import { MessageSeverity } from '../models/toast-info.model';
 import { UploadFileInfo } from '../models/upload-file-info.model';
 import { AppFile } from '../models/app-file.model';
-import { FileService } from './file.service';
+import { FileViewService } from './file-view.service';
 import { BaseFile } from '../models/base-file.model';
 import { SharedFile } from '../models/shared-file.model';
 import { StorageService } from './storage.service';
@@ -39,7 +39,7 @@ export class FileUploadService {
   private readonly http = inject(HttpClient);
   private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
-  private readonly fileService = inject(FileService);
+  private readonly fileView = inject(FileViewService);
 
   private readonly uploadingFiles: Record<
     number,
@@ -64,7 +64,7 @@ export class FileUploadService {
 
   public readonly activeUploadsInCurrentFolder = computed(() =>
     this.activeUploads().filter(
-      (pi) => pi.parentId === this.fileService.parentId(),
+      (pi) => pi.parentId === this.fileView.parentId(),
     ),
   );
   public readonly isUploading = computed(() => this.activeUploads().length > 0);
@@ -95,10 +95,10 @@ export class FileUploadService {
             this.ensureDirectoryExists(dir.path, destinationFolderId).pipe(
               tap((directoryFile) => {
                 if (
-                  destinationFolderId === this.fileService.parentId() &&
+                  destinationFolderId === this.fileView.parentId() &&
                   dir.path.split('/').length === 2
                 ) {
-                  this.fileService.addFileIfNotExists(directoryFile!);
+                  this.addUploadedFile(directoryFile!);
                 }
                 dirMap.set(dir.path, directoryFile!.id);
               }),
@@ -190,7 +190,7 @@ export class FileUploadService {
         const partial = appFile.partialFileInfo!;
 
         // Only update used space for new uploads, and not for "Shared with me" folder
-        if (this.fileService.mode() !== 'GetSharedWithMe')
+        if (this.fileView.mode() !== 'GetSharedWithMe')
           this.storage.updateCurrentUserUsedSpace(file.size);
 
         this.filesInfo[partial.fileId] = { partial, file };
@@ -202,8 +202,8 @@ export class FileUploadService {
           progress: 0,
         });
 
-        if (parentId === this.fileService.parentId()) {
-          this.fileService.addFileIfNotExists(appFile);
+        if (parentId === this.fileView.parentId()) {
+          this.addUploadedFile(appFile);
         }
 
         const upload$ = this.sendFile(file, partial, (progress) => {
@@ -462,7 +462,15 @@ export class FileUploadService {
       ...prev,
       [p.fileId as number]: p,
     }));
-    this.fileService.updateFileUploadProgress(p);
+    this.fileView.updateFileUploadProgress(p);
+  }
+
+  private addUploadedFile(file: AppFile | SharedFile) {
+    if (this.fileView.mode() === 'GetSharedWithMe') {
+      if ('userId' in file) this.fileView.addSharedFileIfNotExists(file);
+    } else if ('isFavourite' in file) {
+      this.fileView.addUserFileIfNotExists(file);
+    }
   }
 
   private removeProgress(fileId: number) {
@@ -499,7 +507,7 @@ export class FileUploadService {
       .put(`${environment.apiUrl}/Upload/${fileId}/Complete`, {})
       .pipe(
         tap({
-          next: () => this.fileService.completeUploadFile(fileId),
+          next: () => this.fileView.completeUploadFile(fileId),
         }),
       );
   }

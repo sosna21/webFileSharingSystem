@@ -24,7 +24,8 @@ import { SharedFile } from '../../core/models/shared-file.model';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { GridSelectionService } from '../../core/services/grid-selection.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
-import { FileService } from '../../core/services/file.service';
+import { FileViewService } from '../../core/services/file-view.service';
+import { FileOperationsService } from '../../core/services/file-operations.service';
 import { ModalService } from '../../core/services/modal.service';
 import { SelectionService } from '../../core/services/selection.service';
 import { generateUniqueDirName } from '../../core/utils/file-utils';
@@ -66,7 +67,8 @@ import {
 export class SharedFilesGridComponent {
   readonly FileStatus = FileStatus;
   readonly ProgressStatus = ProgressStatus;
-  private readonly fileService = inject(FileService);
+  private readonly fileService = inject(FileViewService);
+  private readonly fileOperations = inject(FileOperationsService);
   private readonly modalService = inject(ModalService);
   private readonly uploadService = inject(FileUploadService);
   private readonly selection = inject(SelectionService<SharedFile>);
@@ -74,11 +76,11 @@ export class SharedFilesGridComponent {
   private readonly dragFacade = inject(DragDropService<SharedFile>);
   private readonly authService = inject(AuthenticationService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  readonly editingId = this.fileService.editingId;
-  readonly loadingIds = this.fileService.loadingIds;
+  readonly editingId = this.fileOperations.editingId;
+  readonly loadingIds = this.fileOperations.loadingIds;
   readonly canPaste = computed(
     () =>
-      !!this.fileService.awaitingActionState() &&
+      !!this.fileOperations.awaitingActionState() &&
       this.fileService.isParentMinWriteAccess(),
   );
   readonly currentDirectoryAccessMode = computed(
@@ -129,7 +131,7 @@ export class SharedFilesGridComponent {
   files = this.fileService.sharedFiles;
   selectedIds = this.selection.selectedIds;
   selectedFiles = this.selection.selectedItems;
-  filesMarkedForAction = this.fileService.awaitingActionState;
+  filesMarkedForAction = this.fileOperations.awaitingActionState;
   areAllCheckboxesChecked = computed(
     () =>
       this.files().length > 0 &&
@@ -339,7 +341,7 @@ export class SharedFilesGridComponent {
   }
 
   pasteFiles() {
-    this.fileService.pasteFilesWithFeedback((ids) => {
+    this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selection.selectedIds.set(ids);
       if (ids.size > 0) {
         this.selection.scrollToId(Array.from(ids).pop()!);
@@ -367,7 +369,7 @@ export class SharedFilesGridComponent {
 
     if (!newDirName) return;
 
-    this.fileService.createDirectoryWithFeedback(newDirName, (id) => {
+    this.fileOperations.createDirectoryWithFeedback(newDirName, (id) => {
       this.selection.selectedIds.set(new Set([id]));
       this.selection.scrollToId(id);
     });

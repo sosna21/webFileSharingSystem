@@ -1,11 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { BaseFile } from '../models/base-file.model';
-import { FileService } from './file.service';
+import { FileOperationsService } from './file-operations.service';
 
 @Injectable()
 export class FileMoveDragDropService {
   readonly draggedFiles = signal<BaseFile[]>([]);
-  readonly fileService = inject(FileService);
+  readonly fileOperations = inject(FileOperationsService);
 
   startDrag(files: BaseFile[]) {
     this.draggedFiles.set(files);
@@ -31,7 +31,7 @@ export class FileMoveDragDropService {
   }
 
   async moveDraggedFiles(destinationId: number, destinationName: string) {
-    this.fileService.moveFilesWithFeedback(
+    this.fileOperations.moveFilesWithFeedback(
       this.draggedFiles(),
       destinationId,
       destinationName,
