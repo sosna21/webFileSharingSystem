@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,16 @@ namespace webFileSharingSystem.Web
 
                 await e2eContainer.StartAsync();
 
-                Environment.SetEnvironmentVariable("ConnectionStrings__DbConnection", e2eContainer.GetConnectionString());
+                var connectionStringBuilder = new SqlConnectionStringBuilder(
+                    e2eContainer.GetConnectionString())
+                {
+                    InitialCatalog = "WebFileSharingSystemE2E"
+                };
+
+                Environment.SetEnvironmentVariable(
+                    "ConnectionStrings__DbConnection",
+                    connectionStringBuilder.ConnectionString);
+
                 Environment.SetEnvironmentVariable("DisableDbSeeding", "true");
             }
 
