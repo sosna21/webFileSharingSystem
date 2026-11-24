@@ -88,6 +88,8 @@ export class SelectionService<
   private touchLongPressCompleted = false;
   private touchGestureCancelled = false;
   private touchClickSuppressed = false;
+  private rubberBandClickSuppressed = false;
+  private nativeDragOriginInsideContent = false;
   private touchRangeGestureBlocked = signal(false);
   private touchRangeCurrentFileId: number | null = null;
   private touchRangeInitialSelection = new Set<number>();
@@ -184,6 +186,14 @@ export class SelectionService<
     return event.pointerType === 'mouse' ? 'pointer' : 'touch';
   }
 
+  isNativeDragOriginInsideContent() {
+    return this.nativeDragOriginInsideContent;
+  }
+
+  clearNativeDragOrigin() {
+    this.nativeDragOriginInsideContent = false;
+  }
+
   isTouchRangeSelectionActive() {
     return this.touchRangeGestureBlocked();
   }
@@ -201,6 +211,11 @@ export class SelectionService<
   ) {
     if (event.button !== 0) return;
 
+    this.rubberBandClickSuppressed = false;
+    this.nativeDragOriginInsideContent =
+      event.pointerType === 'mouse' &&
+      event.target instanceof Element &&
+      !!event.target.closest('[data-content]');
     this.touchClickSuppressed = false;
     this.touchRangeGestureBlocked.set(false);
     this.activePointerId = event.pointerId;
@@ -258,6 +273,7 @@ export class SelectionService<
   ) {
     if (event.button !== 0) return false;
 
+    this.rubberBandClickSuppressed = false;
     const mode = this.getSelectionMode(event);
     this.currentSelectionMode.set(mode);
     this.activePointerId = event.pointerId;
@@ -319,6 +335,7 @@ export class SelectionService<
         this.rubberBandBaseSelection.set(new Set(this.selectedIds()));
 
         this.rubberBandState.set('dragging');
+        event.preventDefault();
       }
 
       this.rubberBandPointerPoint.set({ x: event.clientX, y: event.clientY });
@@ -653,7 +670,9 @@ export class SelectionService<
   }
 
   handlePointerUp(event: PointerEvent) {
+    this.nativeDragOriginInsideContent = false;
     if (this.currentSelectionMode() !== 'touch') {
+      this.rubberBandClickSuppressed = this.rubberBandActive();
       this.endRubberBandSelection();
       return;
     }
@@ -681,7 +700,9 @@ export class SelectionService<
   }
 
   handlePointerCancel(event: PointerEvent) {
+    this.nativeDragOriginInsideContent = false;
     if (this.currentSelectionMode() !== 'touch') {
+      this.rubberBandClickSuppressed = false;
       this.endRubberBandSelection();
       return;
     }
@@ -1043,6 +1064,13 @@ export class SelectionService<
       return;
     }
 
+    if (this.rubberBandClickSuppressed && event && event.detail > 0) {
+      this.rubberBandClickSuppressed = false;
+      event?.preventDefault();
+      event?.stopPropagation();
+      return;
+    }
+
     const isCtrl = event?.ctrlKey || event?.metaKey;
     const isShift = event?.shiftKey;
     const localAnchor = this.fileSelectionAnchorId() ?? file.id;
@@ -1218,6 +1246,8 @@ export class SelectionService<
     this.removeTouchMoveListener();
     this.touchLongPressCompleted = false;
     this.touchClickSuppressed = false;
+    this.rubberBandClickSuppressed = false;
+    this.nativeDragOriginInsideContent = false;
     this.resetTouchRangeState();
     this.touchGestureCancelled = false;
     this.touchPressedItemId = null;

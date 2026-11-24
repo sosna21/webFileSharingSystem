@@ -228,7 +228,6 @@ export class UserFilesTableComponent {
     );
 
     if (started) {
-      event.preventDefault();
       this.selectionInteractionStarted.emit();
       (document.activeElement as HTMLElement | null)?.blur();
     }
@@ -455,6 +454,15 @@ export class UserFilesTableComponent {
       return;
     }
 
+    if (
+      !this.isSelected(file.id) &&
+      !this.selection.isNativeDragOriginInsideContent()
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
@@ -477,6 +485,7 @@ export class UserFilesTableComponent {
   }
 
   onRowDragEnd(event: DragEvent) {
+    this.selection.clearNativeDragOrigin();
     this.dragFacade.rowDragEnd(event);
   }
 

@@ -203,7 +203,6 @@ export class UserFilesGridComponent {
     );
 
     if (started) {
-      event.preventDefault();
       this.selectionInteractionStarted.emit();
       (document.activeElement as HTMLElement | null)?.blur();
     }
@@ -409,6 +408,15 @@ export class UserFilesGridComponent {
       return;
     }
 
+    if (
+      !this.isSelected(file.id) &&
+      !this.selection.isNativeDragOriginInsideContent()
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (!this.isSelected(file.id)) {
       this.selection.selectedIds.set(new Set([file.id]));
       this.changeDetectorRef.detectChanges();
@@ -431,6 +439,7 @@ export class UserFilesGridComponent {
   }
 
   onRowDragEnd(event: DragEvent) {
+    this.selection.clearNativeDragOrigin();
     this.dragFacade.rowDragEnd(event);
   }
 
