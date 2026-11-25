@@ -485,6 +485,70 @@ describe('FileOperationsService', () => {
     expect(service.loadingIds()).toEqual(new Set<number>());
   });
 
+  it('preserves a newer pending action when an earlier paste succeeds', () => {
+    const firstFile = createAppFile(110, 'first.txt');
+    const newerFile = createAppFile(111, 'newer.txt');
+    const response = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([firstFile, newerFile]);
+    copyFilesResult = response.asObservable();
+
+    service.markFilesToCopyWithFeedback([firstFile]);
+    service.pasteFilesWithFeedback();
+    service.markFilesToMoveWithFeedback([newerFile]);
+
+    response.next([createAppFile(112, 'copy.txt')]);
+    response.complete();
+
+    expect(service.awaitingActionState()).toEqual({
+      files: new Set([newerFile]),
+      filesIds: new Set([newerFile.id]),
+      type: ActionType.Move,
+    });
+  });
+
+  it('preserves a new action after clearing and marking during a pending paste', () => {
+    const firstFile = createAppFile(113, 'first.txt');
+    const newerFile = createAppFile(114, 'newer.txt');
+    const response = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([firstFile, newerFile]);
+    copyFilesResult = response.asObservable();
+
+    service.markFilesToCopyWithFeedback([firstFile]);
+    service.pasteFilesWithFeedback();
+    service.clearActionContext();
+    service.markFilesToCopyWithFeedback([newerFile]);
+
+    response.next([createAppFile(115, 'copy.txt')]);
+    response.complete();
+
+    expect(service.awaitingActionState()).toEqual({
+      files: new Set([newerFile]),
+      filesIds: new Set([newerFile.id]),
+      type: ActionType.Copy,
+    });
+  });
+
+  it('preserves a newer pending action when an earlier paste fails', () => {
+    const firstFile = createAppFile(116, 'first.txt');
+    const newerFile = createAppFile(117, 'newer.txt');
+    const response = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([firstFile, newerFile]);
+    copyFilesResult = response.asObservable();
+
+    service.markFilesToCopyWithFeedback([firstFile]);
+    service.pasteFilesWithFeedback();
+    service.markFilesToMoveWithFeedback([newerFile]);
+
+    response.error(new Error('Copy failed'));
+
+    expect(service.awaitingActionState()).toEqual({
+      files: new Set([newerFile]),
+      filesIds: new Set([newerFile.id]),
+      type: ActionType.Move,
+    });
+    expect(service.loadingIds()).toEqual(new Set<number>());
+  });
+
   it('pastes moved files into the current destination without updating storage', () => {
     const sourceFile = createAppFile(32, 'to-move.txt');
     const movedFile = createAppFile(32, 'to-move.txt');
@@ -564,6 +628,34 @@ describe('FileOperationsService', () => {
 
     expect(service.loadingIds()).toEqual(new Set<number>());
   });
+
+  it.each(['copy', 'move'] as const)(
+    'does not let a direct %s clear an action marked after it started',
+    (operationName) => {
+      const sourceFile = createAppFile(118, 'source.txt');
+      const newerFile = createAppFile(119, 'newer.txt');
+      const response = new Subject<AppFile[] | SharedFile[]>();
+      userFiles.set([sourceFile, newerFile]);
+
+      if (operationName === 'copy') {
+        copyFilesResult = response.asObservable();
+        service.copyFilesWithFeedback([sourceFile], 80, 'Destination');
+      } else {
+        moveFilesResult = response.asObservable();
+        service.moveFilesWithFeedback([sourceFile], 80, 'Destination');
+      }
+
+      service.markFilesToCopyWithFeedback([newerFile]);
+      response.next([createAppFile(120, 'result.txt')]);
+      response.complete();
+
+      expect(service.awaitingActionState()).toEqual({
+        files: new Set([newerFile]),
+        filesIds: new Set([newerFile.id]),
+        type: ActionType.Copy,
+      });
+    },
+  );
 
   it('adds copied files to the shared list without updating user storage', () => {
     const sourceFile = createSharedFile(35, 'shared-source.txt');

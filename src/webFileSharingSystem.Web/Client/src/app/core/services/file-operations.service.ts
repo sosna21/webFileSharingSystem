@@ -20,6 +20,7 @@ export class FileOperationsService {
   private readonly storage = inject(StorageService);
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
+  private actionContextGeneration = 0;
   private readonly actionContext = linkedSignal<
     Map<number, BaseFile>,
     { files: Set<BaseFile>; filesIds: Set<number>; type: ActionType } | null
@@ -407,6 +408,7 @@ export class FileOperationsService {
 
     const requestMode = this.fileView.mode();
     const requestParentId = this.fileView.parentId();
+    const actionContextGeneration = this.actionContextGeneration;
 
     files.forEach((file) => this.setLoading(file.id, true));
 
@@ -476,7 +478,9 @@ export class FileOperationsService {
                 : $localize`File moved to '${targetDirectoryName}'.`;
 
           this.toast.show($localize`Success`, message, MessageSeverity.success);
-          this.clearActionContext();
+          if (this.actionContextGeneration === actionContextGeneration) {
+            this.clearActionContext();
+          }
 
           if (operationName === 'copy' && requestMode !== 'GetSharedWithMe') {
             this.storage.updateCurrentUserUsedSpace(
@@ -525,10 +529,12 @@ export class FileOperationsService {
   }
 
   clearActionContext() {
+    this.actionContextGeneration++;
     this.actionContext.set(null);
   }
 
   private setFilesMarkedForAction(files: BaseFile[], actionType: ActionType) {
+    this.actionContextGeneration++;
     this.actionContext.set({
       files: new Set(files),
       filesIds: new Set(files.map((file) => file.id)),
