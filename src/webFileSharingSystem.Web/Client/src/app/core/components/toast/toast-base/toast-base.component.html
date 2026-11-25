@@ -2,7 +2,7 @@
   class="mb-2"
   [class]="styling()"
   [autohide]="true"
-  [delay]="toast().delay || 5000"
+  [delay]="toast().delay ?? 5000"
   (hidden)="onHide()"
   (click)="onClick()"
 >

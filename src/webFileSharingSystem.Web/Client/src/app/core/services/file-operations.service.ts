@@ -416,7 +416,11 @@ export class FileOperationsService {
     operation(fileIds, targetDirectoryId)
       .subscribe({
         next: (result) => {
-          if (targetDirectoryId === requestParentId) {
+          const isCurrentContext =
+            this.fileView.mode() === requestMode &&
+            this.fileView.parentId() === requestParentId;
+
+          if (isCurrentContext && targetDirectoryId === requestParentId) {
             if (requestMode === 'GetSharedWithMe') {
               (result as SharedFile[]).forEach((file) => {
                 const optimisticSharedFile: SharedFile = {
@@ -440,7 +444,7 @@ export class FileOperationsService {
                 this.fileView.addUserFileIfNotExists(optimisticAppFile);
               });
             }
-          } else if (operationName === 'move') {
+          } else if (isCurrentContext && operationName === 'move') {
             if (requestMode === 'GetSharedWithMe') {
               this.fileView.removeSharedFiles(new Set(fileIds));
             } else {
@@ -448,9 +452,6 @@ export class FileOperationsService {
             }
           }
 
-          const isCurrentContext =
-            this.fileView.mode() === requestMode &&
-            this.fileView.parentId() === requestParentId;
           if (
             onSuccess &&
             targetDirectoryId === requestParentId &&

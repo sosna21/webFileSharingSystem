@@ -16,7 +16,7 @@ export class ToastService {
       header: header,
       body: body,
       type: type || MessageSeverity.default,
-      delay: delay || 5000,
+      delay: delay ?? 5000,
     };
     if (this.toasts().length >= this.maxToasts) {
       this.toasts.update((current) => [...current.slice(1), toast]);

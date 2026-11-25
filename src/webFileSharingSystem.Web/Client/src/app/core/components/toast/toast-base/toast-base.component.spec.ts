@@ -44,6 +44,22 @@ describe('ToastBaseComponent', () => {
     expect(toastService.remove).toHaveBeenCalledWith(toast);
   });
 
+  it.each([
+    { delay: 0, expectedDelay: 0 },
+    { delay: undefined, expectedDelay: 5000 },
+  ])(
+    'passes delay $expectedDelay to the rendered toast',
+    ({ delay, expectedDelay }) => {
+      fixture.componentRef.setInput('toast', { ...toast, delay });
+      fixture.detectChanges();
+
+      const ngbToast = fixture.debugElement.query(By.directive(NgbToast))
+        .componentInstance as NgbToast;
+
+      expect(ngbToast.delay).toBe(expectedDelay);
+    },
+  );
+
   it('copies the toast body when clicked', () => {
     const originalClipboard = Object.getOwnPropertyDescriptor(
       navigator,
