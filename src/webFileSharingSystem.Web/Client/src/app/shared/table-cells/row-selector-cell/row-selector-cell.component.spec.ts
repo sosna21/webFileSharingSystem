@@ -1,10 +1,6 @@
 import { signal } from '@angular/core';
-import {
-  BrowserDynamicTestingModule,
-  platformBrowserDynamicTesting,
-} from '@angular/platform-browser-dynamic/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { FileStatus } from '../../../core/models/base-file.model';
 import { SelectionService } from '../../../core/services/selection.service';
@@ -27,13 +23,6 @@ describe('RowSelectorCellComponent', () => {
     uploadProgress: null,
     createdBy: 1,
     createdByUserName: 'me',
-  });
-
-  beforeAll(() => {
-    TestBed.initTestEnvironment(
-      BrowserDynamicTestingModule,
-      platformBrowserDynamicTesting(),
-    );
   });
 
   beforeEach(async () => {

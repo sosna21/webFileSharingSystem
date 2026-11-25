@@ -8,11 +8,12 @@ import { of } from 'rxjs';
 import { AuthenticationService } from '../services/authentication.service';
 import { JwtTokenService } from '../services/jwt-token.service';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 import { jwtInterceptor } from './jwt.interceptor';
 
 describe('jwtInterceptor', () => {
-  const interceptor: HttpInterceptorFn = (req, next) => 
+  const interceptor: HttpInterceptorFn = (req, next) =>
     TestBed.runInInjectionContext(() => jwtInterceptor(req, next));
 
   beforeEach(() => {
@@ -23,7 +24,7 @@ describe('jwtInterceptor', () => {
     expect(interceptor).toBeTruthy();
   });
 
-  it('adds the token to an absolute same-origin API URL', () => {
+  it('adds the token to the configured API URL', () => {
     TestBed.configureTestingModule({
       providers: [
         {
@@ -47,7 +48,7 @@ describe('jwtInterceptor', () => {
     interceptor(
       new HttpRequest(
         'GET',
-        `${location.origin}/api/User/Photo/00000000-0000-0000-0000-000000000000`,
+        `${environment.apiUrl}/User/Photo/00000000-0000-0000-0000-000000000000`,
       ),
       next,
     ).subscribe();
