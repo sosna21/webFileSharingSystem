@@ -44,6 +44,7 @@ export class FileActionsStripComponent {
   );
 
   readonly selectedFiles = this.selectionService.selectedItems;
+  readonly isPasteInProgress = this.fileOperations.isPasteInProgress;
   readonly hasSelectedFiles = computed(() => this.selectedFiles().length > 0);
   readonly canCreateDirectory = computed(
     () =>
@@ -168,7 +169,7 @@ export class FileActionsStripComponent {
   }
 
   onPaste() {
-    if (!this.canPaste()) return;
+    if (!this.canPaste() || this.isPasteInProgress()) return;
     this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selectionService.selectedIds.set(ids);
       if (ids.size > 0) {

@@ -1,5 +1,5 @@
 import { inject, Injectable, linkedSignal, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { ActionType } from '../models/action-type.model';
 import { AppFile } from '../models/app-file.model';
 import { BaseFile, FileStatus } from '../models/base-file.model';
@@ -21,6 +21,7 @@ export class FileOperationsService {
   private readonly toast = inject(ToastService);
   private readonly modalService = inject(ModalService);
   private actionContextGeneration = 0;
+  private readonly pasteInProgressState = signal(false);
   private readonly actionContext = linkedSignal<
     Map<number, BaseFile>,
     { files: Set<BaseFile>; filesIds: Set<number>; type: ActionType } | null
@@ -44,6 +45,7 @@ export class FileOperationsService {
   });
 
   readonly awaitingActionState = this.actionContext.asReadonly();
+  readonly isPasteInProgress = this.pasteInProgressState.asReadonly();
   readonly editingId = signal<number | null>(null);
   readonly loadingIds = signal<Set<number>>(new Set());
   renameFileWithFeedback(file: BaseFile, newFileName: string) {
@@ -118,10 +120,7 @@ export class FileOperationsService {
       },
       onError: (file, err) => {
         const errorMessage =
-          err &&
-          typeof err === 'object' &&
-          'error' in err &&
-          err.error
+          err && typeof err === 'object' && 'error' in err && err.error
             ? String(err.error)
             : String(err);
         this.toast.show(
@@ -238,22 +237,41 @@ export class FileOperationsService {
   }
 
   pasteFilesWithFeedback(onSuccess?: (ids: Set<number>) => void) {
+    if (this.pasteInProgressState()) return;
+
     const action = this.awaitingActionState();
-    if (!action) return;
-    if (action.type === ActionType.Move) {
-      this.moveFilesWithFeedback(
-        Array.from(action.files),
-        this.fileView.parentId(),
-        this.fileView.parentName() ?? 'home directory',
-        onSuccess,
-      );
-    } else if (action.type === ActionType.Copy) {
-      this.copyFilesWithFeedback(
-        Array.from(action.files),
-        this.fileView.parentId(),
-        this.fileView.parentName() ?? 'home directory',
-        onSuccess,
-      );
+    if (!action || action.files.size === 0) return;
+
+    const files = Array.from(action.files);
+    const targetDirectoryId = this.fileView.parentId();
+    const targetDirectoryName = this.fileView.parentName() ?? 'home directory';
+
+    this.pasteInProgressState.set(true);
+    try {
+      if (action.type === ActionType.Move) {
+        this.executeFileOperationWithFeedback(
+          files,
+          targetDirectoryId,
+          targetDirectoryName,
+          (ids, targetId) => this.fileApiService.moveFiles(ids, targetId),
+          'move',
+          onSuccess,
+          () => this.pasteInProgressState.set(false),
+        );
+      } else {
+        this.executeFileOperationWithFeedback(
+          files,
+          targetDirectoryId,
+          targetDirectoryName,
+          (ids, targetId) => this.fileApiService.copyFiles(ids, targetId),
+          'copy',
+          onSuccess,
+          () => this.pasteInProgressState.set(false),
+        );
+      }
+    } catch (error) {
+      this.pasteInProgressState.set(false);
+      throw error;
     }
   }
 
@@ -402,6 +420,7 @@ export class FileOperationsService {
     ) => Observable<AppFile[] | SharedFile[]>,
     operationName: 'move' | 'copy',
     onSuccess?: (ids: Set<number>) => void,
+    afterComplete?: () => void,
   ) {
     if (files.length === 0) return;
     if (targetDirectoryName === '') targetDirectoryName = 'Root';
@@ -415,8 +434,9 @@ export class FileOperationsService {
     const fileIds = files.map((f) => f.id);
     const isPlural = files.length > 1;
 
-    operation(fileIds, targetDirectoryId)
-      .subscribe({
+    let subscription: Subscription;
+    try {
+      subscription = operation(fileIds, targetDirectoryId).subscribe({
         next: (result) => {
           const isCurrentContext =
             this.fileView.mode() === requestMode &&
@@ -464,8 +484,7 @@ export class FileOperationsService {
 
           const shouldReloadCurrentList =
             isCurrentContext &&
-            (targetDirectoryId === requestParentId ||
-              operationName === 'move');
+            (targetDirectoryId === requestParentId || operationName === 'move');
           if (shouldReloadCurrentList) this.fileView.reloadCurrentList();
 
           const message =
@@ -509,10 +528,16 @@ export class FileOperationsService {
 
           this.toast.show(title, message, MessageSeverity.error);
         },
-      })
-      .add(() => {
-        files.forEach((file) => this.setLoading(file.id, false));
       });
+    } catch (error) {
+      files.forEach((file) => this.setLoading(file.id, false));
+      throw error;
+    }
+
+    subscription.add(() => {
+      files.forEach((file) => this.setLoading(file.id, false));
+      afterComplete?.();
+    });
   }
 
   setLoading(id: number, value: boolean) {

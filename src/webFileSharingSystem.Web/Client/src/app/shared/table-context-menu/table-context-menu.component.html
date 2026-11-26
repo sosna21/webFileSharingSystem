@@ -114,8 +114,9 @@
   <button
     ngbDropdownItem
     class="d-flex align-items-center"
-    (click)="paste.emit(); close()"
-    [disabled]="!hasMinReadWriteAccess() || !canPaste()"
+    (click)="pasteClicked()"
+    [disabled]="!hasMinReadWriteAccess() || !canPaste() || pasteInProgress()"
+    [attr.aria-busy]="pasteInProgress()"
     data-testid="table-context-menu-paste"
   >
     <i

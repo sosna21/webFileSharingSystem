@@ -44,6 +44,8 @@
         class="btn btn-secondary rounded-circle shadow"
         aria-label="Paste"
         i18n-aria-label
+        [disabled]="isPasteInProgress()"
+        [attr.aria-busy]="isPasteInProgress()"
         (click)="pasteFiles()"
       >
         <i class="bi bi-clipboard" aria-hidden="true"></i>

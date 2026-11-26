@@ -80,7 +80,9 @@ describe('FileOperationsService', () => {
   let createDirectoryResult: ReturnType<FileApiService['createDirectory']>;
   let copyFilesResult: ReturnType<FileApiService['copyFiles']>;
   let moveFilesResult: ReturnType<FileApiService['moveFiles']>;
-  let deleteResult: (fileId: number) => ReturnType<FileApiService['deleteFile']>;
+  let deleteResult: (
+    fileId: number,
+  ) => ReturnType<FileApiService['deleteFile']>;
   let renameFile: FileApiService['renameFile'];
   let setFavourite: FileApiService['setFavourite'];
   let createDirectory: FileApiService['createDirectory'];
@@ -168,12 +170,9 @@ describe('FileOperationsService', () => {
       | 'reloadCurrentList'
     >;
 
-    renameFile = vi.fn(
-      (_fileId: number, _newFileName: string) => renameResult,
-    );
-    setFavourite = vi.fn(
-      (fileId: number, isFavourite: boolean) =>
-        favouriteResult(fileId, isFavourite),
+    renameFile = vi.fn((_fileId: number, _newFileName: string) => renameResult);
+    setFavourite = vi.fn((fileId: number, isFavourite: boolean) =>
+      favouriteResult(fileId, isFavourite),
     );
     createDirectory = vi.fn(
       (_name: string, _parentId: number | null) => createDirectoryResult,
@@ -239,6 +238,7 @@ describe('FileOperationsService', () => {
 
   it('starts with empty action and loading state', () => {
     expect(service.awaitingActionState()).toBeNull();
+    expect(service.isPasteInProgress()).toBe(false);
     expect(service.editingId()).toBeNull();
     expect(service.loadingIds()).toEqual(new Set<number>());
   });
@@ -377,16 +377,19 @@ describe('FileOperationsService', () => {
       'Favourite update failed on server',
       MessageSeverity.error,
     );
-    expect(userFiles().find((file) => file.id === successfulFile.id)?.isFavourite)
-      .toBe(false);
+    expect(
+      userFiles().find((file) => file.id === successfulFile.id)?.isFavourite,
+    ).toBe(false);
 
     pendingSuccess.next({});
     pendingSuccess.complete();
 
-    expect(userFiles().find((file) => file.id === successfulFile.id)?.isFavourite)
-      .toBe(true);
-    expect(userFiles().find((file) => file.id === failedFile.id)?.isFavourite)
-      .toBe(false);
+    expect(
+      userFiles().find((file) => file.id === successfulFile.id)?.isFavourite,
+    ).toBe(true);
+    expect(
+      userFiles().find((file) => file.id === failedFile.id)?.isFavourite,
+    ).toBe(false);
     expect(service.loadingIds()).toEqual(new Set<number>());
     expect(showToast).toHaveBeenCalledWith(
       'Favourite Update',
@@ -484,6 +487,226 @@ describe('FileOperationsService', () => {
 
     expect(service.loadingIds()).toEqual(new Set<number>());
   });
+
+  it('rejects duplicate pastes and allows another paste after success', () => {
+    const sourceFile = createAppFile(121, 'source.txt');
+    const firstResponse = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([sourceFile]);
+    copyFilesResult = firstResponse.asObservable();
+    service.markFilesToCopyWithFeedback([sourceFile]);
+
+    service.pasteFilesWithFeedback();
+    expect(service.isPasteInProgress()).toBe(true);
+
+    service.pasteFilesWithFeedback();
+    expect(copyFiles).toHaveBeenCalledTimes(1);
+
+    firstResponse.next([createAppFile(122, 'first-copy.txt')]);
+    firstResponse.complete();
+    expect(service.isPasteInProgress()).toBe(false);
+
+    const secondResponse = new Subject<AppFile[] | SharedFile[]>();
+    copyFilesResult = secondResponse.asObservable();
+    service.markFilesToCopyWithFeedback([sourceFile]);
+    service.pasteFilesWithFeedback();
+
+    expect(copyFiles).toHaveBeenCalledTimes(2);
+    expect(service.isPasteInProgress()).toBe(true);
+
+    secondResponse.next([]);
+    secondResponse.complete();
+    expect(service.isPasteInProgress()).toBe(false);
+  });
+
+  it.each(['copy', 'move'] as const)(
+    'releases the guard after a paste %s observable completes synchronously',
+    (operationName) => {
+      const sourceFile = createAppFile(132, 'source.txt');
+      userFiles.set([sourceFile]);
+
+      if (operationName === 'copy') {
+        service.markFilesToCopyWithFeedback([sourceFile]);
+        vi.spyOn(
+          TestBed.inject(FileApiService),
+          'copyFiles',
+        ).mockImplementationOnce(() => {
+          expect(service.isPasteInProgress()).toBe(true);
+          return of([]);
+        });
+      } else {
+        service.markFilesToMoveWithFeedback([sourceFile]);
+        vi.spyOn(
+          TestBed.inject(FileApiService),
+          'moveFiles',
+        ).mockImplementationOnce(() => {
+          expect(service.isPasteInProgress()).toBe(true);
+          return of([]);
+        });
+      }
+
+      service.pasteFilesWithFeedback();
+
+      expect(service.isPasteInProgress()).toBe(false);
+    },
+  );
+
+  it.each(['copy', 'move'] as const)(
+    'releases the guard and propagates a synchronous paste %s dispatch exception',
+    (operationName) => {
+      const sourceFile = createAppFile(133, 'source.txt');
+      const dispatchError = new Error('Dispatch failed');
+      userFiles.set([sourceFile]);
+
+      if (operationName === 'copy') {
+        service.markFilesToCopyWithFeedback([sourceFile]);
+        vi.spyOn(
+          TestBed.inject(FileApiService),
+          'copyFiles',
+        ).mockImplementationOnce(() => {
+          expect(service.isPasteInProgress()).toBe(true);
+          expect(service.loadingIds()).toEqual(new Set([sourceFile.id]));
+          throw dispatchError;
+        });
+      } else {
+        service.markFilesToMoveWithFeedback([sourceFile]);
+        vi.spyOn(
+          TestBed.inject(FileApiService),
+          'moveFiles',
+        ).mockImplementationOnce(() => {
+          expect(service.isPasteInProgress()).toBe(true);
+          expect(service.loadingIds()).toEqual(new Set([sourceFile.id]));
+          throw dispatchError;
+        });
+      }
+
+      expect(() => service.pasteFilesWithFeedback()).toThrow(dispatchError);
+      expect(service.isPasteInProgress()).toBe(false);
+      expect(service.loadingIds()).toEqual(new Set<number>());
+    },
+  );
+
+  it('releases the paste guard after failure and preserves the action for retry', () => {
+    const sourceFile = createAppFile(123, 'source.txt');
+    const failedResponse = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([sourceFile]);
+    copyFilesResult = failedResponse.asObservable();
+    service.markFilesToCopyWithFeedback([sourceFile]);
+
+    service.pasteFilesWithFeedback();
+    expect(service.isPasteInProgress()).toBe(true);
+
+    failedResponse.error(new Error('Copy failed'));
+
+    expect(service.isPasteInProgress()).toBe(false);
+    expect(service.awaitingActionState()?.filesIds).toEqual(
+      new Set([sourceFile.id]),
+    );
+
+    const retryResponse = new Subject<AppFile[] | SharedFile[]>();
+    copyFilesResult = retryResponse.asObservable();
+    service.pasteFilesWithFeedback();
+
+    expect(copyFiles).toHaveBeenCalledTimes(2);
+    expect(service.isPasteInProgress()).toBe(true);
+
+    retryResponse.next([]);
+    retryResponse.complete();
+    expect(service.isPasteInProgress()).toBe(false);
+  });
+
+  it('keeps the guard through clearing and replacing the pending action', () => {
+    const firstFile = createAppFile(124, 'first.txt');
+    const newerFile = createAppFile(125, 'newer.txt');
+    const firstResponse = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([firstFile, newerFile]);
+    copyFilesResult = firstResponse.asObservable();
+    service.markFilesToCopyWithFeedback([firstFile]);
+
+    service.pasteFilesWithFeedback();
+    service.clearActionContext();
+    service.markFilesToMoveWithFeedback([newerFile]);
+    service.pasteFilesWithFeedback();
+
+    expect(copyFiles).toHaveBeenCalledTimes(1);
+    expect(service.isPasteInProgress()).toBe(true);
+
+    firstResponse.next([createAppFile(126, 'first-copy.txt')]);
+    firstResponse.complete();
+
+    expect(service.isPasteInProgress()).toBe(false);
+    expect(service.awaitingActionState()?.filesIds).toEqual(
+      new Set([newerFile.id]),
+    );
+    expect(service.awaitingActionState()?.type).toBe(ActionType.Move);
+
+    const secondResponse = new Subject<AppFile[] | SharedFile[]>();
+    moveFilesResult = secondResponse.asObservable();
+    service.pasteFilesWithFeedback();
+
+    expect(moveFiles).toHaveBeenCalledTimes(1);
+    expect(service.isPasteInProgress()).toBe(true);
+
+    secondResponse.next([]);
+    secondResponse.complete();
+    expect(service.isPasteInProgress()).toBe(false);
+  });
+
+  it('keeps a paste active across navigation until the API operation completes', () => {
+    const sourceFile = createAppFile(127, 'source.txt');
+    const response = new Subject<AppFile[] | SharedFile[]>();
+    userFiles.set([sourceFile]);
+    copyFilesResult = response.asObservable();
+    service.markFilesToCopyWithFeedback([sourceFile]);
+
+    service.pasteFilesWithFeedback();
+    parentId.set(90);
+
+    expect(service.isPasteInProgress()).toBe(true);
+    expect(copyFiles).toHaveBeenCalledTimes(1);
+
+    response.next([createAppFile(128, 'copied.txt', { size: 30 })]);
+    response.complete();
+
+    expect(service.isPasteInProgress()).toBe(false);
+    expect(updateCurrentUserUsedSpace).toHaveBeenCalledWith(30);
+    expect(showToast).toHaveBeenCalledWith(
+      'Success',
+      "File copied to 'home directory'.",
+      MessageSeverity.success,
+    );
+  });
+
+  it.each(['copy', 'move'] as const)(
+    'does not block a direct %s while a paste is pending',
+    (operationName) => {
+      const sourceFile = createAppFile(129, 'source.txt');
+      const pasteResponse = new Subject<AppFile[] | SharedFile[]>();
+      userFiles.set([sourceFile]);
+
+      if (operationName === 'copy') {
+        service.markFilesToMoveWithFeedback([sourceFile]);
+        moveFilesResult = pasteResponse.asObservable();
+        service.pasteFilesWithFeedback();
+        copyFilesResult = of([createAppFile(130, 'direct-copy.txt')]);
+        service.copyFilesWithFeedback([sourceFile], 90, 'Direct destination');
+        expect(copyFiles).toHaveBeenCalledWith([sourceFile.id], 90);
+      } else {
+        service.markFilesToCopyWithFeedback([sourceFile]);
+        copyFilesResult = pasteResponse.asObservable();
+        service.pasteFilesWithFeedback();
+        moveFilesResult = of([createAppFile(131, 'direct-move.txt')]);
+        service.moveFilesWithFeedback([sourceFile], 90, 'Direct destination');
+        expect(moveFiles).toHaveBeenCalledWith([sourceFile.id], 90);
+      }
+
+      expect(service.isPasteInProgress()).toBe(true);
+
+      pasteResponse.next([]);
+      pasteResponse.complete();
+
+      expect(service.isPasteInProgress()).toBe(false);
+    },
+  );
 
   it('preserves a newer pending action when an earlier paste succeeds', () => {
     const firstFile = createAppFile(110, 'first.txt');
@@ -754,7 +977,12 @@ describe('FileOperationsService', () => {
     userFiles.set([sourceFile]);
     copyFilesResult = response.asObservable();
 
-    service.copyFilesWithFeedback([sourceFile], 72, 'Original folder', onSuccess);
+    service.copyFilesWithFeedback(
+      [sourceFile],
+      72,
+      'Original folder',
+      onSuccess,
+    );
     expect(service.loadingIds()).toEqual(new Set([sourceFile.id]));
     parentId.set(73);
     userFiles.set([currentFolderFile]);
@@ -784,7 +1012,12 @@ describe('FileOperationsService', () => {
     userFiles.set([sourceFile]);
     copyFilesResult = response.asObservable();
 
-    service.copyFilesWithFeedback([sourceFile], 74, 'Original folder', onSuccess);
+    service.copyFilesWithFeedback(
+      [sourceFile],
+      74,
+      'Original folder',
+      onSuccess,
+    );
     mode.set('GetSharedWithMe');
     sharedFiles.set([currentSharedFile]);
 

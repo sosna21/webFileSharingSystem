@@ -61,7 +61,9 @@
 <i
   class="bi bi-clipboard action-icon action-primary fs-3 disabled"
   data-testid="paste-files-trigger"
-  [class.disabled]="!canPaste()"
+  [class.disabled]="!canPaste() || isPasteInProgress()"
+  [attr.aria-disabled]="!canPaste() || isPasteInProgress()"
+  [attr.aria-busy]="isPasteInProgress()"
   ngbTooltip="Paste"
   i18n-ngbTooltip
   [openDelay]="300"

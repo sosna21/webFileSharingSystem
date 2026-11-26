@@ -25,6 +25,7 @@ export class TableContextMenuComponent {
   readonly position = input.required<{ x: number; y: number }>();
   readonly accessMode = input.required<ShareAccessMode | undefined>();
   readonly canPaste = input.required<boolean>();
+  readonly pasteInProgress = input.required<boolean>();
   readonly sortableColumns = input<{ column: string; displayName: string }[]>();
   readonly sortOption = input<{
     column: string;
@@ -53,6 +54,19 @@ export class TableContextMenuComponent {
       this.dropdown()?.close();
     }
     this.mobileMenu()?.close();
+  }
+
+  pasteClicked() {
+    if (
+      !this.hasMinReadWriteAccess() ||
+      !this.canPaste() ||
+      this.pasteInProgress()
+    ) {
+      return;
+    }
+
+    this.paste.emit();
+    this.close();
   }
 
   uploadClicked($event: Event) {

@@ -30,6 +30,7 @@
   [sortableColumns]="sortableColumns()"
   [sortOption]="sortOption()"
   [canPaste]="canPaste()"
+  [pasteInProgress]="fileOperations.isPasteInProgress()"
   [(viewMode)]="viewMode"
   (refresh)="onTableMenuAction('refresh')"
   (createFolder)="onTableMenuAction('create')"

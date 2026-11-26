@@ -44,6 +44,7 @@ export class MobileFileActionsComponent {
     this.fileService.parentBreadcrumb,
   );
   readonly selectedFiles = this.selectionService.selectedItems;
+  readonly isPasteInProgress = this.fileOperations.isPasteInProgress;
 
   private scrollTop = 0;
   private scrollAnchor = 0;
@@ -155,7 +156,7 @@ export class MobileFileActionsComponent {
   }
 
   pasteFiles() {
-    if (!this.canPaste()) return;
+    if (!this.canPaste() || this.isPasteInProgress()) return;
 
     this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selectionService.selectedIds.set(ids);

@@ -265,6 +265,8 @@ export class UserFilesViewComponent {
   }
 
   private pasteFiles() {
+    if (!this.canPaste() || this.fileOperations.isPasteInProgress()) return;
+
     this.fileOperations.pasteFilesWithFeedback((ids) => {
       this.selection.selectedIds.set(ids);
       if (ids.size > 0) this.selection.scrollToId(Array.from(ids).pop()!);
