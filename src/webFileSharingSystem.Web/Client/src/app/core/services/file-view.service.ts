@@ -331,14 +331,13 @@ export class FileViewService {
   );
 
   private readonly _request = computed(
-    () => `${
-      this.fileUrl
-    }/${this.mode()}?PageNumber=${this.currentPage()}&PageSize=${this.itemsPerPage()}
-      ${this.parentId() ? '&ParentId=' + this.parentId() : ''}${
-        this.searchedPhrase() !== ''
-          ? '&SearchedPhrase=' + this.searchedPhrase()
-          : ''
-      }`,
+    () =>
+      `${this.fileUrl}/${this.mode()}?PageNumber=${this.currentPage()}` +
+      `&PageSize=${this.itemsPerPage()}` +
+      (this.parentId() ? '&ParentId=' + this.parentId() : '') +
+      (this.searchedPhrase() !== ''
+        ? '&SearchedPhrase=' + this.searchedPhrase()
+        : ''),
   );
 
   constructor() {

@@ -171,6 +171,17 @@ describe('FileViewService', () => {
     await stabilize();
   }
 
+  async function loadUserFiles(
+    files: AppFile[],
+    response: Partial<FileResponse<AppFile>> = {},
+  ) {
+    TestBed.tick();
+    httpTesting
+      .expectOne((req) => req.url.startsWith(`${fileUrl}/GetAll?`))
+      .flush(createResponse(files, response));
+    await stabilize();
+  }
+
   async function stabilize() {
     await TestBed.inject(ApplicationRef).whenStable();
     TestBed.tick();
@@ -332,6 +343,29 @@ describe('FileViewService', () => {
       'Home',
     ]);
     expect(service.parentName()).toBe('Home');
+  });
+
+  it('allows minimum write access when the active parent is read-write', async () => {
+    setup('/disc/home/folder/31');
+    TestBed.tick();
+
+    httpTesting
+      .expectOne((req) => req.url.startsWith(`${fileUrl}/GetAll?`))
+      .flush(createResponse<AppFile>([]));
+    httpTesting.expectOne(`${fileUrl}/GetFilePath/31`).flush([
+      {
+        id: 31,
+        fileName: 'Writable folder',
+        level: 1,
+        accessMode: ShareAccessMode.ReadWrite,
+      },
+    ]);
+    await stabilize();
+
+    expect(service.parentBreadcrumb()).toMatchObject({
+      id: 31,
+      accessMode: ShareAccessMode.ReadWrite,
+    });
     expect(service.isParentMinWriteAccess()).toBe(true);
   });
 
@@ -383,6 +417,261 @@ describe('FileViewService', () => {
     ]);
   });
 
+  it('uses filename ascending as the default ordering without an active sort option', async () => {
+    setup('/disc/home');
+    const files = [
+      createAppFile(1, 'zeta.txt'),
+      createAppFile(2, 'alpha.txt'),
+      createAppFile(3, 'mu.txt'),
+    ];
+
+    await loadUserFiles(files);
+
+    expect(service.sortOption()).toBeNull();
+    expect(
+      service.fileResource.value()?.items.map((file) => file.fileName),
+    ).toEqual(['zeta.txt', 'alpha.txt', 'mu.txt']);
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'alpha.txt',
+      'mu.txt',
+      'zeta.txt',
+    ]);
+  });
+
+  it('sorts by a selected column, toggles direction, and resets direction on a new column', async () => {
+    setup('/disc/home');
+    await loadUserFiles([
+      createAppFile(1, 'zeta.txt', { size: 30 }),
+      createAppFile(2, 'alpha.txt', { size: 10 }),
+      createAppFile(3, 'mu.txt', { size: 20 }),
+    ]);
+
+    service.toggleSort('size');
+    expect(service.sortOption()).toEqual({ column: 'size', direction: 'asc' });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'alpha.txt',
+      'mu.txt',
+      'zeta.txt',
+    ]);
+
+    service.toggleSort('size');
+    expect(service.sortOption()).toEqual({ column: 'size', direction: 'desc' });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'zeta.txt',
+      'mu.txt',
+      'alpha.txt',
+    ]);
+
+    service.toggleSort('fileName');
+    expect(service.sortOption()).toEqual({
+      column: 'fileName',
+      direction: 'asc',
+    });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'alpha.txt',
+      'mu.txt',
+      'zeta.txt',
+    ]);
+  });
+
+  it('supports descending-first sorting and toggles back through ascending to no sort', async () => {
+    setup('/disc/home');
+    await loadUserFiles([
+      createAppFile(1, 'small.txt', { size: 1 }),
+      createAppFile(2, 'large.txt', { size: 9 }),
+      createAppFile(3, 'medium.txt', { size: 5 }),
+    ]);
+
+    service.toggleSort('size', true);
+    expect(service.sortOption()).toEqual({ column: 'size', direction: 'desc' });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'large.txt',
+      'medium.txt',
+      'small.txt',
+    ]);
+
+    service.toggleSort('size', true);
+    expect(service.sortOption()).toEqual({ column: 'size', direction: 'asc' });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'small.txt',
+      'medium.txt',
+      'large.txt',
+    ]);
+
+    service.toggleSort('size', true);
+    expect(service.sortOption()).toBeNull();
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'large.txt',
+      'medium.txt',
+      'small.txt',
+    ]);
+  });
+
+  it('sorts user files by user-only columns and ignores shared-only columns', async () => {
+    setup('/disc/home');
+    await loadUserFiles([
+      createAppFile(1, 'charlie.txt', { isFavourite: true }),
+      createAppFile(2, 'beta.txt', { isFavourite: false }),
+      createAppFile(3, 'alpha.txt', { isFavourite: true }),
+    ]);
+
+    service.toggleSort('favourite');
+    expect(service.sortOption()).toEqual({
+      column: 'favourite',
+      direction: 'asc',
+    });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'beta.txt',
+      'alpha.txt',
+      'charlie.txt',
+    ]);
+
+    service.toggleSort('accessMode');
+    expect(service.sortOption()).toEqual({
+      column: 'favourite',
+      direction: 'asc',
+    });
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'beta.txt',
+      'alpha.txt',
+      'charlie.txt',
+    ]);
+  });
+
+  it('sorts shared files by shared-only columns and ignores user-only columns', async () => {
+    setup('/disc/shared-with-me');
+    TestBed.tick();
+    httpTesting
+      .expectOne((req) => req.url.startsWith(`${fileUrl}/GetSharedWithMe?`))
+      .flush(
+        createResponse([
+          createSharedFile(1, 'write.txt', {
+            accessMode: ShareAccessMode.ReadWrite,
+          }),
+          createSharedFile(2, 'read.txt', {
+            accessMode: ShareAccessMode.ReadOnly,
+          }),
+          createSharedFile(3, 'full.txt', {
+            accessMode: ShareAccessMode.FullAccess,
+          }),
+        ]),
+      );
+    await stabilize();
+
+    service.toggleSort('accessMode');
+    expect(service.sortOption()).toEqual({
+      column: 'accessMode',
+      direction: 'asc',
+    });
+    expect(service.sharedFiles().map((file) => file.fileName)).toEqual([
+      'read.txt',
+      'write.txt',
+      'full.txt',
+    ]);
+
+    service.toggleSort('favourite');
+    expect(service.sortOption()).toEqual({
+      column: 'accessMode',
+      direction: 'asc',
+    });
+    expect(service.sharedFiles().map((file) => file.fileName)).toEqual([
+      'read.txt',
+      'write.txt',
+      'full.txt',
+    ]);
+  });
+
+  it('keeps sorting applied to a new resource response without sorting the resource data', async () => {
+    setup('/disc/home');
+    await loadUserFiles([
+      createAppFile(1, 'initial-large.txt', { size: 30 }),
+      createAppFile(2, 'initial-small.txt', { size: 10 }),
+    ]);
+    service.toggleSort('size');
+
+    service.reloadCurrentList();
+    TestBed.tick();
+    const reloadRequest = httpTesting.expectOne((req) =>
+      req.url.startsWith(`${fileUrl}/GetAll?`),
+    );
+    reloadRequest.flush(
+      createResponse([
+        createAppFile(3, 'new-large.txt', { size: 30 }),
+        createAppFile(4, 'new-small.txt', { size: 10 }),
+        createAppFile(5, 'new-medium.txt', { size: 20 }),
+      ]),
+    );
+    await stabilize();
+
+    expect(service.sortOption()).toEqual({ column: 'size', direction: 'asc' });
+    expect(
+      service.fileResource.value()?.items.map((file) => file.fileName),
+    ).toEqual(['new-large.txt', 'new-small.txt', 'new-medium.txt']);
+    expect(service.userFiles().map((file) => file.fileName)).toEqual([
+      'new-small.txt',
+      'new-medium.txt',
+      'new-large.txt',
+    ]);
+  });
+
+  it('requests changed page and page size and reflects the returned user totals', async () => {
+    setup('/disc/home');
+    await loadUserFiles([], {
+      pageIndex: 1,
+      totalPages: 12,
+      totalCount: 111,
+    });
+    expect(service.pagainationData()).toEqual({
+      currentPage: 1,
+      itemsPerPage: 9999,
+      totalItems: 111,
+      totalPages: 12,
+    });
+
+    service.currentPage.set(4);
+    TestBed.tick();
+    const pageRequest = httpTesting.expectOne((req) =>
+      req.url.startsWith(`${fileUrl}/GetAll?`),
+    );
+    let query = new URL(pageRequest.request.urlWithParams, 'http://localhost')
+      .searchParams;
+    expect(query.get('PageNumber')).toBe('4');
+    expect(query.get('PageSize')).toBe('9999');
+    pageRequest.flush(
+      createResponse([], {
+        pageIndex: 4,
+        totalPages: 12,
+        totalCount: 111,
+      }),
+    );
+    await stabilize();
+
+    service.itemsPerPage.set(25);
+    TestBed.tick();
+    const pageSizeRequest = httpTesting.expectOne((req) =>
+      req.url.startsWith(`${fileUrl}/GetAll?`),
+    );
+    query = new URL(pageSizeRequest.request.urlWithParams, 'http://localhost')
+      .searchParams;
+    expect(query.get('PageNumber')).toBe('4');
+    expect(query.get('PageSize')).toBe('25');
+    pageSizeRequest.flush(
+      createResponse([], {
+        pageIndex: 4,
+        totalPages: 5,
+        totalCount: 111,
+      }),
+    );
+    await stabilize();
+
+    expect(service.pagainationData()).toEqual({
+      currentPage: 4,
+      itemsPerPage: 25,
+      totalItems: 111,
+      totalPages: 5,
+    });
+  });
+
   it('loads user files with the current page, parent, and search parameters', async () => {
     setup('/disc/home/folder/42?search=invoice');
     service.currentPage.set(3);
@@ -396,7 +685,7 @@ describe('FileViewService', () => {
       .searchParams;
 
     expect(query.get('PageNumber')).toBe('3');
-    expect(query.get('PageSize')?.trim()).toBe('25');
+    expect(query.get('PageSize')).toBe('25');
     expect(query.get('ParentId')).toBe('42');
     expect(query.get('SearchedPhrase')).toBe('invoice');
     expect(service.fileResource.isLoading()).toBe(true);
@@ -437,7 +726,7 @@ describe('FileViewService', () => {
       .searchParams;
 
     expect(query.get('PageNumber')).toBe('2');
-    expect(query.get('PageSize')?.trim()).toBe('10');
+    expect(query.get('PageSize')).toBe('10');
     expect(query.get('ParentId')).toBe('17');
     expect(query.get('SearchedPhrase')).toBe('report');
     expect(service.sharedFilesResource.isLoading()).toBe(true);
